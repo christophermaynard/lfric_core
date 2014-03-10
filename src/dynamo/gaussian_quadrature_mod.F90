@@ -100,7 +100,6 @@ type(gaussian_quadrature_type) function init_gauss() result(self)
   do i=1,ngp
     self%xgp(i) = 0.5*(self%xgp(i) + 1.0)
   end do
-
   return
 end function init_gauss
   

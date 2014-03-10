@@ -18,6 +18,9 @@ module v3_kernel_mod
 use lfric
 use gaussian_quadrature_mod, only: gaussian_quadrature_type, &
                                    ngp ! parameter for how many GQ points
+use argument_mod,            only: arg_type, &          ! the type
+                                   gh_rw, v3, fe, cells ! the enums
+
 implicit none
 
 
@@ -31,6 +34,10 @@ type(gaussian_quadrature_type) :: gaussian_quadrature
 
 type, public, extends(kernel_type) :: v3_kernel_type
   private
+  type(arg_type) :: meta_args(1) = [ &
+       arg_type(gh_rw,v3,fe) &
+       ]
+  integer :: iterates_over = cells
 contains
   procedure, nopass :: rhs_v3_code
 !  procedure :: operate
@@ -51,7 +58,7 @@ end interface
 public rhs_v3_code              
 contains
 
-type(v3_kernel_type) function v3_kernel_constructor() result(self)
+type(v3_kernel_type) function v3_kernel_constructor() 
   ! no arguments, simply call the constructor for gaussian quadrature
   gaussian_quadrature  = gaussian_quadrature_type()
   return
