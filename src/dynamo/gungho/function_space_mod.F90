@@ -66,7 +66,7 @@ contains
 !> Subroutine Returns a pointer to the dofmap for the cell 
 !! @param[in] self The calling functions_space
 !! @param[in] cell Which cell
-!! @param[out] map The pointer which points to a slice of the dofmap
+!! @return The pointer which points to a slice of the dofmap
   procedure :: get_cell_dofmap
 
 !> Subroutine which populates the dofmap with data
@@ -82,7 +82,7 @@ contains
 
 !>  Accessor procedure for the basis function
 !! @param[in] self the calling function space
-!! @param[out] basis a pointer to the array to hold the values of the basis function 
+!! @return A pointer to the array to hold the values of the basis function 
   procedure :: get_basis
 
 !> Accessor procedure for the basis function
@@ -98,7 +98,7 @@ contains
 !> Accessor procedure for the basis function for the
 !! differential function space
 !! @param[in] self the calling function space
-!! @param[out] basis a pointer to the real array to hold the values of the
+!! @return A pointer to the real array to hold the values of the
 !!  basis function 
   procedure :: get_diff_basis
 
@@ -120,7 +120,7 @@ contains
   procedure :: set_nodes
 
 !> Accessor function to get the coordinates of the function space
-!! @param[out] nodal_coords a pointer to the two dimensional array, (xyz,ndf)
+!! @return A pointer to the two dimensional array, (xyz,ndf)
   procedure :: get_nodes
   
 
@@ -250,16 +250,16 @@ end function get_ndf
 !> Subroutine Returns a pointer to the dofmap for the cell 
 !! @param[in] self The calling functions_space
 !! @param[in] cell Which cell
-!! @param[out] map The pointer which points to a slice of the dofmap
-subroutine get_cell_dofmap(self,cell,map)
+!! @return The pointer which points to a slice of the dofmap
+function get_cell_dofmap(self,cell) result(map)
   implicit none
   class(function_space_type), target, intent(in) :: self
   integer,                            intent(in) :: cell
-  integer, pointer,                   intent(out) :: map(:)
+  integer, pointer                               :: map(:)
 
   map => self%dofmap(cell,:)
   return
-end subroutine get_cell_dofmap
+end function get_cell_dofmap
 
 !-----------------------------------------------------------------------------
 ! Copy data in the dofmap
@@ -281,15 +281,15 @@ end subroutine populate_cell_dofmap
 !-----------------------------------------------------------------------------
 ! Get the basis function
 !-----------------------------------------------------------------------------
-subroutine get_basis(self,basis)
+function get_basis(self)  result(basis)
   implicit none
-  class(function_space_type), target,  intent(in)  :: self  
-  real(kind=dp),              pointer, intent(out) :: basis(:,:,:,:)
+  class(function_space_type), target, intent(in)  :: self  
+  real(kind=dp),              pointer             :: basis(:,:,:,:)
 
   basis => self%basis
 
   return
-end subroutine get_basis
+end function get_basis
 
 !-----------------------------------------------------------------------------
 ! Set the basis function
@@ -308,15 +308,15 @@ end subroutine set_basis
 !-----------------------------------------------------------------------------
 ! Get the differential of the basis function
 !-----------------------------------------------------------------------------
-subroutine get_diff_basis(self,diff_basis)
+function get_diff_basis(self) result(diff_basis)
   implicit none
-  class(function_space_type), target,  intent(in)  :: self  
-  real(kind=dp),              pointer, intent(out) :: diff_basis(:,:,:,:)
+  class(function_space_type), target, intent(in)  :: self  
+  real(kind=dp),              pointer             :: diff_basis(:,:,:,:)
 
   diff_basis => self%diff_basis
 
   return
-end subroutine get_diff_basis
+end function get_diff_basis
 
 !-----------------------------------------------------------------------------
 ! Set the differential of the basis function
@@ -351,14 +351,14 @@ end subroutine set_nodes
 ! ----------------------------------------------------------------
 ! Get the nodal coordinates of the function_space
 ! ----------------------------------------------------------------
-subroutine get_nodes(self,nodal_coords)
+function get_nodes(self) result(nodal_coords)
   implicit none
-  class(function_space_type), target,  intent(in)  :: self
-  real(kind=dp),              pointer, intent(out) :: nodal_coords(:,:)
+  class(function_space_type), target, intent(in)  :: self
+  real(kind=dp),              pointer             :: nodal_coords(:,:)
   
   nodal_coords => self%nodal_coords
   
   return
-end subroutine get_nodes
+end function get_nodes
 
 end module function_space_mod

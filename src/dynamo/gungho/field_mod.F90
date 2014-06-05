@@ -227,7 +227,7 @@ contains
     call log_event( title, LOG_LEVEL_DEBUG )
 
     do cell=1,self%vspace%get_ncell()
-     call self%vspace%get_cell_dofmap( cell,map )
+     map => self%vspace%get_cell_dofmap( cell )
       do df=1,self%vspace%get_ndf()
         do layer=0,self%get_nlayers()-1
           write( log_scratch_space, '( I4, I4, I4, F8.2 )' ) &
