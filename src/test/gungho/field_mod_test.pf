@@ -18,9 +18,8 @@ contains
   @test
   subroutine test_field_data( )
 
-    use field_mod,               only : field_data_type,      &
-                                        field_type,           &
-                                        field_data_from_proxy
+    use field_mod,               only : field_type,      &
+                                        field_proxy_type 
     use function_space_mod,      only : function_space_type
     use gaussian_quadrature_mod, only : gaussian_quadrature_type
     use pFUnit_Mod
@@ -28,7 +27,8 @@ contains
     implicit none
 
     type( function_space_type )      :: func_space
-    type( field_data_type )          :: f_field
+    type( field_type )               :: f_field
+    type( field_proxy_type )         :: f_field_proxy
     type( gaussian_quadrature_type ) :: gq
     integer                          :: num_cells,       &
                                         num_dofs,        &
@@ -52,15 +52,17 @@ contains
 
     gq = gaussian_quadrature_type( )
 
-    f_field = field_data_type( vector_space = func_space, &
+    f_field = field_type( vector_space = func_space, &
                                gq = gq,                   &
                                num_layers = num_layers)
 
+    f_field_proxy = f_field % get_proxy( )
+
     ! test the procedures of the type
-    testncell = f_field%get_ncell()
+    testncell = f_field_proxy%ncell
     @assertEqual( num_cells, testncell )
 
-    testnlayers = f_field%get_nlayers()
+    testnlayers = f_field_proxy%nlayers
     @assertEqual( num_layers, testnlayers )
 
   end subroutine test_field_data

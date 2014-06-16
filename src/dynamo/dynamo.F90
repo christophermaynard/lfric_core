@@ -22,7 +22,7 @@
 program dynamo
 
   use dynamo_algorithm_mod, only : dynamo_algorithm
-  use field_mod,            only : field_data_type
+  use field_mod,            only : field_type
   use lfric
   use log_mod,              only : log_event, LOG_LEVEL_INFO
   use set_up_mod,           only : set_up
@@ -31,7 +31,7 @@ program dynamo
 
   type( function_space_type )      :: v3_function_space, v2_function_space, &
                                       v1_function_space, v0_function_space
-  type( field_data_type )          :: pressure_density, rhs
+  type( field_type )          :: pressure_density, rhs
   type( gaussian_quadrature_type ) :: gq
   integer                          :: num_layers
 
@@ -44,15 +44,15 @@ program dynamo
 
 
 
-  pressure_density = field_data_type( vector_space = v3_function_space, &
+  pressure_density = field_type( vector_space = v3_function_space, &
                                       gq = gq,                          &
                                       num_layers = num_layers)
 
-  rhs = field_data_type( vector_space = v3_function_space, &
+  rhs = field_type( vector_space = v3_function_space, &
                          gq = gq,                          &
                          num_layers = num_layers )
 
-  call dynamo_algorithm( pressure_density%new_proxy( ), rhs%new_proxy( ) )
+  call dynamo_algorithm( pressure_density, rhs )
 
   call rhs%print_field( 'RHS field...' )
   call pressure_density%print_field( 'LHS field...' )

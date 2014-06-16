@@ -8,8 +8,8 @@
 !
 !> @brief A module providing field related classes.
 !>
-!> @detail Both the full fat field representation and a light weight proxy are
-!> defined here.
+!> @detail Both the full fat field representation and a proxy with access to the
+!! field elements are defined here.
 
 module field_mod
 
@@ -20,7 +20,6 @@ module field_mod
   implicit none
 
   private
-  public  :: field_data_from_proxy
 
   !---------------------------------------------------------------------------
   ! Public types
@@ -28,13 +27,37 @@ module field_mod
 
   !> Algorithm layer representation of a field.
   !>
-  !> This is a proxy to the actual field description with no accessor methods.
+  !> Objects of this type hold all the data of the field privately.
+  !> Unpacking the data is done via the proxy type accessed by the Psy layer
+  !> alone.
   !>
   type, public :: field_type
-
     private
+    !> The number of layers 
+    integer :: nlayers
+    !> The number of unique degrees of freedom
+    integer :: undf
+    !> The number of cells from the underlying function space
+    integer :: ncell
+    !> Each field has a pointer to the function space on which it lives
+    type( function_space_type ), pointer         :: vspace => null( )
+    !> Each field has a pointer to the gaussian quadrature rule which will be
+    !! used to integrate over its values
+    type( gaussian_quadrature_type ), pointer         &
+                                      :: gaussian_quadrature => null( )
+    !> Allocatable array of type real which holds the values of the field
+    real(kind=dp), allocatable         :: data( : )
 
-    class( field_data_type ), pointer :: real_field => null()
+  contains
+
+    !> Function to get a proxy with public pointers to the data in a
+    !! field_type.
+    procedure, public :: get_proxy
+
+    !> Sends the field contents to the log
+    !! @param[in] title A title added to the log before the data is written out
+    !>
+    procedure, public :: print_field
 
   end type field_type
 
@@ -42,107 +65,62 @@ module field_mod
 
     module procedure field_constructor
 
-  end interface field_type
+  end interface
 
   !> Psy layer representation of a field.
   !>
-  !> Objects of this type hold all the data of the field ready for kernels to
-  !> work on.
+  !> This is a proxy to the actual field description with each element accessed
+  !> via a public pointer.
   !>
-  type, public :: field_data_type
+  type, public :: field_proxy_type 
+
     private
+
     !> The number of layers 
-    integer :: nlayers
+    integer, public  :: nlayers
     !> The number of unique degrees of freedom
-    integer :: undf
+    integer, public  :: undf
+    !> The number of cells from the underlying function space
+    integer, public  :: ncell
     !> Each field has a pointer to the function space on which it lives
-    type( function_space_type ), pointer, public :: vspace => null( )
+    type( function_space_type ), pointer, public :: vspace
     !> Each field has a pointer to the gaussian quadrature rule which will be
     !! used to integrate over its values
     type( gaussian_quadrature_type ), pointer, public &
-                                      :: gaussian_quadrature => null( )
+                                      :: gaussian_quadrature
     !> Allocatable array of type real which holds the values of the field
-    real(kind=dp), allocatable, public :: data( : )
+    real(kind=dp), public, pointer                      :: data( : )
 
   contains
-    !> Wrapper to <code>get_ncell</code> from the underlying function space
-    !! @param[in] self The calling field
-    !! @return An integer, the number of cells in a single layer (columns)
-    procedure, public :: get_ncell
-
-    !> Accessor function to get the number of layers
-    !! @param[in] self the calling field
-    !! @return An integer, the number of layers
-    procedure, public :: get_nlayers
-
-    !> Create a new light-weight proxy for this object.
-    !>
-    !> This is used by the algorithm layer to refer to the object without
-    !> having access to its methods.
-    !>
-    !> @return The proxy object.
-    !>
-    procedure, public :: new_proxy
-
-    !> Sends the field contents to the log
-    !! @param[in] title A title added to the log before the data is written out
-    !>
-    procedure, public :: print_field
-  end type field_data_type
-
-  interface field_data_type
-
-    module procedure field_data_constructor
-
-  end interface
+  end type field_proxy_type 
 
 contains
 
-  !> Obtain the actual field data object from a proxy object.
+  !> Function to create a proxy with access to the data in the field_type.
   !>
-  !> This is a non-type-bound procedure (class method) used by the Psy layer.
-  !>
-  !> @param [in] proxy The proxy object to dereference.
-  !> @return The dereferenced data object.
-  function field_data_from_proxy( proxy ) result( data )
-
+  !> @return The proxy type with public pointers to the elements of
+  !> field_type
+  type(field_proxy_type ) function get_proxy(self)
     implicit none
+    class(field_type), target, intent(in)  :: self
 
-    type( field_type ), intent( in ) :: proxy
-    class( field_data_type ), pointer :: data
+    get_proxy % nlayers                =  self % nlayers
+    get_proxy % undf                   =  self % undf
+    get_proxy % ncell                  =  self % ncell
+    get_proxy % vspace                 => self % vspace
+    get_proxy % gaussian_quadrature    => self % gaussian_quadrature
+    get_proxy %  data                  => self % data
 
-    data => proxy%real_field
+  end function get_proxy
 
-  end function field_data_from_proxy
-
-  !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
   !> Construct a <code>field_type</code> object.
-  !>
-  !> @param [in] field_data the data object the new object should reference.
-  !> @return The new object.
-  !>
-  function field_constructor( field_data ) result( new_field )
-
-    implicit none
-
-    class( field_data_type ), pointer, intent( in ) :: field_data
-
-    type( field_type ) :: new_field
-
-    new_field%real_field => field_data
-
-  end function field_constructor
-
-  !> Construct a <code>field_data_type</code> object.
   !>
   !> @param [in] vector_space the function space that the field lives on
   !> @param [in] gq the gaussian quadrature rule
   !> @param [in] num_layers integer number of layers for the field
   !> @return self the field
   !>
-  function field_data_constructor( vector_space, &
+  function field_constructor( vector_space, &
                                    gq,           &
                                    num_layers) result(self)
 
@@ -150,61 +128,22 @@ contains
     type(gaussian_quadrature_type), target, intent(in) :: gq
     integer, intent(in) :: num_layers
 
-    type(field_data_type), target :: self
+    type(field_type), target :: self
 
     self%vspace => vector_space
     self%gaussian_quadrature => gq
     self%nlayers = num_layers
+    self%ncell = self%vspace%get_ncell()
     self%undf = self%vspace%get_undf()
 
     ! allocate the array in memory
     allocate(self%data(self%undf))
 
-  end function field_data_constructor
+  end function field_constructor
 
   !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
-  !> Wrapper to <code>get_ncell</code> from the underlying function space
-  !! @param[in] self The calling field
-  !! @return An integer, the number of cells in a single layer (columns)
-  integer function get_ncell(self)
-    class(field_data_type) :: self
-    get_ncell=self%vspace%get_ncell()
-    return
-  end function get_ncell
-
-  !> Accessor function to get the number of layers
-  !! @param[in] self the calling field
-  !! @return An integer, the number of layers
-  integer function get_nlayers(self)
-    class(field_data_type) :: self
-    get_nlayers=self%nlayers
-    return
-  end function get_nlayers
-
-  !> Create a new light-weight proxy for this object.
-  !>
-  !> This is used by the algorithm layer to refer to the object without
-  !> having access to its methods.
-  !>
-  !> @return The proxy object.
-  !>
-  !> @todo The need to use a temporary pointer variable here is ugly. If you
-  !>       have better syntax please replace it.
-  !>
-  type( field_type ) function new_proxy( self ) result( proxy )
-
-    implicit none
-
-    class( field_data_type ), target, intent( in ) :: self
-
-    class( field_data_type ), pointer :: ptr
-
-    ptr => self
-    proxy = field_type( ptr )
-
-  end function new_proxy
 
   !> Sends the field contents to the log
   !! @param[in] title A title added to the log before the data is written out
@@ -215,7 +154,7 @@ contains
 
     implicit none
 
-    class( field_data_type ), target, intent( in ) :: self
+    class( field_type ), target, intent( in ) :: self
 
     character( * ),          intent( in ) :: title
 
@@ -226,10 +165,10 @@ contains
 
     call log_event( title, LOG_LEVEL_DEBUG )
 
-    do cell=1,self%vspace%get_ncell()
+    do cell=1,self%ncell
      map => self%vspace%get_cell_dofmap( cell )
       do df=1,self%vspace%get_ndf()
-        do layer=0,self%get_nlayers()-1
+        do layer=0,self%nlayers-1
           write( log_scratch_space, '( I4, I4, I4, F8.2 )' ) &
               cell, df, layer+1, self%data( map( df ) + layer )
           call log_event( log_scratch_space, LOG_LEVEL_DEBUG )
