@@ -62,7 +62,8 @@ else
   FCOM = $(FC)
 endif
 
-ifeq '$(FC)' 'ifort'
+COMPILER_NAME = $(shell basename $(FC))
+ifeq '$(COMPILER_NAME)' 'ifort'
   $(info ** Chosen Intel Fortran compiler)
 
   FFLAGS_COMPILER     = -xhost
@@ -77,7 +78,7 @@ ifeq '$(FC)' 'ifort'
                            | awk -F "[. ]" '/[0-9]\.[0-9]\.[0-9]/ { printf "%03i%02i%02i", $$(NF-2),$$(NF-1),$$NF}' )
   $(info ** Version $(IFORT_VERSION))
 
-else ifeq ($(findstring xlf,$(FC) ), xlf)
+else ifeq ($(findstring xlf,$(COMPILER_NAME) ), xlf)
   $(info ** Chosen IBM XL Fortran compiler)
 
   FFLAGS_OPTIMISATION   = -O0
@@ -87,7 +88,7 @@ else ifeq ($(findstring xlf,$(FC) ), xlf)
   FFLAGS_RUNTIME        = -qddim -qstackprotect=all -qfloat=nans -qflttrap=enable:invalid:nanq:overflow:underflow:zerodivide
   F_MOD_DESTINATION_ARG = -qmoddir=$(OBJ_DIR)
 
-else ifeq '$(FC)' 'gfortran'
+else ifeq '$(COMPILER_NAME)' 'gfortran'
   $(info ** Chosen GNU Fortran compiler)
 
   FFLAGS_OPTIMISATION = -O0
@@ -101,7 +102,7 @@ else ifeq '$(FC)' 'gfortran'
                        | awk -F . '{ printf "%02i%02i%02i", $$1, $$2, $$3 }')
   $(info ** Version $(GFORTRAN_VERSION))
 
-else ifeq '$(FC)' 'nagfor'
+else ifeq '$(COMPILER_NAME)' 'nagfor'
   $(info ** Chosen NAG Fortran compiler)
 
   FFLAGS_OPTIMISATION = -O0
@@ -110,7 +111,7 @@ else ifeq '$(FC)' 'nagfor'
   FFLAGS_RUNTIME      = -C=all -C=undefined -mtrace=all -nan
   F_MOD_DESTINATION_ARG = -mdir $(OBJ_DIR)
 
-else ifeq '$(FC)' 'pgfortran'
+else ifeq '$(COMPILER_NAME)' 'pgfortran'
   $(info ** Chosen Portland Fortran compiler)
 
   FFLAGS_OPTIMISATION = -O0
@@ -118,7 +119,7 @@ else ifeq '$(FC)' 'pgfortran'
   FFLAGS_RUNTIME      = -Mbounds -Mchkptr -Mchkstk
   F_MOD_DESTINATION_ARG = -module $(OBJ_DIR)
 
-else ifeq '$(FC)' 'crayftn'
+else ifeq '$(COMPILER_NAME)' 'crayftn'
   $(info ** Chosen Cray Fortran compiler)
 
   FFLAGS_COMPILER = -em

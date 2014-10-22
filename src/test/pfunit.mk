@@ -11,7 +11,8 @@ PFUNIT_SOURCE = $(abspath ../pfunit)
 PFUNIT_BUILD = $(BUILD_DIR)/pfunit
 export PFUNIT_INSTALL = $(BUILD_DIR)/pfunit-install
 
-ifeq '$(FC)' 'ifort'
+COMPILER_NAME = $(shell basename $(FC))
+ifeq '$(COMPILER_NAME)' 'ifort'
   PFUNIT_COMPILER_ID = Intel
   ifeq ($(shell test $(IFORT_VERSION) -lt 0130000; echo $$?), 0)
     $(error pFUnit will only compile with ifort v13 or later.)
@@ -19,14 +20,14 @@ ifeq '$(FC)' 'ifort'
     export CPPFLAGS += -DINTEL_13
     export FPPFLAGS += -DINTEL_13
   endif
-else ifeq '$(FC)' 'gfortran'
+else ifeq '$(COMPILER_NAME)' 'gfortran'
   PFUNIT_COMPILER_ID = GNU
   ifeq ($(shell test $(GFORTRAN_VERSION) -lt 040500), 0)
     $(error pFUnit will only compile with gfortran v4.5 or later.)
   endif
-else ifeq '$(FC)' 'nagfor'
+else ifeq '$(COMPILER_NAME)' 'nagfor'
   PFUNIT_COMPILER_ID = NAG
-else ifeq '$(FC)' 'xlf'
+else ifeq '$(COMPILER_NAME)' 'xlf'
   PFUNIT_COMPILER_ID = XL
 else
   $(error Unrecognised compiler "$(FC)")
