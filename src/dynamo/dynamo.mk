@@ -7,53 +7,91 @@
 
 include ../../include.mk
 
-BIN_DIR   = ../../bin
+AR ?= ar
 
-ifdef GFORTRAN_VERSION
-  ifeq ($(shell test $(GFORTRAN_VERSION) -lt 040601; echo $$?), 0)
-    $(error GFortran is too old. Must be at least 4.6.1)
-  endif
-endif
+BIN_DIR  = $(ROOT)/bin
+DATABASE = $(OBJ_DIR)/dependencies.db
 
--include $(OBJ_DIR)/$(EXE).mk
+include $(OBJ_DIR)/programs.mk $(OBJ_DIR)/dependencies.mk
 
-.PHONY: all
-all: $(BIN_DIR)/$(EXE)
+ALL_SRC     = $(shell find . -name "*.[Ff]90")
+TOUCH_FILES = $(patsubst ./%.f90,$(OBJ_DIR)/%.t,$(patsubst ./%.F90,$(OBJ_DIR)/%.t,$(ALL_SRC)))
+PROG_OBJS   = $(patsubst %.f90,%.o,$(patsubst %.F90,%.o,$(PROG_SRCS)))
+PROGRAMS    = $(patsubst %.o,%,$(notdir $(PROG_OBJS)))
+ALL_MODULES = $(filter-out $(PROG_OBJS),$(patsubst %.t,%.o,$(TOUCH_FILES)))
 
-$(BIN_DIR)/$(EXE): $(OBJ_DIR)/$(EXE) | $(BIN_DIR)
+.PHONY: applications
+applications: $(patsubst %,$(BIN_DIR)/%,$(PROGRAMS))
+
+.PHONY: modules
+modules: $(OBJ_DIR)/modules.a
+
+$(BIN_DIR)/%: | $(BIN_DIR)
+	$(MAKE) -f dynamo.mk $(patsubst $(BIN_DIR)/%,$(OBJ_DIR)/%.x,$@) \
+	        UNIT=$(patsubst $(BIN_DIR)/%,%,$@)
 	@echo "Installing $@"
-	@cp $< $(BIN_DIR)
+	$(Q)cp $(OBJ_DIR)/$(notdir $@).x $@
 
 # Directories
+
 $(BIN_DIR):
 	@echo "Creating $@"
-	@mkdir -p $@
+	$(Q)mkdir -p $@
 
-$(OBJ_DIR):
-	@echo "creating $@"
-	@mkdir -p $@
+SUBDIRS = $(shell find * -type d -prune)
+OBJ_SUBDIRS = $(patsubst %,$(OBJ_DIR)/%/,$(SUBDIRS))
 
-# Rules
-$(OBJ_DIR)/%.mod: $(OBJ_DIR)/%.o
-	@echo "Require $@"
+$(OBJ_DIR) $(OBJ_SUBDIRS):
+	@echo "Creating $@"
+	$(Q)mkdir -p $@
 
-$(OBJ_DIR)/%.o: %.F90 | $(OBJ_DIR)
+# Build Rules
+
+INCLUDE_ARGS = -I $(OBJ_DIR) $(patsubst %,-I $(OBJ_DIR)/%,$(SUBDIRS))
+
+$(OBJ_DIR)/%.o $(OBJ_DIR)/%.mod: %.F90 | $(OBJ_DIR)
 	@echo "Compile $<"
-	$(FCOM) $(CPPFLAGS) $(FFLAGS) $(F_MOD_DESTINATION_ARG) \
-	        -I $(OBJ_DIR) -c -o $@ $<
+	$(Q)$(FCOM) $(CPPFLAGS) $(FFLAGS) \
+	            $(F_MOD_DESTINATION_ARG)$(OBJ_DIR)/$(dir $@) \
+	            $(INCLUDE_ARGS) -c -o $(basename $@).o $<
 
-$(OBJ_DIR)/%.o: %.f90 | $(OBJ_DIR)
+$(OBJ_DIR)/%.o $(OBJ_DIR)/%.mod: %.f90 | $(OBJ_DIR)
 	@echo "Compile $<"
-	$(FCOM) $(CPPFLAGS) $(FFLAGS) $(F_MOD_DESTINATION_ARG) \
-	        -I $(OBJ_DIR) -c -o $@ $<
+	$(Q)$(FCOM) $(CPPFLAGS) $(FFLAGS) \
+	            $(F_MOD_DESTINATION_ARG)$(OBJ_DIR)/$(dir $@) \
+	            $(INCLUDE_ARGS) -c -o $(basename $@).o $<
 
-$(OBJ_DIR)/$(EXE): $($(shell echo $(EXE) | tr a-z A-Z)_OBJS)
+$(OBJ_DIR)/modules.a: $(ALL_MODULES)
+	$(Q)$(AR) -r $@ $^
+
+$(OBJ_DIR)/%.x: $($(shell echo $(UNIT) | tr a-z A-Z)_OBJS)
 	@echo "Linking $@"
-	$(FCOM) $(FFLAGS) $(LDFLAGS) -o $@ $^
+	$(Q)$(FCOM) $(FFLAGS) $(LDFLAGS) -o $@ $^
+
+# Dependencies
+
+$(OBJ_DIR)/programs.mk: | $(OBJ_DIR)
+	$(TOOL_DIR)/ProgramObjects -database $(DATABASE) $@
+
+$(OBJ_DIR)/dependencies.mk: $(TOUCH_FILES) | $(OBJ_DIR) $(OBJ_SUBDIRS)
+	$(Q)$(TOOL_DIR)/DependencyRules -database $(DATABASE) $@
+
+IGNORE_DEPENDENCIES := $(patsubst %,-ignore %,$(IGNORE_DEPENDENCIES))
+export LDFLAGS += $(patsubst %, -l%,$(EXTERNAL_LIBRARIES))
+
+$(OBJ_DIR)/%.t: %.F90 | $(OBJ_SUBDIRS)
+	@echo Analysing $<
+	$(Q)$(TOOL_DIR)/DependencyAnalyser $(IGNORE_DEPENDENCIES) \
+	                               $(DATABASE) $< && touch $@
+
+$(OBJ_DIR)/%.t: %.f90 | $(OBJ_SUBDIRS)
+	@echo Analysing $<
+	$(Q)$(TOOL_DIR)/DependencyAnalyser $(IGNORE_DEPENDENCIES) \
+	                                   $(DATABASE) $< && touch $@
+
+# Special Rules
 
 .PHONY: clean
 clean:
 	-rm -rf $(OBJ_DIR)
 	-rm -f $(BIN_DIR)/*
-
--include $(OBJ_DIR)/$(DEP_FILE)

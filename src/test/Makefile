@@ -5,64 +5,64 @@
 # https://puma.nerc.ac.uk/trac/GungHo/wiki
 ##############################################################################
 
-ROOT = ../..
+IGNORE_DEPENDENCIES = netcdf
+EXTERNAL_LIBRARIES = netcdff
+
+export ROOT = ../..
 include $(ROOT)/include.mk
-FFLAGS := $(filter-out -Werror,$(FFLAGS)) # pFUnit isn't that well put together
+export PFUNIT_INSTALL = $(BUILD_DIR)/pfunit-install
 
-TARGET_OBJ_DIR = $(BUILD_DIR)/dynamo
+SPECIAL_FFLAGS := $(filter-out -Werror,$(FFLAGS)) # pFUnit isn't that well put together
 
-# This is not pretty, or good, but it is expedient. Until such times as I have
-# written a better build system put special object files needed to link here.
-LINK_SPECIAL = -lnetcdf -lnetcdff
+OBJ_DIR = $(BUILD_DIR)/tests
+OBJ_SUBDIRS = $(patsubst %,$(OBJ_DIR)/%,$(shell find * -type d))
+export DRIVER_OBJ=$(OBJ_DIR)/driver.o
 
-TEST_SUBDIRS = $(shell find * -maxdepth 1 -type d)
+TEST_SOURCES = $(shell find -name "*.pf")
+TEST_OBJECTS = $(patsubst %.pf,$(OBJ_DIR)/%.o,$(TEST_SOURCES))
 
-TEST_OBJ_DIR     = $(BUILD_DIR)/tests
-TEST_OBJ_SUBDIRS = $(patsubst %,$(TEST_OBJ_DIR)/%,$(TEST_SUBDIRS))
-# OBJ_DIR is used by include.mk
-OBJ_DIR          = $(TEST_OBJ_DIR)
-
-TEST_SRC  = $(shell find . -name '*.pf')
-TEST_OBJS = $(patsubst %.pf,$(TEST_OBJ_DIR)/%.o,$(TEST_SRC))
-
-SRC  = $(wildcard *.[Ff]90)
-OBJS = $(patsubst %.[Ff]90,$(TEST_OBJ_DIR)/%.o,$(SRC))
-
-DRIVER_OBJ = $(TEST_OBJ_DIR)/driver.o
-TARGET_OBJ = $(patsubst %_test.pf,$(TARGET_OBJ_DIR)/%.o,$(TEST_SRC))
-
-DEP_FILE   = dependencies.mk
+SUBJECT_DIR     = $(BUILD_DIR)/dynamo
+SUBJECT_SUBDIRS = $(shell find $(SUBJECT_DIR) -type d)
+SUBJECT_MODINC  = $(patsubst %,-I %,$(SUBJECT_SUBDIRS))
 
 .PHONY: test
-test: pfunit $(TEST_OBJ_DIR)/test
-	$(TEST_OBJ_DIR)/test -robust
+test: $(OBJ_DIR)/test | pfunit
+	$(Q)$(OBJ_DIR)/test -robust
 
-include pfunit.mk
-
-.PRECIOUS: $(TEST_OBJ_DIR)/test
-$(TEST_OBJ_DIR)/test: $(TEST_OBJS) $(OBJS) $(DRIVER_OBJ) $(TARGET_OBJ)
-	$(FCOM) -o $@ $^ $(LDFLAGS) $(LINK_SPECIAL) \
-	        -L$(PFUNIT_INSTALL)/lib -lpfunit
-
-$(TEST_OBJ_DIR)/%.o: $(TEST_OBJ_DIR)/%.F90
-	@echo Compiling $<
-	$(FCOM) $(FPPFLAGS) $(FFLAGS) $(FFLAGS_TESTS) -c \
-	        $(F_MOD_DESTINATION_ARG) -I$(OBJ_DIR) -I$(PFUNIT_INSTALL)/mod \
-	        -I$(TARGET_OBJ_DIR) -o $@ $<
-
-.PRECIOUS: $(TEST_OBJ_DIR)/%.F90
-$(TEST_OBJ_DIR)/%.F90: %.pf | $(TEST_OBJ_DIR) $(TEST_OBJ_SUBDIRS) \
-                       $(PFUNIT_INSTALL)/bin/pFUnitParser.py
+.PRECIOUS: $(OBJ_DIR)/%.F90
+$(OBJ_DIR)/%.F90: %.pf | $(OBJ_DIR) $(OBJ_SUBDIRS)
 	@echo Generating $@
-	$(PFUNIT_INSTALL)/bin/pFUnitParser.py $< $@
+	$(Q)$(PFUNIT_INSTALL)/bin/pFUnitParser.py $< $@
 
-$(TEST_OBJ_DIR) $(TEST_OBJ_SUBDIRS):
+$(OBJ_DIR)/%.o: $(OBJ_DIR)/%.F90
+	@echo Compiling $<
+	$(Q)$(FCOM) $(FPPFLAGS) $(SPECIAL_FFLAGS) $(FFLAGS_TESTS) \
+	            $(F_MOD_DESTINATION_ARG)$(OBJ_DIR)/$(dir $@) \
+	            $(SUBJECT_MODINC) -I$(PFUNIT_INSTALL)/mod \
+	            -c -o $@ $<
+
+$(OBJ_DIR)/test: $(DRIVER_OBJ) $(TEST_OBJECTS)
+	@echo Linking $@
+	$(Q)$(FCOM) $(LDFLAGS) -o $@ \
+	            $^ \
+	            $(SUBJECT_DIR)/modules.a \
+	            $(PFUNIT_INSTALL)/lib/libpfunit.a \
+	            $(patsubst %,-l%,$(EXTERNAL_LIBRARIES))
+
+$(DRIVER_OBJ):
+	$(MAKE) -f pfunit.mk $(DRIVER_OBJ)
+
+$(OBJ_DIR) $(OBJ_SUBDIRS):
 	@echo "Creating $@"
-	@mkdir -p $@
+	$(Q)mkdir -p $@
+
+.PHONY: pfunit
+pfunit:
+	$(MAKE) -f pfunit.mk pfunit
 
 .PHONY: clean
 clean:
 	-rm -rf $(OBJ_DIR)
 ifdef ALL
-	$(MAKE) cleanpfunit
+	$(MAKE) -f pfunit.mk clean
 endif

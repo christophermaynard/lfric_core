@@ -178,9 +178,9 @@ contains
   end subroutine invoke_rhs_w1
   
 !-------------------------------------------------------------------------------  
-!> Invoke_matrix_vector_w0: Invoke the A*x for x in W0 field
-  subroutine invoke_matrix_vector_w0(Ax,x)
-    use matrix_vector_w0_mod, only : matrix_vector_w0_code
+!> Invoke_matrix_vector_kernel_kernel_w0: Invoke the A*x for x in W0 field
+  subroutine invoke_matrix_vector_kernel_w0(Ax,x)
+    use matrix_vector_kernel_w0_mod, only : matrix_vector_w0_code
     type(field_type), intent(in)    :: x
     type(field_type), intent(inout) :: Ax
 
@@ -204,12 +204,12 @@ contains
                                    )
     end do
 
-  end subroutine invoke_matrix_vector_w0
+  end subroutine invoke_matrix_vector_kernel_w0
   
 !-------------------------------------------------------------------------------  
-!> Invoke_matrix_vector_w1: Invoke the A*x for x in W1 field
-  subroutine invoke_matrix_vector_w1(Ax,x)
-    use matrix_vector_w1_mod, only : matrix_vector_w1_code
+!> Invoke_matrix_vector_kernel_w1: Invoke the A*x for x in W1 field
+  subroutine invoke_matrix_vector_kernel_w1(Ax,x)
+    use matrix_vector_kernel_w1_mod, only : matrix_vector_w1_code
     type(field_type), intent(in)    :: x
     type(field_type), intent(inout) :: Ax
 
@@ -233,12 +233,12 @@ contains
                                    )
     end do
 
-  end subroutine invoke_matrix_vector_w1
+  end subroutine invoke_matrix_vector_kernel_w1
   
 !-------------------------------------------------------------------------------  
-!> Invoke_matrix_vector_w2: Invoke the A*x for x in W2 field
-  subroutine invoke_matrix_vector_w2(Ax,x)
-    use matrix_vector_w2_mod, only : matrix_vector_w2_code
+!> Invoke_matrix_vector_kernel_w2: Invoke the A*x for x in W2 field
+  subroutine invoke_matrix_vector_kernel_w2(Ax,x)
+    use matrix_vector_kernel_w2_mod, only : matrix_vector_w2_code
     type(field_type), intent(in)    :: x
     type(field_type), intent(inout) :: Ax
 
@@ -264,7 +264,7 @@ contains
                                    )
     end do
 
-  end subroutine invoke_matrix_vector_w2
+  end subroutine invoke_matrix_vector_kernel_w2
  
 !-------------------------------------------------------------------------------  
 !> Invoke_assign_coordinate_kernel: Invoke the projection of coordinate into a vspace  

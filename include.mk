@@ -31,6 +31,10 @@ ifdef PE_ENV
     endif
 endif
 
+ifndef CPP
+	CPP = cpp
+endif
+
 ifndef FC
   $(info No compiler specified in $$FC)
   OS = $(shell uname -s)
@@ -51,6 +55,15 @@ ifndef FC
   endif
 endif
 
+EMPTY :=
+SPACE := $(EMPTY) # Comment to highlight space character.
+
+ifdef VERBOSE
+	Q :=
+else
+	Q = @
+endif
+
 # Since mpif90 uses $FC there will likely be nasty interactions between the
 # default FC logic above and MPI builds.
 # When MPI becomes the natural way of building dynamo this logic (and the macro
@@ -66,16 +79,16 @@ COMPILER_NAME = $(shell basename $(FC))
 ifeq '$(COMPILER_NAME)' 'ifort'
   $(info ** Chosen Intel Fortran compiler)
 
-  FFLAGS_COMPILER     = -xhost
-  FFLAGS_OPTIMISATION = -O0
-  FFLAGS_DEBUG        = -g -traceback
-  FFLAGS_WARNINGS     = -warn all -warn errors
-  FFLAGS_INIT         = -ftrapuv
-  FFLAGS_RUNTIME      = -check all -fpe0
-  FFLAGS_TESTS        = -assume realloc_lhs
-  F_MOD_DESTINATION_ARG = -module $(OBJ_DIR)
-  IFORT_VERSION := $(shell ifort -v 2>&1 \
-                           | awk -F "[. ]" '/[0-9]\.[0-9]\.[0-9]/ { printf "%03i%02i%02i", $$(NF-2),$$(NF-1),$$NF}' )
+  FFLAGS_COMPILER       = -xhost
+  FFLAGS_OPTIMISATION   = -O0
+  FFLAGS_DEBUG          = -g -traceback
+  FFLAGS_WARNINGS       = -warn all -warn errors
+  FFLAGS_INIT           = -ftrapuv
+  FFLAGS_RUNTIME        = -check all -fpe0
+  FFLAGS_TESTS          = -assume realloc_lhs
+  F_MOD_DESTINATION_ARG = -module$(SPACE)
+  IFORT_VERSION        := $(shell ifort -v 2>&1 \
+                          | awk -F "[. ]" '/[0-9]\.[0-9]\.[0-9]/ { printf "%03i%02i%02i", $$(NF-2),$$(NF-1),$$NF}' )
   $(info ** Version $(IFORT_VERSION))
 
 else ifeq ($(findstring xlf,$(COMPILER_NAME) ), xlf)
@@ -86,47 +99,47 @@ else ifeq ($(findstring xlf,$(COMPILER_NAME) ), xlf)
   FFLAGS_WARNINGS       = -qinfo=all -qhalt=w
   FFLAGS_INIT           = -qinitalloc=ffffffff -qinitauto=ffffffff
   FFLAGS_RUNTIME        = -qddim -qstackprotect=all -qfloat=nans -qflttrap=enable:invalid:nanq:overflow:underflow:zerodivide
-  F_MOD_DESTINATION_ARG = -qmoddir=$(OBJ_DIR)
+  F_MOD_DESTINATION_ARG = -qmoddir=
 
 else ifeq '$(COMPILER_NAME)' 'gfortran'
   $(info ** Chosen GNU Fortran compiler)
 
-  FFLAGS_OPTIMISATION = -O0
-  FFLAGS_DEBUG        = -g
-  FFLAGS_WARNINGS     = -Wall -Werror
-  FFLAGS_INIT         = -finit-integer=31173 -finit-real=snan \
-                        -finit-logical=true -finit-character=85
-  FFLAGS_RUNTIME      = -fcheck=all -ffpe-trap=invalid,zero,overflow,underflow
-  F_MOD_DESTINATION_ARG = -J $(OBJ_DIR)
-  GFORTRAN_VERSION := $(shell gfortran -dumpversion 2>&1 \
-                       | awk -F . '{ printf "%02i%02i%02i", $$1, $$2, $$3 }')
+  FFLAGS_OPTIMISATION   = -O0
+  FFLAGS_DEBUG          = -g
+  FFLAGS_WARNINGS       = -Wall -Werror
+  FFLAGS_INIT           = -finit-integer=31173 -finit-real=snan \
+                          -finit-logical=true -finit-character=85
+  FFLAGS_RUNTIME        = -fcheck=all -ffpe-trap=invalid,zero,overflow,underflow
+  F_MOD_DESTINATION_ARG = -J
+  GFORTRAN_VERSION     := $(shell gfortran -dumpversion 2>&1 \
+                          | awk -F . '{ printf "%02i%02i%02i", $$1, $$2, $$3 }')
   $(info ** Version $(GFORTRAN_VERSION))
 
 else ifeq '$(COMPILER_NAME)' 'nagfor'
   $(info ** Chosen NAG Fortran compiler)
 
-  FFLAGS_OPTIMISATION = -O0
-  FFLAGS_DEBUG        = -g -gline -colour
-  FFLAGS_INIT         = -nan
-  FFLAGS_RUNTIME      = -C=all -C=undefined -mtrace=all -nan
-  F_MOD_DESTINATION_ARG = -mdir $(OBJ_DIR)
+  FFLAGS_OPTIMISATION   = -O0
+  FFLAGS_DEBUG          = -g -gline -colour
+  FFLAGS_INIT           = -nan
+  FFLAGS_RUNTIME        = -C=all -C=undefined -mtrace=all -nan
+  F_MOD_DESTINATION_ARG = -mdir$(SPACE)
 
 else ifeq '$(COMPILER_NAME)' 'pgfortran'
   $(info ** Chosen Portland Fortran compiler)
 
-  FFLAGS_OPTIMISATION = -O0
-  FFLAGS_DEBUG        = -g -traceback
-  FFLAGS_RUNTIME      = -Mbounds -Mchkptr -Mchkstk
-  F_MOD_DESTINATION_ARG = -module $(OBJ_DIR)
+  FFLAGS_OPTIMISATION   = -O0
+  FFLAGS_DEBUG          = -g -traceback
+  FFLAGS_RUNTIME        = -Mbounds -Mchkptr -Mchkstk
+  F_MOD_DESTINATION_ARG = -module$(SPACE)
 
 else ifeq '$(COMPILER_NAME)' 'crayftn'
   $(info ** Chosen Cray Fortran compiler)
 
-  FFLAGS_COMPILER = -em
-  FFLAGS_OPTIMISATION = -O0
-  FFLAGS_DEBUG = -g
-  FFLAGS_WARNINGS = -m 0
-  F_MOD_DESTINATION_ARG = -J $(OBJ_DIR)
+  FFLAGS_COMPILER       = -em
+  FFLAGS_OPTIMISATION   = -O0
+  FFLAGS_DEBUG          = -g
+  FFLAGS_WARNINGS       = -m 0
+  F_MOD_DESTINATION_ARG = -J$(SPACE)
 
 else
   $(error Unrecognised Fortran compiler $(FC))

@@ -25,9 +25,6 @@ module solver_mod
   use psy,             only : invoke_inner_prod,                               &
                               invoke_axpy, invoke_minus_field_data,            &
                               invoke_copy_field_data, invoke_set_field_scalar, &
-                              invoke_matrix_vector_w0,                         &
-                              invoke_matrix_vector_w1,                         &
-                              invoke_matrix_vector_w2,                         &
                               invoke_w3_solver_kernel,                         &
                               invoke_divide_field,                             &
                               invoke_copy_scaled_field_data

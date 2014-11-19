@@ -7,10 +7,10 @@
 # https://puma.nerc.ac.uk/trac/GungHo/wiki
 ##############################################################################
 '''
-Generate a make file snippet holding build information about a source file.
+Generate a make file snippet holding build information about a Fortran
+program.
 
-This snippet consists of a dependency list built up from the modules a
-file "use"s.
+This snippet consists of alist of objects required to link an program.
 
 This snippet may then be "include"ed into other make files.
 '''
@@ -21,9 +21,9 @@ import argparse
 import os
 
 from dependencyanalyser import __version__
-import dependencyanalyser.analyser as backend
 import dependencyanalyser.database as database
 import dependencyanalyser.logging  as logging
+import dependencyanalyser.process  as process
 
 ###############################################################################
 # Entry point
@@ -37,21 +37,37 @@ if __name__ == '__main__':
                          version='%(prog)s {}'.format( __version__ ) )
     parser.add_argument( '-verbose', action='store_true', \
                          help='Provide a running commentry' )
-    parser.add_argument( '-ignore', metavar='MODULE', action='append', \
-                         help='A 3rd party module name to be ignored. ' \
-                              + 'This may appear multiple times.' )
-    parser.add_argument( 'database', metavar='database-file', \
+    parser.add_argument( '-database', metavar='database-file', \
                          help='Database file to use' )
-    parser.add_argument( 'source', metavar='source-file', \
-                         help='The source file.' )
+    parser.add_argument( '-objectdir', metavar='object-directory', \
+                         help='Object files are here. ' \
+                              + 'Defaults to the output directory.' )
+    parser.add_argument( 'output', metavar='output-file', \
+                         help='Dependency details are put here' )
     args = parser.parse_args()
 
     if args.verbose:
         logger = logging.PrintLogger( sys.stdout )
     else:
         logger = logging.NoLogger()
-    if args.ignore is None: args.ignore = []
+
+    if os.path.exists( args.output ):
+        os.unlink( args.output )
+
+    outputDirectory = os.path.dirname( args.output )
+    if not os.path.exists( outputDirectory ):
+        os.makedirs( outputDirectory )
+
+    if not args.database: args.database = os.path.join( outputDirectory, \
+                                                        dependencies.db )
+    if not args.objectdir: args.objectdir = outputDirectory
 
     dependencyStore = database.Dependencies( args.database )
-    analyser = backend.Analyser( logger, args.ignore, dependencyStore )
-    analyser.processSource( args.source )
+    processor = process.Processor( logger, dependencyStore, \
+                                   args.objectdir, None )
+
+    try:
+        with open( args.output, 'w' ) as listFile:
+            processor.programObjects( listFile )
+    except:
+        os.path.unlink( ars.output )

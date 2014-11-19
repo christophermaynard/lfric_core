@@ -11,7 +11,7 @@
 
 !> @details Accessor functions for the W0_solver_kernel class are defined in this module.
 
-module matrix_vector_w0_mod
+module matrix_vector_kernel_w0_mod
 use argument_mod,            only : arg_type,                              &
                                     gh_read, gh_inc, w0, fe, cells 
 use constants_mod,           only : r_def
@@ -87,4 +87,4 @@ subroutine matrix_vector_w0_code(cell,nlayers,ndf,map,lhs,x)
 
 end subroutine matrix_vector_w0_code
 
-end module matrix_vector_w0_mod
+end module matrix_vector_kernel_w0_mod

@@ -11,7 +11,7 @@
 
 !> @details Accessor functions for the W2_solver_kernel class are defined in this module.
 
-module matrix_vector_w2_mod
+module matrix_vector_kernel_w2_mod
 use argument_mod,            only : arg_type,                              &
                                     gh_read, gh_inc, w2, fe, cells 
 use constants_mod,           only : r_def
@@ -90,4 +90,4 @@ subroutine matrix_vector_w2_code(cell,nlayers,ndf,map,boundary_value,lhs,x)
  
 end subroutine matrix_vector_w2_code
 
-end module matrix_vector_w2_mod
+end module matrix_vector_kernel_w2_mod

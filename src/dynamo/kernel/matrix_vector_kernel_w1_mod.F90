@@ -11,7 +11,7 @@
 
 !> @details Accessor functions for the W1 solver_kernel class are defined in this module.
 
-module matrix_vector_w1_mod
+module matrix_vector_kernel_w1_mod
 use argument_mod,            only : arg_type,                              &
                                     gh_read, gh_inc, w1, fe, cells 
 use constants_mod,           only : r_def
@@ -88,4 +88,4 @@ subroutine matrix_vector_w1_code(cell,nlayers,ndf,map,lhs,x)
 
 end subroutine matrix_vector_w1_code
 
-end module matrix_vector_w1_mod
+end module matrix_vector_kernel_w1_mod

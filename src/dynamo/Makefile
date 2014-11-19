@@ -5,36 +5,24 @@
 # https://puma.nerc.ac.uk/trac/GungHo/wiki
 ##############################################################################
 
-IGNORE_DEPENDENCIES = netcdf
-EXTERNAL_LIBRARIES = netcdff
+export IGNORE_DEPENDENCIES = netcdf
+export EXTERNAL_LIBRARIES = netcdff
 
-ROOT = ../..
+export ROOT = ../..
+
 include $(ROOT)/include.mk
+ifdef GFORTRAN_VERSION
+  ifeq ($(shell test $(GFORTRAN_VERSION) -lt 040601; echo $$?), 0)
+    $(error GFortran is too old. Must be at least 4.6.1)
+  endif
+endif
 
-SUBDIRS = $(shell find * -type d -prune)
-IGNORE_DEPENDENCIES := $(patsubst %,-ignore %,$(IGNORE_DEPENDENCIES))
-
-export SRC        = $(wildcard *.[fF]90)
 export OBJ_DIR    = $(BUILD_DIR)/dynamo
-export DEP_FILE   = dependencies.mk
-
-export LDFLAGS += $(patsubst %, -l%,$(EXTERNAL_LIBRARIES))
-
-OBJ_SUBDIRS = $(patsubst %,$(OBJ_DIR)/%,$(SUBDIRS))
 
 .PHONY: all
-all: $(OBJ_DIR)/$(DEP_FILE)
-	$(MAKE) -f dynamo.mk EXE=dynamo all
-	$(MAKE) -f dynamo.mk EXE=generate_cubedsphere all
-	$(MAKE) -f dynamo.mk EXE=cubedsphere all
-
-$(OBJ_DIR)/$(DEP_FILE): $(SRC) | $(OBJ_DIR) $(OBJ_SUBDIRS)
-	@$(TOOL_DIR)/DependencyAnalyser $(IGNORE_DEPENDENCIES) \
-	                                $(OBJ_DIR) $(OBJ_DIR) $(OBJ_DIR) .
-
-$(OBJ_DIR) $(OBJ_SUBDIRS):
-	@echo "Creating $@"
-	@mkdir -p $@
+all:
+	$(MAKE) -f dynamo.mk applications
+	$(MAKE) -f dynamo.mk modules
 
 .PHONY: clean
 clean:

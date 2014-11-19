@@ -7,9 +7,12 @@
 
 CMAKE ?= cmake
 
+SPECIAL_FFLAGS := $(filter-out -Werror,$(FFLAGS)) # pFUnit isn't that well put together
+
 PFUNIT_SOURCE = $(abspath ../pfunit)
 PFUNIT_BUILD = $(BUILD_DIR)/pfunit
-export PFUNIT_INSTALL = $(BUILD_DIR)/pfunit-install
+
+include $(ROOT)/include.mk
 
 COMPILER_NAME = $(shell basename $(FC))
 ifeq '$(COMPILER_NAME)' 'ifort'
@@ -35,23 +38,27 @@ endif
 
 .PHONY: pfunit
 pfunit: $(PFUNIT_BUILD)/Makefile
-	$(MAKE) -C $(PFUNIT_BUILD)
-	$(MAKE) -C $(PFUNIT_BUILD) tests install
-
-$(PFUNIT_INSTALL)/include/driver.F90: pfunit
-$(PFUNIT_INSTALL)/bin/pFUnitParser.py: pfunit
+	@echo Building pFUnit
+	$(Q)$(MAKE) -C $(PFUNIT_BUILD)
+	$(Q)$(MAKE) -C $(PFUNIT_BUILD) tests install
 
 $(PFUNIT_BUILD)/Makefile: | $(PFUNIT_BUILD)
-	cd $(PFUNIT_BUILD); $(CMAKE) -DINSTALL_PATH=$(PFUNIT_INSTALL) \
-	                             $(PFUNIT_SOURCE)
+	@echo Configuring pFUnit
+	$(Q)cd $(PFUNIT_BUILD); $(CMAKE) -DINSTALL_PATH=$(PFUNIT_INSTALL) \
+	                                 $(PFUNIT_SOURCE)
 
-$(PFUNIT_BUILD):
-	mkdir $@
+$(PFUNIT_BUILD) $(dir $(DRIVER_OBJ) ):
+	@echo Creating $@
+	$(Q)mkdir $@
 
-$(DRIVER_OBJ): $(PFUNIT_INSTALL)/include/driver.F90 testSuites.inc
-	$(FC) $(FFLAGS) -c -I$(PFUNIT_INSTALL)/mod -I. -DBUILD_ROBUST -o $@ $<
+$(PFUNIT_INSTALL)/include/driver.F90: pfunit
 
-.PHONY: cleanpfunit
-cleanpfunit:
+$(DRIVER_OBJ): $(PFUNIT_INSTALL)/include/driver.F90 testSuites.inc | $(dir $(DRIVER_OBJ) )
+	@echo Compiling $@
+	$(Q)$(FC) $(SPECIAL_FFLAGS) -c -I$(PFUNIT_INSTALL)/mod -I. \
+	          -DBUILD_ROBUST -o $@ $<
+
+.PHONY: clean
+clean:
 	-rm -rf $(PFUNIT_BUILD)
 	-rm -rf $(PFUNIT_INSTALL)
