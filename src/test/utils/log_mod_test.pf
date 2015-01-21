@@ -1,7 +1,7 @@
 !-------------------------------------------------------------------------------
-! (c) The copyright relating to this work is owned jointly by the Crown, 
-! Met Office and NERC 2014. 
-! However, it has been created with the help of the GungHo Consortium, 
+! (c) The copyright relating to this work is owned jointly by the Crown,
+! Met Office and NERC 2014.
+! However, it has been created with the help of the GungHo Consortium,
 ! whose members are identified at https://puma.nerc.ac.uk/trac/GungHo/wiki
 !-------------------------------------------------------------------------------
 !> @brief Test the functionality of log_mod
@@ -13,7 +13,7 @@ module log_mod_test
   use pFUnit_Mod
   use log_mod
 
-  implicit none 
+  implicit none
 
   private
   !> @todo We shouldn't have to explicitly export setUp and tearDown but
@@ -297,29 +297,29 @@ contains
 !   !> be tested with the others. Or at all at the moment.
 !   @test
 !   subroutine error_test( this )
-! 
+!
 !     implicit none
-! 
+!
 !     class ( log_test_type ), intent( inout ) :: this
-! 
+!
 !     character(  8 ) :: tag
 !     character( 80 ) :: message
-! 
+!
 !     call log_set_info_stream( INFO_UNIT )
 !     call log_set_alert_stream( ALERT_UNIT )
-! 
+!
 !     call log_event( 'stilton', LOG_LEVEL_ERROR )
-! 
+!
 !     rewind( INFO_UNIT )
 !     read( INFO_UNIT, '(23X,A8,A)' ) tag, message
 !     @assertEqual( ':ERROR:', tag )
 !     @assertEqual( 'stilton', message )
-! 
+!
 !     rewind( ALERT_UNIT )
 !     read( ALERT_UNIT, '(23X,A8,A)' ) tag, message
 !     @assertEqual( ':ERROR:', tag )
 !     @assertEqual( 'stilton', message )
-! 
+!
 !   end subroutine error_test
 
 end module log_mod_test

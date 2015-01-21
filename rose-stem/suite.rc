@@ -1,0 +1,141 @@
+#!jinja2
+{% set module_setup_script = "/data/cr1/mhambley/modules/setup" %}
+[cylc]
+    UTC mode = True 
+    [[event hooks]]
+        timeout handler = "rose suite-hook --mail --shutdown"
+        timeout = 180 # 3 hours
+
+[scheduling]
+    [[queues]]
+        [[[host_throttle]]]
+            limit = 4
+            members = REMOTE
+    [[dependencies]]
+        graph = """
+        purge => export
+{% for environment in COMPILER_ENVIRONMENTS %}
+        export => copy_for_{{environment}} => compile_with_{{environment}}
+        copy_for_{{environment}} => documentation
+        compile_with_{{environment}} => unit_test_with_{{environment}}
+
+        unit_test_with_{{environment}} => run_{{environment}}_dynamo
+        run_{{environment}}_dynamo => check_{{environment}}_dynamo
+
+        unit_test_with_{{environment}} => generate_{{environment}}_cubedsphere
+        generate_{{environment}}_cubedsphere => check_{{environment}}_cubedsphere_metadata
+        generate_{{environment}}_cubedsphere => check_{{environment}}_cubedsphere_data
+{% endfor %}
+        """
+
+[runtime]
+    [[root]]
+        initial scripting     = """
+                                export CYLC_VERSION={{CYLC_VERSION}}
+                                export ROSE_VERSION={{ROSE_VERSION}}
+                                """
+        pre-command scripting = """
+                                source {{module_setup_script}}
+                                module load environment/dynamo/base
+                                """
+        command scripting     = "rose task-run"
+        [[[event hooks]]]
+            succeeded handler          = "rose suite-hook"
+            failed handler             = "rose suite-hook"
+            retry handler              = "rose suite-hook --mail"
+            submission failed handler  = "rose suite-hook --mail"
+            submission timeout         = 720 # 12 hours
+            submission timeout handler = "rose suite-hook --mail"
+            execution timeout          =  180 # 3 hours
+            execution timeout handler  = "rose suite-hook --mail"
+        [[[job submission]]]
+            method = at
+
+    [[ LOCATIONS ]]
+        [[[environment]]]
+            SOURCE_ROOT     = $CYLC_SUITE_SHARE_DIR/src
+            OUTPUT_ROOT     = $CYLC_SUITE_SHARE_DIR/output
+            PRISTINE_SOURCE = $SOURCE_ROOT/head
+
+    [[LOCAL]]
+        [[[remote]]]
+            host = {{ ROSE_ORIG_HOST }}
+
+    [[REMOTE]]
+        [[[remote]]]
+            host = $(rose host-select {{ LINUX_HOSTS }})
+
+    [[purge]]
+        inherit = None, LOCATIONS, LOCAL
+        command scripting = "rm -rf $CYLC_SUITE_SHARE_DIR/*"
+
+    [[export]]
+        inherit = None, LOCATIONS, LOCAL
+        command scripting = """
+                            mkdir -p $SOURCE_ROOT
+                            svn export {{ SOURCE_DYNAMO }} $PRISTINE_SOURCE
+                            """
+
+    [[documentation]]
+        inherit = None, LOCATIONS, LOCAL
+        command scripting = "make -C $PRISTINE_SOURCE docs"
+
+{% for name in COMPILER_ENVIRONMENTS %}
+{%   set compiler = name | upper %}
+     # An "extract, compile, unit test, run, check" pipeline is created for
+     # each compiler.
+
+    [[{{compiler}}]]
+        inherit = None, LOCATIONS
+        pre-command scripting = """
+                                source {{module_setup_script}}
+                                module load environment/dynamo/base
+                                module load environment/dynamo/compiler/{{name}}
+                                """
+        [[[environment]]]
+            SOURCE_DIRECTORY      = $SOURCE_ROOT/{{name}}
+            DESTINATION_DIRECTORY = $OUTPUT_ROOT/{{name}}
+            COMPILER              = {{name}}
+
+    [[copy_for_{{name}}]]
+        # Each compiler gets its own copy of the source.
+        inherit = None, LOCAL, {{compiler}}
+        command scripting = "cp -r $PRISTINE_SOURCE $SOURCE_DIRECTORY"
+
+    [[compile_with_{{name}}]]
+        inherit = None, REMOTE, {{compiler}}
+        command scripting = "make -C $SOURCE_DIRECTORY all"
+
+    [[unit_test_with_{{name}}]]
+        inherit = None, REMOTE, {{compiler}}
+        command scripting = "make -C $SOURCE_DIRECTORY test"
+
+    [[run_{{name}}_dynamo]]
+        inherit = None, REMOTE, {{compiler}}
+        command scripting = """
+                            mkdir -p $DESTINATION_DIRECTORY
+                            $SOURCE_DIRECTORY/bin/dynamo | tee $DESTINATION_DIRECTORY/dynamo.out.txt
+                            """
+
+    [[check_{{name}}_dynamo]]
+        inherit = None, REMOTE, {{compiler}}
+        command scripting = "rose task-run --verbose --debug --app-key=check_dynamo"
+
+    [[generate_{{name}}_cubedsphere]]
+        # The generate_cubedsphere executable will always dump its output to
+        # the current working directory so it must be moved to where it is
+        # needed. This removal only happens if the file was generated correctly.
+        inherit = None, REMOTE, {{compiler}}
+        command scripting = """
+                            mkdir -p $DESTINATION_DIRECTORY
+                            $SOURCE_DIRECTORY/bin/generate_cubedsphere && mv ugrid_quads_2d.nc $DESTINATION_DIRECTORY
+                            """
+
+    [[check_{{name}}_cubedsphere_metadata]]
+        inherit = None, REMOTE, {{compiler}}
+        command scripting = "rose task-run --app-key=check_cubedsphere --command-key=check_cubedsphere_metadata"
+
+    [[check_{{name}}_cubedsphere_data]]
+        inherit = None, REMOTE, {{compiler}}
+        command scripting = "rose task-run --app-key=check_cubedsphere --command-key=check_cubedsphere_data"
+{% endfor %}

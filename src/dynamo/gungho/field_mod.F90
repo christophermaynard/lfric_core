@@ -1,20 +1,20 @@
 !-------------------------------------------------------------------------------
-! (c) The copyright relating to this work is owned jointly by the Crown, 
-! Met Office and NERC 2014. 
-! However, it has been created with the help of the GungHo Consortium, 
+! (c) The copyright relating to this work is owned jointly by the Crown,
+! Met Office and NERC 2014.
+! However, it has been created with the help of the GungHo Consortium,
 ! whose members are identified at https://puma.nerc.ac.uk/trac/GungHo/wiki
 !-------------------------------------------------------------------------------
 !
 !> @brief A module providing field related classes.
 !>
-!> @detail Both a representation of a field which provides no access to the 
+!> @detail Both a representation of a field which provides no access to the
 !> underlying data (to be used in the algorithm layer) and an accessor class
 !> (to be used in the Psy layer) are provided.
 
 
 module field_mod
 
-  use constants_mod,            only : r_def
+  use constants_mod,            only : r_def, i_def
   use function_space_mod,       only : function_space_type
 
   implicit none
@@ -48,9 +48,9 @@ module field_mod
     !> Sends the field contents to the log
     !! @param[in] title A title added to the log before the data is written out
     !>
-    procedure, public :: print_field
-    procedure, public :: print_dofs
-    procedure, public :: print_minmax
+    procedure, public :: log_field
+    procedure, public :: log_dofs
+    procedure, public :: log_minmax
 
     !> function returns the enumerated integer for the functions_space on which
     !! the field lives
@@ -77,7 +77,7 @@ module field_mod
   !> This is an accessor class that allows access to the actual field information
   !> with each element accessed via a public pointer.
   !>
-  type, public :: field_proxy_type 
+  type, public :: field_proxy_type
 
     private
 
@@ -88,7 +88,7 @@ module field_mod
     real(kind=r_def), public, pointer         :: data( : ) => null()
 
   contains
-  end type field_proxy_type 
+  end type field_proxy_type
 
 contains
 
@@ -128,83 +128,117 @@ contains
   !---------------------------------------------------------------------------
 
   !> Sends the field contents to the log
+  !!
+  !! @param[in] dump_level The level to use when sending the dump to the log.
+  !! @param[in] checksum_level The level to use when sending the checksum to
+  !!                           the log.
   !! @param[in] title A title added to the log before the data is written out
   !>
-  subroutine print_field( self, title )
+  subroutine log_field( self, dump_level, checksum_level, label )
 
-    use log_mod, only : log_event, log_scratch_space, LOG_LEVEL_INFO
+    use constants_mod, only : r_double, i_def
+    use log_mod, only : log_event,         &
+                        log_scratch_space, &
+                        LOG_LEVEL_INFO,    &
+                        LOG_LEVEL_TRACE
 
     implicit none
 
-    class( field_type ), target, intent( in ) :: self
+    class( field_type ), target, intent(in) :: self
+    integer(i_def),              intent(in) :: dump_level
+    integer(i_def),              intent(in) :: checksum_level
+    character( * ),              intent(in) :: label
 
-    character( * ),          intent( in ) :: title
+    integer          :: cell
+    integer          :: layer
+    integer          :: df
+    integer, pointer :: map( : )
+    real( r_double ) :: fraction_checksum
+    integer( i_def ) :: exponent_checksum
 
-    integer                   :: cell
-    integer                   :: layer
-    integer                   :: df
-    integer,          pointer :: map( : ) => null()
+    write( log_scratch_space, '( A, A)' ) trim( label ), " =["
+    call log_event( log_scratch_space, dump_level )
 
-    call log_event( title, LOG_LEVEL_INFO )
-
+    fraction_checksum = 0.0_r_double
+    exponent_checksum = 0_i_def
     do cell=1,self%vspace%get_ncell()
      map => self%vspace%get_cell_dofmap( cell )
       do df=1,self%vspace%get_ndf()
         do layer=0,self%vspace%get_nlayers()-1
+          fraction_checksum = modulo( fraction_checksum + fraction( self%data( map( df ) + layer ) ), 1.0 )
+          exponent_checksum = exponent_checksum + exponent( self%data( map( df ) + layer ) )
           write( log_scratch_space, '( I6, I6, I6, E16.8 )' ) &
               cell, df, layer+1, self%data( map( df ) + layer )
-          call log_event( log_scratch_space, LOG_LEVEL_INFO )
+          call log_event( log_scratch_space, dump_level )
         end do
       end do
     end do
 
-  end subroutine print_field
-  
+    call log_event( '];', dump_level )
+
+    write( log_scratch_space, '( A, A, A, F18.16 )' ) &
+           "Fraction checksum ", trim( label ), " = ", fraction_checksum
+    call log_event( log_scratch_space, checksum_level )
+    write( log_scratch_space, '( A, A, A, I0 )' ) &
+           "Exponent checksum ", trim( label ), " = ", exponent_checksum
+    call log_event( log_scratch_space, checksum_level )
+
+  end subroutine log_field
+
   !> Sends the field contents to the log
+  !!
+  !! @param[in] log_level The level to use for logging.
   !! @param[in] title A title added to the log before the data is written out
-  !>
-  subroutine print_dofs( self, title )
+  !!
+  subroutine log_dofs( self, log_level, title )
 
     use log_mod, only : log_event, log_scratch_space, LOG_LEVEL_INFO
 
     implicit none
 
-    class( field_type ), target, intent( in ) :: self
-
-    character( * ),          intent( in ) :: title
+    class( field_type ), target, intent(in) :: self
+    integer(i_def),              intent(in) :: log_level
+    character( * ),              intent(in) :: title
 
     integer                   :: df
 
-    call log_event( title, LOG_LEVEL_INFO )
+    call log_event( title, log_level )
 
     do df=1,self%vspace%get_undf()
       write( log_scratch_space, '( I6, E16.8 )' ) df,self%data( df )
-      call log_event( log_scratch_space, LOG_LEVEL_INFO )
+      call log_event( log_scratch_space, log_level )
     end do
 
-  end subroutine print_dofs
-  
+  end subroutine log_dofs
+
   !> Sends the min/max of a field to the log
+  !!
   !! @param[in] title A title added to the log before the data is written out
-  !>
-  subroutine print_minmax( self, title )
-    use log_mod, only : log_event, log_scratch_space, LOG_LEVEL_INFO
+  !! @param[in] log_level The level to use for logging.
+  !!
+  subroutine log_minmax( self, log_level, label )
+
+    use log_mod, only : log_event, log_scratch_space, LOG_LEVEL_DEBUG
+
     implicit none
 
-    class( field_type ), target, intent( in ) :: self
-    character( * ),          intent( in ) :: title
-    
-    call log_event( title, LOG_LEVEL_INFO )
-    write( log_scratch_space, '( 2E16.8 )' ) minval( self%data(:) ),maxval( self%data(:) )
-    call log_event( log_scratch_space, LOG_LEVEL_INFO )    
-  end subroutine print_minmax
+    class( field_type ), target, intent(in) :: self
+    integer(i_def),              intent(in) :: log_level
+    character( * ),              intent(in) :: label
+
+    write( log_scratch_space, '( A, A, A, 2E16.8 )' ) &
+         "Min/max ", trim( label ),                   &
+         " = ", minval( self%data(:) ), maxval( self%data(:) )
+    call log_event( log_scratch_space, log_level )
+
+  end subroutine log_minmax
 
 
   function which_function_space(self) result(fs)
     implicit none
     class(field_type), intent(in) :: self
     integer :: fs
-    
+
     fs = self%vspace%which()
     return
   end function which_function_space
@@ -219,8 +253,8 @@ contains
 
     class( field_type ),             target, intent( inout ) :: self
     class( field_io_strategy_type ),         intent( in   ) :: io_strategy
-    
-    call io_strategy % read_field_data ( self % data(:) )    
+
+    call io_strategy % read_field_data ( self % data(:) )
 
   end subroutine read_field
 
@@ -234,8 +268,8 @@ contains
 
     class( field_type ),             target, intent( inout ) :: self
     class( field_io_strategy_type ),         intent( inout ) :: io_strategy
-    
-    call io_strategy % write_field_data ( self % data(:) )    
+
+    call io_strategy % write_field_data ( self % data(:) )
 
   end subroutine write_field
 

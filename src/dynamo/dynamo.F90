@@ -1,72 +1,114 @@
 !-------------------------------------------------------------------------------
-! (c) The copyright relating to this work is owned jointly by the Crown, 
-! Met Office and NERC 2014. 
-! However, it has been created with the help of the GungHo Consortium, 
+! (c) The copyright relating to this work is owned jointly by the Crown,
+! Met Office and NERC 2014.
+! However, it has been created with the help of the GungHo Consortium,
 ! whose members are identified at https://puma.nerc.ac.uk/trac/GungHo/wiki
 !-------------------------------------------------------------------------------
 
 !> @mainpage Dynamo
 !> Illustration of the PSyKAl (Parallel-system/Kernel/Algorithm) architecture
 !> for Gung Ho. Whilst the computational and optimisation infrastructure is
-!> being developed, the science code is being developed using 
+!> being developed, the science code is being developed using
 !> a hand-rolled PSy layer, PSy-lite. A PSyKAl-lite needs a dynamo!
 !> Eventually, PSyKAl-lite will be replaced with the real PSy and Dynamo
 !> will be the implementation of the Gung Ho dynamical core.
 
 !> @brief Main program used to illustrate dynamo functionality.
 
-!> @details Calls Creates function spaces, then fields on those 
+!> @details Calls Creates function spaces, then fields on those
 !> function spaces, before passing the fields to the algorithm layer
 
 program dynamo
 
-  use constants_mod,           only : str_max_filename
+  use constants_mod,           only : i_def, str_max_filename
   use dynamo_algorithm_rk_timestep_mod, &
                                only : dynamo_algorithm_rk_timestep
   use field_mod,               only : field_type
   use function_space_mod,      only : function_space_type, W0, W1, W2, W3
-  use log_mod,                 only : log_event, LOG_LEVEL_INFO
   use set_up_mod,              only : set_up
   use field_io_mod,            only : write_state_netcdf                      &
                                     , write_state_plain_text
   use mesh_mod,                only : total_ranks, local_rank
+  use log_mod,                 only : log_event,         &
+                                      log_set_level,     &
+                                      log_scratch_space, &
+                                      LOG_LEVEL_ERROR,   &
+                                      LOG_LEVEL_INFO,    &
+                                      LOG_LEVEL_DEBUG,   &
+                                      LOG_LEVEL_TRACE
 
   implicit none
 
   type( function_space_type )      :: function_space
-! coordinate fields
+
+  ! coordinate fields
   type( field_type ) :: chi(3)
-! prognostic fields    
+
+  ! prognostic fields
   type( field_type ) :: u, rho, theta, exner, xi
-                                     
+
   integer                          :: coord
+  integer( i_def )                 :: argument_index,  &
+                                      argument_length, &
+                                      argument_status
+  character( 6 )                   :: argument
 
   type( field_type ), allocatable  :: state(:)
   integer                          :: n_fields
 
   call log_event( 'Dynamo running...', LOG_LEVEL_INFO )
 
-  !Code is not set up to run in parallel - so hardcode rank information
-  total_ranks=1
-  local_rank=0
+  ! Code is not set up to run in parallel - so hardcore rank information
+  total_ranks = 1
+  local_rank  = 0
+
+  ! Process command line arguments
+  cli_argument_loop: do argument_index = 1, command_argument_count()
+
+    call get_command_argument( argument_index,  &
+                               argument,        &
+                               argument_length, &
+                               argument_status )
+
+    if ( argument_status > 0 ) then
+      call log_event( 'Unable to retrieve command line argument', &
+                      LOG_LEVEL_ERROR )
+    else if ( argument_status < 0 ) then
+      write( log_scratch_space, '( A, A, A )' ) "Argument starting >", &
+                                                argument,              &
+                                                "< is too long"
+      call log_event( log_scratch_space, LOG_LEVEL_ERROR )
+    end if
+
+    if ( argument == '-debug' ) then
+      call log_set_level( LOG_LEVEL_TRACE )
+      call log_event( 'Switching to full debug output', LOG_LEVEL_DEBUG )
+    else
+      write( log_scratch_space, '( A, A, A )' ) "Unrecognised argument >", &
+                                                trim( argument ), &
+                                                "<"
+      call log_event( log_scratch_space, LOG_LEVEL_ERROR )
+    end if
+
+  end do cli_argument_loop
 
   call set_up( )
 
   do coord = 1,3
     chi(coord) = field_type( vector_space = function_space%get_instance( W0 ) )
   end do
-               
+
   theta = field_type( vector_space = function_space%get_instance( W0 ) )
-                    
+
   xi = field_type( vector_space = function_space%get_instance( W1 ) )
-                    
+
   u = field_type( vector_space = function_space%get_instance( W2 ) )
 
   rho = field_type( vector_space = function_space%get_instance( W3 ) )
 
   exner = field_type( vector_space = function_space%get_instance( W3 ) )
 
-                                           
+
 
   n_fields = 1
   allocate(state(1:n_fields))
@@ -74,17 +116,14 @@ program dynamo
   call write_state_netcdf( n_fields, state, 'field_before.nc' )
   deallocate(state)
 
-  call dynamo_algorithm_rk_timestep( chi, u, rho, theta, exner, xi)                       
+  call dynamo_algorithm_rk_timestep( chi, u, rho, theta, exner, xi)
 
-! do some i/o
-  call rho%print_field( '   rho =[' )
-  call log_event( '   ];', LOG_LEVEL_INFO )
-  call exner%print_field( '   exner =[' )
-  call log_event( '   ];', LOG_LEVEL_INFO )
-  call theta%print_field( '   theta =[' )
-  call log_event( '   ];', LOG_LEVEL_INFO )
-  call u%print_field( '   u =[' )
-  call log_event( '   ];', LOG_LEVEL_INFO )
+  ! do some i/o
+  call rho%log_field(   LOG_LEVEL_DEBUG, LOG_LEVEL_INFO, 'rho' )
+  call exner%log_field( LOG_LEVEL_DEBUG, LOG_LEVEL_INFO, 'exner' )
+  call theta%log_field( LOG_LEVEL_DEBUG, LOG_LEVEL_INFO, 'theta' )
+  call u%log_field(     LOG_LEVEL_DEBUG, LOG_LEVEL_INFO, 'u' )
+
 
   n_fields = 4
   allocate(state(1:n_fields))
