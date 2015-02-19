@@ -775,7 +775,7 @@ Flux 2-form vectors
 \begin_inset Text
 
 \begin_layout Plain Layout
-Scalar space for buoyancy etc
+Scalar space for buoyancy etc.
 \end_layout
 
 \end_inset
@@ -1750,7 +1750,7 @@ The corresponding quantities on the reference cells are represented by adding
 \begin_layout Standard
 Any variable may be expanded in terms of basis functions in the appropriate
  primal function space.
- The coefficients in the expansion (the degrees of freedom or dof's) have
+ The coefficients in the expansion (the degrees of freedom or dofs) have
  the same variable name as the field expanded but with a subscript indicating
  the degree of freedom and therefore with which basis function it is associated.
  Additionally, the vector aspect is carried by the basis function and so

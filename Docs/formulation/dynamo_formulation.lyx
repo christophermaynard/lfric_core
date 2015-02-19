@@ -78,7 +78,7 @@
 \begin_body
 
 \begin_layout Title
-Dynamo formulation V0.1
+Dynamo formulation V1.0
 \begin_inset Foot
 status open
 
@@ -220,6 +220,24 @@ newpage
 
 \end_layout
 
+\begin_layout Section*
+Changes to make:
+\end_layout
+
+\begin_layout Standard
+These changes should be made once the relevant areas of the Dynamo code
+ have also been changed
+\end_layout
+
+\begin_layout Enumerate
+Modify reference edge numbering so that edges are labeled with the vertices
+ they connect, e.g 
+\begin_inset Formula $e_{1}\rightarrow e_{12},\, e_{10}\rightarrow e_{85}$
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Section
 \begin_inset CommandInset label
 LatexCommand label
@@ -231,8 +249,8 @@ Introduction
 \end_layout
 
 \begin_layout Standard
-This document describes the model and discretisation for the dynamo prototype
- dynamical core produced as part of the Gung-Ho project
+This document describes the model and discretisation for the Dynamo prototype
+ dynamical core produced as part of the Gung-Ho project.
 \end_layout
 
 \begin_layout Section
@@ -246,21 +264,29 @@ Governing Equations
 \end_layout
 
 \begin_layout Standard
-Consider a 3-dimensional version of the nonlinear compressible Bousinesq
- equations 
-\begin_inset CommandInset citation
-LatexCommand citep
-key "durran_blossey12"
+Consider the full nonlinear 3D equations in a rotating frame
+\begin_inset Formula 
+\begin{eqnarray}
+\frac{D\mathbf{u}}{Dt}+2\bm{\Omega}\times\bm{u}+c_{pd}\theta\nabla\Pi+\nabla\Phi & = & 0,\label{eq:nonlinear_mom}\\
+\frac{D\rho}{Dt}-\rho\nabla.\mathbf{u} & = & 0,\label{eq:nonlinear_continuity}\\
+\frac{D\theta}{Dt} & = & 0,\label{eq:nonlinear_thermo}
+\end{eqnarray}
 
 \end_inset
 
- 
+along with the nonlinear equation of state 
 \begin_inset Formula 
-\begin{eqnarray}
-\frac{\partial\mathbf{u}}{\partial t}+\mathbf{u}.\nabla\left(\mathbf{u}\right)+\nabla P & = & b\mathbf{k}+\nabla\times\bm{\psi},\label{eq:comp_bousinesq_momentum}\\
-\frac{\partial P}{\partial t}+\mathbf{u}.\nabla P+c_{s}^{2}\nabla.\mathbf{u} & = & 0,\label{eq:comp_bousinesq_continuity}\\
-\frac{\partial b}{\partial t}+\mathbf{u}.\nabla b+wN^{2} & = & 0,\label{eq:com_bousinesq_energy}
-\end{eqnarray}
+\begin{equation}
+\Pi^{\left(\frac{1-\kappa_{d}}{\kappa_{d}}\right)}=\frac{R_{d}}{p_{0}}\rho\theta,\label{eq:nonlinear_eos}
+\end{equation}
+
+\end_inset
+
+and 
+\begin_inset Formula 
+\begin{equation}
+\frac{D}{Dt}\equiv\frac{\partial}{\partial t}+\mathbf{u}.\nabla,\label{eq:Lagrangian_Dt}
+\end{equation}
 
 \end_inset
 
@@ -277,155 +303,150 @@ where
 \end_inset
 
  respectively; 
-\begin_inset Formula $P\equiv\frac{p-\tilde{p}\left(\chi_{3}\right)}{\rho_{0}}$
-\end_inset
-
- is the departure of pressure from some reference profile 
-\begin_inset Formula $\tilde{p}\left(\chi_{3}\right)$
-\end_inset
-
- normalised by a constant reference density 
-\begin_inset Formula $\rho_{0};$
-\end_inset
-
- 
-\begin_inset Formula $b\equiv g\frac{\rho-\tilde{\rho}\left(\chi_{3}\right)}{\rho_{0}}$
-\end_inset
-
-is the buoyancy given in terms of the density 
 \begin_inset Formula $\rho$
 \end_inset
 
- and reference density 
-\begin_inset Formula $\tilde{\rho}\left(\chi_{3}\right);$
+ is the density; 
+\begin_inset Formula $\theta$
 \end_inset
 
- 
-\begin_inset Formula $\mathbf{g}\equiv\left(0,0,-g\right)$
+ is the potential temperature, related to temperature through 
+\begin_inset Formula $T=\theta\Pi$
 \end_inset
 
- is the gravity and 
-\begin_inset Formula $N^{2}\equiv-\frac{g}{\rho_{0}}\frac{d\tilde{\rho}}{d\chi_{3}}$
+; 
+\begin_inset Formula $\Pi=\left(p/p_{0}\right)^{\kappa_{d}}$
 \end_inset
 
- where 
-\begin_inset Formula $N$
+ is the Exner pressure with 
+\begin_inset Formula $p$
 \end_inset
 
- is the buoyancy frequency.
- 
-\begin_inset Formula $\bm{\psi}$
+ pressure and 
+\begin_inset Formula $p_{0}$
 \end_inset
 
- is an explicitly defined stream function used in 
-\begin_inset CommandInset citation
-LatexCommand citet
-key "durran_blossey12"
-
+ a constant reference pressure; 
+\begin_inset Formula $R$
 \end_inset
 
- test cases.
- Equations 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:comp_bousinesq_momentum"
-
+ is the gas constant per unit mass, 
+\begin_inset Formula $c_{pd}$
 \end_inset
 
--
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:com_bousinesq_energy"
-
+ is the specific heat at constant pressure, and 
+\begin_inset Formula $\kappa_{d}\equiv R/c_{pd}$
 \end_inset
 
- constitute the compressible Bousinesq versions of the momentum, continuity
- and energy equations.
- Reformulating 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:comp_bousinesq_momentum"
-
+; 
+\begin_inset Formula $\Phi$
 \end_inset
 
--
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:com_bousinesq_energy"
-
+ is the geopotential such that 
+\begin_inset Formula $\nabla\Phi=-\mathbf{g}\equiv\left(0,0,g\right)$
 \end_inset
 
- into the vector invaraint form
+ is the gravitational term and 
+\begin_inset Formula $\bm{\Omega}$
+\end_inset
+
+ is the rotation vector.
+ Rewriting these equations in the vector invariant form yields
 \begin_inset Formula 
 \begin{eqnarray}
-\frac{\partial\mathbf{u}}{\partial t}+\mathbf{u}\times\bm{\xi}+\nabla\left(P+K\right) & = & b\mathbf{k}+\nabla\times\bm{\psi},\label{eq:comp_bousinesq_momentum-1}\\
-\frac{\partial P}{\partial t}+\nabla.\left(\mathbf{u}P\right)+\left(c_{s}^{2}-P\right)\nabla.\mathbf{u} & = & 0,\label{eq:comp_bousinesq_continuity-1}\\
-\frac{\partial b}{\partial t}+\nabla.\left(\mathbf{u}b\right)-b\nabla.\mathbf{u}+\left(\mathbf{k}.\mathbf{u}\right)N^{2} & = & 0,\label{eq:com_bousinesq_energy-1}
+\frac{\partial\mathbf{u}}{\partial t}+\frac{\bm{\xi}}{\rho}\times\bm{F}+\nabla\left(K+\Phi\right)+c_{pd}\theta\nabla\Pi & = & 0,\label{eq:nonlinear_mom-1}\\
+\frac{\partial\rho}{\partial t}+\nabla.\mathbf{F} & = & 0,\label{eq:nonlinear_continuity-1}\\
+\frac{\partial\theta}{\partial t}+\mathbf{u}.\nabla\theta & = & 0,\label{eq:nonlinear_thermo-1}\\
+\Pi^{\left(\frac{1-\kappa_{d}}{\kappa_{d}}\right)} & = & \frac{R_{d}}{p_{0}}\rho\theta,\label{eq:nonlinear_eos-1}
 \end{eqnarray}
 
 \end_inset
 
 where 
-\begin_inset Formula $\bm{\xi}\equiv\nabla\times\mathbf{u}$
+\begin_inset Formula $\bm{\xi}\equiv\nabla\times\mathbf{u}+2\bm{\Omega}$
 \end_inset
 
- is the relative vorticity and 
+ is the relative vorticity, 
 \begin_inset Formula $K\equiv\frac{1}{2}\mathbf{u}.\mathbf{u}$
 \end_inset
 
- is the kinetic energy per unit mass.
-\end_layout
+ is the kinetic energy per unit mass and 
+\begin_inset Formula $\mathbf{F}=\rho\mathbf{u}$
+\end_inset
 
-\begin_layout Subsection
-Linear equations
-\end_layout
-
-\begin_layout Standard
-The linear forms of 
+ is the mass flux.
+ To simplify the problem the nonlinear equations 
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:comp_bousinesq_momentum"
+reference "eq:nonlinear_mom-1"
 
 \end_inset
 
 -
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:com_bousinesq_energy"
+reference "eq:nonlinear_eos-1"
 
 \end_inset
 
- are 
+ are linearised about a hydrostatically balanced state 
+\begin_inset Formula $\left(\rho_{s},\theta_{s},\Pi_{s}\right)$
+\end_inset
+
+ that is a function of 
+\begin_inset Formula $\chi_{3}$
+\end_inset
+
+ only, with a zero advecting wind 
+\begin_inset Formula $\mathbf{u}_{s}\equiv\bm{0}$
+\end_inset
+
+.
+ Using 
+\begin_inset Formula $N^{2}=\left(g/\theta_{s}\right)\partial\theta_{s}/\partial\chi_{3},$
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\partial\Pi_{s}/\partial\chi_{3}=-g/\left(c_{pd}\theta_{s}\right),$
+\end_inset
+
+ and 
+\begin_inset Formula $\left(1/\rho_{s}\right)\partial\rho_{s}/\partial\chi_{3}=-N^{2}/g$
+\end_inset
+
+ gives 
 \begin_inset Formula 
 \begin{eqnarray}
-\frac{\partial\mathbf{u}}{\partial t}+\mathbf{U}.\nabla\left(\mathbf{u}\right)+\nabla P & = & b\mathbf{k},\label{eq:comp_bousinesq_momentum-linear}\\
-\frac{\partial P}{\partial t}+\mathbf{U}.\nabla P+c_{s}^{2}\nabla.\mathbf{u} & = & 0,\label{eq:comp_bousinesq_continuity-linear}\\
-\frac{\partial b}{\partial t}+\mathbf{U}.\nabla b+\left(\mathbf{k}.\mathbf{u}\right)N^{2} & = & 0,\label{eq:com_bousinesq_energy-linear}
+\frac{\partial\mathbf{u}'}{\partial t} & = & -c_{pd}\theta_{s}\nabla\Pi'+\frac{\theta'}{\theta_{s}}\mathbf{g}-2\bm{\Omega}\times\bm{u},\label{eq:linear_mom}\\
+\frac{\partial\rho'}{\partial t} & = & \frac{N^{2}\rho_{s}}{g}\mathbf{u}'.\bm{k}-\rho_{s}\nabla.\mathbf{u}',\label{eq:linear_continuity}\\
+\frac{\partial\theta'}{\partial t} & = & -N^{2}\frac{\theta_{s}}{g}\mathbf{u}'.\bm{k},\label{eq:linear_thermo}
 \end{eqnarray}
 
 \end_inset
 
-where a constant advecting velocity 
-\begin_inset Formula $\bm{U}=\left(U,V,0\right)$
-\end_inset
-
- has been introduced, the momentum equation can again be rewritten as 
+where the linear equation of state is
 \begin_inset Formula 
-\begin{eqnarray}
-\frac{\partial\mathbf{u}}{\partial t}+\bm{U}\times\bm{\xi}+\nabla\left(P+K\right) & = & b\mathbf{k},\label{eq:comp_bousinesq_momentum-linear-1}
-\end{eqnarray}
+\begin{equation}
+\left(\frac{1-\kappa_{d}}{\kappa_{d}}\right)\frac{\Pi'}{\Pi_{s}}=\frac{\rho'}{\rho_{s}}+\frac{\theta'}{\theta_{s}},\label{eq:linear_eos}
+\end{equation}
 
 \end_inset
 
-where 
-\begin_inset Formula $\bm{\xi}\equiv\nabla\times\mathbf{u}$
+and 
+\begin_inset Formula $\bm{k}$
 \end_inset
 
- is the relative vorticity and 
-\begin_inset Formula $K\equiv\mathbf{u}.\mathbf{U}$
+ is a unit vector normal to the surface of the domain, i.e.
+ aligned along the positive 
+\begin_inset Formula $z$
 \end_inset
 
- is the linear kinetic energy per unit mass.
+ direction for a Cartesian domain and in the radial direction for a spherical
+ domain.
 \end_layout
 
 \begin_layout Section
@@ -442,34 +463,57 @@ Finite Element Discretisation
 Equations 
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:comp_bousinesq_momentum-1"
+reference "eq:nonlinear_mom"
 
 \end_inset
 
 -
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:com_bousinesq_energy-1"
+reference "eq:nonlinear_eos"
 
 \end_inset
 
- constitute at set of coupled nonlinear equations for the unknowns 
-\begin_inset Formula $b\,,\bm{\xi},\,\mathbf{u},\, P.$
+ constitute a set of coupled nonlinear equations for the unknowns 
+\begin_inset Formula $\theta\,,\bm{\xi},\,\mathbf{u},\,\rho,\,\Pi.$
 \end_inset
 
- These are to be discretised using a mixed finite element method on quadrilatera
-l elements, see Appendix 
+ Alternatively 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear_mom"
+
+\end_inset
+
+-
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear_eos"
+
+\end_inset
+
+ constitute a set of coupled linear equations for the same unknowns (without
+ the vorticity term 
+\begin_inset Formula $\bm{\xi}$
+\end_inset
+
+) which represent small perturbations from the reference state 
+\begin_inset Formula $\left(\theta_{s},\,\rho_{s},\,\Pi_{s}\right).$
+\end_inset
+
+ The chosen set of equations are discretised using a mixed finite element
+ method on quadrilateral elements, see Appendix 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sec:Reference-Element"
 
 \end_inset
 
-, for this four function spaces are defined as denoted by 
+; this method implies a set of four function spaces denoted by 
 \begin_inset Formula $\mathbb{W}_{i},\, i=0..3$
 \end_inset
 
-:
+, related by the DeRahm complex:
 \begin_inset Formula 
 \begin{equation}
 \begin{array}{ccccccc}
@@ -481,25 +525,25 @@ reference "sec:Reference-Element"
 \end_inset
 
  where arrows pointing to the right denote strong operators and arrows to
- the left indicate weak operations.
- The function spaces correspond to 
+ the left indicate weak operators.
+ The function spaces correspond to: 
 \end_layout
 
 \begin_layout Labeling
 \labelwidthstring 00.00.0000
-\begin_inset Formula $\mathbb{W}_{0}$
+\begin_inset Formula $\mathbb{W}_{0},$
 \end_inset
 
  The space of scalar functions built from the tensor product of 
 \begin_inset Formula $P^{k+1}(\chi_{1})P^{k+1}(\chi_{2})P^{k+1}(\chi_{3})$
 \end_inset
 
- polynomials with full continuity.
+ polynomials with full continuity;
 \end_layout
 
 \begin_layout Labeling
 \labelwidthstring 00.00.0000
-\begin_inset Formula $\mathbb{W}_{1}$
+\begin_inset Formula $\mathbb{W}_{1},$
 \end_inset
 
  The space of vector functions built from the tensor product of two 
@@ -510,12 +554,12 @@ reference "sec:Reference-Element"
 \begin_inset Formula $P^{k}$
 \end_inset
 
- polynomial with continuity in the tangential direction only.
+ polynomial with continuity in the tangential direction only;
 \end_layout
 
 \begin_layout Labeling
 \labelwidthstring 00.00.0000
-\begin_inset Formula $\mathbb{W}_{2}$
+\begin_inset Formula $\mathbb{W}_{2},$
 \end_inset
 
  The space of vector functions built from the tensor product of one 
@@ -526,12 +570,12 @@ reference "sec:Reference-Element"
 \begin_inset Formula $P^{k}$
 \end_inset
 
- polynomials with continuity in the normal direction only.
+ polynomials with continuity in the normal direction only;
 \end_layout
 
 \begin_layout Labeling
 \labelwidthstring 00.00.0000
-\begin_inset Formula $\mathbb{W}_{3}$
+\begin_inset Formula $\mathbb{W}_{3},$
 \end_inset
 
  The space of scalar functions built from the tensor product of 
@@ -542,7 +586,7 @@ reference "sec:Reference-Element"
 \end_layout
 
 \begin_layout Standard
-the associated test/trial functions for each function space are 
+The associated test/trial functions for each function space are 
 \begin_inset Formula $\gamma,\,\bm{c},\,\bm{v}\,,\sigma$
 \end_inset
 
@@ -557,10 +601,10 @@ reference "sec:Basis-Functions"
  To obtain the finite element discretisation each variable has to be placed
  into a function space from which it will inherit a polynomial expansion.
  Consistent with the physical nature of each variable these are: 
-\begin_inset Formula $b\in\mathbb{W}_{0}$
+\begin_inset Formula $\theta\in\mathbb{W}_{0}$
 \end_inset
 
-, point wise scalar functions; 
+, pointwise scalar functions; 
 \begin_inset Formula $\bm{\xi}\in\mathbb{W}_{1}$
 \end_inset
 
@@ -569,21 +613,102 @@ reference "sec:Basis-Functions"
 \end_inset
 
 , vector functions corresponding to fluxes and 
-\begin_inset Formula $P\in\mathbb{W}_{3}$
+\begin_inset Formula $\rho\in\mathbb{W}_{3}$
 \end_inset
 
 , scalar functions corresponding to volume integrals.
- Multiplying 
+ 
+\begin_inset Formula $\Pi$
+\end_inset
+
+ will be computed from either 
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:comp_bousinesq_momentum-1"
+reference "eq:nonlinear_eos"
+
+\end_inset
+
+ or 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear_eos"
+
+\end_inset
+
+ as a pointwise value wherever it is needed and so it is not placed in any
+ function space.
+ Additionally the form of the reference state, rotation vector and geopotential
+ is assumed to be know analytically and so will also be computed where needed.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\shape italic
+Note: To obtain the desired properties of a Charney-Philips grid, where
+ 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is collocated with 
+\begin_inset Formula $w$
+\end_inset
+
+ it is envisioned that 
+\begin_inset Formula $\theta$
+\end_inset
+
+ will actually belong to a special space 
+\begin_inset Formula $\mathbb{W}_{\theta}$
+\end_inset
+
+ which corresponds to the vertical part of 
+\begin_inset Formula $\mathbb{W}_{2}$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Linear-Equations-weak"
+
+\end_inset
+
+Linear Equations
+\end_layout
+
+\begin_layout Standard
+Multiplying 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear_mom"
 
 \end_inset
 
 -
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:com_bousinesq_energy-1"
+reference "eq:linear_eos"
 
 \end_inset
 
@@ -595,11 +720,9 @@ reference "eq:com_bousinesq_energy-1"
  gives the weak form of the equations
 \begin_inset Formula 
 \begin{eqnarray}
-\left\langle \bm{v},\frac{\partial\mathbf{u}}{\partial t}\right\rangle +\left\langle \bm{v},\left(\frac{\bm{\xi}}{P}\times\mathbf{F}\right)\right\rangle +\left\langle \bm{v},\tilde{\nabla}\left(P+K\right)\right\rangle  & = & \left\langle \bm{v},b\mathbf{k}\right\rangle ,\label{eq:comp_bousinesq_momentum-weak}\\
-\left\langle \sigma,\frac{\partial P}{\partial t}\right\rangle +\left\langle \sigma,\nabla.\left(\mathbf{F}\right)\right\rangle +\left\langle \sigma,\left(c_{s}^{2}-P\right)\nabla.\mathbf{u}\right\rangle  & = & 0,\label{eq:comp_bousinesq_continuity-weak}\\
-\left\langle \gamma,\frac{\partial b}{\partial t}\right\rangle +\left\langle \gamma,\tilde{\nabla}.\left(\mathbf{u}b\right)\right\rangle -\left\langle \gamma,b\nabla.\mathbf{u}\right\rangle +\left\langle \gamma,\left(\mathbf{k}.\mathbf{u}\right)N^{2}\right\rangle  & = & 0,\label{eq:com_bousinesq_energy-weak}\\
-\left\langle \bm{c},\bm{\xi}\right\rangle  & = & \left\langle \bm{c},\tilde{\nabla}\times\mathbf{u}\right\rangle ,\label{eq:vorticity_weak}\\
-\left\langle \bm{v},\bm{F}\right\rangle  & \equiv & \left\langle \bm{v},\bm{u}P\right\rangle ,\label{eq:mass_flux}
+\left\langle \bm{v},\frac{\partial\mathbf{u}'}{\partial t}\right\rangle  & = & -\left\langle \bm{v},c_{pd}\theta_{s}\tilde{\nabla}\Pi-\frac{\theta'}{\theta_{s}}\mathbf{g}+2\bm{\Omega}\times\mathbf{u}\right\rangle ,\label{eq:linear_mom_vec_invariant-weak}\\
+\left\langle \sigma,\frac{\partial\rho'}{\partial t}\right\rangle  & = & \left\langle \sigma,\frac{N^{2}}{g}\rho_{s}\mathbf{k}.\mathbf{u}'-\rho_{s}\nabla.\mathbf{u}'\right\rangle ,\label{eq:linear_continuity-weak}\\
+\left\langle \gamma,\frac{\partial\theta'}{\partial t}\right\rangle  & = & -\left\langle \gamma,\frac{N^{2}}{g}\theta_{s}\mathbf{k}.\mathbf{u}'\right\rangle ,\label{eq:linear_thermo-weak}
 \end{eqnarray}
 
 \end_inset
@@ -608,13 +731,119 @@ where the inner product takes its usual form
 \begin_inset Formula $\left\langle f,g\right\rangle \equiv\int_{\Omega}f\left(\bm{\chi}\right)g\left(\bm{\chi}\right)d\bm{\chi}.$
 \end_inset
 
- In addition the stream function forcing term to the momentum equation has
- been dropped.
- The vorticity advection term can be split onto advection of the horizontal
- and vertical parts 
+ Replacing the weak operators in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear_mom_vec_invariant-weak"
+
+\end_inset
+
+ through integrating by parts gives
+\begin_inset Formula 
+\begin{eqnarray}
+\left\langle \bm{v},\frac{\partial\mathbf{u}'}{\partial t}\right\rangle  & = & c_{pd}\left\langle \nabla.\left(\bm{v}\theta_{s}\right),\Pi'\right\rangle +\left\langle \bm{v},\frac{\theta'}{\theta_{s}}\mathbf{g}\right\rangle -\left\langle \bm{v},2\bm{\Omega}\times\mathbf{u}\right\rangle .\label{eq:linear_mom_vec_invariant-weak-1}
+\end{eqnarray}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Nonlinear-Equations-weak"
+
+\end_inset
+
+Nonlinear Equations
+\end_layout
+
+\begin_layout Standard
+Multiplying 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear_mom"
+
+\end_inset
+
+-
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear_eos"
+
+\end_inset
+
+ by test functions from the appropriate space and integrating over the domain
+ 
+\begin_inset Formula $\Omega\in\mathbb{R}^{3}$
+\end_inset
+
+ gives the weak form of the nonlinear equations
+\begin_inset Formula 
+\begin{eqnarray}
+\left\langle \bm{v},\frac{\partial\mathbf{u}}{\partial t}\right\rangle  & = & -\left\langle \bm{v},\frac{\bm{\xi}}{\rho}\times\bm{F}+\tilde{\nabla}K+\nabla\Phi+c_{pd}\theta\tilde{\nabla}\Pi\right\rangle ,\label{eq:nonlinear_mom-1-1}\\
+\left\langle \sigma,\frac{\partial\rho}{\partial t}\right\rangle  & = & -\left\langle \sigma,\nabla.\mathbf{F}\right\rangle ,\label{eq:nonlinear_continuity-1-1}\\
+\left\langle \gamma,\frac{\partial\theta}{\partial t}\right\rangle  & = & -\left\langle \gamma,\mathbf{u}.\nabla\theta\right\rangle .\label{eq:nonlinear_thermo-1-1}
+\end{eqnarray}
+
+\end_inset
+
+Again, replacing the weak operators in the momentum equation through integrating
+ by parts yields
+\begin_inset Formula 
+\begin{eqnarray}
+\left\langle \bm{v},\frac{\partial\mathbf{u}}{\partial t}\right\rangle  & = & -\left\langle \bm{v},\frac{\bm{\xi}}{\rho}\times\bm{F}+\nabla\Phi\right\rangle +\left\langle \nabla.\bm{v},K\right\rangle +c_{pd}\left\langle \nabla.\left(\theta\bm{v}\right),\Pi\right\rangle -\left\langle \bm{v},2\bm{\Omega}\times\mathbf{u}\right\rangle ,\label{eq:nonlinear_mom-1-1-1}
+\end{eqnarray}
+
+\end_inset
+
+where the boundary integral terms have been neglected on the assumption
+ that 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is continuous.
+ The chosen advection scheme will be needed to compute the mass flux 
+\begin_inset Formula $\bm{F}$
+\end_inset
+
+ the vorticity flux term 
+\begin_inset Formula $\frac{\bm{\xi}}{\rho}\times\bm{F}$
+\end_inset
+
+ and the potential temperature advection term 
+\begin_inset Formula $\mathbf{u}.\nabla\theta$
+\end_inset
+
+.
+ The simplest form of advection scheme is to compute the mass flux and vorticity
+ as projections into the appropriate spaces, i.e.
+ 
+\begin_inset Formula 
+\begin{eqnarray}
+\left\langle \bm{v},\bm{F}\right\rangle  & = & \left\langle \bm{v},\rho\bm{u}\right\rangle ,\label{eq:mass_flux_projection}\\
+\left\langle \bm{c},\mbox{\bm{\xi}}\right\rangle  & = & \left\langle \bm{c},\tilde{\nabla}\times\bm{u}+2\bm{\Omega}\right\rangle =-\left\langle \nabla\times\bm{c},\bm{u}\right\rangle +\left\langle \bm{c},2\bm{\Omega}\right\rangle ,\label{eq:voticity_projection}
+\end{eqnarray}
+
+\end_inset
+
+and the potential temperature advection term is computed as in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:nonlinear_thermo-1-1"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Alternatively the vorticity advection term could be split onto advection
+ of the horizontal and vertical parts 
 \begin_inset Formula 
 \begin{equation}
-\frac{\bm{\xi}}{P}\times\mathbf{F}\equiv\frac{\bm{\xi}_{h}}{P}\times\mathbf{F}+\frac{\xi_{v}}{P}\mathbf{F}_{h}^{\perp}\label{eq:vorticity_split}
+\frac{\bm{\xi}}{\rho}\times\mathbf{F}\equiv\frac{\bm{\xi}_{h}}{\rho}\times\mathbf{F}+\frac{\xi_{v}}{\rho}\mathbf{F}_{h}^{\perp}\label{eq:vorticity_split-1}
 \end{equation}
 
 \end_inset
@@ -627,7 +856,7 @@ where subscripts
 \begin_inset Formula $v$
 \end_inset
 
- indicate the horizontal and vertical parts of a vector respectively and
+ indicate the horizontal and vertical parts of a vector, respectively, and
  
 \begin_inset Formula $\mathbf{F}_{h}^{\perp}\equiv\mathbf{k}\times\mathbf{F}_{h}$
 \end_inset
@@ -636,45 +865,14 @@ where subscripts
  The last term in 
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:vorticity_split"
+reference "eq:vorticity_split-1"
 
 \end_inset
 
  is the vorticity flux term that appears in the shallow water equations.
- Replacing the weak operators in 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:comp_bousinesq_momentum-weak"
-
-\end_inset
-
--
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:vorticity_weak"
-
-\end_inset
-
- through integrating by parts and using 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:vorticity_split"
-
-\end_inset
-
- gives 
-\begin_inset Formula 
-\begin{eqnarray}
-\left\langle \bm{v},\frac{\partial\mathbf{u}}{\partial t}\right\rangle +\left\langle \bm{v},\frac{\bm{\xi}_{h}}{P}\times\mathbf{F}+\frac{\xi_{v}}{P}\mathbf{F}_{h}^{\perp}\right\rangle -\left\langle \nabla.\bm{v},\left(P+K\right)\right\rangle  & = & \left\langle \bm{v},b\mathbf{k}\right\rangle ,\label{eq:comp_bousinesq_momentum-weak-1}\\
-\left\langle \sigma,\frac{\partial P}{\partial t}\right\rangle +\left\langle \sigma,\nabla.\mathbf{F}\right\rangle +\left\langle \sigma,\left(c_{s}^{2}-P\right)\nabla.\mathbf{u}\right\rangle  & = & 0,\label{eq:comp_bousinesq_continuity-weak-1}\\
-\left\langle \gamma,\frac{\partial b}{\partial t}\right\rangle -\left\langle \nabla\gamma,\left(\mathbf{u}b\right)\right\rangle -\left\langle \gamma,b\nabla.\mathbf{u}\right\rangle +\left\langle \gamma,\left(\mathbf{k}.\mathbf{u}\right)N^{2}\right\rangle  & = & 0,\label{eq:com_bousinesq_energy-weak-1}\\
-\left\langle \bm{c},\bm{\xi}\right\rangle  & = & \left\langle \nabla\times\bm{c},\mathbf{u}\right\rangle ,\label{eq:vorticity_weak-1}\\
-\left\langle \bm{v},\bm{F}\right\rangle  & \equiv & \left\langle \bm{v},\bm{u}P\right\rangle ,\label{eq:mass_flux-1}
-\end{eqnarray}
-
-\end_inset
-
-
+ The mass flux term could be computed using any form of finite volume/discontin
+uous Galerkin method and the potential temperature equation could be computed
+ in a semi-Lagrangian manner.
 \end_layout
 
 \begin_layout Subsection
@@ -729,24 +927,20 @@ Consider a mapping
  We now require a set of mappings for each function space that maintains
  the continuity from the reference to the physical domain.
  For the vector spaces 
-\begin_inset Formula $\mathbb{W}_{2}$
+\begin_inset Formula $\mathbb{W}_{1}$
 \end_inset
 
  and 
-\begin_inset Formula $\mathbb{W}_{3}$
+\begin_inset Formula $\mathbb{W}_{2}$
 \end_inset
 
  this means using 
 \family typewriter
-div
-\family default
- and 
-\family typewriter
-curl
+curl and div
 \family default
  conforming mappings respectively, that is mappings that preserve the continuity
- of normal and tangential components.
- These mappings are the contravariant and covariant Piola transforms respectivel
+ of tangential and normal components respectively.
+ These mappings are the covariant and contravariant Piola transforms respectivel
 y, see 
 \begin_inset CommandInset citation
 LatexCommand citet
@@ -754,27 +948,27 @@ key "rognes09,brezzi91,monk03"
 
 \end_inset
 
- for further a more thorough treatment of the Piola transform.
+ for a more thorough treatment of the Piola transform.
  For vector fields in 
 \begin_inset Formula $\mathbb{W}_{2}$
 \end_inset
 
- the Contravariant Piola transform is used 
+ the contravariant Piola transform is used 
 \begin_inset Formula 
 \begin{equation}
-\mathbf{v\left(\bm{\chi}\right)\equiv}\mathbf{v}\left(\bm{\mathbf{\phi}}\left(\hat{\bm{\mathbf{\chi}}}\right)\right)=\frac{\sqrt{\det\left(\mathbf{g}^{{\rm ref}}\right)}}{\sqrt{\det\left(\mathbf{g}\right)}}\frac{J\hat{\mathbf{v}}\left(\hat{\bm{\mathbf{\chi}}}\right)}{\det J},\label{eq:W2_contravariant_piola}
+\mathbf{v\left(\bm{\chi}\right)\equiv}\mathbf{v}\left(\bm{\mathbf{\phi}}\left(\hat{\bm{\mathbf{\chi}}}\right)\right)=\frac{\sqrt{\det\left(\mathbf{g}^{{\rm ref}}\right)}}{\sqrt{\det\left(\mathbf{g}\right)}}\frac{J\hat{\mathbf{v}}\left(\hat{\bm{\mathbf{\chi}}}\right)}{\det\left(J\right)},\label{eq:W2_contravariant_piola}
 \end{equation}
 
 \end_inset
 
 where the Jacobian 
-\begin_inset Formula $J\equiv\partial\bm{\mathbf{\phi}}\left(\bm{\chi}\right)/\partial\hat{\bm{\mathbf{\chi}}},$
+\begin_inset Formula $J\equiv\partial\bm{\mathbf{\phi}}\left(\hat{\bm{\chi}}\right)/\partial\hat{\bm{\mathbf{\chi}}},$
 \end_inset
 
  crucially this transformation satisfies 
 \begin_inset Formula 
 \begin{equation}
-\nabla.\mathbf{v}\left(\bm{\chi}\right)=\frac{1}{\det J}\hat{\nabla}.\left(\frac{\sqrt{\det\left(\mathbf{g}^{{\rm ref}}\right)}}{\sqrt{\det\left(\mathbf{g}\right)}}\hat{\mathbf{v}}\left(\hat{\bm{\mathbf{\chi}}}\right)\right).\label{eq:piola_div}
+\nabla.\mathbf{v}\left(\bm{\chi}\right)=\frac{1}{\det\left(J\right)}\hat{\nabla}.\left(\frac{\sqrt{\det\left(\mathbf{g}^{{\rm ref}}\right)}}{\sqrt{\det\left(\mathbf{g}\right)}}\hat{\mathbf{v}}\left(\hat{\bm{\mathbf{\chi}}}\right)\right),\label{eq:piola_div}
 \end{equation}
 
 \end_inset
@@ -834,12 +1028,12 @@ and for
  
 \begin_inset Formula 
 \begin{equation}
-\sigma\left(\bm{\chi}\right)\equiv\sigma\left(\bm{\mathbf{\phi}}\left(\hat{\bm{\mathbf{\chi}}}\right)\right)=\frac{\sqrt{\det\left(\mathbf{g}^{{\rm ref}}\right)}}{\sqrt{\det\left(\mathbf{g}\right)}}\frac{\hat{\sigma}\left(\hat{\bm{\mathbf{\chi}}}\right)}{\det J},\label{eq:W3_scalar_transform}
+\sigma\left(\bm{\chi}\right)\equiv\sigma\left(\bm{\mathbf{\phi}}\left(\hat{\bm{\mathbf{\chi}}}\right)\right)=\frac{\sqrt{\det\left(\mathbf{g}^{{\rm ref}}\right)}}{\sqrt{\det\left(\mathbf{g}\right)}}\frac{\hat{\sigma}\left(\hat{\bm{\mathbf{\chi}}}\right)}{\det\left(J\right)}.\label{eq:W3_scalar_transform}
 \end{equation}
 
 \end_inset
 
-however, use of 
+However, use of 
 \begin_inset CommandInset ref
 LatexCommand eqref
 reference "eq:W3_scalar_transform"
@@ -849,18 +1043,18 @@ reference "eq:W3_scalar_transform"
  would result in the divergence mapping becoming 
 \begin_inset Formula 
 \begin{equation}
-\int_{\Omega}\sigma\nabla.\mathbf{v}d\chi=\int_{\hat{\Omega}}\frac{\sqrt{\det\left(\mathbf{g}^{{\rm ref}}\right)}}{\sqrt{\det\left(\mathbf{g}\right)}}\frac{\hat{\sigma}}{\det J}\hat{\nabla}.\hat{\mathbf{v}}d\hat{\chi}\label{eq:divergence_problem}
+\int_{\Omega}\sigma\nabla.\mathbf{v}d\chi=\int_{\hat{\Omega}}\frac{\sqrt{\det\left(\mathbf{g}^{{\rm ref}}\right)}}{\sqrt{\det\left(\mathbf{g}\right)}}\frac{\hat{\sigma}}{\det\left(J\right)}\hat{\nabla}.\hat{\mathbf{v}}d\hat{\chi}\label{eq:divergence_problem}
 \end{equation}
 
 \end_inset
 
 which for non-flat elements (such as when mapping to the sphere) cannot
  be integrated exactly as 
-\begin_inset Formula ${\rm det}J$
+\begin_inset Formula $\det\left(J\right)$
 \end_inset
 
  is not constant (for flat elements 
-\begin_inset Formula ${\rm det}J=const$
+\begin_inset Formula $\det\left(J\right)=const$
 \end_inset
 
  and there is no problem).
@@ -883,8 +1077,9 @@ reference "eq:W3_scalar_transform"
 
 \end_inset
 
-this now means that the div-curl relationships are not satisfied anymore,
- i.e 
+which now means that the div-curl relationships are not satisfied anymore,
+ i.e.
+ 
 \begin_inset Formula $\nabla.$
 \end_inset
 
@@ -893,10 +1088,10 @@ this now means that the div-curl relationships are not satisfied anymore,
 \end_inset
 
  to 
-\begin_inset Formula $\mathbb{W}_{3},$
+\begin_inset Formula $\mathbb{W}_{3}.$
 \end_inset
 
- the chosen solution to this, proposed by 
+ The chosen solution to this, proposed by 
 \begin_inset CommandInset citation
 LatexCommand citet
 key "bochev_ridzal10"
@@ -994,61 +1189,72 @@ reference "eq:W3_scalar_transform-new"
 Discrete equations in the reference domain
 \end_layout
 
+\begin_layout Subsubsection
+Linear equations
+\end_layout
+
 \begin_layout Standard
-The pullback of equations 
+Applying these transformations to the linear equations 
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:comp_bousinesq_momentum-weak-1"
+reference "eq:linear_mom_vec_invariant-weak"
 
 \end_inset
 
 -
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:mass_flux-1"
+reference "eq:linear_mom_vec_invariant-weak-1"
 
 \end_inset
 
- into the reference domains using the transforms 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:W0_scaler_transform"
+ gives
+\end_layout
 
-\end_inset
-
-, 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:W1_covariant_piola"
-
-\end_inset
-
-, 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:W2_contravariant_piola"
-
-\end_inset
-
- and 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:W3_scalar_transform-new"
-
-\end_inset
-
- for variables in spaces 
-\begin_inset Formula $\mathbb{W}_{0}-\mathbb{W}_{3}$
-\end_inset
-
- respectively yields
+\begin_layout Standard
 \begin_inset Formula 
 \begin{eqnarray}
-\left\langle \frac{J\hat{\bm{v}}}{\det J},J\frac{\partial\hat{\mathbf{u}}}{\partial t}\right\rangle +\left\langle \bm{v},\frac{\bm{\xi}_{h}}{P}\times\mathbf{F}+\frac{\xi_{v}}{P}\mathbf{F}_{h}^{\perp}\right\rangle -\left\langle \hat{\nabla}.\hat{\bm{v}},\left[\hat{P}+\frac{1}{2}\left(\frac{J\hat{\mathbf{u}}}{\det J}\right).\left(\frac{J\hat{\mathbf{u}}}{\det J}\right)\right]\right\rangle  & = & \left\langle \frac{J\hat{\bm{v}}}{\det J},\frac{Jb\hat{\mathbf{k}}}{\det J}\right\rangle ,\label{eq:comp_bousinesq_momentum-weak-reference}\\
-\left\langle \hat{\sigma},\frac{\partial\hat{P}}{\partial t}\det J\right\rangle +\left\langle \hat{\sigma},\hat{\nabla}.\hat{\mathbf{F}}\right\rangle +\left\langle \hat{\sigma},\left(c_{s}^{2}-\hat{P}\right)\hat{\nabla}.\hat{\mathbf{u}}\right\rangle  & = & 0,\label{eq:comp_bousinesq_continuity-weak-reference}\\
-\left\langle \hat{\gamma},\frac{\partial\hat{b}}{\partial t}\right\rangle -\left\langle \nabla\gamma,\left(\mathbf{u}b\right)\right\rangle -\left\langle \hat{\gamma},\hat{b}\hat{\nabla}.\hat{\mathbf{u}}\right\rangle +N^{2}\left\langle \gamma,\left(\mathbf{k}.\mathbf{u}\right)\right\rangle  & = & 0,\label{eq:com_bousinesq_energy-weak-reference}\\
-\left\langle J^{-1}\hat{\bm{c}},J^{-1}\hat{\bm{\xi}}\det J\right\rangle  & = & \left\langle \hat{\nabla}\times\hat{\bm{c}},\hat{\mathbf{u}}\right\rangle ,\label{eq:vorticity_weak-reference}\\
-\left\langle \frac{J\hat{\bm{v}}}{\det J},J\hat{\bm{F}}\right\rangle  & = & \left\langle \frac{J\hat{\bm{v}}}{\det J},J\hat{\bm{u}}\hat{P}\right\rangle ,\label{eq:mass_flux-reference}
+\left\langle J\hat{\bm{v}},\frac{J}{\det\left(J\right)}\frac{\partial\hat{\mathbf{u}}'}{\partial t}\right\rangle  & = & c_{pd}\left\langle \theta_{s}\left(\nabla.\hat{\bm{v}}\right)+\frac{N^{2}}{g}\bm{k}.\hat{\bm{v}},\Pi'\right\rangle +\left\langle J\bm{v},\frac{\hat{\theta}'}{\theta_{s}}\mathbf{g}\right\rangle -\left\langle \hat{\bm{v}},2\bm{\Omega}\times\hat{\mathbf{u}}\right\rangle \equiv R_{u},\label{eq:linear_mom_vec_invariant-weak-pullback}\\
+\left\langle \hat{\sigma},\frac{\partial\hat{\rho}'}{\partial t}\det\left(J\right)\right\rangle  & = & \left\langle \hat{\sigma},\frac{N^{2}}{g}\rho_{s}\mathbf{k}.J\hat{\mathbf{u}}'-\rho_{s}\nabla.\hat{\mathbf{u}}'\right\rangle \equiv R_{\rho},\label{eq:linear_continuity-weak-pullback}\\
+\left\langle \hat{\gamma},\frac{\partial\hat{\theta}'}{\partial t}\det\left(J\right)\right\rangle  & = & -\left\langle \hat{\gamma},\frac{N^{2}}{g}\theta_{s}\mathbf{k}.J\hat{\mathbf{u}}'\right\rangle \equiv R_{\theta}.\label{eq:linear_thermo-weak-pullback}
+\end{eqnarray}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Nonlinear equations
+\end_layout
+
+\begin_layout Standard
+Applying these coordinate transformations to the nonlinear equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:nonlinear_mom-1-1"
+
+\end_inset
+
+-
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:voticity_projection"
+
+\end_inset
+
+ yields
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray}
+\left\langle J\hat{\bm{v}},\frac{J}{\det\left(J\right)}\frac{\partial\hat{\mathbf{u}}}{\partial t}\right\rangle  & = & -\left\langle J\hat{\bm{v}},\frac{J^{-1}\hat{\bm{\xi}}}{\hat{\rho}\det\left(J\right)}\times J\hat{\bm{F}}+\nabla\Phi\right\rangle +\left\langle \nabla.\hat{\bm{v}},\frac{1}{2}\left(\frac{J\hat{\bm{u}}}{\det\left(J\right)}\right).\left(\frac{J\hat{\bm{u}}}{\det\left(J\right)}\right)\right\rangle \label{eq:nonlinear_mom-pullback}\\
+ &  & +c_{pd}\left\langle \hat{\theta}\nabla.\hat{\bm{v}}+J\hat{\bm{v}}.J^{-1}\nabla\hat{\theta},\Pi\right\rangle ,\nonumber \\
+\left\langle \hat{\sigma},\frac{\partial\hat{\rho}'}{\partial t}\det\left(J\right)\right\rangle  & = & -\left\langle \hat{\sigma},\nabla.\hat{\mathbf{F}}\right\rangle ,\label{eq:nonlinear_continuity-pullback}\\
+\left\langle \hat{\gamma},\frac{\partial\hat{\theta}'}{\partial t}\det\left(J\right)\right\rangle  & = & -\left\langle \hat{\gamma},\hat{\mathbf{u}}.\nabla\hat{\theta}\right\rangle ,\label{eq:nonlinear_thermo-pullback}\\
+\left\langle J\hat{\bm{v}},\frac{J\hat{\mathbf{F}}}{\det\left(J\right)}\right\rangle  & = & \left\langle J\hat{\bm{v}},\hat{\rho}\frac{J\hat{\bm{u}}}{\det\left(J\right)}\right\rangle ,\label{eq:mass_flux_pullback}\\
+\left\langle J^{-1}\bm{c},J^{-1}\mbox{\bm{\xi}}\det\left(J\right)\right\rangle  & = & -\left\langle J\nabla\times\hat{\bm{c}},\frac{J\hat{\bm{u}}}{\det\left(J\right)}\right\rangle +\left\langle J^{-1}\hat{\bm{c}},2\bm{\Omega}\det\left(J\right)\right\rangle .\label{eq:vorticity_pullback}
 \end{eqnarray}
 
 \end_inset
@@ -1061,14 +1267,14 @@ Computation of the Jacobian
 \end_layout
 
 \begin_layout Standard
-For various computations the Jacobian, along with its determinant, of the
- coordinate transformation from the reference space to the physical space
- is required.
+For various computations the Jacobian of the coordinate transformation from
+ the reference space to the physical space, along with its determinant is
+ required.
  By setting 
 \begin_inset Formula $\bm{\phi}\left(\hat{\bm{\chi}}\right)=\left(\phi_{1}\left(\hat{\bm{\chi}}\right),\phi_{2}\left(\hat{\bm{\chi}}\right),\phi_{3}\left(\hat{\bm{\chi}}\right)\right)$
 \end_inset
 
-and requiring that 
+ and requiring that 
 \begin_inset Formula $\phi_{i}\in\mathbb{W}_{0}$
 \end_inset
 
@@ -1079,16 +1285,16 @@ and requiring that
  then the Jacobian can be calculated.
  In practice this means that each element is parameterised by a polynomial
  function and therefore in general 
-\begin_inset Formula $\det J$
+\begin_inset Formula $\det\left(J\right)$
 \end_inset
 
  will be a polynomial and so terms with factors 
-\begin_inset Formula $\det J^{-1}$
+\begin_inset Formula $\det\left(J\right)^{-1}$
 \end_inset
 
- will not be able to be integrated exactly, instead a suitably high order
- quadrature will be used such that the error in the integration is small,
- Appendix 
+ will not be able to be integrated exactly.
+ Instead a suitably high order quadrature will be used such that the error
+ in the integration is small, Appendix 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sec:Quadrature"
@@ -1112,41 +1318,38 @@ Timestepping Schemes
 Equations 
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:comp_bousinesq_momentum-weak-reference"
+reference "eq:linear_mom_vec_invariant-weak-pullback"
 
 \end_inset
 
 -
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:mass_flux-reference"
+reference "eq:linear_thermo-weak-pullback"
 
 \end_inset
 
- constitute three nonlinear prognostic equations for the velocity vector
- 
+ constitute three prognostic equations for the velocity vector 
 \begin_inset Formula $\hat{\mathbf{u}}$
 \end_inset
 
-, the pressure 
-\begin_inset Formula $\hat{P}$
+, the density 
+\begin_inset Formula $\hat{\rho}$
 \end_inset
 
- and the buoyancy 
-\begin_inset Formula $\hat{b}$
+ and the potential temperature 
+\begin_inset Formula $\hat{\theta}$
 \end_inset
 
- along with two diagnostic equations for the vorticity 
-\begin_inset Formula $\hat{\bm{\xi}}$
+ along with a diagnostic equation the equation of state relating Exner pressure
+ 
+\begin_inset Formula $\Pi$
 \end_inset
 
- and the mass flux 
-\begin_inset Formula $\hat{\mathbf{F}}.$
-\end_inset
-
- These equations are continuous in time and discrete in space, the temporal
- discretisation is achieved either through a fully explicit Runge-Kutta
- method or a semi-implicit method.
+ to the density and potential temperature.
+ These equations are continuous in time and discrete in space.
+ The temporal discretisation is achieved either through a fully explicit
+ Runge-Kutta method or a semi-implicit method.
 \end_layout
 
 \begin_layout Subsection
@@ -1165,7 +1368,7 @@ A generic
  can be written as 
 \begin_inset Formula 
 \begin{equation}
-y^{\left(j\right)}=y^{n}+\Delta t\sum_{k=1}^{j-1}a_{j,k}f\left(y^{\left(k\right)},t+c_{k}\Delta t\right)\label{eq:RK-1}
+y^{\left(j\right)}=y^{n}+\Delta t\sum_{k=1}^{j-1}a_{j,k}f\left(y^{\left(k\right)},t+c_{k}\Delta t\right),\label{eq:RK-1}
 \end{equation}
 
 \end_inset
@@ -1173,7 +1376,7 @@ y^{\left(j\right)}=y^{n}+\Delta t\sum_{k=1}^{j-1}a_{j,k}f\left(y^{\left(k\right)
 
 \begin_inset Formula 
 \begin{equation}
-y^{n+1}=y^{n}+\Delta t\sum_{j=1}^{m}\omega_{j}f\left(y^{\left(j\right)},t+c_{j}\Delta t\right)\label{eq:RK-2}
+y^{n+1}=y^{n}+\Delta t\sum_{j=1}^{m}\omega_{j}f\left(y^{\left(j\right)},t+c_{j}\Delta t\right),\label{eq:RK-2}
 \end{equation}
 
 \end_inset
@@ -1186,7 +1389,8 @@ where the weights
 \begin_inset Formula $A$
 \end_inset
 
- and all the weights are given by a Butcher tableau 
+.
+ All the weights are given by a Butcher tableau 
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="2">
 <features rotate="0" tabularvalignment="middle">
@@ -1245,15 +1449,17 @@ where the weights
 
 \end_inset
 
-, eg for the strong stability preserving 3 stage 3rd order scheme this is
- given in Table 
+, e.g.
+ for the strong stability preserving 3 stage 3rd order scheme this is given
+ in Table 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "tab:RKSSP3"
 
 \end_inset
 
-
+.
+ 
 \begin_inset Float table
 wide false
 sideways false
@@ -1470,7 +1676,7 @@ name "tab:RKSSP3"
 
 \end_inset
 
-RKSSP3 Butcher tableau
+RKSSP3 Butcher tableau.
 \end_layout
 
 \end_inset
@@ -1484,21 +1690,35 @@ RKSSP3 Butcher tableau
 
 \end_inset
 
-Equations 
+ Equations 
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:comp_bousinesq_momentum-weak-reference"
+reference "eq:linear_mom_vec_invariant-weak-pullback"
 
 \end_inset
 
 -
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "eq:mass_flux-reference"
+reference "eq:linear_thermo-weak-pullback"
 
 \end_inset
 
- can be reformulated into a form appropriate for applying 
+ (or alternatively 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:nonlinear_mom-pullback"
+
+\end_inset
+
+-
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:nonlinear_thermo-pullback"
+
+\end_inset
+
+) can be reformulated into a form appropriate for applying 
 \begin_inset CommandInset ref
 LatexCommand eqref
 reference "eq:RK-1"
@@ -1523,7 +1743,7 @@ M_{2}\frac{d\tilde{u}}{dt}=R_{u},\label{eq:u_RK}
 
 \begin_inset Formula 
 \begin{equation}
-M_{3}\frac{d\tilde{P}}{dt}=R_{p},\label{eq:P_RK}
+M_{3}\frac{d\tilde{\rho}}{dt}=R_{\rho},\label{eq:P_RK}
 \end{equation}
 
 \end_inset
@@ -1534,16 +1754,17 @@ M_{3}\frac{d\tilde{P}}{dt}=R_{p},\label{eq:P_RK}
 \begin_layout Standard
 \begin_inset Formula 
 \begin{equation}
-M_{0}\frac{d\tilde{b}}{dt}=R_{b},\label{eq:b_RK}
+M_{0}\frac{d\tilde{\theta}}{dt}=R_{\theta},\label{eq:theta_RK}
 \end{equation}
 
 \end_inset
 
 where now the unknowns 
-\begin_inset Formula $\tilde{u},\tilde{P},\tilde{b}$
+\begin_inset Formula $\tilde{u},\,\tilde{\rho},\,\tilde{\theta}$
 \end_inset
 
- correspond to vectors of dof's and 
+ correspond to vectors of degrees of freedom (dofs), that is the temporally
+ varying expansion coefficients of the finite element expansion, and 
 \begin_inset Formula $M_{i}$
 \end_inset
 
@@ -1554,7 +1775,7 @@ where now the unknowns
  given by 
 \begin_inset Formula 
 \begin{equation}
-M_{0}=\left\langle \hat{\gamma},\hat{\gamma}\det J\right\rangle ,\label{eq:M0_mass_matrix}
+M_{0}=\left\langle \hat{\gamma},\hat{\gamma}\det\left(J\right)\right\rangle ,\label{eq:M0_mass_matrix}
 \end{equation}
 
 \end_inset
@@ -1562,7 +1783,7 @@ M_{0}=\left\langle \hat{\gamma},\hat{\gamma}\det J\right\rangle ,\label{eq:M0_ma
 
 \begin_inset Formula 
 \begin{equation}
-M_{1}=\left\langle J^{-1}\hat{\mathbf{c}},J^{-1}\hat{\mathbf{c}}\det J\right\rangle ,\label{eq:M1_mass_matrix}
+M_{1}=\left\langle J^{-1}\hat{\mathbf{c}},J^{-1}\hat{\mathbf{c}}\det\left(J\right)\right\rangle ,\label{eq:M1_mass_matrix}
 \end{equation}
 
 \end_inset
@@ -1570,7 +1791,7 @@ M_{1}=\left\langle J^{-1}\hat{\mathbf{c}},J^{-1}\hat{\mathbf{c}}\det J\right\ran
 
 \begin_inset Formula 
 \begin{equation}
-M_{2}=\left\langle \frac{J\hat{\bm{v}}}{\det J},J\hat{\bm{v}}\right\rangle ,\label{eq:M2_mass_matrix}
+M_{2}=\left\langle \frac{J\hat{\bm{v}}}{\det\left(J\right)},J\hat{\bm{v}}\right\rangle ,\label{eq:M2_mass_matrix}
 \end{equation}
 
 \end_inset
@@ -1578,54 +1799,41 @@ M_{2}=\left\langle \frac{J\hat{\bm{v}}}{\det J},J\hat{\bm{v}}\right\rangle ,\lab
 
 \begin_inset Formula 
 \begin{equation}
-M_{3}=\left\langle \hat{\sigma},\hat{\sigma}\det J\right\rangle ,\label{eq:M3_mass_matrix}
+M_{3}=\left\langle \hat{\sigma},\hat{\sigma}\det\left(J\right)\right\rangle ,\label{eq:M3_mass_matrix}
 \end{equation}
 
 \end_inset
 
-and the right hand sides are given by
-\begin_inset Formula 
-\begin{eqnarray}
-R_{u} & \equiv & -\left\langle \bm{v},\frac{\bm{\xi}_{h}}{P}\times\mathbf{F}+\frac{\xi_{v}}{P}\mathbf{F}_{h}^{\perp}\right\rangle +\left\langle \hat{\nabla}.\hat{\bm{v}},\left[\hat{P}+\frac{1}{2}\left(\frac{J\hat{\mathbf{u}}}{\det J}\right).\left(\frac{J\hat{\mathbf{u}}}{\det J}\right)\right]\right\rangle +\left\langle \frac{J\hat{\bm{v}}}{\det J},\frac{Jb\hat{\mathbf{k}}}{\det J}\right\rangle ,\label{eq:R_u}\\
-R_{P} & \equiv & -\left\langle \hat{\sigma},\hat{\nabla}.\hat{\mathbf{F}}\right\rangle -\left\langle \hat{\sigma},\left(c_{s}^{2}-\hat{P}\right)\hat{\nabla}.\hat{\mathbf{u}}\right\rangle ,\label{eq:R_p}\\
-R_{b} & \equiv & \left\langle \nabla\gamma,\left(\mathbf{u}b\right)\right\rangle +\left\langle \hat{\gamma},\hat{b}\hat{\nabla}.\hat{\mathbf{u}}\right\rangle -N^{2}\left\langle \gamma,\left(\mathbf{k}.\mathbf{u}\right)\right\rangle .\label{eq:R_b}
-\end{eqnarray}
+and the right hand sides are given by equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear_mom_vec_invariant-weak-pullback"
 
 \end_inset
 
-Where they are needed, the vorticity and mass flux are computed from 
-\begin_inset Formula 
-\begin{equation}
-M_{1}\tilde{\xi}=R_{\xi}\label{eq:xi_diagnostic}
-\end{equation}
+-
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear_thermo-weak-pullback"
 
 \end_inset
 
-
-\begin_inset Formula 
-\begin{equation}
-M_{2}\tilde{F}=R_{F}\label{eq:F_diagnostic}
-\end{equation}
-
-\end_inset
-
-with 
-\begin_inset Formula 
-\begin{equation}
-R_{\xi}\equiv\left\langle \hat{\nabla}\times\hat{\bm{c}},\hat{\mathbf{u}}\right\rangle ,\label{eq:R_xi}
-\end{equation}
+.
+ The same method can be applied to the nonlinear equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:nonlinear_mom-pullback"
 
 \end_inset
 
-
-\begin_inset Formula 
-\begin{equation}
-R_{F}\equiv\left\langle \frac{J\hat{\bm{v}}}{\det J},J\hat{\bm{u}}\hat{P}\right\rangle .\label{eq:R_F}
-\end{equation}
+-
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:vorticity_pullback"
 
 \end_inset
 
-
+.
 \end_layout
 
 \begin_layout Subsection
@@ -1633,7 +1841,10 @@ Semi-Implicit Timestepping
 \end_layout
 
 \begin_layout Standard
-To be populated
+To be populated.
+\end_layout
+
+\begin_layout Standard
 \end_layout
 
 \begin_layout Section
@@ -1648,7 +1859,7 @@ name "sec:Results"
 \end_layout
 
 \begin_layout Standard
-This section gives some indicative results obtained using dynamo
+This section gives some indicative results obtained using Dynamo.
 \end_layout
 
 \begin_layout Subsection
@@ -1843,11 +2054,11 @@ name "fig:Gravity_wave_k0_results"
 \end_inset
 
 Results for the 2D gravity wave test simulated using the linear equations
- with
+ with 
 \begin_inset Formula $\Delta x=6\,{\rm km},$
 \end_inset
 
- and 
+ and  
 \begin_inset Formula $\Delta z=2\,{\rm km}$
 \end_inset
 
@@ -1855,7 +2066,7 @@ Results for the 2D gravity wave test simulated using the linear equations
 \begin_inset Formula $\Delta x=3\,{\rm km},$
 \end_inset
 
- and 
+ and  
 \begin_inset Formula $\Delta z=1\,{\rm km}$
 \end_inset
 
@@ -1935,15 +2146,15 @@ Results for the 2D gravity wave test simulated using the linear equations
 \end_layout
 
 \begin_layout Standard
-To simulate a Cartesian vertical slice model dynamo is run on a biperiodic
+To simulate a Cartesian vertical slice model Dynamo is run on a biperiodic
  domain and all fields are initiated so that there is no variation in the
  
 \begin_inset Formula $y$
 \end_inset
 
  direction and so the results remain 2-dimensional (for various technical
- reasons dynamo cannot be run in a true 2D mode, each horizontal direction
- requires an even number of cells > 2, i.e the minimum sized permissible
+ reasons Dynamo cannot be run in a true 2D mode, each horizontal direction
+ requires an even number of cells > 2, i.e. the minimum sized permissible
  domain is 4x4x1 cells).
  Results for the non-hydrostatic gravity wave test 
 \begin_inset CommandInset citation
@@ -1974,7 +2185,7 @@ reference "fig:Gravity_wave_k1_results"
 \begin_inset Formula $k=1$
 \end_inset
 
- elements with a domain size of 480x10 km, the horizontal domain size has
+ elements with a domain size of 480x10 km; the horizontal domain size has
  been increased to stop interference from the spuriously fast gravity waves
  wrapping around the domain and interfering with the results.
  For comparison the results using the full nonlinear ENDGame vertical slice
@@ -2176,7 +2387,7 @@ name "fig:Gravity_wave_k1_results"
 \end_inset
 
 Results for the 2D gravity wave test simulated using the linear equations
- with
+ with 
 \begin_inset Formula $\Delta x=6\,{\rm km},$
 \end_inset
 
@@ -2184,7 +2395,7 @@ Results for the 2D gravity wave test simulated using the linear equations
 \begin_inset Formula $\Delta z=2\,{\rm km}$
 \end_inset
 
- and 
+ and  
 \begin_inset Formula $\Delta t=1$
 \end_inset
 
@@ -2254,7 +2465,7 @@ Results for the 2D gravity wave test simulated using the linear equations
 \end_inset
 
  to 
-\begin_inset Formula $2\times10^{-3}\,{\rm ms}^{-1}$
+\begin_inset Formula $2\times10^{-3}\,{\rm ms}^{-1}.$
 \end_inset
 
 
@@ -2350,7 +2561,7 @@ status collapsed
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-Vertices
+Vertices.
 \end_layout
 
 \end_inset
@@ -2381,7 +2592,7 @@ status collapsed
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-Edges
+Edges.
 \end_layout
 
 \end_inset
@@ -2412,7 +2623,7 @@ status collapsed
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-Faces
+Faces.
 \end_layout
 
 \end_inset
@@ -2433,6 +2644,7 @@ name "fig:Reference-cube-topology"
 \end_inset
 
 Reference cube topology.
+ Dashed arrows indicate hidden faces.
 \end_layout
 
 \end_inset
@@ -2457,53 +2669,41 @@ For many computations some assumptions about the element are made, such
 \end_layout
 
 \begin_layout Enumerate
-Numbering of vertices is depicted in Figure 
+Numbering of vertices as depicted in Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Reference-cube-topology"
 
 \end_inset
 
- (a)
+ (a),
 \end_layout
 
 \begin_layout Enumerate
-Numbering of edges is depicted in Figure 
+Numbering of edges as depicted in Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Reference-cube-topology"
 
 \end_inset
 
- (b)
+ (b),
 \end_layout
 
 \begin_layout Enumerate
-Numbering of vertices is depicted in Figure 
+Numbering of vertices as depicted in Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Reference-cube-topology"
 
 \end_inset
 
- (c)
+ (c),
 \end_layout
 
 \begin_layout Enumerate
-Normals to vertical faces (
-\begin_inset Formula $\hat{\chi}_{1}=const$
-\end_inset
-
- or 
-\begin_inset Formula $\hat{\chi}_{2}=const$
-\end_inset
-
-) point outwards and normals to horizontal faces (
-\begin_inset Formula $\hat{\chi}_{3}=const$
-\end_inset
-
-) point in the positive 
-\begin_inset Formula $\hat{\chi}_{3}$
+Normals to faces point in the positive 
+\begin_inset Formula $\hat{\chi}_{i}$
 \end_inset
 
  direction, Figure 
@@ -2513,13 +2713,12 @@ reference "fig:Reference-cube-directions"
 
 \end_inset
 
- (a)
+ (a),
 \end_layout
 
 \begin_layout Enumerate
-Tangents to edges horizontal edges have an anticlockwise circulation, tangents
- to vertical edges point in the positive 
-\begin_inset Formula $\hat{\chi}_{3}$
+Tangents to edges point in the positive 
+\begin_inset Formula $\hat{\chi}_{i}$
 \end_inset
 
  direction, Figure 
@@ -2529,7 +2728,7 @@ reference "fig:Reference-cube-directions"
 
 \end_inset
 
- (b)
+ (b).
 \end_layout
 
 \begin_layout Standard
@@ -2547,11 +2746,7 @@ status open
 \begin_inset Float figure
 wide false
 sideways false
-status collapsed
-
-\begin_layout Plain Layout
-
-\end_layout
+status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
@@ -2615,7 +2810,7 @@ name "fig:Reference-cube-directions"
 
 \end_inset
 
-Reference cube (a) face normal directions and (b) edge tangent directions
+Reference cube (a) face normal directions and (b) edge tangent directions.
 \end_layout
 
 \end_inset
@@ -2650,7 +2845,7 @@ Quadrilateral Elements
 \begin_layout Standard
 For quadrilateral elements each basis function can be decomposed into the
  tensor product of three orthogonal polynomials, multiplied by a unit vector
- for the basis functions in the the vector spaces 
+ for the basis functions in the vector spaces 
 \begin_inset Formula $\mathbb{W}_{1}$
 \end_inset
 
@@ -2660,18 +2855,18 @@ For quadrilateral elements each basis function can be decomposed into the
 
 .
  Two orders of polynomial functions are required in order to fully specify
- the basis functions, if the functions in 
+ the basis functions; if the functions in 
 \begin_inset Formula $\mathbb{W}_{0}$
 \end_inset
 
-are order 
+ are order 
 \begin_inset Formula $k+1$
 \end_inset
 
  the two sets of polynomials can be denoted by 
 \begin_inset Formula 
 \begin{equation}
-F_{i}\left(\xi\right)\equiv\Pi_{i\neq j}^{k+2}\frac{\xi_{i}-\xi}{\xi_{i}-\xi_{j}},\label{eq:F_basis}
+F_{i}\left(\xi\right)\equiv\Pi_{j\neq i}^{k+2}\frac{\xi_{i}-\xi}{\xi_{i}-\xi_{j}},\label{eq:F_basis}
 \end{equation}
 
 \end_inset
@@ -2679,7 +2874,7 @@ F_{i}\left(\xi\right)\equiv\Pi_{i\neq j}^{k+2}\frac{\xi_{i}-\xi}{\xi_{i}-\xi_{j}
 
 \begin_inset Formula 
 \begin{equation}
-G_{i}\left(\xi\right)\equiv\Pi_{i\neq j}^{k+1}\frac{\xi_{i}-\xi}{\xi_{i}-\xi_{j}},\label{eq:G_basis}
+G_{i}\left(\xi\right)\equiv\Pi_{j\neq i}^{k+1}\frac{\xi_{i}-\xi}{\xi_{i}-\xi_{j}},\label{eq:G_basis}
 \end{equation}
 
 \end_inset
@@ -2697,7 +2892,8 @@ for a generic coordinate
 \begin_inset Formula $\xi_{j}$
 \end_inset
 
- depends upon the choice of polynomial functions, eg Legendre polynomials.
+ usually depends upon the choice of quadrature rule, e.g.
+ Gauss-Legendre or Gauss-Legendre-Lobatto.
  Using 
 \begin_inset CommandInset ref
 LatexCommand eqref
@@ -2755,7 +2951,7 @@ those in
 F\left(\hat{\chi}_{1}\right)G\left(\hat{\chi}_{2}\right)G\left(\hat{\chi}_{3}\right)\mathbf{i},\\
 G\left(\hat{\chi}_{1}\right)F\left(\hat{\chi}_{2}\right)G\left(\hat{\chi}_{3}\right)\mathbf{j},\\
 G\left(\hat{\chi}_{1}\right)G\left(\hat{\chi}_{2}\right)F\left(\hat{\chi}_{3}\right)\mathbf{k},
-\end{cases}\label{eq:c_def-1}
+\end{cases}\label{eq:nu_def}
 \end{equation}
 
 \end_inset
@@ -2779,7 +2975,7 @@ and finally those in
  are given by 
 \begin_inset Formula 
 \begin{equation}
-\sigma\left(\bm{\hat{\chi}}\right)\equiv G\left(\hat{\chi}_{1}\right)G\left(\hat{\chi}_{2}\right)G\left(\hat{\chi}_{3}\right),\label{eq:sigma_def}
+\sigma\left(\bm{\hat{\chi}}\right)\equiv G\left(\hat{\chi}_{1}\right)G\left(\hat{\chi}_{2}\right)G\left(\hat{\chi}_{3}\right).\label{eq:sigma_def}
 \end{equation}
 
 \end_inset
@@ -2792,7 +2988,565 @@ Triangular elements
 \end_layout
 
 \begin_layout Standard
-To be populated
+For triangular elements the basis functions can be decomposed into the tensor
+ product of a horizontal basis function defined on a triangular element
+ along with a one-dimensional vertical component that will be the same as
+ in the previous section.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figures/RT0_tri.eps
+	scale 50
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Triangular geometry"
+
+\end_inset
+
+Triangular element with vertices 
+\begin_inset Formula $\nu_{i}$
+\end_inset
+
+, edges opposite vertices 
+\begin_inset Formula $e_{i}$
+\end_inset
+
+ of length 
+\begin_inset Formula $l_{i}$
+\end_inset
+
+.
+ Tangent and (outward) normal vectors to edge 
+\begin_inset Formula $e_{i}$
+\end_inset
+
+ are denoted 
+\begin_inset Formula $\mathbf{t}_{i},\mathbf{n}_{i}$
+\end_inset
+
+ respectively.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Consider the two-dimensional triangular element as shown in Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Triangular geometry"
+
+\end_inset
+
+ with vertices 
+\begin_inset Formula $\nu_{i}$
+\end_inset
+
+ located at 
+\begin_inset Formula $\left(\chi_{1}^{i},\chi_{2}^{i}\right)$
+\end_inset
+
+.
+ The barycentric coordinates 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "coxeter89"
+
+\end_inset
+
+ of a point 
+\begin_inset Formula $\mathbf{\bm{\chi}}=\left(\chi_{1},\chi_{2}\right)$
+\end_inset
+
+ can be expressed as 
+\begin_inset Formula $\bm{\lambda}=\left(\lambda_{1},\lambda_{2},\lambda_{3}\right)$
+\end_inset
+
+ with 
+\begin_inset Formula 
+\begin{eqnarray}
+\lambda_{1} & = & \frac{\left(\chi_{2}^{2}-\chi_{2}^{3}\right)\left(\chi_{1}-\chi_{1}^{3}\right)+\left(\chi_{1}^{3}-\chi_{1}^{2}\right)\left(\chi_{2}-\chi_{2}^{3}\right)}{\left(\chi_{2}^{2}-\chi_{2}^{3}\right)\left(\chi_{1}^{1}-\chi_{1}^{3}\right)+\left(\chi_{1}^{3}-\chi_{1}^{2}\right)\left(\chi_{2}^{1}-\chi_{2}^{3}\right)},\label{eq:barycentric1}\\
+\lambda_{2} & = & \frac{\left(\chi_{2}^{3}-\chi_{2}^{1}\right)\left(\chi_{1}-\chi_{1}^{3}\right)+\left(\chi_{1}^{1}-\chi_{1}^{3}\right)\left(\chi_{2}-\chi_{2}^{3}\right)}{\left(\chi_{2}^{2}-\chi_{2}^{3}\right)\left(\chi_{1}^{1}-\chi_{1}^{3}\right)+\left(\chi_{1}^{3}-\chi_{1}^{2}\right)\left(\chi_{2}^{1}-\chi_{2}^{3}\right)},\label{eq:barycentric2}\\
+\lambda_{3} & = & 1-\lambda_{1}-\lambda_{2},\label{eq:barycentric3}
+\end{eqnarray}
+
+\end_inset
+
+where 
+\begin_inset Formula $\lambda_{j}=1$
+\end_inset
+
+ at vertex 
+\begin_inset Formula $i=j$
+\end_inset
+
+ and 
+\begin_inset Formula $\lambda_{j}=0$
+\end_inset
+
+ at vertex 
+\begin_inset Formula $i\neq j$
+\end_inset
+
+.
+ In two-dimensions the lowest order space on triangles at which the correct
+ 2:1 ratio of velocity to pressure degrees of freedom is obtained is the
+ 
+\begin_inset Formula $BDFM_{1}-P_{1}^{DG}$
+\end_inset
+
+, pair 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "cotter12"
+
+\end_inset
+
+, with the layout of the dofs in 2D shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:BDFM_dofs"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/BDFM1_V0.eps
+	scale 50
+	BoundingBox 0bp 0bp 300bp 250bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/BDFM1_V1.eps
+	scale 50
+	BoundingBox 0bp 0bp 300bp 250bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/BDFM1_V2.eps
+	scale 50
+	BoundingBox 0bp 0bp 300bp 250bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename figures/BDFM1_N.eps
+	scale 50
+	BoundingBox 0bp 0bp 300bp 250bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:BDFM_dofs"
+
+\end_inset
+
+Location of degrees of freedom for the two-dimensional 
+\begin_inset Formula $P_{1}^{+}-BDFM_{1}-P_{1}^{DG}$
+\end_inset
+
+ element complex in spaces (a)
+\begin_inset Formula $\mathbb{W}_{0}:$
+\end_inset
+
+
+\begin_inset Formula $P_{2}^{+}$
+\end_inset
+
+,
+\begin_inset space ~
+\end_inset
+
+(b)
+\begin_inset Formula $\mathbb{W}_{1}:$
+\end_inset
+
+
+\begin_inset Formula $BDFM_{1}$
+\end_inset
+
+,
+\begin_inset space ~
+\end_inset
+
+ (c)
+\begin_inset Formula $\mathbb{W}_{2}:$
+\end_inset
+
+
+\begin_inset Formula $P_{1}^{DG}$
+\end_inset
+
+ and (d) Rotation of 
+\begin_inset Formula $BDFM_{1}$
+\end_inset
+
+ space so that normal components are discontinuous and tangential components
+ are continuous (this is the equivalent of the Nedelec space on quadrilaterals).
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The 2D basis functions are, for 
+\begin_inset Formula $\mathbb{W}_{0}$
+\end_inset
+
+ 
+\begin_inset Formula 
+\begin{equation}
+\gamma_{h}\left(\bm{\hat{\chi}}_{h}\right)\equiv\begin{cases}
+A_{i,j}\lambda_{i}\lambda_{j},\\
+6\lambda_{1}\lambda_{2}\lambda_{3},
+\end{cases}\label{eq:gamma_def_horiz_tri}
+\end{equation}
+
+\end_inset
+
+with 
+\begin_inset Formula $A_{i,j}=1$
+\end_inset
+
+ for 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+\lang british
+
+\begin_inset Formula $i=j$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+\lang english
+ and 
+\begin_inset Formula $A=4$
+\end_inset
+
+ for 
+\begin_inset Formula $i\neq j$
+\end_inset
+
+; the second function in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:gamma_def_horiz_tri"
+
+\end_inset
+
+ is for the cubic bubble function that is added to the 
+\begin_inset Formula $P_{2}$
+\end_inset
+
+ space to give 
+\begin_inset Formula $P_{2}^{+}$
+\end_inset
+
+.
+ The functions in 
+\begin_inset Formula $\mathbb{W}_{1}$
+\end_inset
+
+ are 
+\begin_inset Formula 
+\begin{equation}
+\mathbf{v}_{h}\left(\bm{\hat{\chi}}_{h}\right)\equiv\begin{cases}
+\lambda_{j}\mathbf{t}_{k},\\
+4\lambda_{j}\lambda_{k}\mathbf{t}_{i},
+\end{cases}\label{eq:nu_def_horiz_tri}
+\end{equation}
+
+\end_inset
+
+for degrees of freedom normal to edge 
+\begin_inset Formula $i$
+\end_inset
+
+ at vertex 
+\begin_inset Formula $j$
+\end_inset
+
+ and for degrees of freedom tangent to edge 
+\begin_inset Formula $i$
+\end_inset
+
+ respectively, with 
+\begin_inset Formula $i,j,k$
+\end_inset
+
+ cyclic permutations of the indices 
+\begin_inset Formula $1,2,3$
+\end_inset
+
+.
+ The functions in 
+\begin_inset Formula $\mathbb{W}_{2}$
+\end_inset
+
+ are 
+\begin_inset Formula 
+\begin{equation}
+\sigma_{h}\left(\hat{\bm{\chi}}_{h}\right)\equiv\lambda_{i},\label{eq:sigma_def_horiz_tri}
+\end{equation}
+
+\end_inset
+
+where index 
+\begin_inset Formula $i$
+\end_inset
+
+ indicates the vertex the basis function is associated with.
+ In addition, although not needed for a purely horizontal discretisation,
+ the 2D projection of the 3D functions in 
+\begin_inset Formula $\mathbb{W}_{1}$
+\end_inset
+
+ are needed to build the 3D basis functions.
+ These are 
+\begin_inset Formula 
+\begin{equation}
+\mathbf{c}_{h}\left(\bm{\hat{\chi}}_{h}\right)\equiv\begin{cases}
+\lambda_{j}\mathbf{n}_{k}\\
+4\lambda_{j}\lambda_{k}\mathbf{n}_{i}
+\end{cases}.\label{eq:c_def_horiz_tri}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The basis functions for the 3D extrusion of this element for space 
+\begin_inset Formula $\mathbb{W}_{0}$
+\end_inset
+
+ are given by
+\begin_inset Formula 
+\begin{equation}
+\gamma\left(\bm{\hat{\chi}}\right)\equiv\begin{cases}
+\gamma_{h}\left(\bm{\hat{\chi}}_{h}\right)F\left(\hat{\chi}_{3}\right),\\
+\gamma_{h}\left(\bm{\hat{\chi}}_{h}\right)F\left(\hat{\chi}_{3}\right).
+\end{cases}\label{eq:gamma_def_tri}
+\end{equation}
+
+\end_inset
+
+ The basis functions in 
+\begin_inset Formula $\mathbb{W}_{1}$
+\end_inset
+
+ are given by
+\begin_inset Formula 
+\begin{equation}
+\mathbf{c}\left(\bm{\hat{\chi}}\right)\equiv\begin{cases}
+\mathbf{c}_{h}\left(\bm{\hat{\chi}}_{h}\right)F\left(\hat{\chi}_{3}\right),\\
+\gamma_{h}\left(\bm{\hat{\chi}}_{h}\right)G\left(\hat{\chi}_{3}\right)\mathbf{k},
+\end{cases}\label{eq:c_def_tri}
+\end{equation}
+
+\end_inset
+
+those in 
+\begin_inset Formula $\mathbb{W}_{2}$
+\end_inset
+
+ are given by
+\begin_inset Formula 
+\begin{equation}
+\mathbf{v}\left(\bm{\hat{\chi}}\right)\equiv\begin{cases}
+\mathbf{v}_{h}\left(\bm{\hat{\chi}}_{h}\right)G\left(\hat{\chi}_{3}\right),\\
+\sigma_{h}\left(\hat{\bm{\chi}}_{h}\right)F\left(\hat{\chi}_{3}\right)\mathbf{k},
+\end{cases}\label{eq:nu_def_tri}
+\end{equation}
+
+\end_inset
+
+those in 
+\begin_inset Formula $\mathbb{W}_{\theta}$
+\end_inset
+
+ are given by
+\begin_inset Formula 
+\begin{equation}
+w\left(\bm{\hat{\chi}}\right)\equiv G\left(\hat{\chi}_{1}\right)G\left(\hat{\chi}_{2}\right)F\left(\hat{\chi}_{3}\right)\label{eq:w_def-1}
+\end{equation}
+
+\end_inset
+
+and finally those in 
+\begin_inset Formula $\mathbb{W}_{3}$
+\end_inset
+
+ are given by 
+\begin_inset Formula 
+\begin{equation}
+\sigma\left(\bm{\hat{\chi}}\right)\equiv\sigma_{h}\left(\hat{\bm{\chi}}_{h}\right)G\left(\hat{\chi}_{3}\right).\label{eq:sigma_def-1}
+\end{equation}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -2800,7 +3554,7 @@ Compound elements
 \end_layout
 
 \begin_layout Standard
-To be populated
+To be populated.
 \end_layout
 
 \begin_layout Section
@@ -2817,10 +3571,11 @@ name "sec:Computation-of-dofs"
 \begin_layout Standard
 The number of dofs per element in each function space is the same as the
  number of unique basis functions in that space.
- A dof can be associated with any mesh entity (volume,face,edge,vertex)
+ A dof can be associated with any mesh entity (volume, face, edge, vertex)
  and will inherit the connectivity of its associated mesh entity.
  The number of dofs associated with each entity depends upon the order of
- the function spaces chosen for the lowest order spaces 
+ the function spaces chosen.
+ For the lowest order spaces 
 \begin_inset Formula $k=0$
 \end_inset
 
@@ -2832,7 +3587,7 @@ reference "tab:num_dofs"
 
 \end_inset
 
- (a) and for general order elements in (b)
+ (a) and for general order elements in (b).
 \end_layout
 
 \begin_layout Standard
@@ -3340,7 +4095,7 @@ volume
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $k\left(k+1\right)$
+\begin_inset Formula $2k\left(k+1\right)$
 \end_inset
 
 
@@ -3352,7 +4107,7 @@ volume
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $3k\left(k+1\right)\left(k+2\right)$
+\begin_inset Formula $3k^{2}\left(k+1\right)$
 \end_inset
 
 
@@ -3521,7 +4276,7 @@ Numbers of dofs per mesh entity for the (a) lowest order elements
 \begin_inset Formula $\left(k=0\right)$
 \end_inset
 
- and (b) general order elements
+ and (b) general order elements.
 \end_layout
 
 \end_inset
@@ -3574,11 +4329,7 @@ reference "fig:dof_locations"
 \begin_inset Float figure
 wide false
 sideways false
-status collapsed
-
-\begin_layout Plain Layout
-
-\end_layout
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -3619,7 +4370,7 @@ status collapsed
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename figures/k0_W0_dofs.eps
+	filename figures/k1_W0_dofs.eps
 	scale 40
 
 \end_inset
@@ -3844,7 +4595,7 @@ name "fig:dof_locations"
 \end_inset
 
 Locations of dofs for spaces 
-\begin_inset Formula $\mathbb{W}_{0}..\mathbb{W}_{3}$
+\begin_inset Formula $\mathbb{W}_{0},..,\mathbb{W}_{3}$
 \end_inset
 
  for (left column) 
@@ -3884,7 +4635,7 @@ reference "fig:dof_locations-Wtheta"
 
 \end_inset
 
-
+.
 \end_layout
 
 \begin_layout Standard
@@ -4006,9 +4757,10 @@ name "sec:Computation-of-dofmaps"
 
 \begin_layout Standard
 The cell dofmaps for each space contain the indices in a global array of
- all the dof's that have none zero support for a given cell, i.e 
+ all the dofs that have none zero support for a given cell, i.e.
+ 
 \family typewriter
-dofmap_w1(i,:)
+dofmap_w1(:,i)
 \family default
  will return the indices of all the dofs in cell 
 \family typewriter
@@ -4019,12 +4771,12 @@ for space
 \end_inset
 
 .
- The dofmaps for other mesh entities (faces,edges,vertices) could in principle
+ The dofmaps for other mesh entities (faces, edges, vertices) could in principle
  be computed, but these are not in general needed.
  The ordering of the dofs within the cell dofmap is of importance as we
  need to know which basis function to associate that dof.
  The assumption made about the ordering of the dofs within the cell dofmap
- is that are in the the order 
+ is that they are in the the order 
 \end_layout
 
 \begin_layout Standard
@@ -4045,7 +4797,14 @@ status open
 \align center
 
 \family typewriter
-dofmap_w2(i,:)=[dofs_in_volume,dofs_on_faces,dofs_on_edges,dofs_on_vertices]
+dofmap_w2(:,i)=[dofs_in_volume,dofs_on_faces,dofs_on_edges,dofs_on_vertices];
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset VSpace smallskip
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -4064,7 +4823,8 @@ reference "sec:Reference-Element"
 
 \end_inset
 
-, eg for 
+, e.g.
+ for 
 \begin_inset Formula $k=0$
 \end_inset
 
@@ -4076,7 +4836,7 @@ reference "sec:Reference-Element"
 \family typewriter
 i
 \family default
- will return:
+ will return
 \end_layout
 
 \begin_layout Standard
@@ -4097,7 +4857,14 @@ status open
 \align center
 
 \family typewriter
-dofmap_w2(i,:)=[u_face1,u_face2,u_face3,u_face4,u_face5,u_face6]
+dofmap_w2(:,i)=[u_face1,u_face2,u_face3,u_face4,u_face5,u_face6].
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset VSpace smallskip
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -4106,12 +4873,12 @@ dofmap_w2(i,:)=[u_face1,u_face2,u_face3,u_face4,u_face5,u_face6]
 \end_layout
 
 \begin_layout Standard
-for comparison the same operator for a C-grid finite difference model (such
+For comparison, the same operator for a C-grid finite difference model (such
  as ENDGame) would return, for a cell located at 
 \begin_inset Formula $\left(i-\frac{1}{2},k-\frac{1}{2},k-\frac{1}{2}\right)$
 \end_inset
 
-:
+,
 \end_layout
 
 \begin_layout Standard
@@ -4132,23 +4899,30 @@ status open
 \align center
 
 \family typewriter
-dofmap_endgame(i,j,k,:)=[
+dofmap_endgame(:,i,j,k)=[
 \begin_inset Formula $u_{i-1,j-\frac{1}{2},k-\frac{1}{2}},u_{i,j-\frac{1}{2},k-\frac{1}{2}},v_{i-\frac{1}{2},j-1,k-\frac{1}{2}},v_{i-\frac{1}{2},j,k-\frac{1}{2}},w_{i-\frac{1}{2},j-\frac{1}{2},k-1},w_{i-\frac{1}{2}.j-\frac{1}{2},k}$
 \end_inset
 
-]
+].
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset VSpace smallskip
+\end_inset
+
+
 \end_layout
 
 \end_inset
 
-.
+
 \end_layout
 
 \begin_layout Standard
-With higher order elements there is potentially more that one dof per mesh
- entity and a further ordering of the dofs is required and the choice made
- here is to use lexicographical ordering along the dimensions of the associated
- mesh entity, i.e.
+With higher order elements there is potentially more than one dof per mesh
+ entity and a further ordering of the dofs is required.
+ The choice made here is to use lexicographical ordering along the dimensions
+ of the associated mesh entity, i.e.
  for 
 \begin_inset Formula $k=2$
 \end_inset
@@ -4161,7 +4935,7 @@ With higher order elements there is potentially more that one dof per mesh
 \begin_inset Formula $\left[q\left(\chi_{1}^{1},0,0\right),q\left(\chi_{1}^{2},0,0\right)\right]$
 \end_inset
 
-where 
+ where 
 \begin_inset Formula $\chi_{1}^{i}$
 \end_inset
 
@@ -4189,19 +4963,34 @@ name "sec:Quadrature"
 \end_layout
 
 \begin_layout Standard
-Using Gaussian quadrature of order 
-\begin_inset Formula $n$
+A quadrature rule seeks to approximate the integral of a function 
+\begin_inset Formula $y$
 \end_inset
 
-, for the integral 
+ by a weighted sum of the function evaluated at certain quadrature points
+ 
 \begin_inset Formula 
 \begin{equation}
-\int_{-1}^{+1}y(x)dx\approx\sum_{i=1}^{n}y\left(x_{i}\right)w_{i}\label{eq:guass1}
+\int_{-1}^{+1}y(x)dx\approx\sum_{i=1}^{n}y\left(x_{i}\right)w_{i}. \label{eq:guass1}
 \end{equation}
 
 \end_inset
 
- provides the exact value exact for polynomials up to order 
+The number and location of the quadrature points is determined by the type
+ of rule use.
+ For Gauss-Legendre quadrature, the quadrature points 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ are the zeros of the associates Legendre polynomials and for 
+\begin_inset Formula $n$
+\end_inset
+
+ points, for the integral is exact for polynomials 
+\begin_inset Formula $y$
+\end_inset
+
+ up to order 
 \begin_inset Formula $2n-1$
 \end_inset
 
@@ -4225,15 +5014,33 @@ Using Gaussian quadrature of order
  order polynomials) are given in Table 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "tab:quad"
+reference "tab:GL_quad"
 
 \end_inset
 
 .
+ Gauss-Legendre-Lobatto quadrature arranges for the end points of the domain
+ to be included in the set 
+\begin_inset Formula $x_{i},$
+\end_inset
+
+ however it is only accurate up to order 
+\begin_inset Formula $2n-3$
+\end_inset
+
+ polynomials, Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:GLL_quad"
+
+\end_inset
+
+.
+ 
 \begin_inset Float table
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -4533,7 +5340,7 @@ status open
 \begin_layout Plain Layout
 \begin_inset CommandInset label
 LatexCommand label
-name "tab:quad"
+name "tab:GL_quad"
 
 \end_inset
 
@@ -4545,7 +5352,333 @@ Quadrature points
 \begin_inset Formula $w_{i}$
 \end_inset
 
+ for Gauss-Legendre quadrature.
+\end_layout
 
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="3">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $n$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $x_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $w_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\pm1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0,\,\pm1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{4}{3},\,\frac{1}{3},\,\frac{1}{3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\pm1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{1}{6}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\pm\frac{1}{\sqrt{5}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{5}{6}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\pm1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{1}{10}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\pm\sqrt{\frac{3}{7}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{49}{90}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{32}{45}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:GLL_quad"
+
+\end_inset
+
+Quadrature points 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ and weights 
+\begin_inset Formula $w_{i}$
+\end_inset
+
+ for Gauss-Legendre-Lobatto quadrature.
 \end_layout
 
 \end_inset
@@ -4566,7 +5699,7 @@ Integration over the element can be transformed to the interval
  through
 \begin_inset Formula 
 \begin{equation}
-\int_{x^{m}}^{x^{m+1}}y(x)dx=\frac{h}{2}\int_{-1}^{+1}y\left(\frac{h}{2}z+x^{m+\frac{1}{2}}\right).\label{eq:gauss2}
+\int_{x^{m}}^{x^{m+1}}y(x)dx=\frac{h}{2}\int_{-1}^{+1}y\left(\frac{h}{2}z+x^{m+\frac{1}{2}}\right)dz.\label{eq:gauss2}
 \end{equation}
 
 \end_inset
@@ -4579,57 +5712,23 @@ where
 \begin_inset Formula $x^{m+\frac{1}{2}}\equiv\frac{1}{2}\left(x^{m+1}+x^{m}\right).$
 \end_inset
 
- The order of the Gaussian quadrature is chosen such that it will be exact
- for all linear terms under the assumption of constant determinant of the
- Jacobian, this gives the order 
-\begin_inset Formula $n=4$
+ For Dynamo the order of the Gaussian quadrature rule is chosen such that
+ it will be exact for all linear terms under the assumption of constant
+ determinant of the Jacobian; this gives for Gauss-Legendre quadrature the
+ order 
+\begin_inset Formula $n=k+2$
 \end_inset
 
-.
+ where 
+\begin_inset Formula $k$
+\end_inset
+
+ is the order of the 
+\begin_inset Formula $\mathbb{W}_{3}$
+\end_inset
+
+ space.
  
-\end_layout
-
-\begin_layout Standard
-\begin_inset Newpage newpage
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
-Work To Do
-\end_layout
-
-\begin_layout Enumerate
-Galerkin projection for 
-\begin_inset Formula $\mathbb{W}_{1}$
-\end_inset
-
--Iva
-\end_layout
-
-\begin_layout Enumerate
-Galerkin projection for 
-\begin_inset Formula $\mathbb{W}_{2}$
-\end_inset
-
--Iva
-\end_layout
-
-\begin_layout Enumerate
-Piola transform for all spaces-Tom
-\end_layout
-
-\begin_layout Enumerate
-Construct and discretise test equation set (Boussinesq)
-\end_layout
-
-\begin_layout Enumerate
-Document formulation 
-\end_layout
-
-\begin_layout Enumerate
-Add in timestepping to code
 \end_layout
 
 \end_body
