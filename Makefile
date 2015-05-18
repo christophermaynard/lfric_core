@@ -8,16 +8,16 @@
 # A trio of targets are offered for various levels of debugging support and
 # speed of execution.
 #
+.PHONY: fast-debug
+fast-debug: OPTIMISATION?=SAFE
+fast-debug: SYMBOLS?=YES
+fast-debug: build
+
 .PHONY: full-debug
 full-debug: OPTIMISATION?=NONE
 full-debug: SYMBOLS?=YES
 full-debug: CHECKS?=YES
 full-debug: build
-
-.PHONY: fast-debug
-fast-debug: OPTIMISATION?=SAFE
-fast-debug: SYMBOLS?=YES
-fast-debug: build
 
 .PHONY: production
 production: OPTIMISATION?=RISKY
