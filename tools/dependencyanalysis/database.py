@@ -59,9 +59,11 @@ CREATE TABLE IF NOT EXISTS programs (name TEXT PRIMARY KEY);
         # it isn't. No other query can find the database inconsistent.
         with self._database:
             self._database.executescript( '''
-DELETE FROM dependencies WHERE (SELECT  program_unit AS dependor FROM provides WHERE file = "{filename}");
-DELETE FROM programs WHERE (SELECT program_unit AS dependor FROM provides WHERE file = "{filename}");
+CREATE TEMPORARY TABLE _units AS SELECT  program_unit FROM provides WHERE file = "{filename}";
+DELETE FROM dependencies WHERE dependor IN _units OR dependee IN _units;
+DELETE FROM programs WHERE name IN _units;
 DELETE FROM provides WHERE file = "{filename}";
+DROP TABLE _units;
                                           '''.format( filename=filename ) )
 
     ###########################################################################
@@ -115,9 +117,9 @@ INSERT OR REPLACE INTO programs VALUES ( "{name}" );
     #
     def getDependencySources( self, filename ):
         cursor = self._database.cursor()
-        self._database.execute( 'SELECT DISTINCT p.file AS dependent_file, dp.file AS dependee_file, d.dependee AS dependee FROM dependencies AS d, provides AS p, provides as dp' \
-                                + ' WHERE p.file = ? AND d.dependor = p.program_unit AND dp.program_unit = d.dependee ORDER BY d.dependee', \
-                                    [filename] )
+        cursor.execute( 'SELECT DISTINCT p.file AS dependent_file, dp.file AS dependee_file, d.dependee AS dependee FROM dependencies AS d, provides AS p, provides as dp' \
+                        + ' WHERE p.file = ? AND d.dependor = p.program_unit AND dp.program_unit = d.dependee ORDER BY d.dependee', \
+                        [filename] )
 
         for row in cursor.fetchall():
             yield row
@@ -130,7 +132,7 @@ INSERT OR REPLACE INTO programs VALUES ( "{name}" );
     #
     # Arguments:
     #
-    # To-do:
+    # TODO:
     #   Currently the recursion is handled in Python. As of 3.8.3 sqlite
     #   supports recursive queries. Once performance becomes an issue and
     #   this version of the DBMS is more prevelent a move should be made.
@@ -142,7 +144,7 @@ INSERT OR REPLACE INTO programs VALUES ( "{name}" );
         for row in cursor.fetchall():
             sources = self._recurseDependencies( row['file'], row['program_unit'] )
             uniqueSources = set( sources )
-            yield row['program_unit'], uniqueSources
+            yield row['program_unit'], list(uniqueSources)
 
     ###########################################################################
     # Recursively descend the dependency tree.
@@ -179,6 +181,9 @@ INSERT OR REPLACE INTO programs VALUES ( "{name}" );
     # Get all the dependency relationships.
     #
     # Arguments:
+    #
+    # Return:
+    #   A generator yielding (dependor, [dependee]) tuples.
     #
     def getAllFileDependencies( self ):
         cursor = self._database.cursor()

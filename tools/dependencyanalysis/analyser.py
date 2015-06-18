@@ -55,6 +55,9 @@ class Analyser():
     ###########################################################################
     # Scan the source tree.
     #
+    # TODO: Rather than create a temporary directory for each file processed
+    #       this should be a property of the object.
+    #
     # Arguments:
     #   sourceFilename - The name of the object to scan.
     #

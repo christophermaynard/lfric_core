@@ -25,10 +25,14 @@ production: SYMBOLS?=YES
 production: build
 
 .PHONY: build
-build:
+build: tools
 	$(MAKE) -C src/dynamo OPTIMISATION=$(OPTIMISATION) \
 	                      SYMBOLS=$(SYMBOLS) CHECKS=$(CHECKS)
 	$(MAKE) -C src/test
+
+.PHONY: tools
+tools:
+	$(MAKE) -C tools
 
 # The test target allows tests to be run on their own. Since there is no way
 # to know which of the above builds is desired this target does not list a
