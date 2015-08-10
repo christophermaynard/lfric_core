@@ -46,7 +46,7 @@ test:
 # Build the projects documentation. This includes both API and design documents.
 .PHONY: doc docs
 doc docs:
-	$(MAKE) -C Docs
+	$(MAKE) -C documentation
 
 # Clean only the dynamo build. This leaves pFUnit alone.
 #
