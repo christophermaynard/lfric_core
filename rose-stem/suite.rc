@@ -121,6 +121,7 @@
                             """
 {% endmacro %}
 {#############################################################################}
+{# Godliness, it is, afterall, next to cleanliness                             #}
 
 {{ prepare_pipeline( 'documentation' ) }}
 
@@ -179,7 +180,7 @@
                             mkdir -p {{database_directory}}
                             make -C $SOURCE_DIRECTORY {{target}}
                             RC=$?
-                            rm -rf {{database_directory}}
+                            rm -rf $DYNAMO_DEPENDENCY_DB
                             exit $RC
                             )
                             """
