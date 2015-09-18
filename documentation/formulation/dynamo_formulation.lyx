@@ -598,6 +598,31 @@ reference "sec:Reference-Element"
  
 \end_layout
 
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+\begin_inset Formula $\mathbb{W}_{2V},$
+\end_inset
+
+ The space of vector functions based on the vertical part of 
+\begin_inset Formula $\mathbb{W}_{2}$
+\end_inset
+
+ to be used as part of the multigrid solver.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+\begin_inset Formula $\mathbb{W}_{2H},$
+\end_inset
+
+ The space of vector functions based on the horizontal part of 
+\begin_inset Formula $\mathbb{W}_{2}$
+\end_inset
+
+ to be used in later developments.
+ 
+\end_layout
+
 \begin_layout Standard
 The associated test/trial functions for each function space are 
 \begin_inset Formula $\gamma,\,\mathbf{c},\,\mathbf{v}\,,\sigma$
@@ -5121,7 +5146,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Tabular
-<lyxtabular version="3" rows="6" columns="5">
+<lyxtabular version="3" rows="8" columns="5">
 <features rotate="0" tabularvalignment="middle">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
@@ -5424,11 +5449,135 @@ volume
 </cell>
 </row>
 <row>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
 \begin_inset Formula $\mathbb{W}_{\theta}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1^{†}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathbb{W}_{2V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1^{†}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathbb{W}_{2H}$
 \end_inset
 
 
@@ -5519,7 +5668,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Tabular
-<lyxtabular version="3" rows="6" columns="5">
+<lyxtabular version="3" rows="8" columns="5">
 <features rotate="0" tabularvalignment="middle">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
@@ -5819,11 +5968,135 @@ volume
 </cell>
 </row>
 <row>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
 \begin_inset Formula $\mathbb{W}_{\theta}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(k+1\right)^{2†}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $k\left(k+1\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathbb{W}_{2V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(k+1\right)^{2†}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $k\left(k+1\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathbb{W}_{2H}$
 \end_inset
 
 
@@ -5871,7 +6144,7 @@ volume
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $k\left(k+1\right)^{2}$
+\begin_inset Formula $2k\left(k+1\right)^{2}$
 \end_inset
 
 
@@ -5913,8 +6186,29 @@ Numbers of dofs per mesh entity for the (a) lowest order elements
 \end_inset
 
  and (b) general order elements.
- †Only the top and bottom faces live in
+ †For 
 \begin_inset Formula $\mathbb{W}_{θ}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbb{W}_{2V}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbb{W}_{2H}$
+\end_inset
+
+ some faces do not include degrees of freedom.
+ There are no degrees of freedom on i) vertical faces for 
+\begin_inset Formula $\mathbb{W}_{θ}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbb{W}_{2V}$
+\end_inset
+
+ and ii) top and bottom faces for 
+\begin_inset Formula $\mathbb{W}_{2H}$
 \end_inset
 
 .
@@ -6270,6 +6564,15 @@ The corresponding diagrams for
 LatexCommand ref
 reference "fig:dof_locations-Wtheta"
 
+\end_inset
+
+.
+ Also need a similar figure for 
+\begin_inset Formula $\mathbb{W}_{2V}$
+\end_inset
+
+ and for 
+\begin_inset Formula $\mathbb{W}_{2H}$
 \end_inset
 
 .

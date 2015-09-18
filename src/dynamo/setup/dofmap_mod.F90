@@ -7,14 +7,14 @@
 !
 !-------------------------------------------------------------------------------
 
-!> @brief A module that holds dofmaps for the five element spaces 
+!> @brief A module that holds dofmaps for the seven element spaces 
 !>
-!> @detail The dofmaps for the five element spaces are stored in this module. The 
+!> @detail The dofmaps for the seven element spaces are stored in this module. The 
 !>         module also contains the code to calculate the dofmaps. This will eventually
 !>         be replaced with code that reads them in from a file.
 
 !-------------------------------------------------------------------------------
-! Computes the dofmaps for the 5 element spaces given grid connectivity information
+! Computes the dofmaps for the 7 element spaces given grid connectivity information
 ! requires: list of cell next to current cell
 !           list of vertices on this cell
 !-------------------------------------------------------------------------------
@@ -44,6 +44,12 @@ integer, allocatable :: w3_dofmap(:,:)
 !> A two dim integer arrays which hold the indirection maps (or dofmaps)
 !! for the whole Wtheta function space over the bottom level of the domain.
 integer, allocatable :: wtheta_dofmap(:,:)
+!> A two dim integer arrays which hold the indirection maps (or dofmaps)
+!! for the whole W2V function space over the bottom level of the domain.
+integer, allocatable :: w2v_dofmap(:,:)
+!> A two dim integer arrays which hold the indirection maps (or dofmaps)
+!! for the whole W2H function space over the bottom level of the domain.
+integer, allocatable :: w2h_dofmap(:,:)
 
 !> The index within the dofmap of the last "owned" dof in the W0 function space
 integer              :: w0_last_dof_owned
@@ -85,6 +91,23 @@ integer              :: wtheta_last_dof_annexed
 !> The index within the dofmap of the last of the halo dofs (from the various
 !> depths of halo) in the Wtheta function space
 integer, allocatable :: wtheta_last_dof_halo(:)
+!> The index within the dofmap of the last "owned" dof in the W2V function space
+integer              :: w2v_last_dof_owned
+!> The index within the dofmap of the last "annexed" dof in the W2V function
+!> space ("Annexed" dofs that those that are not owned, but are on owned cells)
+integer              :: w2v_last_dof_annexed
+!> The index within the dofmap of the last of the halo dofs (from the various
+!> depths of halo) in the W2V function space
+integer, allocatable :: w2v_last_dof_halo(:)
+!> The index within the dofmap of the last "owned" dof in the W2H function space
+integer              :: w2h_last_dof_owned
+!> The index within the dofmap of the last "annexed" dof in the W2H function
+!> space ("Annexed" dofs that those that are not owned, but are on owned cells)
+integer              :: w2h_last_dof_annexed
+!> The index within the dofmap of the last of the halo dofs (from the various
+!> depths of halo) in the W2H function space
+integer, allocatable :: w2h_last_dof_halo(:)
+
 
 !> A two dim integer array which holds the orientation data for the
 !> W0 function space
@@ -101,6 +124,12 @@ integer, allocatable :: w3_orientation(:,:)
 !> A two dim integer array which holds the orientation data for the
 !> Wtheta function space
 integer, allocatable :: wtheta_orientation(:,:)
+!> A two dim integer array which holds the orientation data for the
+!> W2V function space
+integer, allocatable :: w2v_orientation(:,:)
+!> A two dim integer array which holds the orientation data for the
+!> W2H function space
+integer, allocatable :: w2h_orientation(:,:)
 
 
 !-------------------------------------------------------------------------------
@@ -113,17 +142,17 @@ contains
 !> @param[in] function_space The function space
 !> @param[in] ndf_entity     The number of dofs on each grid entity
 !> @param[in] w_dof_entity ndofs for vert, edge, face, cell, exterior and
-!!interior collums for W0-Wtheta
+!!interior collums for W0-W2H
 !> @param[in] w_unique_dofs ndofs for global, local, exterior & interior dofs in
-!!collums for W0-Wtheta
+!!collums for W0-W2H
 subroutine get_dofmap(mesh, w_dof_entity, w_unique_dofs)
   
   implicit none
   
   type (mesh_type), intent(in) :: mesh
 
-  integer, intent(in) :: w_dof_entity(5,0:5)
-  integer, intent(in) :: w_unique_dofs(5,4) 
+  integer, intent(in) :: w_dof_entity(7,0:5)
+  integer, intent(in) :: w_unique_dofs(7,4) 
 
   integer(i_def) :: ncells
 
@@ -135,11 +164,15 @@ subroutine get_dofmap(mesh, w_dof_entity, w_unique_dofs)
   allocate( w2_dofmap(w_unique_dofs(3,2),0:ncells) )
   allocate( w3_dofmap(w_unique_dofs(4,2),0:ncells) )
   allocate( wtheta_dofmap(w_unique_dofs(5,2),0:ncells) )
+  allocate( w2v_dofmap(w_unique_dofs(6,2),0:ncells) )
+  allocate( w2h_dofmap(w_unique_dofs(7,2),0:ncells) )
   allocate( w0_last_dof_halo(mesh%get_halo_depth()) )
   allocate( w1_last_dof_halo(mesh%get_halo_depth()) )
   allocate( w2_last_dof_halo(mesh%get_halo_depth()) )
   allocate( w3_last_dof_halo(mesh%get_halo_depth()) )
   allocate( wtheta_last_dof_halo(mesh%get_halo_depth()) )
+  allocate( w2v_last_dof_halo(mesh%get_halo_depth()) )
+  allocate( w2h_last_dof_halo(mesh%get_halo_depth()) )
 
   call dofmap_populate( mesh, &
                         ncells, &
@@ -186,6 +219,27 @@ subroutine get_dofmap(mesh, w_dof_entity, w_unique_dofs)
                         wtheta_last_dof_owned,&
                         wtheta_last_dof_annexed,&
                         wtheta_last_dof_halo)
+
+  call dofmap_populate( mesh, &
+                        ncells, &
+                        w_unique_dofs(6,2), &
+                        w_dof_entity(6,:), &
+                        select_entity_w2v, &
+                        w2v_dofmap, &
+                        w2v_last_dof_owned,&
+                        w2v_last_dof_annexed,&
+                        w2v_last_dof_halo)
+
+  call dofmap_populate( mesh, &
+                        ncells, &
+                        w_unique_dofs(7,2), &
+                        w_dof_entity(7,:), &
+                        select_entity_w2h, &
+                        w2h_dofmap, &
+                        w2h_last_dof_owned,&
+                        w2h_last_dof_annexed,&
+                        w2h_last_dof_halo)
+
 
 end subroutine get_dofmap
 
@@ -318,7 +372,7 @@ subroutine dofmap_populate( mesh, &
 
 ! assign dofs for connectivity (3,2) (dofs on faces)
       do j=1,nfaces_h
-        if (any(select_entity % faces.eq.j)) then
+        if (any(select_entity % faces==j)) then
           jd = mesh%get_face_on_cell(j,i) 
           if(mesh%is_edge_owned(j,i))then
             if ( dofmap_d2(1,jd) == 0 ) then
@@ -340,7 +394,7 @@ subroutine dofmap_populate( mesh, &
       if(mesh%is_cell_owned(i))then
         id0 = id_owned
         do j=nfaces_h+1,nfaces
-          if (any(select_entity % faces.eq.j)) then
+          if (any(select_entity % faces==j)) then
             jd = mesh%get_face_on_cell(j,i) 
             if ( dofmap_d2(1,jd) == 0 ) then
               do k=1,ndof_entity(2)
@@ -358,7 +412,7 @@ subroutine dofmap_populate( mesh, &
       else
         id0 = id_halo
         do j=nfaces_h+1,nfaces
-          if (any(select_entity % faces.eq.j)) then
+          if (any(select_entity % faces==j)) then
             jd = mesh%get_face_on_cell(j,i) 
             if ( dofmap_d2(1,jd) == 0 ) then
               do k=1,ndof_entity(2)
@@ -465,7 +519,7 @@ subroutine dofmap_populate( mesh, &
       else if( dofmap_d3(k,i) < 0 )then
         dofmap(dof_idx,i) = id_owned - (dofmap_d3(k,i) + 1)
       end if
-      if( dofmap_d3(k,i).ne.0 )then
+      if( dofmap_d3(k,i)/=0 )then
         dof_idx = dof_idx + 1
       endif
     end do
@@ -478,7 +532,7 @@ subroutine dofmap_populate( mesh, &
         else if( dofmap_d2(k,jd) < 0 )then
           dofmap(dof_idx,i) = id_owned - (dofmap_d2(k,jd) + 1)
         end if
-        if( dofmap_d2(k,jd).ne.0 )then
+        if( dofmap_d2(k,jd)/=0 )then
           dof_idx = dof_idx + 1
         endif
       end do
@@ -492,7 +546,7 @@ subroutine dofmap_populate( mesh, &
         else if( dofmap_d1(k,jd) < 0 )then
           dofmap(dof_idx,i) = id_owned - (dofmap_d1(k,jd) + 1)
         end if
-        if( dofmap_d1(k,jd).ne.0 )then
+        if( dofmap_d1(k,jd)/=0 )then
           dof_idx = dof_idx + 1
         endif
       end do
@@ -506,7 +560,7 @@ subroutine dofmap_populate( mesh, &
         else if( dofmap_d0(k,jd) < 0 )then
           dofmap(dof_idx,i) = id_owned - (dofmap_d0(k,jd) + 1)
         end if
-        if( dofmap_d0(k,jd).ne.0 )then
+        if( dofmap_d0(k,jd)/=0 )then
           dof_idx = dof_idx + 1
         endif
       end do
@@ -535,10 +589,13 @@ subroutine get_orientation(mesh, w_unique_dofs, w_dof_entity)
   implicit none
 
   type (mesh_type), intent(in) :: mesh
-  integer,          intent(in) :: w_unique_dofs(5,4)
-  integer,          intent(in) :: w_dof_entity(5,0:5)
+  integer,          intent(in) :: w_unique_dofs(7,4)
+  integer,          intent(in) :: w_dof_entity(7,0:5)
 
   integer(i_def) :: ncells
+  logical        :: is_scalar(7)
+
+  is_scalar(:) = (/ .true., .false., .false., .true., .true., .false., .false. /)
 
   ncells = mesh%get_ncells_2d()
 
@@ -547,29 +604,51 @@ subroutine get_orientation(mesh, w_unique_dofs, w_dof_entity)
   allocate( w2_orientation(0:ncells,w_unique_dofs(3,2)) )
   allocate( w3_orientation(0:ncells,w_unique_dofs(4,2)) )
   allocate( wtheta_orientation(0:ncells,w_unique_dofs(5,2)) )
-
+  allocate( w2v_orientation(0:ncells,w_unique_dofs(6,2)) )
+  allocate( w2h_orientation(0:ncells,w_unique_dofs(7,2)) )
 
   call orientation_populate( mesh, ncells,                                &
                              w_unique_dofs(1,2),                          &
                              w_dof_entity(1,:),                           &
+                             is_scalar(1),                                &
+                             select_entity_all,                           &
                              w0_orientation )
-
   call orientation_populate( mesh, ncells,                                &
                              w_unique_dofs(2,2),                          &
                              w_dof_entity(2,:),                           &
+                             is_scalar(2),                                &
+                             select_entity_all,                           &
                              w1_orientation )
   call orientation_populate( mesh, ncells,                                &
                              w_unique_dofs(3,2),                          &
                              w_dof_entity(3,:),                           &
+                             is_scalar(3),                                &
+                             select_entity_all,                           &
                              w2_orientation )
   call orientation_populate( mesh, ncells,                                &
                              w_unique_dofs(4,2),                          &
                              w_dof_entity(4,:),                           &
+                             is_scalar(4),                                &
+                             select_entity_all,                           &
                              w3_orientation )
   call orientation_populate( mesh, ncells,                                &
                              w_unique_dofs(5,2),                          &
                              w_dof_entity(5,:),                           &
+                             is_scalar(5),                                &
+                             select_entity_theta,                         &
                              wtheta_orientation )
+  call orientation_populate( mesh, ncells,                                &
+                             w_unique_dofs(6,2),                          &
+                             w_dof_entity(6,:),                           &
+                             is_scalar(6),                                &
+                             select_entity_w2v,                           &
+                             w2v_orientation )
+  call orientation_populate( mesh, ncells,                                &
+                             w_unique_dofs(7,2),                          &
+                             w_dof_entity(7,:),                           &
+                             is_scalar(7),                                &
+                             select_entity_w2h,                           &
+                             w2h_orientation )
 
 end subroutine get_orientation
 
@@ -580,17 +659,21 @@ end subroutine get_orientation
 !>                         single cell
 !> @param[in] ndf_entity   The number of dofs associated with each grid
 !>                         entity in a single cell
+!> @param[in] is_scalar    Logical: true (scalar-space) or false (vector-space)
+!> @param[in] select_entity  Data type that holds lists of entities to use in
+!! the function space
 !> @param[out] orientation The output orientation
-subroutine orientation_populate(mesh, ncells, ndf, ndf_entity, orientation)
+subroutine orientation_populate(mesh, ncells, ndf, ndf_entity, is_scalar, select_entity, orientation)
 
-  use reference_element_mod, only: nfaces_h, nedges_h
-  
+  use reference_element_mod, only: nfaces_h, nedges_h, select_entity_type
   implicit none
 
   type (mesh_type), intent(in) :: mesh
   integer, intent(in)  :: ncells
   integer, intent(in)  :: ndf
   integer, intent(in)  :: ndf_entity(0:5)
+  logical, intent(in)  :: is_scalar
+  type(select_entity_type), intent(in) :: select_entity
   integer, intent(out) :: orientation(0:ncells,ndf)
   
 
@@ -603,24 +686,17 @@ subroutine orientation_populate(mesh, ncells, ndf, ndf_entity, orientation)
   integer :: vert_1, vert_1_next
 
 ! ndof indicator
-  integer :: ndof_diff
+!  integer :: ndof_diff
 
   allocate( face_orientation(nfaces_h, ncells) )
   allocate( edge_orientation(nedges_h, ncells) )
 
-! Catch scalar space for theta
-! Compare: sum(n_entity*ndf_per_entity) with 2*ndf_exterior + ndf_interior
-! This is specific to QUADS (the n_entity values)
-  ndof_diff = 8*ndf_entity(0) + 12*ndf_entity(1) + 6*ndf_entity(2) + 1*ndf_entity(3)
-  ndof_diff = ndof_diff - (2*ndf_entity(4) + ndf_entity(5))
-
 ! Check if this is vector or scalar space
-  if ( (ndf_entity(1) == 0 .and. ndf_entity(2) == 0) &
-  .or. ndf_entity(0) /= 0 .or. ndof_diff /= 0) then
+  if (is_scalar) then
 ! orientation is not needed for scalar spaces (but set them to 1 anyway)  
     do cell = 0, ncells
       do df = 1,ndf
-       orientation(cell,df) = 1   
+       orientation(cell,df) = 1
       end do
     end do
     return
@@ -693,7 +769,6 @@ subroutine orientation_populate(mesh, ncells, ndf, ndf_entity, orientation)
     end do
   end do
 
-
 ! Populate cell orientation  
   do cell = 0, ncells
 ! initialise all orientations to 1
@@ -707,10 +782,12 @@ subroutine orientation_populate(mesh, ncells, ndf, ndf_entity, orientation)
 ! only applicable if ndf_entity(2) > 0
     df = ndf_entity(3) + 1 
     do face = 1,nfaces_h
-      do df_on_face = 1,ndf_entity(2) 
-        orientation(cell,df) = face_orientation(face,cell)
-        df = df + 1
-      end do
+      if (any(select_entity % faces==face)) then
+        do df_on_face = 1,ndf_entity(2)
+          orientation(cell,df) = face_orientation(face,cell)
+          df = df + 1
+        end do
+      end if
     end do
 ! ! Overwrite dof orientation with edge orientation
 ! only applicable if ndf_entity(1) > 0

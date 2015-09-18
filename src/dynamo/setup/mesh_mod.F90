@@ -787,12 +787,12 @@ contains
 
 
     allocate(ncells_per_colour(size(self%ncells_per_colour_w0)), stat=astat)
-    if(astat.ne.0) call log_event("[Mesh Mod] Unable to allocate "//&
+    if(astat/=0) call log_event("[Mesh Mod] Unable to allocate "//&
                                   "ncells_per_colour_w0.", LOG_LEVEL_ERROR)
 
     allocate(colour_map(self%ncolours, size(self%cells_in_colour_w0, 2)), &
              stat=astat)
-    if(astat.ne.0) call log_event("[Mesh Mod] Unable to allocate "//&
+    if(astat/=0) call log_event("[Mesh Mod] Unable to allocate "//&
                                   "w0 colour_map.", LOG_LEVEL_ERROR)
 
     ncolours = self%ncolours
@@ -819,12 +819,12 @@ contains
 
 
     allocate(ncells_per_colour(size(self%ncells_per_colour_w1)), stat=astat)
-    if(astat.ne.0) call log_event("[Mesh Mod] Unable to allocate "//&
+    if(astat/=0) call log_event("[Mesh Mod] Unable to allocate "//&
                                   "ncells_per_colour_w1.", LOG_LEVEL_ERROR)
 
     allocate(colour_map(self%ncolours, size(self%cells_in_colour_w1, 2)), &
              stat=astat)
-    if(astat.ne.0) call log_event("[Mesh Mod] Unable to allocate "//&
+    if(astat/=0) call log_event("[Mesh Mod] Unable to allocate "//&
                                   "w1 colour_map.", LOG_LEVEL_ERROR)
 
     ncolours = self%ncolours
@@ -851,12 +851,12 @@ contains
 
 
     allocate(ncells_per_colour(size(self%ncells_per_colour_w2)), stat=astat)
-    if(astat.ne.0) call log_event("[Mesh Mod] Unable to allocate "//&
+    if(astat/=0) call log_event("[Mesh Mod] Unable to allocate "//&
                                   "ncells_per_colour_w2.", LOG_LEVEL_ERROR)
 
     allocate(colour_map(self%ncolours, size(self%cells_in_colour_w2, 2)), &
              stat=astat)
-    if(astat.ne.0) call log_event("[Mesh Mod] Unable to allocate "//&
+    if(astat/=0) call log_event("[Mesh Mod] Unable to allocate "//&
                                   "w2 colour_map.", LOG_LEVEL_ERROR)
 
     ncolours = self%ncolours

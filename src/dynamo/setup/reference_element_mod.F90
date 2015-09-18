@@ -45,7 +45,8 @@ type select_entity_type
   integer, allocatable :: verts(:)
 end type select_entity_type
 
-type(select_entity_type) ::  select_entity_all, select_entity_theta
+type(select_entity_type) ::  select_entity_all, select_entity_theta, &
+                             select_entity_w2v, select_entity_w2h
 
 !Entity naming convention for reference cube:
 !
@@ -247,6 +248,14 @@ subroutine reference_cube()
   allocate ( select_entity_theta % faces(nfaces) )
   allocate ( select_entity_theta % edges(nedges) )
   allocate ( select_entity_theta % verts(nverts) )
+  ! w2v - a subset of entities
+  allocate ( select_entity_w2v % faces(nfaces) )
+  allocate ( select_entity_w2v % edges(nedges) )
+  allocate ( select_entity_w2v % verts(nverts) )
+  ! w2h - a subset of entities
+  allocate ( select_entity_w2h % faces(nfaces) )
+  allocate ( select_entity_w2h % edges(nedges) )
+  allocate ( select_entity_w2h % verts(nverts) )
 
 ! vertex coordinates in unit reference space
   x_vert(SWB,:) = (/ 0.0_r_def, 0.0_r_def, 0.0_r_def /)
@@ -344,6 +353,14 @@ subroutine reference_cube()
   select_entity_theta % faces = (/ IMDI, IMDI, IMDI, IMDI, B, T /)
   select_entity_theta % edges = IMDI
   select_entity_theta % verts = IMDI
+  ! w2v - a subset of entities
+  select_entity_w2v % faces = (/ IMDI, IMDI, IMDI, IMDI, B, T /)
+  select_entity_w2v % edges = IMDI
+  select_entity_w2v % verts = IMDI
+  ! w2h - a subset of entities
+  select_entity_w2h % faces = (/ W, S, E, N, IMDI, IMDI /)
+  select_entity_w2h % edges = IMDI
+  select_entity_w2h % verts = IMDI
 
 end subroutine reference_cube
 
@@ -465,6 +482,12 @@ subroutine deallocate_reference()
   if(allocated( select_entity_theta % faces ))deallocate ( select_entity_theta % faces )
   if(allocated( select_entity_theta % edges ))deallocate ( select_entity_theta % edges )
   if(allocated( select_entity_theta % verts ))deallocate ( select_entity_theta % verts )
+  if(allocated( select_entity_w2v % faces ))deallocate ( select_entity_w2v % faces )
+  if(allocated( select_entity_w2v % edges ))deallocate ( select_entity_w2v % edges )
+  if(allocated( select_entity_w2v % verts ))deallocate ( select_entity_w2v % verts )
+  if(allocated( select_entity_w2h % faces ))deallocate ( select_entity_w2h % faces )
+  if(allocated( select_entity_w2h % edges ))deallocate ( select_entity_w2h % edges )
+  if(allocated( select_entity_w2h % verts ))deallocate ( select_entity_w2h % verts )
 
 end subroutine deallocate_reference
 

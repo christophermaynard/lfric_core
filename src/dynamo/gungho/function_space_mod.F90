@@ -187,6 +187,8 @@ integer, public, parameter      :: W1 = 101
 integer, public, parameter      :: W2 = 102
 integer, public, parameter      :: W3 = 103
 integer, public, parameter      :: Wtheta = 104
+integer, public, parameter      :: W2V = 105
+integer, public, parameter      :: W2H = 106
 
 !> These are static copies of all the function spaces that will be required 
 type(function_space_type), target, allocatable, save :: w0_function_space
@@ -194,7 +196,8 @@ type(function_space_type), target, allocatable, save :: w1_function_space
 type(function_space_type), target, allocatable, save :: w2_function_space
 type(function_space_type), target, allocatable, save :: w3_function_space
 type(function_space_type), target, allocatable, save :: wtheta_function_space 
-
+type(function_space_type), target, allocatable, save :: w2v_function_space
+type(function_space_type), target, allocatable, save :: w2h_function_space
 
 !-------------------------------------------------------------------------------
 ! Contained functions/subroutines
@@ -207,22 +210,28 @@ contains
 function get_instance(mesh, function_space) result(instance)
   use basis_function_mod,      only : &
               w0_order, w1_order, w2_order, w3_order, wtheta_order, &
+              w2v_order, w2h_order, &
               w0_nodal_coords, w1_nodal_coords, w2_nodal_coords, &
               w3_nodal_coords, wtheta_nodal_coords, &
+              w2v_nodal_coords, w2h_nodal_coords, &
               w0_dof_on_vert_boundary, w1_dof_on_vert_boundary, &
               w2_dof_on_vert_boundary, w3_dof_on_vert_boundary, &
-              wtheta_dof_on_vert_boundary, &
+              wtheta_dof_on_vert_boundary, w2v_dof_on_vert_boundary, &
+              w2h_dof_on_vert_boundary, &
               w0_basis_order, w0_basis_index, w0_basis_vector, w0_basis_x, &
               w1_basis_order, w1_basis_index, w1_basis_vector, w1_basis_x, &
               w2_basis_order, w2_basis_index, w2_basis_vector, w2_basis_x, &
               w3_basis_order, w3_basis_index, w3_basis_vector, w3_basis_x, &
-              wtheta_basis_order, wtheta_basis_index, wtheta_basis_vector, &
-              wtheta_basis_x
+              wtheta_basis_order, wtheta_basis_index, wtheta_basis_vector, & 
+              wtheta_basis_x, &
+              w2v_basis_order, w2v_basis_index, w2v_basis_vector, w2v_basis_x, &
+              w2h_basis_order, w2h_basis_index, w2h_basis_vector, w2h_basis_x
 
   use dofmap_mod,              only : &
               w0_dofmap, w1_dofmap, w2_dofmap, w3_dofmap, wtheta_dofmap, &
-              w0_orientation, w1_orientation, w2_orientation, &
-              w3_orientation, wtheta_orientation
+              w2v_dofmap, w2h_dofmap, &
+              w0_orientation, w1_orientation, w2_orientation, w3_orientation, & 
+              wtheta_orientation, w2v_orientation, w2h_orientation
 
   use slush_mod, only : w_unique_dofs
 
@@ -320,6 +329,40 @@ function get_instance(mesh, function_space) result(instance)
          basis_vector=wtheta_basis_vector, basis_x=wtheta_basis_x )
     end if
     instance => wtheta_function_space
+  case (W2V)
+    if(.not.allocated(w2v_function_space)) then
+      allocate(w2v_function_space)
+      call init_function_space(self=w2v_function_space, &
+         order = w2v_order, &
+         mesh=mesh,&
+         num_dofs = w_unique_dofs(6,2), &
+         num_unique_dofs = w_unique_dofs(6,1) ,  &
+         dim_space = 3, dim_space_diff = 1,  &
+         dofmap=w2v_dofmap, &
+         nodal_coords=w2v_nodal_coords, &
+         dof_on_vert_boundary=w2v_dof_on_vert_boundary, &
+         orientation=w2v_orientation, fs=W2V, &
+         basis_order=w2v_basis_order, basis_index=w2v_basis_index, &
+         basis_vector=w2v_basis_vector, basis_x=w2v_basis_x )
+    end if
+    instance => w2v_function_space
+  case (W2H)
+    if(.not.allocated(w2h_function_space)) then
+      allocate(w2h_function_space)
+      call init_function_space(self=w2h_function_space, &
+         order = w2h_order, &
+         mesh=mesh,&
+         num_dofs = w_unique_dofs(7,2), &
+         num_unique_dofs = w_unique_dofs(7,1) ,  &
+         dim_space = 3, dim_space_diff = 1,  &
+         dofmap=w2h_dofmap, &
+         nodal_coords=w2h_nodal_coords, &
+         dof_on_vert_boundary=w2h_dof_on_vert_boundary, &
+         orientation=w2h_orientation, fs=W2H, &
+         basis_order=w2h_basis_order, basis_index=w2h_basis_index, &
+         basis_vector=w2h_basis_vector, basis_x=w2h_basis_x )
+    end if
+    instance => w2h_function_space
   case default
     !not a recognised function space - return a null pointer
     instance => null()

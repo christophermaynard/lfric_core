@@ -24,7 +24,7 @@ module psy
 
 contains
 
-  !-------------------------------------------------------------------------------  
+!-------------------------------------------------------------------------------   
 !> Invoke the solver kernel for a w3 field kernel
   subroutine invoke_w3_solver_kernel( lhs, rhs, chi, qr )
 
@@ -499,6 +499,8 @@ contains
     
   end subroutine invoke_compute_mass_matrix_w0
 
+!-------------------------------------------------------------------------------  
+!> invoke_compute_mass_matrix_w1: Calculate mass matrix for W1 space
   subroutine invoke_compute_mass_matrix_w1(mm, chi, qr)
     use compute_mass_matrix_kernel_w1_mod, only :  compute_mass_matrix_w1_code
     implicit none
@@ -580,7 +582,9 @@ contains
     
   end subroutine invoke_compute_mass_matrix_w1
 
- subroutine invoke_compute_mass_matrix_w2(mm, chi, qr)
+!-------------------------------------------------------------------------------  
+!> invoke_compute_mass_matrix_w2: Calculate mass matrix for W2 space
+  subroutine invoke_compute_mass_matrix_w2(mm, chi, qr)
     use compute_mass_matrix_kernel_w2_mod, only :  compute_mass_matrix_w2_code
     implicit none
 
@@ -890,6 +894,7 @@ contains
       field_res_proxy%data(i) = scalar
     end do
   end subroutine invoke_set_field_scalar
+
 !-------------------------------------------------------------------------------   
 !> invoke_divide_field: divide the values of field1 by field2 and put result in
 !>field_res
@@ -1375,7 +1380,8 @@ contains
     deallocate(basis_w3, basis_w2, diff_basis_w2, basis_w0, diff_basis_w0)
     
   end subroutine invoke_linear_ru_kernel
-  
+ 
+!-------------------------------------------------------------------------------   
 !> Invoke_compute_geopotential_kernel: Invoke the computation of the
 !! geopotential
   subroutine invoke_compute_geopotential_kernel( phi, chi )
@@ -1431,6 +1437,7 @@ contains
     end do
 
   end subroutine invoke_sum_field
+
 !-------------------------------------------------------------------------------   
 !> invoke_axpby:  z = (a * x + b * y) ; a,b-scalar, x,y-vector     
   subroutine invoke_axpby(a,x,b,y,z)
@@ -1468,6 +1475,7 @@ contains
       z_proxy%data(i) = (a * x_proxy%data(i)) + (b * y_proxy%data(i))
     end do
   end subroutine invoke_axpby
+
 !-------------------------------------------------------------------------------   
 !> invoke_multiply_field: compute y = a*x for scalar a and fields y and x
   subroutine invoke_multiply_field(a, x, y)
@@ -1495,6 +1503,7 @@ contains
       y_proxy%data(i) = a*x_proxy%data(i)
     end do
   end subroutine invoke_multiply_field
+
 !-------------------------------------------------------------------------------   
   subroutine invoke_sample_flux_kernel(flux, u, multiplicity, q)
     use sample_flux_kernel_mod, only: sample_flux_code
@@ -1552,6 +1561,7 @@ contains
     end do
 
   end subroutine invoke_sample_flux_kernel
+
 !-------------------------------------------------------------------------------   
 !> invoke_field_delta: compute delta, a small perturbation to a field
   subroutine invoke_compute_delta(delta, norm, x)
@@ -1574,4 +1584,4 @@ contains
     delta = delta/(real(undf)*norm)
   end subroutine invoke_compute_delta
 
-  end module psy
+end module psy

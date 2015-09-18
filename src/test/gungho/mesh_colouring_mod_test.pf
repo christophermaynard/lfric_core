@@ -47,7 +47,7 @@ subroutine setUp(this)
                   localPet=local_pet, &
                   petCount=pet_count, &
                   rc=rc)
-  if (rc .ne. ESMF_SUCCESS) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+  if (rc /= ESMF_SUCCESS) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
   call reference_cube()
 
@@ -153,7 +153,7 @@ subroutine test_compute_colours_cubedsphere(this)
   ! Does the total in each colour match the cells in the colour map...
   do colour_idx=1, num_colours
     nc_colour = num_cell_per_colour_w0(colour_idx)
-    cic_colour = count(cells_in_colour_w0(colour_idx,:).ne.0)
+    cic_colour = count(cells_in_colour_w0(colour_idx,:)/=0)
     @assertEqual(nc_colour, cic_colour, "Mismatch between num-per-colour total and cell count.")
   end do
 

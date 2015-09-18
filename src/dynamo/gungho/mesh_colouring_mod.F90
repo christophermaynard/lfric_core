@@ -79,7 +79,7 @@ subroutine set_colours(num_cells,              &
 
 
   allocate(colour_map(0:num_cells), stat=astat)
-  if(astat.ne.0) call log_event(prefix//"colour_map.", LOG_LEVEL_ERROR)
+  if(astat/=0) call log_event(prefix//"colour_map.", LOG_LEVEL_ERROR)
 
   colour_map = 0
   cells_per_colour = 0
@@ -137,17 +137,17 @@ subroutine set_colours(num_cells,              &
 
   allocate(num_cell_per_colour_w0(num_colours), stat=astat)
 
-  if(astat.ne.0) call log_event(prefix//"num_cell_per_colour_w0.", &
+  if(astat/=0) call log_event(prefix//"num_cell_per_colour_w0.", &
                                 LOG_LEVEL_ERROR)
 
   allocate(num_cell_per_colour_w1(num_colours), stat=astat)
 
-  if(astat.ne.0) call log_event(prefix//"num_cell_per_colour_w1.", &
+  if(astat/=0) call log_event(prefix//"num_cell_per_colour_w1.", &
                                 LOG_LEVEL_ERROR)
 
   allocate(num_cell_per_colour_w2(num_colours), stat=astat)
 
-  if(astat.ne.0) call log_event(prefix//"num_cell_per_colour_w2.", &
+  if(astat/=0) call log_event(prefix//"num_cell_per_colour_w2.", &
                                 LOG_LEVEL_ERROR)
 
   do colour = 1, num_colours
@@ -158,17 +158,17 @@ subroutine set_colours(num_cells,              &
 
   allocate(cells_in_colour_w0(num_colours, maxval(num_cell_per_colour_w0)), &
            stat=astat)
-  if(astat.ne.0) call log_event(prefix//"cells_in_colour_w0.", &
+  if(astat/=0) call log_event(prefix//"cells_in_colour_w0.", &
                                 LOG_LEVEL_ERROR)
 
   allocate(cells_in_colour_w1(num_colours, maxval(num_cell_per_colour_w1)), &
            stat=astat)
-  if(astat.ne.0) call log_event(prefix//"cells_in_colour_w1.", &
+  if(astat/=0) call log_event(prefix//"cells_in_colour_w1.", &
                                 LOG_LEVEL_ERROR)
 
   allocate(cells_in_colour_w2(num_colours, maxval(num_cell_per_colour_w2)), &
            stat=astat)
-  if(astat.ne.0) call log_event(prefix//"cells_in_colour_w2.", &
+  if(astat/=0) call log_event(prefix//"cells_in_colour_w2.", &
                                 LOG_LEVEL_ERROR)
 
   cells_in_colour_w0 = 0

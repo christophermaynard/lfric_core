@@ -14,19 +14,24 @@ contains
   @test
   subroutine test_func_space()
     use pFUnit_Mod
-    use function_space_mod, only : function_space_type, W0, W1, W2, W3, Wtheta
+    use function_space_mod, only : function_space_type, W0, W1, W2, W3, Wtheta, W2V, W2H
     use constants_mod, only : r_def, PLANE_BI_PERIODIC
     use quadrature_mod, only : quadrature_type, QR3 
-    use function_space_build_mod, only : w0_func_space, w1_func_space,      &
-                                         w2_func_space, w3_func_space,      &
-					 wtheta_func_space,		    &
-                                         fs_build, fs_destroy,get_test_map, &
-                                         basis_func_w0, diff_basis_func_w0, &
-                                         basis_func_w1, diff_basis_func_w1, &
-                                         basis_func_w2, diff_basis_func_w2, &
-                                         basis_func_w3, diff_basis_func_w3, &
-					 basis_func_wtheta, diff_basis_func_wtheta
-    use mesh_mod,                   only : mesh_type
+    use function_space_build_mod, only : & 
+                                  w0_func_space, w1_func_space,              &
+                                  w2_func_space, w3_func_space,              &
+                                  wtheta_func_space,		             &
+                                  w2v_func_space, w2h_func_space,            &
+                                  fs_build, fs_destroy,get_test_map,         &
+                                  basis_func_w0, diff_basis_func_w0,         &
+                                  basis_func_w1, diff_basis_func_w1,         &
+                                  basis_func_w2, diff_basis_func_w2,         &
+                                  basis_func_w3, diff_basis_func_w3,         &
+                                  basis_func_wtheta, diff_basis_func_wtheta, &
+                                  basis_func_w2v, diff_basis_func_w2v,       &
+                                  basis_func_w2h, diff_basis_func_w2h
+
+    use mesh_mod,                 only : mesh_type
     
     implicit none
 
@@ -46,13 +51,6 @@ contains
     integer                            :: cell
 
     integer :: ndf
-    integer :: W0_l, W1_l, W2_l, W3_l, Wtheta_l
-
-    W0_l = W0 - W0 + 1
-    W1_l = W1 - W0 + 1
-    W2_l = W2 - W0 + 1
-    W3_l = W3 - W0 + 1
-    Wtheta_l = Wtheta - W0 + 1
 
     scalar=1
     vector=3
@@ -254,9 +252,85 @@ contains
     @assertEqual(test_basis, basis, epsilon)
     deallocate(basis, test_basis)
    
+    ! ---------------------------------------------
+    ! test w2v
+    test_fs = w2v_func_space%which()
+    @assertEqual( test_fs, W2V )
+
+    call get_test_map(testmap,W2V)
+    do cell = 1, w2v_func_space%get_ncell()
+       map => w2v_func_space%get_cell_dofmap( cell )
+       @assertEqual( map, testmap(:,cell) )
+    end do
+
+    ndf = w2v_func_space%get_ndf()
+    ! W2V at lowest order on quads ...
+    @assertEqual(ndf,2)
+    ! 36 for w2v
+    @assertEqual( w2v_func_space%get_undf(), 36 )
+    @assertEqual( w2v_func_space%get_ncell(), nqp_h)
+    @assertEqual( w2v_func_space%get_nlayers(), nqp_v )
+    @assertEqual( w2v_func_space%get_dim_space(), vector )
+    @assertEqual( w2v_func_space%get_dim_space_diff(), scalar )
+
+    allocate(basis(     w2v_func_space%get_dim_space(), ndf, nqp_h, nqp_v) )
+    allocate(test_basis(w2v_func_space%get_dim_space(), ndf, nqp_h, nqp_v) )
+    call basis_func_w2v(test_basis)
+    call w2v_func_space%compute_basis_function(                       &
+         basis, ndf, nqp_h, nqp_v, xp, zp )
+    @assertEqual(test_basis, basis, epsilon)
+    deallocate(basis, test_basis)
+
+    allocate(basis(     w2v_func_space%get_dim_space_diff(), ndf, nqp_h, nqp_v) )
+    allocate(test_basis(w2v_func_space%get_dim_space_diff(), ndf, nqp_h, nqp_v) )
+    call diff_basis_func_w2v(test_basis)
+    call w2v_func_space%compute_diff_basis_function(                   &
+         basis, ndf, nqp_h, nqp_v, xp, zp )
+    @assertEqual(test_basis, basis, epsilon)
+    deallocate(basis, test_basis)
+
+    ! ---------------------------------------------
+    ! test w2h
+    test_fs = w2h_func_space%which()
+    @assertEqual( test_fs, W2H )
+
+    call get_test_map(testmap,W2H)
+    do cell = 1, w2h_func_space%get_ncell()
+       map => w2h_func_space%get_cell_dofmap( cell )
+       @assertEqual( map, testmap(:,cell) )
+    end do
+
+    ndf = w2h_func_space%get_ndf()
+    ! W2H at lowest order on quads ...
+    @assertEqual(ndf,4)
+    ! 54 for w2h
+    @assertEqual( w2h_func_space%get_undf(), 54 )
+    @assertEqual( w2h_func_space%get_ncell(), nqp_h)
+    @assertEqual( w2h_func_space%get_nlayers(), nqp_v )
+    @assertEqual( w2h_func_space%get_dim_space(), vector )
+    @assertEqual( w2h_func_space%get_dim_space_diff(), scalar )
+
+    allocate(basis(     w2h_func_space%get_dim_space(), ndf, nqp_h, nqp_v) )
+    allocate(test_basis(w2h_func_space%get_dim_space(), ndf, nqp_h, nqp_v) )
+    call basis_func_w2h(test_basis)
+    call w2h_func_space%compute_basis_function(                       &
+         basis, ndf, nqp_h, nqp_v, xp, zp )
+    @assertEqual(test_basis, basis, epsilon)
+    deallocate(basis, test_basis)
+
+    allocate(basis(     w2h_func_space%get_dim_space_diff(), ndf, nqp_h, nqp_v) )
+    allocate(test_basis(w2h_func_space%get_dim_space_diff(), ndf, nqp_h, nqp_v) )
+    call diff_basis_func_w2h(test_basis)
+    call w2h_func_space%compute_diff_basis_function(                   &
+         basis, ndf, nqp_h, nqp_v, xp, zp )
+    @assertEqual(test_basis, basis, epsilon)
+    deallocate(basis, test_basis)
+
+
     ! tear down that which we have build, 'cos there are some module scope
     ! allocated arrays. Yuk, but it works
     call fs_destroy()
+
 
   end subroutine test_func_space 
 
