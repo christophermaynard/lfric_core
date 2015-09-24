@@ -90,7 +90,7 @@ contains
     ! prognostic fields    
     type( field_type ), intent( inout ) :: u, rho, theta, xi
     ! temporary fields    
-    type( field_type ) :: geopotential
+    type( field_type ) :: geopotential, r_u
 
     type( field_type ) :: state_n(3), state_np1(3), state_adv(3)
     type( field_type ) :: rhs_n(3), rhs_np1(3), rhs_adv(3)
@@ -128,6 +128,9 @@ contains
      call clone_bundle(state_np1, rhs_np1,   mesh, 3)
      call clone_bundle(state_np1, rhs_adv,   mesh, 3)
     
+    ! Create W2 field needed for u initialisation
+    r_u = field_type( vector_space = fs%get_instance(mesh, u_fs) )
+
     ! Create W0 fields needed for timestepping
     geopotential = field_type( vector_space = fs%get_instance(mesh, theta_fs) )
 
