@@ -79,7 +79,19 @@ subroutine set_colours(num_cells,              &
 
 
   allocate(colour_map(0:num_cells), stat=astat)
-  if(astat/=0) call log_event(prefix//"colour_map.", LOG_LEVEL_ERROR)
+  if(astat/=0) then
+    call log_event(prefix//"colour_map.", LOG_LEVEL_ERROR)
+    ! Although the logger will call "stop" for errors GFortran is unable to
+    ! perform inter-file analysis so believes it is possible to use colour_map
+    ! without initialising it.
+    ! The following "stop" will never be reached but it lets GFortran know
+    ! that colour_map will always be initialised.
+    stop
+    !> @todo Keep an eye on GFortran development and remove uncalled "stop"
+    !>       when it is no longer necessary to satisfy "Uninitialised variable
+    !>       may be used" warning. This warning is only seen for the
+    !>       "production" target.
+  end if
 
   colour_map = 0
   cells_per_colour = 0
