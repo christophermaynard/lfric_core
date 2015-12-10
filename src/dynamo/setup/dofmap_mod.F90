@@ -775,8 +775,10 @@ end subroutine dofmap_populate
 !> @brief Subroutine to compute the orientation of vectors
 !> @param[in] mesh          Mesh object to base dof maps on
 !> @param[in] w_unique_dofs The number of dofs in each function space
-!> @param[in] w_dof_entity
-subroutine get_orientation(mesh, w_unique_dofs, w_dof_entity)
+!> @deprecated New cube-sphere orientation does not reuqire orientation arrays,
+!!             they are left here until the kernel and PSyClone refernces are
+!              !also removed
+subroutine get_orientation(mesh, w_unique_dofs)
 !-----------------------------------------------------------------------------
 ! Subroutine to read orientation
 !-----------------------------------------------------------------------------
@@ -785,12 +787,8 @@ subroutine get_orientation(mesh, w_unique_dofs, w_dof_entity)
 
   type (mesh_type), intent(in) :: mesh
   integer,          intent(in) :: w_unique_dofs(7,4)
-  integer,          intent(in) :: w_dof_entity(7,0:5)
 
   integer(i_def) :: ncells
-  logical        :: is_scalar(7)
-
-  is_scalar(:) = (/ .true., .false., .false., .true., .true., .false., .false. /)
 
   ncells = mesh%get_ncells_2d()
 
@@ -802,205 +800,57 @@ subroutine get_orientation(mesh, w_unique_dofs, w_dof_entity)
   allocate( w2v_orientation(0:ncells,w_unique_dofs(6,2)) )
   allocate( w2h_orientation(0:ncells,w_unique_dofs(7,2)) )
 
-  call orientation_populate( mesh, ncells,                                &
+  call orientation_populate( ncells,                                      &
                              w_unique_dofs(1,2),                          &
-                             w_dof_entity(1,:),                           &
-                             is_scalar(1),                                &
-                             select_entity_all,                           &
                              w0_orientation )
-  call orientation_populate( mesh, ncells,                                &
+  call orientation_populate( ncells,                                      &
                              w_unique_dofs(2,2),                          &
-                             w_dof_entity(2,:),                           &
-                             is_scalar(2),                                &
-                             select_entity_all,                           &
                              w1_orientation )
-  call orientation_populate( mesh, ncells,                                &
+  call orientation_populate( ncells,                                      &
                              w_unique_dofs(3,2),                          &
-                             w_dof_entity(3,:),                           &
-                             is_scalar(3),                                &
-                             select_entity_all,                           &
                              w2_orientation )
-  call orientation_populate( mesh, ncells,                                &
+  call orientation_populate( ncells,                                      &
                              w_unique_dofs(4,2),                          &
-                             w_dof_entity(4,:),                           &
-                             is_scalar(4),                                &
-                             select_entity_all,                           &
                              w3_orientation )
-  call orientation_populate( mesh, ncells,                                &
+  call orientation_populate( ncells,                                      &
                              w_unique_dofs(5,2),                          &
-                             w_dof_entity(5,:),                           &
-                             is_scalar(5),                                &
-                             select_entity_theta,                         &
                              wtheta_orientation )
-  call orientation_populate( mesh, ncells,                                &
+  call orientation_populate( ncells,                                      &
                              w_unique_dofs(6,2),                          &
-                             w_dof_entity(6,:),                           &
-                             is_scalar(6),                                &
-                             select_entity_w2v,                           &
                              w2v_orientation )
-  call orientation_populate( mesh, ncells,                                &
+  call orientation_populate( ncells,                                      &
                              w_unique_dofs(7,2),                          &
-                             w_dof_entity(7,:),                           &
-                             is_scalar(7),                                &
-                             select_entity_w2h,                           &
                              w2h_orientation )
 
 end subroutine get_orientation
 
 !> @brief Subroutine to compute the orientation of vectors
-!> @param[in] mesh         Mesh object to base dof maps on
 !> @param[in] ncells       The number of horizontal cells
 !> @param[in] ndf          The total number of dofs associated with a
 !>                         single cell
-!> @param[in] ndf_entity   The number of dofs associated with each grid
-!>                         entity in a single cell
-!> @param[in] is_scalar    Logical: true (scalar-space) or false (vector-space)
-!> @param[in] select_entity  Data type that holds lists of entities to use in
-!> the function space
 !> @param[out] orientation The output orientation
-subroutine orientation_populate(mesh, ncells, ndf, ndf_entity, is_scalar, select_entity, orientation)
+!> @deprecated New cube-sphere orientation does not reuqire orientation arrays,
+!!             they are left here until the kernel and PSyClone refernces are
+!              !also removed
+subroutine orientation_populate(ncells, ndf, orientation)
 
-  use reference_element_mod, only: nfaces_h, nedges_h, select_entity_type
   implicit none
 
-  type (mesh_type), intent(in) :: mesh
   integer, intent(in)  :: ncells
   integer, intent(in)  :: ndf
-  integer, intent(in)  :: ndf_entity(0:5)
-  logical, intent(in)  :: is_scalar
-  type(select_entity_type), intent(in) :: select_entity
   integer, intent(out) :: orientation(0:ncells,ndf)
   
 
-  integer, allocatable :: face_orientation(:,:), edge_orientation(:,:)
-  
-  integer :: next_cell
-  integer :: next_face, common_face, df_on_face  
-  integer :: next_edge, common_edge, df_on_edge  
-  integer :: cell, face, edge, df
-  integer :: vert_1, vert_1_next
+  integer :: cell, df
 
-! ndof indicator
-!  integer :: ndof_diff
-
-  allocate( face_orientation(nfaces_h, ncells) )
-  allocate( edge_orientation(nedges_h, ncells) )
-
-! Check if this is vector or scalar space
-  if (is_scalar) then
-! orientation is not needed for scalar spaces (but set them to 1 anyway)  
+! Orientations are no longer required so just set them to 1 and return
     do cell = 0, ncells
       do df = 1,ndf
        orientation(cell,df) = 1
       end do
     end do
     return
-  end if
 
-! initialise all face and edge orientations to 0
-  do cell = 1,ncells
-    do face = 1,nfaces_h
-      face_orientation(face,cell) = 0
-    end do
-    do edge = 1,nedges_h
-      edge_orientation(edge,cell) = 0
-    end do    
-  end do
-   
-  do cell = 1,ncells
-! Face orientation for this cell  
-    do face = 1,nfaces_h
-      if ( face_orientation(face,cell) == 0 ) then
-        next_cell = mesh%get_cell_next(face,cell)
-        common_face = 0
-        do next_face = 1,nfaces_h
-          if ( mesh%get_cell_next(next_face,next_cell) == cell) common_face = next_face
-        end do
-        face_orientation(face,cell) = 1
-! if neighbouring faces are in set (1,1),(1,2),(2,2),(3,3),(3,4),(4,4)
-! or the reverse (2,1), (4,3)
-! then reverse orientation of one element
-        if ( face == common_face &
-        .or. face + common_face == 3 &
-        .or. face + common_face == 7 ) then
-          face_orientation(common_face,next_cell) = -1
-        else
-          face_orientation(common_face,next_cell) = 1
-        end if
-      end if   
-    end do
-! Edge orientation of this cell
-    do edge = 1,nedges_h
-! This works as horizontal edges == horizontal faces    
-      if ( edge_orientation(edge,cell) == 0 ) then
-        next_cell = mesh%get_cell_next(edge,cell)
-        common_edge = 0
-        do next_edge = 1,nedges_h
-          if ( mesh%get_cell_next(next_edge,next_cell) == cell) common_edge = next_edge 
-        end do
-        edge_orientation(edge,cell) = 1
-        
-        vert_1      = mesh%get_vert_on_cell(edge,cell)
-        vert_1_next = mesh%get_vert_on_cell(common_edge,next_cell)
-
-! if neighbouring edges are (1,2), (2,1) or (3,4), (4,3) then
-        if ( max(edge,common_edge) < 3 .or. min(edge,common_edge) > 2 ) then 
-          if ( vert_1 == vert_1_next ) then
-            edge_orientation(common_edge,next_cell) = 1
-! if edges are in the opposite direction then reverse orientation            
-          else
-            edge_orientation(common_edge,next_cell) = -1
-          end if  
-        else
-! else if neighbouring edges are (1,3), (1,4) or (2,3), (2,4) + symmetric changes then        
-! if edges are in the same direction then reverse orientation         
-          if ( vert_1 == vert_1_next ) then
-            edge_orientation(common_edge,next_cell) = -1
-          else
-            edge_orientation(common_edge,next_cell) = 1
-          end if           
-        end if
-      end if
-    end do
-  end do
-
-! Populate cell orientation  
-  do cell = 0, ncells
-! initialise all orientations to 1
-    do df = 1,ndf
-     orientation(cell,df) = 1   
-    end do
-  end do
-  
-  do cell = 1, ncells 
-! Overwrite dof orientation with face orientation 
-! only applicable if ndf_entity(2) > 0
-    df = ndf_entity(3) + 1 
-    do face = 1,nfaces_h
-      if (any(select_entity % faces==face)) then
-        do df_on_face = 1,ndf_entity(2)
-          orientation(cell,df) = face_orientation(face,cell)
-          df = df + 1
-        end do
-      end if
-    end do
-! ! Overwrite dof orientation with edge orientation
-! only applicable if ndf_entity(1) > 0
-    df = ndf_entity(3) + nfaces*ndf_entity(2) + 1 
-    do edge = 1,nedges_h
-      do df_on_edge = 1,ndf_entity(1) 
-        orientation(cell,df) = edge_orientation(edge,cell)
-        df = df + 1
-      end do
-    end do 
-  end do
-  do cell = 0, ncells
-    do df = 1,ndf
-     if ( orientation(cell,df) == -1 ) write(6,*) cell,df
-    end do
-  end do    
-  deallocate( face_orientation )
-  deallocate( edge_orientation )
 end subroutine orientation_populate
 
 end module dofmap_mod

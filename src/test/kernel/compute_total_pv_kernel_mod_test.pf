@@ -51,8 +51,7 @@ contains
     integer, pointer :: map_xi(:) => null(), &
                         map_theta(:) => null(), & 
                         map_chi(:) => null(), & 
-                        map_pv(:) => null(), &
-                        orientation_xi(:) => null()
+                        map_pv(:) => null()
 
     real(kind=r_def), pointer :: xp(:,:) => null()
     real(kind=r_def), pointer :: zp(:)   => null()
@@ -131,7 +130,6 @@ contains
     map_xi    => xi_p%vspace%get_cell_dofmap( cell )
     map_theta => theta_p%vspace%get_cell_dofmap( cell )
     map_pv    => pv_p%vspace%get_cell_dofmap( cell )
-    orientation_xi => xi_p%vspace%get_cell_orientation ( cell )
 
     ! Create the data
     xi_p%data(:) = 6.0_r_def
@@ -151,7 +149,6 @@ contains
                                ndf_xi, undf_xi,                   &
                                map_xi,                            &
                                basis_xi,                          &
-                               orientation_xi,                    &
                                ndf_theta, undf_theta,             &
                                map_theta,                         &
                                diff_basis_theta,                  &

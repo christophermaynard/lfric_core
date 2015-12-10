@@ -14,7 +14,7 @@ use kernel_mod,              only : kernel_type
 use argument_mod,            only : arg_type, func_type,                     &
                                     GH_FIELD, GH_WRITE, GH_READ,             &
                                     W0, W1, W3,                              &
-                                    GH_BASIS, GH_DIFF_BASIS, GH_ORIENTATION, &
+                                    GH_BASIS, GH_DIFF_BASIS,                 &
                                     CELLS
 use constants_mod,           only : r_def
 use configuration_mod,       only : earth_radius
@@ -35,7 +35,7 @@ type, public, extends(kernel_type) :: compute_total_pv_kernel_type
        /)
   type(func_type) :: meta_funcs(2) = (/                                &
        func_type(W0, GH_DIFF_BASIS),                                   &
-       func_type(W1, GH_BASIS, GH_ORIENTATION)                         &
+       func_type(W1, GH_BASIS)                                         &
        /)
   integer :: iterates_over = CELLS
 contains
@@ -68,7 +68,6 @@ end function compute_total_pv_kernel_constructor
 !! @param[in] undf_w1  The number of unique degrees of freedom  for w1
 !! @param[in] map_w1 Integer array holding the dofmap for the cell at the base of the column for w1
 !! @param[in] w1_basis Real 5-dim array holding basis functions evaluated at gaussian quadrature points 
-!! @param[in] orientation The orientation array for w1
 !! @param[in] xi The absolute vorticity
 !! @param[in] ndf_w0 The number of degrees of freedom per cell for w0
 !! @param[in] undf_w0  The number of unique degrees of freedom  for w0
@@ -89,7 +88,7 @@ subroutine compute_total_pv_code(                                               
                                  theta,                                                  &
                                  chi1, chi2, chi3,                                       &
                                  ndf_w3, undf_w3, map_w3,                                &
-                                 ndf_w1, undf_w1, map_w1, w1_basis, orientation,         &
+                                 ndf_w1, undf_w1, map_w1, w1_basis,                      &
                                  ndf_w0, undf_w0, map_w0, w0_diff_basis,                 &
                                  nqp_h, nqp_v, wqp_h, wqp_v )
                                
@@ -102,7 +101,7 @@ subroutine compute_total_pv_code(                                               
 
   integer, dimension(ndf_w3), intent(in) :: map_w3
   integer, dimension(ndf_w0), intent(in) :: map_w0
-  integer, dimension(ndf_w1), intent(in) :: map_w1, orientation
+  integer, dimension(ndf_w1), intent(in) :: map_w1
 
   real(kind=r_def), dimension(3,ndf_w0,nqp_h,nqp_v), intent(in) :: w0_diff_basis  
   real(kind=r_def), dimension(3,ndf_w1,nqp_h,nqp_v), intent(in) :: w1_basis 
@@ -139,7 +138,7 @@ subroutine compute_total_pv_code(                                               
                              w0_diff_basis, jac, dj)
     call coordinate_jacobian_inverse(nqp_h, nqp_v, jac, dj, jac_inv)  
     do df = 1, ndf_w1
-      xi_e(df) = xi( map_w1(df) + k )*real(orientation(df),r_def)
+      xi_e(df) = xi( map_w1(df) + k )
     end do
     pv_e(:) = 0.0_r_def
   ! compute the pv integrated over one cell

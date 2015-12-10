@@ -46,7 +46,7 @@ contains
     integer                 :: ndf_w2, ndf_w3
     integer                 :: undf_w2, undf_w3
     integer                 :: diff_dim_w2, dim_w3
-    integer, pointer  :: map_w3(:), map_w2(:), orientation_w2(:) => null()
+    integer, pointer  :: map_w3(:), map_w2(:) => null()
 
     type( field_proxy_type )        :: r_rho_proxy, u_proxy
     
@@ -105,7 +105,6 @@ contains
 
        map_w3 => r_rho_proxy%vspace%get_cell_dofmap( cell )
        map_w2 => u_proxy%vspace%get_cell_dofmap( cell )
-       orientation_w2 => u_proxy%vspace%get_cell_orientation( cell )
 
        call rrho_code( nlayers,                          &
                        r_rho_proxy%data,                 &
@@ -118,7 +117,6 @@ contains
                        undf_w2,                          &
                        map_w2,                           &
                        diff_basis_w2,                    &
-                       orientation_w2,                   &
                        nqp_h,                            &
                        nqp_v,                            &
                        wh,                               &

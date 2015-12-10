@@ -40,6 +40,7 @@ module iter_timestep_alg_mod
   use compute_mass_matrix_kernel_w1_mod, only: compute_mass_matrix_kernel_w1_type
   use compute_mass_matrix_kernel_w2_mod, only: compute_mass_matrix_kernel_w2_type
   use compute_geopotential_kernel_mod,   only: compute_geopotential_kernel_type
+  use mm_diagonal_kernel_mod,            only: mm_diagonal_kernel_type
 
   ! Derived Types
   use mesh_mod,                          only: mesh_type
@@ -101,9 +102,14 @@ contains
     type( field_type ) :: geopotential, r_u
     type( field_type ) :: state_n(3), state_np1(3), state_adv(3)
     type( field_type ) :: rhs_n(3), rhs_np1(3), rhs_adv(3)
+    type( field_type ) :: mm_diagonal_w3, &
+                          mm_diagonal_w2, &
+                          mm_diagonal_w1, &
+                          mm_diagonal_w0,
+    
     type( runtime_constants_type ) :: runtime_constants
 
-    integer :: theta_fs, u_fs, rho_fs
+    integer :: theta_fs, u_fs, rho_fs, xi_fs
 
     type( function_space_type )      :: fs
     type( quadrature_type ), pointer :: qr => null()
@@ -118,6 +124,7 @@ contains
     theta_fs  = theta%which_function_space()
     u_fs      = u%which_function_space()
     rho_fs    = rho%which_function_space()
+    xi_fs     = xi%which_function_space()
 
     qr => qr%get_instance(QR3,9,3)
 
@@ -152,10 +159,30 @@ contains
                  compute_mass_matrix_kernel_w1_type(mm_w1, chi, qr), &
                  compute_mass_matrix_kernel_w2_type(mm_w2, chi, qr) )
 
+    ! Compute mass matrix diagonals
+    mm_diagonal_w0 = field_type( vector_space = fs%get_instance(mesh, theta_fs) )
+    mm_diagonal_w1 = field_type( vector_space = fs%get_instance(mesh, xi_fs) )
+    mm_diagonal_w2 = field_type( vector_space = fs%get_instance(mesh, u_fs) )
+    mm_diagonal_w3 = field_type( vector_space = fs%get_instance(mesh, rho_fs) )
+    call invoke_set_field_scalar(0.0_r_def,mm_diagonal_w0)
+    call invoke_set_field_scalar(0.0_r_def,mm_diagonal_w1)
+    call invoke_set_field_scalar(0.0_r_def,mm_diagonal_w2)
+
+    call invoke( mm_diagonal_kernel_type(mm_diagonal_w0,mm_w0))
+    call invoke( mm_diagonal_kernel_type(mm_diagonal_w1,mm_w1))
+    call invoke( mm_diagonal_kernel_type(mm_diagonal_w2,mm_w2))
+    ! W3 equations are solved pointwise and so the mass matrix is inverted
+    ! exactly, therfore the diagonal, where used should be 1
+    call invoke_set_field_scalar(1.0_r_def,mm_diagonal_w3)
+
     ! Create fixed state container
     runtime_constants = runtime_constants_type(mesh, chi, geopotential, &
-                                               mm_w0, mm_w1, mm_w2)
-    ! Initialise other required fields and U field if necessary 
+                                               mm_w0, mm_w1, mm_w2, &
+                                               mm_diagonal_w0, &
+                                               mm_diagonal_w1, &
+                                               mm_diagonal_w2, &
+                                               mm_diagonal_w3)
+    ! Prognostics
     if(.not.restart%read_file()) then ! no check point to start from
       call invoke_set_field_scalar(0.0_r_def, u)
       call invoke_set_field_scalar(0.0_r_def, r_u) 

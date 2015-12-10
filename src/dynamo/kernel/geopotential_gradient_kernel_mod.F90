@@ -25,7 +25,6 @@ use kernel_mod,              only : kernel_type
 use argument_mod,            only : arg_type, func_type,                 &
                                     GH_FIELD, GH_READ, GH_INC,           &
                                     W0, W2,GH_BASIS, GH_DIFF_BASIS,      &
-                                    GH_ORIENTATION,                      &
                                     CELLS 
 use constants_mod,           only : r_def
 
@@ -42,7 +41,7 @@ type, public, extends(kernel_type) :: geopotential_gradient_kernel_type
        arg_type(GH_FIELD,   GH_READ, W0)                               &
        /)
   type(func_type) :: meta_funcs(2) = (/                                &
-       func_type(W2, GH_BASIS, GH_ORIENTATION),                        &
+       func_type(W2, GH_BASIS),                                        &
        func_type(W0, GH_DIFF_BASIS)                                    &
        /)
   integer :: iterates_over = CELLS
@@ -75,7 +74,6 @@ end function geopotential_gradient_kernel_constructor
 !! @param[in] undf_w2 The number unique of degrees of freedom  for w2
 !! @param[in] map_w2 Integer array holding the dofmap for the cell at the base of the column for w2
 !! @param[in] w2_basis Real 4-dim array holding basis functions evaluated at quadrature points 
-!! @param[in] orientation_w2 Orientation array for w2 fields
 !! @param[inout] r_u Real array the data 
 !! @param[in] ndf_w0 The number of degrees of freedom per cell for w0
 !! @param[in] undf_w0 The number unique of degrees of freedom  for w0
@@ -89,7 +87,6 @@ end function geopotential_gradient_kernel_constructor
 subroutine geopotential_gradient_code(nlayers,                                 &
                                       r_u, phi,                                &
                                       ndf_w2, undf_w2, map_w2, w2_basis,       &
-                                      orientation_w2,                          &
                                       ndf_w0, undf_w0, map_w0, w0_diff_basis,  &
                                       nqp_h, nqp_v, wqp_h, wqp_v               &
                                       )
@@ -100,7 +97,6 @@ subroutine geopotential_gradient_code(nlayers,                                 &
   integer, intent(in) :: undf_w0, undf_w2
   integer, dimension(ndf_w0), intent(in) :: map_w0
   integer, dimension(ndf_w2), intent(in) :: map_w2
-  integer, dimension(ndf_w2), intent(in) :: orientation_w2
 
   real(kind=r_def), dimension(3,ndf_w2,nqp_h,nqp_v), intent(in) :: w2_basis 
   real(kind=r_def), dimension(3,ndf_w0,nqp_h,nqp_v), intent(in) :: w0_diff_basis   
@@ -118,8 +114,7 @@ subroutine geopotential_gradient_code(nlayers,                                 &
   real(kind=r_def), dimension(ndf_w2)          :: ru_e
   real(kind=r_def), dimension(ndf_w0)          :: phi_e
 
-  real(kind=r_def) :: grad_phi_at_quad(3), &
-                      v(3)
+  real(kind=r_def) :: grad_phi_at_quad(3)
   real(kind=r_def) :: geo_term
   
   do k = 0, nlayers-1
@@ -139,9 +134,8 @@ subroutine geopotential_gradient_code(nlayers,                                 &
         end do
 
         do df = 1, ndf_w2
-          v  = w2_basis(:,df,qp1,qp2)*real(orientation_w2(df),r_def)
 ! geopotential term
-          geo_term = dot_product( grad_phi_at_quad(:), v)
+          geo_term = dot_product( grad_phi_at_quad(:), w2_basis(:,df,qp1,qp2))
 
           ru_e(df) = ru_e(df) -  wqp_h(qp1)*wqp_v(qp2)*geo_term 
 

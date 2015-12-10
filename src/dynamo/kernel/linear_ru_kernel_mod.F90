@@ -21,8 +21,7 @@ use kernel_mod,         only : kernel_type
 use argument_mod,       only : arg_type, func_type,                     &
                                GH_FIELD, GH_READ, GH_INC,               &
                                W0, W2, W3,                              &
-                               GH_BASIS, GH_DIFF_BASIS, GH_ORIENTATION, &
-                               CELLS
+                               GH_BASIS, GH_DIFF_BASIS, CELLS
 use constants_mod,      only : GRAVITY, Cp, r_def
 use configuration_mod,  only : omega
 use initialisation_mod, only : itest_option, n_sq
@@ -44,7 +43,7 @@ type, public, extends(kernel_type) :: linear_ru_kernel_type
        arg_type(GH_FIELD*3, GH_READ, W0)                               &
        /)
   type(func_type) :: meta_funcs(3) = (/                                &
-       func_type(W2, GH_BASIS, GH_DIFF_BASIS, GH_ORIENTATION),         &
+       func_type(W2, GH_BASIS, GH_DIFF_BASIS),                         &
        func_type(W3, GH_BASIS),                                        &
        func_type(W0, GH_BASIS, GH_DIFF_BASIS)                          &
        /)
@@ -81,7 +80,6 @@ end function linear_ru_kernel_constructor
 !! @param[in] w2_diff_basis Real 4-dim array holding differntial of the basis functions evaluated at  quadrature points
 !! @param[in] boundary_value array of flags (= 0) for dofs that live on the
 !!            vertical boundaries of the cell (=1 for other dofs)
-!! @param[in] orientation_w2 The cell orientation array for w2 
 !! @param[inout] r_u Real array the data 
 !! @param[in] u Real array. The velocity
 !! @param[in] ndf_w3 The number of degrees of freedom per cell for w3
@@ -105,7 +103,7 @@ end function linear_ru_kernel_constructor
 !! @param[in] wqp_v Real array. Quadrature weights vertical
 subroutine linear_ru_code(nlayers,                                             &
                           ndf_w2, undf_w2, map_w2, w2_basis, w2_diff_basis,    &
-                          boundary_value, orientation, r_u, u,                 &
+                          boundary_value, r_u, u,                              &
                           ndf_w3, undf_w3, map_w3, w3_basis, rho,              &
                           ndf_w0, undf_w0, map_w0, w0_basis, w0_diff_basis,    &
                           theta, phi, chi_1, chi_2, chi_3,                     &
@@ -131,7 +129,6 @@ subroutine linear_ru_code(nlayers,                                             &
   integer, dimension(ndf_w3), intent(in) :: map_w3
   
   integer, dimension(ndf_w2,2), intent(in) :: boundary_value
-  integer, dimension(ndf_w2),   intent(in) :: orientation 
 
   real(kind=r_def), dimension(1,ndf_w3,nqp_h,nqp_v), intent(in) :: w3_basis  
   real(kind=r_def), dimension(3,ndf_w2,nqp_h,nqp_v), intent(in) :: w2_basis 
@@ -226,13 +223,13 @@ subroutine linear_ru_code(nlayers,                                             &
                                theta_s_at_quad)
 
         do df = 1, ndf_w2
-          v = real(orientation(df),r_def)*w2_basis(:,df,qp1,qp2)
-          jac_v = matmul(jac(:,:,qp1,qp2),real(orientation(df),r_def)*w2_basis(:,df,qp1,qp2))
+          v = w2_basis(:,df,qp1,qp2)
+          jac_v = matmul(jac(:,:,qp1,qp2),w2_basis(:,df,qp1,qp2))
           buoy_term = dot_product( v, grad_phi_at_quad ) &
                     *(theta_at_quad/theta_s_at_quad)
           grad_term = Cp*exner_at_quad*theta_s_at_quad*( &
                       n_sq/GRAVITY*dot_product( v, grad_phi_at_quad ) + &
-                      real(orientation(df),r_def)*w2_diff_basis(1,df,qp1,qp2) )
+                      w2_diff_basis(1,df,qp1,qp2) )
 
           coriolis_term = dot_product(jac_v/dj(qp1,qp2),omega_cross_u)
 

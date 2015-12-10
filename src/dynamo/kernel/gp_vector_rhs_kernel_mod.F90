@@ -14,7 +14,7 @@ use argument_mod,            only : arg_type, func_type,           &
                                     GH_FIELD, GH_INC, GH_READ,     &
                                     W0, ANY_SPACE_1, ANY_SPACE_2,  &
                                     GH_BASIS, GH_DIFF_BASIS,       &
-                                    GH_ORIENTATION, CELLS
+                                    CELLS
 
 implicit none
 
@@ -32,7 +32,7 @@ type, public, extends(kernel_type) :: gp_vector_rhs_kernel_type
   type(func_type) :: meta_funcs(3) = (/                                &
        func_type(ANY_SPACE_1, GH_BASIS),                               &
        func_type(ANY_SPACE_2, GH_BASIS),                               &
-       func_type(W0,          GH_BASIS, GH_DIFF_BASIS, GH_ORIENTATION) &
+       func_type(W0,          GH_BASIS, GH_DIFF_BASIS)                 &
        /)
   integer :: iterates_over = CELLS
 
@@ -74,7 +74,6 @@ end function gp_vector_rhs_kernel_constructor
 !! @param[in] gq Type, gaussian quadrature rule
 !! @param[in] ndf_f The number of degrees of freedom per cell for the field to be projected
 !! @param[in] map_f Integer array holding the dofmap for the cell at the base of the column
-!! @param[in] orientation The orientation array for the vector field to be projected
 !! @param[in] field The field to be projected 
 !! @param[in] ndf_chi the numbe rof dofs per cell for the coordinate field
 !! @param[in] map_chi the dofmap for the coordinate field
@@ -92,7 +91,6 @@ subroutine gp_vector_rhs_code(nlayers, &
                               ndf_f, undf_f, map_f, f_basis, &
                               ndf_chi, undf_chi, &
                               map_chi, chi_basis, chi_diff_basis, &
-                              orientation,                        &
                               nqp_h, nqp_v, wqp_h, wqp_v &
                              )
                        
@@ -109,7 +107,6 @@ subroutine gp_vector_rhs_code(nlayers, &
   integer, dimension(ndf),     intent(in) :: map
   integer, dimension(ndf_f),   intent(in) :: map_f
   integer, dimension(ndf_chi), intent(in) :: map_chi
-  integer, dimension(ndf_f),   intent(in) :: orientation
 
   real(kind=r_def), intent(in), dimension(1,ndf,    nqp_h,nqp_v) :: basis 
   real(kind=r_def), intent(in), dimension(3,ndf_f,  nqp_h,nqp_v) :: f_basis 
@@ -153,8 +150,7 @@ subroutine gp_vector_rhs_code(nlayers, &
           u_at_quad(:) = 0.0_r_def
           do df2 = 1,ndf_f
             u_at_quad(:) = u_at_quad(:) &
-                         + f_basis(:,df2,qp1,qp2)*field(map_f(df2) + k) &
-                          *real(orientation(df2),r_def)
+                         + f_basis(:,df2,qp1,qp2)*field(map_f(df2) + k) 
           end do
 ! For W2 space            
           u_at_quad(:) = matmul(jacobian(:,:,qp1,qp2),u_at_quad(:))/dj(qp1,qp2)

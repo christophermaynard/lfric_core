@@ -51,7 +51,7 @@ contains
     integer                 :: nlayers, nqp_h, nqp_v
     integer                 :: ndf_w0, undf_w0, dim_w0, dim_diff_w0
     integer                 :: ndf_w2, undf_w2, dim_w2
-    integer, pointer        :: map_w2(:), map_w0(:), orientation_w2(:) => null()
+    integer, pointer        :: map_w2(:), map_w0(:) => null()
 
     type( field_proxy_type )        :: r_theta_proxy, u_proxy, phi_proxy 
     
@@ -138,7 +138,6 @@ contains
     map_w0 => r_theta_proxy%vspace%get_cell_dofmap( cell )
     map_w2 => u_proxy%vspace%get_cell_dofmap( cell )
 
-    orientation_w2 => u_proxy%vspace%get_cell_orientation ( cell )
     ! Create the data
     r_theta_proxy%data(:) = 0.0_r_def
     u_proxy%data(:) = 0.0_r_def
@@ -158,7 +157,6 @@ contains
                              ndf_w2, undf_w2, &
                              map_w2, &
                              basis_w2, &
-                             orientation_w2, &
                              nqp_h, nqp_v, wh, wv &
                              )
 

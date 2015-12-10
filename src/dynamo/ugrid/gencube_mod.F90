@@ -346,6 +346,7 @@ subroutine generate(self)
   call part6(self)
   call part7(self)
   call part8(self)
+  call part9(self)
 
   return
 end subroutine generate
@@ -1276,6 +1277,37 @@ subroutine part8(self)
   return
 end subroutine part8
 
+!>details Rotate elements on certain panels so that there is no
+!! change in normal or tangent orientation between panels
+!!  @param[in,out]  self     The cubed-sphere function object.
+subroutine part9(self)
+  !Arguments
+  class(gencube_type), intent(inout) :: self
+
+  integer :: grid, ncell, npanel, cell
+  integer, parameter :: clockwise = 1,&
+                        anticlockwise = -1
+
+  do grid = 1,NGRIDS
+    ncell = self%nface(grid)
+    npanel = ncell/6
+    ! Panel 3
+    do cell = 2*npanel+1,3*npanel
+      call rotate_cell(self%fnxtf(cell,:,grid), self%voff(cell,:,grid), self%eoff(cell,:,grid), clockwise) 
+    end do
+    ! Panel 4 & 5
+    do cell = 3*npanel+1,5*npanel
+      call rotate_cell(self%fnxtf(cell,:,grid), self%voff(cell,:,grid), self%eoff(cell,:,grid), anticlockwise) 
+      call rotate_cell(self%fnxtf(cell,:,grid), self%voff(cell,:,grid), self%eoff(cell,:,grid), anticlockwise) 
+    end do
+    ! Panel 6
+    do cell = 5*npanel+1,6*npanel
+      call rotate_cell(self%fnxtf(cell,:,grid), self%voff(cell,:,grid), self%eoff(cell,:,grid), clockwise) 
+    end do
+  end do
+
+end subroutine part9
+
 !-------------------------------------------------------------------------------
 !>  @brief     Write mesh data to rough-and-ready files.
 !!
@@ -1468,5 +1500,42 @@ subroutine addtab(tab,index,entry,dim1,dim2)
 
   return
 end subroutine addtab
+
+!> @brief Rotate a cell
+subroutine rotate_cell(cell_next, vert_on_cell, edge_on_cell, direction)
+  implicit none
+ 
+  integer, intent(inout) :: cell_next(4), &
+                            vert_on_cell(4), &
+                            edge_on_cell(4)  
+  integer, intent(in)    :: direction
+
+  integer, parameter :: clockwise = 1
+  integer ::  local(4)
+
+  if ( direction == clockwise ) then
+    local = cell_next
+    cell_next(2:4) = local(1:3)
+    cell_next(1)   = local(4)
+    local = vert_on_cell
+    vert_on_cell(2:4) = local(1:3)
+    vert_on_cell(1)   = local(4)
+    local = edge_on_cell
+    edge_on_cell(2:4) = local(1:3)
+    edge_on_cell(1)   = local(4)
+  else
+    local = cell_next
+    cell_next(1:3) = local(2:4)
+    cell_next(4)   = local(1)
+    local = vert_on_cell
+    vert_on_cell(1:3) = local(2:4)
+    vert_on_cell(4)   = local(1)
+    local = edge_on_cell
+    edge_on_cell(1:3) = local(2:4)
+    edge_on_cell(4)   = local(1)
+
+  end if
+
+end subroutine rotate_cell
 
 end module gencube_mod

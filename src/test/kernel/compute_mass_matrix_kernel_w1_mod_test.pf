@@ -54,7 +54,6 @@ contains
     integer :: nqp_h, nqp_v
 
     integer, pointer        ::  map_chi(:)  => null()
-    integer, pointer        ::  orientation_w1(:) => null()
     real ( kind=r_def ), allocatable :: diff_basis(:,:,:,:), &
                                         basis(:,:,:,:)
     type( operator_proxy_type) :: mm_p
@@ -122,7 +121,6 @@ contains
 
     cell = 1
     map_chi => chi_p(1)%vspace%get_cell_dofmap(cell)
-    orientation_w1 => mm_p%fs_from%get_cell_orientation ( cell )
     mm_p%local_stencil(:,:,:) = 0.0_r_def
     call compute_mass_matrix_w1_code( cell,                              &
                                       nlayers,                           &
@@ -133,7 +131,6 @@ contains
                                       chi_p(3)%data,                     &
                                       ndf,                               &
                                       basis,                             &
-                                      orientation_w1,                    &
                                       ndf_chi,                           &
                                       undf_chi,                          &
                                       map_chi,                           &

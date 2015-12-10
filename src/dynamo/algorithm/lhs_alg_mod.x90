@@ -60,7 +60,8 @@ contains
 
   real(kind=r_def),             intent(in)    :: alpha_dt
   ! Form of state and lhs is [u,theta,rho] & [lhs_u,lhs_theta,lhs_rho]
-  type(field_type), target,     intent(inout) :: state(3), ref_state(3)
+  type(field_type), target,     intent(inout) :: state(3)
+  type(field_type), target,     intent(in)    :: ref_state(3)
   type(field_type),             intent(inout) :: lhs(3)
   type(runtime_constants_type), intent(in)    :: runtime_constants
 

@@ -21,7 +21,7 @@ use argument_mod,            only: arg_type, func_type,            &
                                    GH_OPERATOR, GH_FIELD,          &
                                    GH_READ, GH_WRITE,              &
                                    W0, W1, GH_BASIS,               &
-                                   GH_DIFF_BASIS, GH_ORIENTATION,  &
+                                   GH_DIFF_BASIS,                  &
                                    CELLS
 use coordinate_jacobian_mod, only: coordinate_jacobian, &
                                    coordinate_jacobian_inverse
@@ -39,7 +39,7 @@ type, public, extends(kernel_type) :: compute_mass_matrix_kernel_w1_type
        /)
   type(func_type) :: meta_funcs(2) = (/                                &
        func_type(W0, GH_DIFF_BASIS),                                   &
-       func_type(W1, GH_BASIS, GH_ORIENTATION)                         &
+       func_type(W1, GH_BASIS)                                         &
        /)
   integer :: iterates_over = CELLS
 
@@ -72,7 +72,6 @@ end function compute_mass_matrix_constructor
 !! @param[in] ndf_w1 Integer: The number of degrees of freedom per cell.
 !! @param[in] ncell_3d Integer: ncell*ndf
 !! @param[in] basis_w1 Real: 4-dim array holding VECTOR basis functions evaluated at quadrature points.
-!! @param[in] orientation_w1 The orientation array for W1
 !! @param[in] mm Real array, the local stencil or mass matrix
 !! @param[in] ndf_chi Integer: number of degrees of freedum per cell for chi field
 !! @param[in] undf_chi Integer: number of unique degrees of freedum  for chi field
@@ -89,7 +88,7 @@ end function compute_mass_matrix_constructor
 subroutine compute_mass_matrix_w1_code(cell, nlayers, ncell_3d,          &
                                        mm,                               &
                                        chi1, chi2, chi3,                 &
-                                       ndf_w1, basis_w1, orientation_w1, &
+                                       ndf_w1, basis_w1,                 &
                                        ndf_chi, undf_chi,                &
                                        map_chi, diff_basis_chi,          &
                                        nqp_h, nqp_v, wqp_h, wqp_v )
@@ -101,7 +100,6 @@ subroutine compute_mass_matrix_w1_code(cell, nlayers, ncell_3d,          &
   integer,   intent(in)     :: ndf_chi
   integer,   intent(in)     :: undf_chi
   integer, dimension(ndf_chi), intent(in) :: map_chi
-  integer, dimension(ndf_w1),  intent(in) :: orientation_w1
   real(kind=r_def), dimension(ndf_w1,ndf_w1,ncell_3d),  intent(inout)  :: mm
   real(kind=r_def), dimension(3,ndf_chi,nqp_h,nqp_v), intent(in) :: diff_basis_chi
   real(kind=r_def), dimension(3,ndf_w1,nqp_h,nqp_v), intent(in)     :: basis_w1
@@ -140,12 +138,12 @@ subroutine compute_mass_matrix_w1_code(cell, nlayers, ncell_3d,          &
           mm(df,df2,ik) = 0.0_r_def
           do qp2 = 1, nqp_v
              do qp1 = 1, nqp_h
-                integrand = wqp_h(qp1) * wqp_v(qp2) *                           & 
-                     dot_product(                                               &
-                     matmul(transpose(jac_inv(:,:,qp1,qp2)),                    &
-                            basis_w1(:,df,qp1,qp2)*real(orientation_w1(df),r_def)),   &
-                     matmul(transpose(jac_inv(:,:,qp1,qp2)),                    &
-                            basis_w1(:,df2,qp1,qp2)*real(orientation_w1(df2),r_def) ) &
+                integrand = wqp_h(qp1) * wqp_v(qp2) *                         & 
+                     dot_product(                                             &
+                     matmul(transpose(jac_inv(:,:,qp1,qp2)),                  &
+                            basis_w1(:,df,qp1,qp2)),                          &
+                     matmul(transpose(jac_inv(:,:,qp1,qp2)),                  &
+                            basis_w1(:,df2,qp1,qp2))                          &
                                 )*dj(qp1,qp2) 
                 mm(df,df2,ik) = mm(df,df2,ik) + integrand
              end do

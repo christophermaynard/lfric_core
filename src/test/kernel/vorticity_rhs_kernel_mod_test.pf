@@ -50,9 +50,7 @@ contains
 
     integer, pointer :: map_xi(:) => null(), &
                         map_u(:) => null(), & 
-                        map_chi(:) => null(), &
-                        orientation_u(:) => null(), &
-                        orientation_xi(:) => null()
+                        map_chi(:) => null()
 
     real(kind=r_def), pointer :: xp(:,:) => null()
     real(kind=r_def), pointer :: zp(:)   => null()
@@ -134,8 +132,6 @@ contains
     map_u   => u_p%vspace%get_cell_dofmap( cell )
     map_xi  => rhs_p%vspace%get_cell_dofmap( cell )
     map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
-    orientation_u => u_p%vspace%get_cell_orientation ( cell )
-    orientation_xi => rhs_p%vspace%get_cell_orientation ( cell )
 
     ! Create the data
     rhs_p%data(:) = 0.0_r_def
@@ -154,12 +150,10 @@ contains
                            undf_xi, &
                            map_xi, &
                            diff_basis_xi, &
-                           orientation_xi, &
                            ndf_u, &
                            undf_u, &
                            map_u, &
                            basis_u, &   
-                           orientation_u, &
                            ndf_chi, &
                            undf_chi, &
                            map_chi, &

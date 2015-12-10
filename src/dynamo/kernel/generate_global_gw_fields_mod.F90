@@ -92,6 +92,8 @@ pure function generate_global_gw_pert(lon, lat, z) result(theta)
 !> @param[in] z The height (m) above the mean surface of the point to compute the fields at
 !> @result theta the potential temperature perturbation at the desired point
 
+  use configuration_mod, only: earth_scaling
+
 implicit none
 
   real(kind=r_def)              :: theta
@@ -100,18 +102,20 @@ implicit none
   real(kind=r_def) :: sin_tmp, cos_tmp, r, shape_function
 
   real(kind=r_def), parameter :: LAMBDAC = 2.0_r_def*PI/3.0_r_def,     &     ! Lon of Pert Center
-                                 D       = 5000.0_r_def,               &     ! Width for Pert
+                                 D       = 625000.0_r_def,             &     ! Width for Pert
                                  PHIC    = 0.0_r_def,                  &     ! Lat of Pert Center
                                  DELTA_THETA = 1.0_r_def,              &     ! Max Amplitude of Pert
                                  LZ      = 10000.0_r_def                     ! Vertical half-Wavelength of Pert
+
+ real(kind=r_def) :: D_scaled
  
   sin_tmp = sin(lat) * sin(PHIC)
   cos_tmp = cos(lat) * cos(PHIC)
 
 ! great circle distance  
   r  = earth_radius * acos (sin_tmp + cos_tmp*cos(lon-LAMBDAC)) 
-
-  shape_function = (D**2)/(D**2 + r**2)
+  D_scaled = D/earth_scaling
+  shape_function = (D_scaled**2)/(D_scaled**2 + r**2)
 
   theta = DELTA_THETA*shape_function*sin(PI*z/LZ)
 end function generate_global_gw_pert

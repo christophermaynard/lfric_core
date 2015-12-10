@@ -25,7 +25,6 @@ use kernel_mod,              only : kernel_type
 use argument_mod,            only : arg_type, func_type,                 &
                                     GH_FIELD, GH_READ, GH_INC,           &
                                     W0, W2, W3, GH_BASIS, GH_DIFF_BASIS, &
-                                    GH_ORIENTATION,                      &
                                     CELLS 
 use constants_mod,           only : cp, r_def
 
@@ -43,7 +42,7 @@ type, public, extends(kernel_type) :: pressure_gradient_kernel_type
        arg_type(GH_FIELD,   GH_READ, W0)                               &
        /)
   type(func_type) :: meta_funcs(3) = (/                                &
-       func_type(W2, GH_BASIS, GH_DIFF_BASIS, GH_ORIENTATION),         &
+       func_type(W2, GH_BASIS, GH_DIFF_BASIS),                         &
        func_type(W3, GH_BASIS),                                        &
        func_type(W0, GH_BASIS, GH_DIFF_BASIS)                          &
        /)
@@ -78,7 +77,6 @@ end function pressure_gradient_kernel_constructor
 !! @param[in] map_w2 Integer array holding the dofmap for the cell at the base of the column for w2
 !! @param[in] w2_basis Real 4-dim array holding basis functions evaluated at quadrature points 
 !! @param[in] w2_diff_basis Real 4-dim array holding differntial of the basis functions evaluated at  quadrature points
-!! @param[in] orientation_w2 Orientation array for w2 fields
 !! @param[inout] r_u Real array the data 
 !! @param[in] ndf_w3 The number of degrees of freedom per cell for w3
 !! @param[in] undf_w3 The number unique of degrees of freedom  for w3
@@ -98,7 +96,6 @@ end function pressure_gradient_kernel_constructor
 subroutine pressure_gradient_code(nlayers,                                          &
                                   r_u, rho, theta,                                  &
                                   ndf_w2, undf_w2, map_w2, w2_basis, w2_diff_basis, &
-                                  orientation_w2,                                   &
                                   ndf_w3, undf_w3, map_w3, w3_basis,                &
                                   ndf_w0, undf_w0, map_w0, w0_basis, w0_diff_basis, &
                                   nqp_h, nqp_v, wqp_h, wqp_v                        &
@@ -114,7 +111,6 @@ subroutine pressure_gradient_code(nlayers,                                      
   integer, dimension(ndf_w2), intent(in) :: map_w2
   integer, dimension(ndf_w3), intent(in) :: map_w3
   
-  integer, dimension(ndf_w2), intent(in) :: orientation_w2
 
 
   real(kind=r_def), dimension(1,ndf_w3,nqp_h,nqp_v), intent(in) :: w3_basis  
@@ -172,8 +168,8 @@ subroutine pressure_gradient_code(nlayers,                                      
         exner_at_quad = calc_exner_pointwise(rho_at_quad, theta_at_quad)
 
         do df = 1, ndf_w2
-          v  = w2_basis(:,df,qp1,qp2)*real(orientation_w2(df),r_def)
-          dv = w2_diff_basis(1,df,qp1,qp2)*real(orientation_w2(df),r_def)
+          v  = w2_basis(:,df,qp1,qp2)
+          dv = w2_diff_basis(1,df,qp1,qp2)
 
 !pressure gradient term
           grad_term = cp*exner_at_quad * (                           & 

@@ -297,7 +297,7 @@ contains
           lx(idx) =  jx
           ly(idx) =  jy
           lz(idx) =  jz
-          unit_vec_w1(idx,1) = 1.0_r_def
+          unit_vec_w1(idx,:) = tangent_to_edge(2,:)
           idx = idx + 1
         end do
       end do
@@ -309,7 +309,7 @@ contains
           lx(idx) =  jx
           ly(idx) =  jy
           lz(idx) =  jz
-          unit_vec_w1(idx,2) = 1.0_r_def
+          unit_vec_w1(idx,:) = tangent_to_edge(1,:)
           idx = idx + 1
         end do
       end do
@@ -321,7 +321,7 @@ contains
           lx(idx) =  jx
           ly(idx) =  jy
           lz(idx) =  jz
-          unit_vec_w1(idx,3) = 1.0_r_def
+          unit_vec_w1(idx,:) = tangent_to_edge(5,:)
           idx = idx + 1
         end do
       end do
@@ -373,20 +373,20 @@ contains
     do i=1,w_unique_dofs(2,2)
  
        w1_nodal_coords(1,i)= &
-             unit_vec_w1(i,1)*x2(lx(i)) + (1.0_r_def - unit_vec_w1(i,1))*x1(lx(i))
+             abs(unit_vec_w1(i,1))*x2(lx(i)) + (1.0_r_def - abs(unit_vec_w1(i,1)))*x1(lx(i))
        w1_nodal_coords(2,i)= &
-             unit_vec_w1(i,2)*x2(ly(i)) + (1.0_r_def - unit_vec_w1(i,2))*x1(ly(i))
+             abs(unit_vec_w1(i,2))*x2(ly(i)) + (1.0_r_def - abs(unit_vec_w1(i,2)))*x1(ly(i))
        w1_nodal_coords(3,i)= &
-             unit_vec_w1(i,3)*x2(lz(i)) + (1.0_r_def - unit_vec_w1(i,3))*x1(lz(i))
+             abs(unit_vec_w1(i,3))*x2(lz(i)) + (1.0_r_def - abs(unit_vec_w1(i,3)))*x1(lz(i))
 
-       w1_basis_order(1,i) = order - int(unit_vec_w1(i,1))
-       w1_basis_order(2,i) = order - int(unit_vec_w1(i,2))
-       w1_basis_order(3,i) = order - int(unit_vec_w1(i,3))
+       w1_basis_order(1,i) = order - int(abs(unit_vec_w1(i,1)))
+       w1_basis_order(2,i) = order - int(abs(unit_vec_w1(i,2)))
+       w1_basis_order(3,i) = order - int(abs(unit_vec_w1(i,3)))
 
        w1_basis_vector(:,i) = unit_vec_w1(i,:)
-       w1_basis_x(:,1,i) = unit_vec_w1(i,1)*x2(:) + (1.0_r_def - unit_vec_w1(i,1))*x1(:)
-       w1_basis_x(:,2,i) = unit_vec_w1(i,2)*x2(:) + (1.0_r_def - unit_vec_w1(i,2))*x1(:)
-       w1_basis_x(:,3,i) = unit_vec_w1(i,3)*x2(:) + (1.0_r_def - unit_vec_w1(i,3))*x1(:)
+       w1_basis_x(:,1,i) = abs(unit_vec_w1(i,1))*x2(:) + (1.0_r_def - abs(unit_vec_w1(i,1)))*x1(:)
+       w1_basis_x(:,2,i) = abs(unit_vec_w1(i,2))*x2(:) + (1.0_r_def - abs(unit_vec_w1(i,2)))*x1(:)
+       w1_basis_x(:,3,i) = abs(unit_vec_w1(i,3))*x2(:) + (1.0_r_def - abs(unit_vec_w1(i,3)))*x1(:)
 
     end do
     w1_basis_index(1,:) = lx(1:w_unique_dofs(2,2))
@@ -417,7 +417,7 @@ contains
           lx(idx) =  jx
           ly(idx) =  jy
           lz(idx) =  jz
-          unit_vec_w2(idx,1) = 1.0_r_def
+          unit_vec_w2(idx,:) =  normal_to_face(1,:)
           idx = idx + 1
         end do
       end do
@@ -429,7 +429,7 @@ contains
           lx(idx) =  jx
           ly(idx) =  jy
           lz(idx) =  jz
-          unit_vec_w2(idx,2) = 1.0_r_def
+          unit_vec_w2(idx,:) =  normal_to_face(2,:)
           idx = idx + 1
         end do
       end do
@@ -441,7 +441,7 @@ contains
           lx(idx) =  jx
           ly(idx) =  jy
           lz(idx) =  jz
-          unit_vec_w2(idx,3) = 1.0_r_def
+          unit_vec_w2(idx,:) =  normal_to_face(5,:)
           idx = idx + 1
         end do
       end do
@@ -468,20 +468,20 @@ contains
     do i=1,w_unique_dofs(3,2)
 
        w2_nodal_coords(1,i)= &
-             unit_vec_w2(i,1)*x1(lx(i)) + (1.0_r_def - unit_vec_w2(i,1))*x2(lx(i))
+             abs(unit_vec_w2(i,1))*x1(lx(i)) + (1.0_r_def - abs(unit_vec_w2(i,1)))*x2(lx(i))
        w2_nodal_coords(2,i)= &
-             unit_vec_w2(i,2)*x1(ly(i)) + (1.0_r_def - unit_vec_w2(i,2))*x2(ly(i))
+             abs(unit_vec_w2(i,2))*x1(ly(i)) + (1.0_r_def - abs(unit_vec_w2(i,2)))*x2(ly(i))
        w2_nodal_coords(3,i)= &
-             unit_vec_w2(i,3)*x1(lz(i)) + (1.0_r_def - unit_vec_w2(i,3))*x2(lz(i))
+             abs(unit_vec_w2(i,3))*x1(lz(i)) + (1.0_r_def - abs(unit_vec_w2(i,3)))*x2(lz(i))
 
-       w2_basis_order(1,i) = order - int(1 - unit_vec_w2(i,1))
-       w2_basis_order(2,i) = order - int(1 - unit_vec_w2(i,2))
-       w2_basis_order(3,i) = order - int(1 - unit_vec_w2(i,3))
+       w2_basis_order(1,i) = order - int(1 - abs(unit_vec_w2(i,1)))
+       w2_basis_order(2,i) = order - int(1 - abs(unit_vec_w2(i,2)))
+       w2_basis_order(3,i) = order - int(1 - abs(unit_vec_w2(i,3)))
 
        w2_basis_vector(:,i) = unit_vec_w2(i,:)
-       w2_basis_x(:,1,i) = unit_vec_w2(i,1) *x1(:) + (1.0_r_def - unit_vec_w2(i,1))*x2(:)
-       w2_basis_x(:,2,i) = unit_vec_w2(i,2) *x1(:) + (1.0_r_def - unit_vec_w2(i,2))*x2(:)
-       w2_basis_x(:,3,i) = unit_vec_w2(i,3) *x1(:) + (1.0_r_def - unit_vec_w2(i,3))*x2(:)
+       w2_basis_x(:,1,i) = abs(unit_vec_w2(i,1)) *x1(:) + (1.0_r_def - abs(unit_vec_w2(i,1)))*x2(:)
+       w2_basis_x(:,2,i) = abs(unit_vec_w2(i,2)) *x1(:) + (1.0_r_def - abs(unit_vec_w2(i,2)))*x2(:)
+       w2_basis_x(:,3,i) = abs(unit_vec_w2(i,3)) *x1(:) + (1.0_r_def - abs(unit_vec_w2(i,3)))*x2(:)
     end do
 
     w2_basis_index(1,:) = lx(1:w_unique_dofs(3,2))
@@ -604,7 +604,7 @@ contains
           lx(idx) =  jx
           ly(idx) =  jy
           lz(idx) =  jz
-          unit_vec_w2v(idx,3) = 1.0_r_def
+          unit_vec_w2v(idx,:) =  normal_to_face(5,:)
           idx = idx + 1
         end do
       end do
@@ -631,20 +631,20 @@ contains
     do i=1,w_unique_dofs(6,2)
 
        w2v_nodal_coords(1,i)= &
-             unit_vec_w2v(i,1)*x1(lx(i)) + (1.0_r_def - unit_vec_w2v(i,1))*x2(lx(i))
+             abs(unit_vec_w2v(i,1))*x1(lx(i)) + (1.0_r_def - abs(unit_vec_w2v(i,1)))*x2(lx(i))
        w2v_nodal_coords(2,i)= &
-             unit_vec_w2v(i,2)*x1(ly(i)) + (1.0_r_def - unit_vec_w2v(i,2))*x2(ly(i))
+             abs(unit_vec_w2v(i,2))*x1(ly(i)) + (1.0_r_def - abs(unit_vec_w2v(i,2)))*x2(ly(i))
        w2v_nodal_coords(3,i)= &
-             unit_vec_w2v(i,3)*x1(lz(i)) + (1.0_r_def - unit_vec_w2v(i,3))*x2(lz(i))
+             abs(unit_vec_w2v(i,3))*x1(lz(i)) + (1.0_r_def - abs(unit_vec_w2v(i,3)))*x2(lz(i))
 
-       w2v_basis_order(1,i) = order - int(1 - unit_vec_w2v(i,1))
-       w2v_basis_order(2,i) = order - int(1 - unit_vec_w2v(i,2))
-       w2v_basis_order(3,i) = order - int(1 - unit_vec_w2v(i,3))
+       w2v_basis_order(1,i) = order - int(1 - abs(unit_vec_w2v(i,1)))
+       w2v_basis_order(2,i) = order - int(1 - abs(unit_vec_w2v(i,2)))
+       w2v_basis_order(3,i) = order - int(1 - abs(unit_vec_w2v(i,3)))
 
        w2v_basis_vector(:,i) = unit_vec_w2v(i,:)
-       w2v_basis_x(:,1,i) = unit_vec_w2v(i,1) *x1(:) + (1.0_r_def - unit_vec_w2v(i,1))*x2(:)
-       w2v_basis_x(:,2,i) = unit_vec_w2v(i,2) *x1(:) + (1.0_r_def - unit_vec_w2v(i,2))*x2(:)
-       w2v_basis_x(:,3,i) = unit_vec_w2v(i,3) *x1(:) + (1.0_r_def - unit_vec_w2v(i,3))*x2(:)
+       w2v_basis_x(:,1,i) = abs(unit_vec_w2v(i,1)) *x1(:) + (1.0_r_def - abs(unit_vec_w2v(i,1)))*x2(:)
+       w2v_basis_x(:,2,i) = abs(unit_vec_w2v(i,2)) *x1(:) + (1.0_r_def - abs(unit_vec_w2v(i,2)))*x2(:)
+       w2v_basis_x(:,3,i) = abs(unit_vec_w2v(i,3)) *x1(:) + (1.0_r_def - abs(unit_vec_w2v(i,3)))*x2(:)
     end do
 
     w2v_basis_index(1,:) = lx(1:w_unique_dofs(6,2))
@@ -673,7 +673,7 @@ contains
           lx(idx) =  jx
           ly(idx) =  jy
           lz(idx) =  jz
-          unit_vec_w2h(idx,1) = 1.0_r_def
+          unit_vec_w2h(idx,:) =  normal_to_face(1,:)
           idx = idx + 1
         end do
       end do
@@ -685,7 +685,7 @@ contains
           lx(idx) =  jx
           ly(idx) =  jy
           lz(idx) =  jz
-          unit_vec_w2h(idx,2) = 1.0_r_def
+          unit_vec_w2h(idx,:) =  normal_to_face(2,:)
           idx = idx + 1
         end do
       end do
@@ -712,20 +712,20 @@ contains
     do i=1,w_unique_dofs(7,2)
 
        w2h_nodal_coords(1,i)= &
-             unit_vec_w2h(i,1)*x1(lx(i)) + (1.0_r_def - unit_vec_w2h(i,1))*x2(lx(i))
+             abs(unit_vec_w2h(i,1))*x1(lx(i)) + (1.0_r_def - abs(unit_vec_w2h(i,1)))*x2(lx(i))
        w2h_nodal_coords(2,i)= &
-             unit_vec_w2h(i,2)*x1(ly(i)) + (1.0_r_def - unit_vec_w2h(i,2))*x2(ly(i))
+             abs(unit_vec_w2h(i,2))*x1(ly(i)) + (1.0_r_def - abs(unit_vec_w2h(i,2)))*x2(ly(i))
        w2h_nodal_coords(3,i)= &
-             unit_vec_w2h(i,3)*x1(lz(i)) + (1.0_r_def - unit_vec_w2h(i,3))*x2(lz(i))
+             abs(unit_vec_w2h(i,3))*x1(lz(i)) + (1.0_r_def - abs(unit_vec_w2h(i,3)))*x2(lz(i))
 
-       w2h_basis_order(1,i) = order - int(1 - unit_vec_w2h(i,1))
-       w2h_basis_order(2,i) = order - int(1 - unit_vec_w2h(i,2))
-       w2h_basis_order(3,i) = order - int(1 - unit_vec_w2h(i,3))
+       w2h_basis_order(1,i) = order - int(1 - abs(unit_vec_w2h(i,1)))
+       w2h_basis_order(2,i) = order - int(1 - abs(unit_vec_w2h(i,2)))
+       w2h_basis_order(3,i) = order - int(1 - abs(unit_vec_w2h(i,3)))
 
        w2h_basis_vector(:,i) = unit_vec_w2h(i,:)
-       w2h_basis_x(:,1,i) = unit_vec_w2h(i,1) *x1(:) + (1.0_r_def - unit_vec_w2h(i,1))*x2(:)
-       w2h_basis_x(:,2,i) = unit_vec_w2h(i,2) *x1(:) + (1.0_r_def - unit_vec_w2h(i,2))*x2(:)
-       w2h_basis_x(:,3,i) = unit_vec_w2h(i,3) *x1(:) + (1.0_r_def - unit_vec_w2h(i,3))*x2(:)
+       w2h_basis_x(:,1,i) = abs(unit_vec_w2h(i,1)) *x1(:) + (1.0_r_def - abs(unit_vec_w2h(i,1)))*x2(:)
+       w2h_basis_x(:,2,i) = abs(unit_vec_w2h(i,2)) *x1(:) + (1.0_r_def - abs(unit_vec_w2h(i,2)))*x2(:)
+       w2h_basis_x(:,3,i) = abs(unit_vec_w2h(i,3)) *x1(:) + (1.0_r_def - abs(unit_vec_w2h(i,3)))*x2(:)
     end do
 
     w2h_basis_index(1,:) = lx(1:w_unique_dofs(7,2))

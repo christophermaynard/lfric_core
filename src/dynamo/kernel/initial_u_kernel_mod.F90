@@ -8,15 +8,15 @@
 !> @brief Kernel which projects the components of a vector field into a scalar space 
 
 module initial_u_kernel_mod
-use kernel_mod,         only : kernel_type
-use argument_mod,       only : arg_type, func_type,           &
-                               GH_FIELD, GH_INC, GH_READ,     &
-                               W0, W2,                        &
-                               GH_BASIS, GH_DIFF_BASIS,       &
-                               GH_ORIENTATION, CELLS
-use constants_mod,      only : r_def, PI
-use configuration_mod,  only : earth_radius
-use initialisation_mod, only : U0, V0, initial_u_profile, rotation_angle
+use kernel_mod,              only : kernel_type
+use constants_mod,           only : r_def, PI
+use configuration_mod,       only : earth_radius
+use argument_mod,            only : arg_type, func_type,           &
+                                    GH_FIELD, GH_INC, GH_READ,     &
+                                    W0, W2,                        &
+                                    GH_BASIS, GH_DIFF_BASIS,       &
+                                    CELLS
+use initialisation_mod,      only : INITIAL_U_PROFILE, U0, V0, ROTATION_ANGLE
 implicit none
 
 !-------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ type, public, extends(kernel_type) :: initial_u_kernel_type
        ARG_TYPE(GH_FIELD*3, GH_READ, W0)                               &
        /)
   type(func_type) :: meta_funcs(2) = (/                                &
-       func_type(W2, GH_BASIS, GH_ORIENTATION),                        &
+       func_type(W2, GH_BASIS),                                        &
        func_type(W0, GH_BASIS, GH_DIFF_BASIS)                          &
        /)
   integer :: iterates_over = CELLS
@@ -69,7 +69,6 @@ end function initial_u_kernel_constructor
 !! @param[in] ndf The number of degrees of freedom per cell
 !! @param[in] map Integer array holding the dofmap for the cell at the base of the column
 !! @param[in] basis Real 5-dim array holding basis functions evaluated at gaussian quadrature points
-!! @param[in] orientation The orientation array for the vector field
 !! @param[inout] rhs Real array, the ths field to compute
 !! @param[in] gq Type, gaussian quadrature rule
 !! @param[in] ndf_chi the numbe rof dofs per cell for the coordinate field
@@ -85,7 +84,6 @@ subroutine initial_u_code(nlayers, &
                           chi_1, chi_2, chi_3, &
                           ndf, undf, &
                           map, basis, &
-                          orientation,                        &
                           ndf_chi, undf_chi, &
                           map_chi, chi_basis, chi_diff_basis, &
                           nqp_h, nqp_v, wqp_h, wqp_v &
@@ -103,7 +101,6 @@ subroutine initial_u_code(nlayers, &
 
   integer, dimension(ndf),     intent(in) :: map
   integer, dimension(ndf_chi), intent(in) :: map_chi
-  integer, dimension(ndf),     intent(in) :: orientation
 
   real(kind=r_def), intent(in), dimension(3,ndf,    nqp_h,nqp_v) :: basis 
   real(kind=r_def), intent(in), dimension(3,ndf_chi,nqp_h,nqp_v) :: chi_diff_basis
@@ -158,8 +155,7 @@ subroutine initial_u_code(nlayers, &
         end if
         do df = 1, ndf 
           integrand = dot_product(matmul(jacobian(:,:,qp1,qp2),&
-                                         basis(:,df,qp1,qp2)), &
-                                  u_physical)*real(orientation(df),r_def)
+                                         basis(:,df,qp1,qp2)),u_physical)
           rhs(map(df) + k) = rhs(map(df) + k) &
                            + wqp_h(qp1)*wqp_v(qp2)*integrand
         end do

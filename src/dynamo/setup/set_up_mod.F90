@@ -133,7 +133,7 @@ contains
                      w_unique_dofs=w_unique_dofs)
     
     ! compute cell local orientations for vector spaces
-    call get_orientation( mesh, w_unique_dofs, w_dof_entity )
+    call get_orientation( mesh, w_unique_dofs)
 
     return
 

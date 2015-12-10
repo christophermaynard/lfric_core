@@ -48,7 +48,6 @@ contains
     integer                 :: undf_w0, undf_w2
     integer                 :: diff_dim_w0, dim_w0, dim_w2
     integer, pointer        :: map_w2(:), map_w0(:) => null()
-    integer, pointer        :: orientation_w2(:) => null()
 
     type( field_proxy_type )        :: r_u_proxy 
     
@@ -125,7 +124,6 @@ contains
 
     map_w2 => r_u_proxy%vspace%get_cell_dofmap( cell )
     map_w0 => chi_p(1)%vspace%get_cell_dofmap( cell )
-    orientation_w2 => r_u_proxy%vspace%get_cell_orientation ( cell )
 
 ! Create the data
     r_u_proxy%data(:) = 0.0_r_def
@@ -137,7 +135,6 @@ contains
                          chi_p(3)%data,                                        &
                          ndf_w2, undf_w2,                                      &
                          map_w2, basis_w2,                                     &
-                         orientation_w2,                                       &
                          ndf_w0, undf_w0,                                      &
                          map_w0, basis_w0, diff_basis_w0,                      &   
                          nqp_h, nqp_v, wh, wv                                  &

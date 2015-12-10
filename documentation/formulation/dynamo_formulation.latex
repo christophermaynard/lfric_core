@@ -1339,6 +1339,51 @@ constant determinant of the Jacobian; this gives for Gauss-Legendre
 quadrature the order $n=k+2$ where $k$ is the order of the $\mathbb{W}_{3}$
 space.
 
+
+\section{Cube sphere grid generation\label{sec:cube-sphere-generation}}
+
+\begin{figure}
+\begin{centering}
+\includegraphics[scale=0.5]{cube_layout}\protect\caption{\label{fig:cube_sphere_layout}Layout of the cube sphere faces showing
+the panel local coordinate directions so that there is no change in
+orientation of normal or tangent directions between panels.}
+\par\end{centering}
+\end{figure}
+
+To map a point from a 2D Cartesian plane with coordinates $\left(\xi,\eta\right)$
+to a point on the unit sphere defined either in terms of 3D Cartesian
+coordinates $\left(x,y,z\right)$ with the origin at the centre of
+the sphere or to spherical coordinates $\left(\lambda,\phi,r\right)$
+the following procedure is used. First, subdivide the sphere into
+6 panels, numbered 1-6 as in Figure \ref{fig:cube_sphere_layout},
+then for a point $\left(\xi\,\eta\right)\in\left(-\frac{\pi}{4},\frac{\pi}{4}\right)^{2}$
+on the plane, the corresponding point $\left(x,y,z\right)$ on the
+front panel (labelled 1 in Fig. \ref{fig:cube_sphere_layout}) of
+the cubed sphere is given by 
+\begin{eqnarray}
+x & = & \left(\sqrt{1+X^{2}+Y^{2}}\right)^{-1},\label{eq:x_3d}\\
+y & = & xY,\label{eq:y_3d}\\
+z & = & xX,\label{eq:z_3d}
+\end{eqnarray}
+with $X\equiv\tan\left(\xi\right)$ and $Y\equiv\tan\left(\eta\right).$
+The coordinates on the other panels can be found by simple rotations
+of the values on a neighbouring face. From these the 3D spherical
+coordinates can be found through
+\begin{eqnarray}
+r & = & \sqrt{x^{2}+y^{2}+z^{2},}\label{eq:r_def}\\
+\lambda & = & \tan^{-1}\left(\frac{y}{x}\right),\label{eq:lambda_def}\\
+\phi & = & \cos^{-1}\left(\frac{z}{r}\right)-\frac{\pi}{2}.\label{eq:phi_def}
+\end{eqnarray}
+The mapping for a vector $\mathbf{u}\left(x,y,z\right)\equiv u_{1}\hat{\mathbf{x}}+u_{2}\hat{\mathbf{y}}+u_{3}\hat{\mathbf{z}}$
+defined in 3D Cartesian coordinates to $\mathbf{v}\left(\lambda,\phi,r\right)\equiv v_{1}\hat{\bm{\lambda}}+v_{2}\hat{\bm{\phi}}+v_{3}\hat{\bm{r}}$
+defined in 3D spherical coordinates is computed via 
+\begin{eqnarray}
+v_{1} & = & \frac{xu_{2}-yu_{1}}{x^{2}+y^{2}},\label{eq:v1_cart2sphere}\\
+v_{2} & = & \frac{\left(x^{2}+y^{2}\right)u_{3}-\left(xu_{1}+yu_{2}\right)z}{r^{2}\sqrt{x^{2}+y^{2}}}\label{eq:v2_cart2sphere}\\
+v_{3} & = & \frac{xu_{1}+yu_{2}+zu_{3}}{r}\label{eq:v3_cart2sphere}
+\end{eqnarray}
+with $r$ given by \eqref{eq:r_def}.
+
 \bibliographystyle{wileyqj}
 \bibliography{master}
 

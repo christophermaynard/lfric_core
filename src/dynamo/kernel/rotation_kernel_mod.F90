@@ -18,7 +18,7 @@ use kernel_mod,              only : kernel_type
 use argument_mod,            only : arg_type, func_type,                     &
                                     GH_FIELD, GH_READ, GH_INC,               &
                                     W0, W2, GH_BASIS, GH_DIFF_BASIS,         &
-                                    GH_ORIENTATION, CELLS
+                                    CELLS
 use constants_mod,           only : cp, r_def
 use configuration_mod,       only : omega
 use cross_product_mod,       only : cross_product
@@ -37,7 +37,7 @@ type, public, extends(kernel_type) :: rotation_kernel_type
        arg_type(GH_FIELD*3, GH_READ, W0)                               &
        /)
   type(func_type) :: meta_funcs(2) = (/                                &
-       func_type(W2, GH_BASIS, GH_ORIENTATION),                        &
+       func_type(W2, GH_BASIS),                                        &
        func_type(W0, GH_BASIS, GH_DIFF_BASIS)                          &
        /)
   integer :: iterates_over = CELLS
@@ -75,7 +75,6 @@ end function rotation_kernel_constrotationctor
 !! @param[in] undf_w2 The number unique of degrees of freedom  for w2
 !! @param[in] map_w2 Integer array holding the dofmap for the cell at the base of the column for w2
 !! @param[in] w2_basis Real 4-dim array holding basis functions evaluated at quadrature points
-!! @param[in] orientation_w2 Orientation array for w2 fields
 !! @param[in] ndf_w0 The number of degrees of freedom per cell for w0
 !! @param[in] undf_w0 The number unique of degrees of freedom  for w0
 !! @param[in] map_w0 Integer array holding the dofmap for the cell at the base of the column for w0
@@ -90,7 +89,6 @@ subroutine rotation_code(nlayers,                                              &
                          r_u, u,                                               &
                          chi_1, chi_2, chi_3,                                  &
                          ndf_w2, undf_w2, map_w2, w2_basis,                    &
-                         orientation_w2,                                       &
                          ndf_w0, undf_w0, map_w0, w0_basis, w0_diff_basis,     &
                          nqp_h, nqp_v, wqp_h, wqp_v                            &
                          )
@@ -106,7 +104,6 @@ subroutine rotation_code(nlayers,                                              &
   integer, intent(in) :: undf_w0, undf_w2
   integer, dimension(ndf_w0), intent(in) :: map_w0
   integer, dimension(ndf_w2), intent(in) :: map_w2
-  integer, dimension(ndf_w2), intent(in) :: orientation_w2
 
   real(kind=r_def), dimension(3,ndf_w2,nqp_h,nqp_v), intent(in) :: w2_basis
   real(kind=r_def), dimension(1,ndf_w0,nqp_h,nqp_v), intent(in) :: w0_basis
@@ -166,15 +163,14 @@ subroutine rotation_code(nlayers,                                              &
 
         do df = 1, ndf_w2
           u_at_quad(:) = u_at_quad(:) &
-                       + u_e(df)*w2_basis(:,df,qp1,qp2) &
-                         *real(orientation_w2(df),r_def)
+                       + u_e(df)*w2_basis(:,df,qp1,qp2)
         end do
 
         ! Rotation term
         omega_cross_u = cross_product(rotation_vector(:,qp1,qp2), &
                                       matmul(jac(:,:,qp1,qp2),u_at_quad))
         do df = 1, ndf_w2
-          v  = w2_basis(:,df,qp1,qp2)*real(orientation_w2(df),r_def)
+          v  = w2_basis(:,df,qp1,qp2)
           jac_v = matmul(jac(:,:,qp1,qp2),v)/dj(qp1,qp2)
 
           coriolis_term = dot_product(jac_v,omega_cross_u)

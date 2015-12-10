@@ -125,10 +125,12 @@ module configuration_mod
   integer (kind=i_def), parameter :: NO_PRE_COND       = -1      !< No preconditioner option.
   integer (kind=i_def), parameter :: DIAGONAL_PRE_COND = 1       !< Diagonal preconditioner option.
   real(kind=r_def),     parameter :: SOLVER_TOL = 1.0e-4_r_def   !< Relative tolerance of solver.
-  integer (kind=i_def), parameter :: GCRK  = 32                  !< Dimension of the approximate Krylov subspace.
+  integer (kind=i_def), parameter :: GCRK  = 4                   !< Dimension of the approximate Krylov subspace.
                                                                  !! In other words, it is the number of potential 
                                                                  !! residual vectors to calculate at each
                                                                  !! iteration of the solver.               
+  integer (kind=i_def), parameter :: SI_GCRK = 32                !< GCR restart value fo the semi-implicit solver
+  !> @}
 
   !> @name Choice of linear solver                                                           
   !> @{

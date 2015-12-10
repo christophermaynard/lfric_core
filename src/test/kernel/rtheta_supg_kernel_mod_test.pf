@@ -48,7 +48,7 @@ contains
     integer                 :: ndf_w2, undf_w2, dim_w2
     integer                 :: ndf_w3, undf_w3, dim_w3
 
-    integer, pointer        :: map_w2(:), map_w0(:), map_w3(:), orientation_w2(:) => null()
+    integer, pointer        :: map_w2(:), map_w0(:), map_w3(:) => null()
 
     type( field_proxy_type )        :: r_theta_proxy, theta_proxy, &
                                        theta_n_proxy, &
@@ -161,7 +161,6 @@ contains
        map_w3 => rho_proxy%vspace%get_cell_dofmap( cell )
 
 
-       orientation_w2 => f_proxy%vspace%get_cell_orientation ( cell )
        call rtheta_supg_code( nlayers, &
                               r_theta_proxy%data, &
                               theta_proxy%data, &
@@ -178,7 +177,6 @@ contains
                               ndf_w2, undf_w2, &
                               map_w2, &
                               basis_w2, &
-                              orientation_w2, &
                               ndf_w3, undf_w3, &
                               map_w3, &
                               basis_w3, &

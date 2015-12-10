@@ -18,7 +18,7 @@ use kernel_mod,              only : kernel_type
 use argument_mod,            only : arg_type, func_type,                     &
                                     GH_FIELD, GH_READ, GH_INC,               &
                                     W0, W2, ANY_SPACE_1,                     &
-                                    GH_BASIS, GH_DIFF_BASIS, GH_ORIENTATION, &
+                                    GH_BASIS, GH_DIFF_BASIS,                 &
                                     CELLS
 use constants_mod,           only : r_def
 

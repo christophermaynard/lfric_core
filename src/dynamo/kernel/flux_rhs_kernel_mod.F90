@@ -16,7 +16,7 @@ use kernel_mod,              only : kernel_type
 use argument_mod,            only : arg_type, func_type,                     &
                                     GH_FIELD, GH_READ, GH_INC,               &
                                     W0, W2, ANY_SPACE_1,                     &
-                                    GH_BASIS, GH_DIFF_BASIS, GH_ORIENTATION, &
+                                    GH_BASIS, GH_DIFF_BASIS,                 &
                                     CELLS
 use constants_mod,           only : r_def
 
@@ -35,7 +35,7 @@ type, public, extends(kernel_type) :: flux_rhs_kernel_type
        arg_type(GH_FIELD*3, GH_READ, W0)                               &
        /)
   type(func_type) :: meta_funcs(3) = (/                                &
-       func_type(W2,          GH_BASIS, GH_ORIENTATION),               &
+       func_type(W2,          GH_BASIS),                               &
        func_type(ANY_SPACE_1, GH_BASIS),                               &
        func_type(W0,          GH_DIFF_BASIS)                           &
        /)
@@ -69,7 +69,6 @@ end function flux_rhs_kernel_constructor
 !! @param[in] undf_u The number of unique degrees of freedom for w2
 !! @param[in] map_u Integer array holding the dofmap for the cell at the base of the column for w2
 !! @param[in] basis_u Real 4-dim array holding basis functions evaluated at gaussian quadrature points
-!! @param[in] orientation Array for the orientation of the advecting field
 !! @param[inout] rhs Real array the field to contain the right hand side to be computed
 !! @param[in] u Real array the advecting field
 !! @param[in] ndf_f The number of degrees of freedom per cell for the field to be advected
@@ -89,7 +88,7 @@ end function flux_rhs_kernel_constructor
 !! @param[in] wqp_h the weights of the horizontal quadrature points
 !! @param[in] wqp_v the weights of the vertical quadrature points
 subroutine flux_rhs_code(nlayers,ndf_u, undf_u, map_u, basis_u,              &
-                         boundary_value, orientation, rhs, u,                &
+                         boundary_value, rhs, u,                             &
                          ndf_f, undf_f, map_f, basis_f, f,                   &
                          ndf_chi, undf_chi, map_chi, diff_basis_chi,         &                           
                          chi_1, chi_2, chi_3,                                &
@@ -105,7 +104,6 @@ subroutine flux_rhs_code(nlayers,ndf_u, undf_u, map_u, basis_u,              &
   integer, intent(in) :: nqp_h, nqp_v
   integer, intent(in) :: map_chi(ndf_chi), map_u(ndf_u), map_f(ndf_f)
   integer, dimension(ndf_u,2), intent(in) :: boundary_value
-  integer, dimension(ndf_u),   intent(in) :: orientation
   real(kind=r_def), dimension(3,ndf_u,nqp_h,nqp_v) ,  intent(in)    :: basis_u  
   real(kind=r_def), dimension(1,ndf_f,nqp_h,nqp_v),   intent(in)    :: basis_f
   real(kind=r_def), dimension(3,ndf_chi,nqp_h,nqp_v), intent(in)    :: diff_basis_chi
@@ -143,7 +141,7 @@ subroutine flux_rhs_code(nlayers,ndf_u, undf_u, map_u, basis_u,              &
       f_cell(df) = f( map_f(df) + k )
     end do    
     do df = 1, ndf_u
-      u_cell(df) = u( map_u(df) + k )*real(orientation(df),r_def)
+      u_cell(df) = u( map_u(df) + k )
     end do    
   ! compute the RHS integrated over one cell
     rhs_cell(:) = 0.0_r_def
@@ -160,8 +158,7 @@ subroutine flux_rhs_code(nlayers,ndf_u, undf_u, map_u, basis_u,              &
         
         u_at_quad(:) = wqp_h(qp1)*wqp_v(qp2)*matmul(jac(:,:,qp1,qp2),u_at_quad(:)*f_at_quad)/dj(qp1,qp2)
         do df = 1, ndf_u
-          jac_v = matmul(jac(:,:,qp1,qp2), &
-                         basis_u(:,df,qp1,qp2)*real(orientation(df),r_def))
+          jac_v = matmul(jac(:,:,qp1,qp2),basis_u(:,df,qp1,qp2))
           rhs_cell(df) = rhs_cell(df) +  dot_product(jac_v,u_at_quad(:))
         end do
       end do

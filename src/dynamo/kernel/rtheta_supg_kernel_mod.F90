@@ -13,7 +13,7 @@ use kernel_mod,              only : kernel_type
 use argument_mod,            only : arg_type, func_type,                     &
                                     GH_FIELD, GH_READ, GH_INC,               &
                                     W0, W2, W3,                              &
-                                    GH_BASIS, GH_DIFF_BASIS, GH_ORIENTATION, &
+                                    GH_BASIS, GH_DIFF_BASIS,                 &
                                     CELLS
 use constants_mod,           only : r_def, EPS
 use configuration_mod,       only : dt
@@ -38,7 +38,7 @@ type, public, extends(kernel_type) :: rtheta_supg_kernel_type
        /)
   type(func_type) :: meta_funcs(3) = (/                                &
        func_type(W0, GH_BASIS, GH_DIFF_BASIS),                         &
-       func_type(W2, GH_BASIS, GH_ORIENTATION),                        &
+       func_type(W2, GH_BASIS),                                        &
        func_type(W3, GH_BASIS)                                         &
        /)
   integer :: iterates_over = CELLS
@@ -84,7 +84,6 @@ end function rtheta_supg_kernel_constructor
 !! @param[in] undf_w2  The number of unique degrees of freedom  for w2
 !! @param[in] map_w2 Integer array holding the dofmap for the cell at the base of the column for w2 
 !! @param[in] w2_basis Real 5-dim array holding basis functions evaluated at gaussian quadrature points 
-!! @param[in] orientation the orientation arrays for the velocity field
 !! @param[in] f the mass flux field
 !! @param[in] ndf_w3 The number of degrees of freedom per cell for w3
 !! @param[in] undf_w3  The number of unique degrees of freedom  for w3
@@ -103,7 +102,7 @@ subroutine rtheta_supg_code(nlayers,                                          &
                             f, rho,                                            &
                             chi1, chi2, chi3,                                  & 
                             ndf_w0, undf_w0, map_w0, w0_basis, w0_diff_basis,  &
-                            ndf_w2, undf_w2, map_w2, w2_basis, orientation,    &
+                            ndf_w2, undf_w2, map_w2, w2_basis,                 &
                             ndf_w3, undf_w3, map_w3, w3_basis,                 &
                             nqp_h, nqp_v, wqp_h, wqp_v )
                                
@@ -113,7 +112,7 @@ subroutine rtheta_supg_code(nlayers,                                          &
   integer, intent(in) :: ndf_w0, ndf_w2, ndf_w3, undf_w0, undf_w2, undf_w3
 
   integer, dimension(ndf_w0), intent(in) :: map_w0
-  integer, dimension(ndf_w2), intent(in) :: map_w2, orientation
+  integer, dimension(ndf_w2), intent(in) :: map_w2
   integer, dimension(ndf_w3), intent(in) :: map_w3
 
   real(kind=r_def), dimension(1,ndf_w0,nqp_h,nqp_v), intent(in) :: w0_basis
@@ -160,7 +159,7 @@ subroutine rtheta_supg_code(nlayers,                                          &
     call coordinate_jacobian(ndf_w0, nqp_h, nqp_v, chi1_e, chi2_e, chi3_e,  &
                              w0_diff_basis, jac, dj)
     do df = 1, ndf_w2
-      f_e(df) = f( map_w2(df) + k )*real(orientation(df),r_def)
+      f_e(df) = f( map_w2(df) + k )
     end do
     do df = 1, ndf_w3
       rho_e(df) = rho( map_w3(df) + k )

@@ -53,7 +53,7 @@ contains
     integer                 :: ndf_w0, ndf_w2, ndf_w3
     integer                 :: undf_w0, undf_w2, undf_w3
     integer                 :: dim_w0, diff_dim_w0, dim_w2, diff_dim_w2,dim_w3
-    integer, pointer        :: map_w3(:), map_w2(:), map_w0(:), orientation_w2(:) => null()
+    integer, pointer        :: map_w3(:), map_w2(:), map_w0(:) => null()
     integer, pointer        :: boundary_dofs(:,:) => null()
 
     type( field_proxy_type )        :: r_u_proxy, u_proxy, rho_proxy, theta_proxy, phi_proxy
@@ -166,7 +166,6 @@ contains
     map_w2 => r_u_proxy%vspace%get_cell_dofmap( cell )
     map_w0 => theta_proxy%vspace%get_cell_dofmap( cell )
 
-    orientation_w2 => r_u_proxy%vspace%get_cell_orientation ( cell )
     ! Create the data    
     phi_proxy%data(:) = GRAVITY*chi_p(3)%data(:)
     r_u_proxy%data(:) = 0.0_r_def
@@ -177,7 +176,6 @@ contains
                          ndf_w2, undf_w2,                              &
                          map_w2, basis_w2, diff_basis_w2,              &
                          boundary_dofs,                                &
-                         orientation_w2,                               &
                          r_u_proxy%data,                               &
                          u_proxy%data,                                 &
                          ndf_w3, undf_w3,                              &

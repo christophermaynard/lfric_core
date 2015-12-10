@@ -26,7 +26,6 @@ use argument_mod,            only : arg_type, func_type,                 &
                                     GH_FIELD, GH_READ, GH_INC,           &
                                     W0, W1, W2, W3,                      &
                                     GH_BASIS, GH_DIFF_BASIS,             &
-                                    GH_ORIENTATION,                      &
                                     CELLS 
 use constants_mod,           only : r_def
 use cross_product_mod,       only : cross_product
@@ -47,9 +46,9 @@ type, public, extends(kernel_type) :: vorticity_advection_kernel_type
        arg_type(GH_FIELD*3, GH_READ, W0)                               &
        /)
   type(func_type) :: meta_funcs(4) = (/                                &
-       func_type(W2, GH_BASIS, GH_ORIENTATION),                        &
+       func_type(W2, GH_BASIS),                                        &
        func_type(W3, GH_BASIS),                                        &
-       func_type(W1, GH_BASIS, GH_ORIENTATION),                        &
+       func_type(W1, GH_BASIS),                                        &
        func_type(W0, GH_DIFF_BASIS)                                    &
        /)
   integer :: iterates_over = CELLS
@@ -82,7 +81,6 @@ end function vorticity_advection_kernel_constructor
 !! @param[in] undf_w2 The number unique of degrees of freedom  for w2
 !! @param[in] map_w2 Integer array holding the dofmap for the cell at the base of the column for w2
 !! @param[in] w2_basis Real 4-dim array holding basis functions evaluated at quadrature points 
-!! @param[in] orientation_w2 Orientation array for w2 fields
 !! @param[inout] r_u Real array the data 
 !! @param[in] u The velocity array
 !! @param[in] mass_flux The mass flux array F
@@ -95,7 +93,6 @@ end function vorticity_advection_kernel_constructor
 !! @param[in] undf_w1 The number unique of degrees of freedom  for w1
 !! @param[in] map_w1 Integer array holding the dofmap for the cell at the base of the column for w1
 !! @param[in] w1_basis Real 4-dim array holding basis functions evaluated at gaussian quadrature points 
-!! @param[in] orientation_w1 Orientation array for w1 fields
 !! @param[in] xi Real array. Vorticity
 !! @param[in] ndf_w0 The number of degrees of freedom per cell for w0
 !! @param[in] undf_w0 The number unique of degrees of freedom  for w0
@@ -112,9 +109,8 @@ subroutine vorticity_advection_code(nlayers,                                    
                                     r_u, mass_flux, rho, xi,                           &
                                     chi_1, chi_2, chi_3,                               &
                                     ndf_w2, undf_w2, map_w2, w2_basis,                 &
-                                    orientation_w2,                                    &
                                     ndf_w3, undf_w3, map_w3, w3_basis,                 &
-                                    ndf_w1, undf_w1, map_w1, w1_basis, orientation_w1, &
+                                    ndf_w1, undf_w1, map_w1, w1_basis,                 &
                                     ndf_w0, undf_w0, map_w0, w0_diff_basis,            &
                                     nqp_h, nqp_v, wqp_h, wqp_v                         &
                                     )
@@ -130,8 +126,6 @@ subroutine vorticity_advection_code(nlayers,                                    
   integer, dimension(ndf_w1), intent(in) :: map_w1
   integer, dimension(ndf_w2), intent(in) :: map_w2
   integer, dimension(ndf_w3), intent(in) :: map_w3
-  integer, dimension(ndf_w2), intent(in) :: orientation_w2
-  integer, dimension(ndf_w1), intent(in) :: orientation_w1
 
   real(kind=r_def), dimension(1,ndf_w3,nqp_h,nqp_v), intent(in) :: w3_basis  
   real(kind=r_def), dimension(3,ndf_w2,nqp_h,nqp_v), intent(in) :: w2_basis 
@@ -198,23 +192,21 @@ subroutine vorticity_advection_code(nlayers,                                    
         f_at_quad(:) = 0.0_r_def
         do df = 1, ndf_w2
           f_at_quad(:) = f_at_quad(:) &
-                       + f_e(df)*w2_basis(:,df,qp1,qp2) &
-                         *real(orientation_w2(df),r_def)
+                       + f_e(df)*w2_basis(:,df,qp1,qp2)
         end do
 
 ! Vorticity advection term
         xi_at_quad(:) = 0.0_r_def
         do df = 1, ndf_w1
           xi_at_quad(:) = xi_at_quad(:) &
-                        + xi_e(df)*w1_basis(:,df,qp1,qp2) &
-                          *real(orientation_w1(df),r_def)
+                        + xi_e(df)*w1_basis(:,df,qp1,qp2)
         end do
         vorticity = cross_product(matmul(transpose(jac_inv(:,:,qp1,qp2)),xi_at_quad),&
                                   matmul(jac    (:,:,qp1,qp2),f_at_quad))        
         vorticity = vorticity/(dj(qp1,qp2)*rho_at_quad)
 
         do df = 1, ndf_w2
-          v  = w2_basis(:,df,qp1,qp2)*real(orientation_w2(df),r_def)
+          v  = w2_basis(:,df,qp1,qp2)
           jac_v = matmul(jac(:,:,qp1,qp2),v)
 
           vorticity_term = - dot_product(jac_v,vorticity)

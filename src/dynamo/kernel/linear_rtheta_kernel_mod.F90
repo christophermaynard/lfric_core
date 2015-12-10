@@ -21,7 +21,7 @@ use kernel_mod,              only : kernel_type
 use argument_mod,            only : arg_type, func_type,                     &
                                     GH_FIELD, GH_READ, GH_INC,               &
                                     W0, W2,                                  &
-                                    GH_BASIS, GH_DIFF_BASIS, GH_ORIENTATION, &
+                                    GH_BASIS, GH_DIFF_BASIS,                 &
                                     CELLS
 use constants_mod,           only : r_def, GRAVITY
 use initialisation_mod,      only : itest_option, n_sq
@@ -43,7 +43,7 @@ type, public, extends(kernel_type) :: linear_rtheta_kernel_type
        /)
   type(func_type) :: meta_funcs(2) = (/                                &
        func_type(W0, GH_BASIS, GH_DIFF_BASIS),                         &
-       func_type(W2, GH_BASIS, GH_ORIENTATION)                         &
+       func_type(W2, GH_BASIS)                                         &
        /)
   integer :: iterates_over = CELLS
 contains
@@ -86,7 +86,6 @@ subroutine linear_rtheta_code(nlayers,                                         &
                               r_theta, u, phi,  chi_1, chi_2, chi_3,           &
                               ndf_w0, undf_w0, map_w0, w0_basis, w0_diff_basis,&
                               ndf_w2, undf_w2, map_w2, w2_basis,               &
-                              orientation,                                     &
                               nqp_h, nqp_v, wqp_h, wqp_v )
                                
   use coordinate_jacobian_mod, only: coordinate_jacobian                             
@@ -96,7 +95,7 @@ subroutine linear_rtheta_code(nlayers,                                         &
   integer, intent(in) :: ndf_w0, ndf_w2, undf_w0, undf_w2
 
   integer, dimension(ndf_w0), intent(in) :: map_w0
-  integer, dimension(ndf_w2), intent(in) :: map_w2, orientation
+  integer, dimension(ndf_w2), intent(in) :: map_w2
 
   real(kind=r_def), dimension(1,ndf_w0,nqp_h,nqp_v), intent(in) :: w0_basis  
   real(kind=r_def), dimension(3,ndf_w0,nqp_h,nqp_v), intent(in) :: w0_diff_basis  
@@ -134,7 +133,7 @@ subroutine linear_rtheta_code(nlayers,                                         &
     call coordinate_jacobian(ndf_w0, nqp_h, nqp_v, chi_1_e, chi_2_e, chi_3_e,  &
                              w0_diff_basis, jac, dj)
     do df = 1, ndf_w2
-      u_e(df) = u( map_w2(df) + k )*real(orientation(df),r_def)
+      u_e(df) = u( map_w2(df) + k )
     end do
   ! compute the RHS integrated over one cell
     do qp2 = 1, nqp_v

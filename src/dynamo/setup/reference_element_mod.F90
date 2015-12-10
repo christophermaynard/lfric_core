@@ -321,11 +321,11 @@ subroutine reference_cube()
   face_on_edge(ET,:) = (/ E, T /)
   face_on_edge(NT,:) = (/ N, T /)
 
-! outward unit normal vector to each face  
+! unit normal vector to each face  
   normal_to_face(W,:) = I_VEC
-  normal_to_face(S,:) = J_VEC
+  normal_to_face(S,:) = MINUS_J_VEC
   normal_to_face(E,:) = I_VEC
-  normal_to_face(N,:) = J_VEC
+  normal_to_face(N,:) = MINUS_J_VEC
   normal_to_face(B,:) = K_VEC
   normal_to_face(T,:) = K_VEC
   

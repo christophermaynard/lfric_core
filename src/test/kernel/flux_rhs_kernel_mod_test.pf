@@ -50,8 +50,7 @@ contains
     integer, pointer :: map_f(:) => null(), &
                         map_u(:) => null(), & 
                         map_chi(:) => null(), &
-                        boundary_dofs(:,:) => null(), &
-                        orientation_u(:) => null()
+                        boundary_dofs(:,:) => null()
 
     real(kind=r_def), pointer :: xp(:,:) => null()
     real(kind=r_def), pointer :: zp(:)   => null()
@@ -138,7 +137,6 @@ contains
     map_f   => f_p%vspace%get_cell_dofmap( cell )
     map_u   => rhs_p%vspace%get_cell_dofmap( cell )
     map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
-    orientation_u => u_p%vspace%get_cell_orientation ( cell )
 
     ! Create the data   
     f_p%data(:) = 2.0_r_def
@@ -157,7 +155,6 @@ contains
                         map_u, &
                         basis_u, &
                         boundary_dofs, &
-                        orientation_u, &
                         rhs_p%data, &
                         u_p%data, &
                         ndf_f, &

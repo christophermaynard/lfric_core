@@ -88,12 +88,10 @@ contains
        if ( space_dimension == 1 ) then
           write( log_scratch_space, '(A)' ) '    scalar field ... '
           call log_event( log_scratch_space, LOG_LEVEL_INFO )
-          !call invoke_gp_rhs( rhs(1), f_in, chi, qr)
           call invoke( gp_rhs_kernel_type(rhs(1), f_in, chi, qr) )
        else
           write( log_scratch_space, '(A)' ) '    vector field ... '
           call log_event( log_scratch_space, LOG_LEVEL_INFO )
-          !call invoke_gp_vector_rhs( rhs, f_in, chi, qr )
           call invoke( gp_vector_rhs_kernel_type(rhs, f_in, chi, qr) )
        end if
        space = f_out(1)%which_function_space()
