@@ -44,9 +44,9 @@
 {{ prepare_pipeline_schedule( 'cleanliness' ) }}
                 export_for_cleanliness => check_for_unused_source
 
-{{ prepare_pipeline_schedule( 'documentation' ) }}
-                export_for_documentation => api_documentation
-                export_for_documentation => design_documentation
+{{ prepare_pipeline_schedule( 'godliness' ) }}
+                export_for_godliness => api_godliness
+                export_for_godliness => design_godliness
 {% for compiler, version in COMPILER_ENVIRONMENTS | batch(2) -%}
 {%   for target in targets -%}
 {{     pipeline_schedule( compiler, target ) }}
@@ -123,16 +123,16 @@
 {#############################################################################}
 {# Godliness, it is, afterall, next to cleanliness                             #}
 
-{{ prepare_pipeline( 'documentation' ) }}
+{{ prepare_pipeline( 'godliness' ) }}
 
-    [[api_documentation]]
-        inherit = DOCUMENTATION, DOCUMENTATION_ENVIRONMENT, LOCAL
+    [[api_godliness]]
+        inherit = GODLINESS, GODLINESS_ENVIRONMENT, LOCAL
         command scripting = """
                             make -C $SOURCE_DIRECTORY/documentation api
                             """
 
-    [[design_documentation]]
-        inherit = DOCUMENTATION, DOCUMENTATION_ENVIRONMENT, LOCAL
+    [[design_godliness]]
+        inherit = GODLINESS, GODLINESS_ENVIRONMENT, LOCAL
         command scripting = """
                             make -C $SOURCE_DIRECTORY/documentation documents
                             """

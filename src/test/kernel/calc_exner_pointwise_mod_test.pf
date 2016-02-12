@@ -8,19 +8,34 @@
 !-------------------------------------------------------------------------------
 
 module calc_exner_pointwise_mod_test
+
+  use constants_mod, only: r_def
+  use pFUnit_Mod
+
   implicit none
 
-contains 
+  private
+  public :: calc_excner_pointwise_test_type, test_all
 
+  @TestCase
+  type, extends(TestCase) :: calc_excner_pointwise_test_type
+    private
+  contains
+    procedure test_all
+  end type calc_excner_pointwise_test_type
+
+contains
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   @test
-  subroutine calc_exner_pointwise_test()
+  subroutine test_all( this )
 
-    use pFUnit_Mod
-    use constants_mod, only: r_def, KAPPA, Rd, P_ZERO
+    use constants_mod, only: KAPPA, Rd, P_ZERO
     use calc_exner_pointwise_mod, only: calc_exner_pointwise, &
                                         linear_calc_exner_pointwise
 
     implicit none
+
+    class(calc_excner_pointwise_test_type), intent(inout) :: this
 
     real(kind=r_def) :: exner, exner_exact
     real(kind=r_def) :: rho, theta, exner_s, rho_s, theta_s
@@ -28,9 +43,9 @@ contains
     rho     = 0.5_r_def
     theta   = 300.0_r_def
 
-    exner_exact =  ( Rd/P_ZERO * rho * theta ) ** (  KAPPA / ( 1.0_r_def - KAPPA ) )   
+    exner_exact =  ( Rd/P_ZERO * rho * theta ) ** (  KAPPA / ( 1.0_r_def - KAPPA ) )
     exner = calc_exner_pointwise(rho, theta)
-  
+
     @assertEqual(exner_exact, exner)
 
     rho_s   = 0.75_r_def
@@ -39,9 +54,9 @@ contains
 
     exner_exact = KAPPA / ( 1.0_r_def - KAPPA ) * exner_s * ( rho/rho_s + theta/theta_s )
     exner = linear_calc_exner_pointwise(rho, theta, exner_s, rho_s, theta_s)
-  
+
     @assertEqual(exner_exact, exner)
 
-  end subroutine calc_exner_pointwise_test
+  end subroutine test_all
 
 end module calc_exner_pointwise_mod_test

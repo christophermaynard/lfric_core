@@ -38,7 +38,6 @@ contains
 
     integer :: rc
 
-    write(7,'("set_up_suite")')
     call ESMF_Initialize( vm=vm, &
                           defaultlogfilename="dynamo.Log", &
                           logkindflag=ESMF_LOGKIND_MULTI, &
@@ -56,7 +55,6 @@ contains
 
     integer :: rc
 
-    write(7,'("tear_down_suite")')
     call ESMF_Finalize( rc=rc )
 
   end subroutine tear_down_suite

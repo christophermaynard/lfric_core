@@ -9,26 +9,54 @@
 !>
 module generate_global_gw_fields_mod_test
 
-  implicit none 
+  use constants_mod, only: r_def
+  use pFUnit_Mod
+
+  implicit none
+
+  private
+  public :: generate_global_gw_fields_test_type, test_all
+
+  @TestCase
+  type, extends(TestCase) :: generate_global_gw_fields_test_type
+    private
+  contains
+    procedure setUp
+    procedure test_all
+  end type generate_global_gw_fields_test_type
 
 contains
 
-  !> Empty test to ensure that module is found
-  !>
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
+
+    use initialisation_mod, only : n_sq
+
+    implicit none
+
+    class(generate_global_gw_fields_test_type), intent(inout) :: this
+
+    n_sq = 0.0001_r_def
+
+  end subroutine setUp
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   @test
-  subroutine generate_global_gw_fields_test( )
-    use pFUnit_Mod  
-    use constants_mod,                 only: r_def, Rd, P_ZERO
-    use initialisation_mod,            only: n_sq
+  subroutine test_all( this )
+
+    use constants_mod,                 only: Rd, P_ZERO
     use generate_global_gw_fields_mod, only: generate_global_gw_fields
 
-    real(kind=r_def) :: lat, z, tol
+    class(generate_global_gw_fields_test_type), intent(inout) :: this
+
+    real(r_def) :: tol = 1.0e010_r_def
+
+    real(kind=r_def) :: lat, z
     real(kind=r_def) :: exner, theta, rho, u(3)
     real(kind=r_def) :: exner_ans, theta_ans, rho_ans, u_ans(3)
 
     lat = 0.0_r_def
     z   = 0.0_r_def
-    n_sq = 0.0001_r_def 
 
     call generate_global_gw_fields(lat, z, exner, u, theta, rho)
 
@@ -36,18 +64,15 @@ contains
     rho_ans   = P_ZERO/(Rd*300.0_r_def)
     theta_ans = 300.0_r_def
     u_ans(:)  = 0.0_r_def
-!    u_ans(1)  = 20.0_r_def
 
-    tol = 1.0e-10_r_def
-
-    @assertEqual( theta_ans, theta, tol )  
+    @assertEqual( theta_ans, theta, tol )
     @assertEqual( exner_ans, exner, tol )  
     @assertEqual( rho_ans,   rho,   tol ) 
     @assertEqual( u_ans(1),  u(1),  tol )
     @assertEqual( u_ans(2),  u(2),  tol )
     @assertEqual( u_ans(3),  u(3),  tol )
 
-  end subroutine generate_global_gw_fields_test
+  end subroutine test_all
 
 end module generate_global_gw_fields_mod_test
 

@@ -7,43 +7,71 @@
 !
 !-------------------------------------------------------------------------------
 module reference_profile_mod_test
-  implicit none 
+
+  use constants_mod,      only : r_def
+  use initialisation_mod, only : n_sq
+  use pFUnit_Mod
+
+  implicit none
+
+  private
+  public :: reference_profile_test_type, test_all
+
+  @TestCase
+  type, extends(TestCase) :: reference_profile_test_type
+    private
+  contains
+    procedure setUp
+    procedure test_all
+  end type reference_profile_test_type
 
 contains
 
-  @test
-  subroutine test_of_reference_profile()
-    use pFUnit_Mod
-    use reference_profile_mod, only : reference_profile
-    use constants_mod,         only : r_def, GRAVITY, P_ZERO, Rd, Cp, KAPPA
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
+
     use configuration_mod,     only : l_spherical
-    use initialisation_mod,    only : ITEST_GRAVITY_WAVE, n_sq
-    
+
     implicit none
 
-    real(kind=r_def) :: tol
-    real(kind=r_def) :: exner, theta, rho, x(3)
-    real(kind=r_def) :: exner_exact, theta_exact, rho_exact   
+    class(reference_profile_test_type), intent(inout) :: this
 
     l_spherical = .false.
-    n_sq        = 0.0001_r_def 
+
+    n_sq        = 0.0001_r_def
+
+  end subroutine setUp
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_all( this )
+
+    use constants_mod,         only : GRAVITY, P_ZERO, Rd, Cp, KAPPA
+    use initialisation_mod,    only : ITEST_GRAVITY_WAVE
+    use reference_profile_mod, only : reference_profile
+
+    implicit none
+
+    class(reference_profile_test_type), intent(inout) :: this
+
+    real(r_def), parameter :: tol = 1.0e-14
+
+    real(kind=r_def) :: exner, theta, rho, x(3)
+    real(kind=r_def) :: exner_exact, theta_exact, rho_exact
 
     x = (/ 0.0_r_def, 0.0_r_def, 1000.0_r_def /)
-           
+
     call reference_profile(exner,rho,theta,x,ITEST_GRAVITY_WAVE)
 
-    tol=1.0e-14
-    
     theta_exact = 300.0_r_def * exp (  n_sq/GRAVITY*x(3))
     exner_exact = 1.0_r_def - GRAVITY**2/(Cp*300.0_r_def*n_sq)   &
               * (1.0_r_def - exp ( - n_sq/GRAVITY * x(3) ))
     rho_exact = P_ZERO/(Rd*theta_exact) * exner_exact ** ((1.0_r_def - KAPPA)/KAPPA) 
-    
 
-    @assertEqual( theta_exact, theta, tol )  
-    @assertEqual( exner_exact, exner, tol )  
-    @assertEqual( rho_exact,   rho,   tol )  
+    @assertEqual( theta_exact, theta, tol )
+    @assertEqual( exner_exact, exner, tol )
+    @assertEqual( rho_exact,   rho,   tol )
 
-  end subroutine test_of_reference_profile
+  end subroutine test_all
 
 end module reference_profile_mod_test

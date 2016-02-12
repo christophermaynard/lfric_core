@@ -7,35 +7,77 @@
 
 module compute_dof_level_kernel_mod_test
 
-  implicit none 
+  use constants_mod,      only : i_def, r_def
+  use field_mod,          only : field_type, field_proxy_type
+  use fs_continuity_mod,  only : W0, W1, W2, W3
+  use function_space_mod, only : function_space_type
+  use mesh_mod,           only : mesh_type, PLANE_BI_PERIODIC
+  use pFUnit_Mod
+  use quadrature_mod,     only : quadrature_type, GAUSSIAN
 
+  implicit none
+
+  private
+  public :: test_all
+
+  @TestCase
+  type, extends(TestCase), public :: compute_dof_level_test_type
+    private
+  contains
+    procedure setUp
+    procedure tearDown
+    procedure test_all
+  end type compute_dof_level_test_type
 
 contains
 
-  @test
-  subroutine compute_dof_level_kernel_test()
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
 
-    use pFUnit_Mod
-    use field_mod,                  only : field_type,      &
-                                           field_proxy_type
-    use function_space_mod,         only : function_space_type &
-                                         , purge_function_spaces
-    use fs_continuity_mod,          only : W0, W1, W2, W3
-    use configuration_mod,          only : QUAD
-    use constants_mod,              only : r_def
-    use quadrature_mod,             only : quadrature_type, GAUSSIAN
-    use mesh_mod,                   only : mesh_type, PLANE_BI_PERIODIC
-    use reference_element_mod,      only : reference_cube, deallocate_reference &
-                                         , reference_element
+    use configuration_mod,     only : QUAD
+    use reference_element_mod, only : reference_cube, reference_element
+
+    implicit none
+
+    class(compute_dof_level_test_type), intent(inout) :: this
+
+    reference_element = QUAD
+    call reference_cube()
+
+  end subroutine setUp
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine tearDown( this )
+
+    use function_space_mod,    only : purge_function_spaces
+    use reference_element_mod, only : deallocate_reference
+
+    implicit none
+
+    class(compute_dof_level_test_type), intent(inout) :: this
+
+    call purge_function_spaces()
+    call deallocate_reference()
+
+  end subroutine tearDown
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_all( this )
 
     use compute_dof_level_kernel_mod, only: compute_dof_level_code
+
     implicit none
+
+    class(compute_dof_level_test_type), intent(inout) :: this
+
+    real(r_def), parameter :: tol = 1.0e-6_r_def
 
     type(function_space_type) :: fs
     type( quadrature_type)    :: qr
     type(mesh_type)  :: mesh
 
-    real(kind=r_def) :: tol, answer
+    real(r_def) :: answer
 
     integer :: k
     integer :: element_order
@@ -48,11 +90,7 @@ contains
     integer, pointer :: map(:) => null()
 
     ! Setup
-    tol = 1.0e-6_r_def  
     qr = quadrature_type(3, GAUSSIAN)
-
-    reference_element = QUAD
-    call reference_cube()
 
     mesh = mesh_type(PLANE_BI_PERIODIC)
 
@@ -69,11 +107,11 @@ contains
     nodes => l_p%vspace%get_nodes( )
  
     ncell = l_p%vspace%get_ncell()
-    ! Create the data   
+    ! Create the data
     l_p%data(:) = 0.0_r_def
 
 
-    ! Call the kernel    
+    ! Call the kernel
     do cell = 1,ncell
       map => l_p%vspace%get_cell_dofmap(cell)
       call compute_dof_level_code(l_p%vspace%get_nlayers(),                 &
@@ -83,7 +121,7 @@ contains
                                   map,                                      &
                                   nodes                                     &
                                  )
-    end do      
+    end do
 
     !Test the answer
     do k = 0,l_p%vspace%get_nlayers()-1
@@ -95,9 +133,6 @@ contains
       @assertEqual(answer, l_p%data(map(6) + k ), tol)
     end do
 
-    call deallocate_reference()
-    call purge_function_spaces()
-  
-  end subroutine compute_dof_level_kernel_test
+  end subroutine test_all
 
 end module compute_dof_level_kernel_mod_test

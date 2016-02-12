@@ -29,4 +29,7 @@ integer(i_def), public, parameter :: Wtheta = 104
 integer(i_def), public, parameter :: W2V    = 105
 integer(i_def), public, parameter :: W2H    = 106
 
+character(*), public, parameter :: fs_name(100:106) &
+                          = (/'W0', 'W1', 'W2', 'W3', 'Wtheta', 'W2V', 'W2H'/)
+
 end module fs_continuity_mod

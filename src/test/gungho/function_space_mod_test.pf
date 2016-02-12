@@ -7,512 +7,455 @@
 !
 !-------------------------------------------------------------------------------
 module function_space_mod_test
+
+  use constants_mod,         only : i_def, r_def
+  use fs_continuity_mod,     only : W0, W1, W2, W3, Wtheta, W2V, W2H
+  use fs_test_data_mod  ! Will use everything in here as it's the static data
+  use function_space_mod,    only : function_space_type
+  use mesh_mod,              only : mesh_type
+  use pFUnit_Mod
+  use quadrature_mod,        only : quadrature_type, GAUSSIAN
+  use reference_element_mod, only : N, E, S, W
+
   implicit none 
+
+  private
+  public :: test_function_space_constructor, getParameters,   &
+            test_space, test_stencil_point, test_stencil_1dx, &
+            test_stencil_1dy, test_stencil_cross, test_mesh, test_colouring
+
+  @testParameter
+  type, public, extends(AbstractTestParameter) :: function_space_parameter_type
+    integer(i_def),                        public :: function_space
+  contains
+    procedure :: toString
+  end type function_space_parameter_type
+
+  @TestCase(testParameters={getParameters()}, constructor=test_function_space_constructor)
+  type, extends(ParameterizedTestCase), public :: test_function_space_type
+    private
+    integer(i_def)           :: function_space
+    type(mesh_type)          :: mesh
+    real(r_def), allocatable :: test_diff_basis(:,:,:,:)
+    real(r_def), allocatable :: test_basis(:,:,:,:)
+  contains
+    procedure setUp
+    procedure tearDown
+    procedure test_space
+    procedure test_stencil_point
+    procedure test_stencil_1dx
+    procedure test_stencil_1dy
+    procedure test_stencil_cross
+    procedure test_mesh
+    procedure test_colouring
+  end type test_function_space_type
+
+  integer(i_def), parameter :: element_order = 0
+
+  integer(i_def), parameter :: nqp_h = 9
+  integer(i_def), parameter :: nqp_v = 3
 
 contains
 
-  @test
-  subroutine test_func_space()
-
-    use pFUnit_Mod
-
-    use constants_mod,         only: i_def, r_def
-    use quadrature_mod,        only: quadrature_type, GAUSSIAN
-    use stencil_dofmap_mod,    only: stencil_dofmap_type, STENCIL_POINT        &
-                                   , STENCIL_CROSS, STENCIL_1DX                &
-                                   , STENCIL_1DY
-
-    use configuration_mod,     only: QUAD
-    use mesh_mod,              only: mesh_type, PLANE_BI_PERIODIC
-    use function_space_mod,    only: function_space_type                       &
-                                   , purge_function_spaces
-    use fs_continuity_mod,     only: W0, W1, W2, W3, Wtheta, W2V, W2H
-    use reference_element_mod, only: reference_cube, deallocate_reference      &
-                                   , reference_element
-
-    use fs_test_data_mod  ! Will use everything in here
-                          ! as it's the static data
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  function test_function_space_constructor( testParameter ) result( new_test )
 
     implicit none
 
-    type(mesh_type),  pointer :: mesh_out => null()
+    type(function_space_parameter_type), intent( in ) :: testParameter
+    type(test_function_space_type) :: new_test
 
-    type(mesh_type)           :: mesh
-    type(quadrature_type)     :: qr
-    type(function_space_type) :: fs
-    type(function_space_type), pointer :: test_fs0k0 => null()
-    type(function_space_type), pointer :: test_fs1k0 => null()
-    type(function_space_type), pointer :: test_fs2k0 => null()
-    type(function_space_type), pointer :: test_fs3k0 => null()
-    type(function_space_type), pointer :: test_fs4k0 => null()
-    type(function_space_type), pointer :: test_fs5k0 => null()
-    type(function_space_type), pointer :: test_fs6k0 => null()
+    new_test%function_space = testParameter%function_space
 
-    integer          :: scalar, vector
-    integer          :: nqp_h, nqp_v
+  end function test_function_space_constructor
 
-    real(r_def), pointer :: xp(:,:) => null()
-    real(r_def), pointer :: zp(:)   => null()
-    real(r_def)          :: epsilon
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  function toString( this ) result( string )
 
-    integer          :: test_fs
-    integer, pointer :: map(:) => null()
-  
+    use fs_continuity_mod, only : fs_name
 
-    real(r_def), allocatable, dimension(:,:,:,:) :: test_diff_basis
-    real(r_def), allocatable, dimension(:,:,:,:) :: test_basis
+    implicit none
 
+    class( function_space_parameter_type ), intent( in ) :: this
+    character(:), allocatable :: string
 
-    integer(i_def) :: err
-    integer :: i
-    integer :: cell
-    integer :: ndf
-    integer :: iface, iedge, lid, test_integer
-    integer :: test_ncells
-    integer :: test_ndof_cell
-    integer :: test_dim_space
-    integer :: test_dim_space_diff
-    integer :: element_order
+    character(len=80) :: buffer
+    write( buffer, '(A)') fs_name(this%function_space)
+    string = trim( buffer )
 
-    type(stencil_dofmap_type), pointer :: stencil_dofmap   => null()
-    integer,                   pointer :: stencil_map(:,:) => null()
+  end function toString
 
-    !--------------------------------------------------------------------------
-    ! Colouring vars
-    integer                 :: total_colours, colour_idx
-    integer                 :: nc_colour, cic_colour
-  
-    integer(i_def)          :: num_colours
-    integer(i_def), pointer :: num_cell_per_colour(:)
-    integer(i_def), pointer :: cells_in_colour(:,:)
-    !--------------------------------------------------------------------------
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  function getParameters() result( parameters )
 
+    implicit none
 
+    type( function_space_parameter_type ) :: parameters(7)
+    parameters = [ function_space_parameter_type( W0 ), &
+                   function_space_parameter_type( W1 ), &
+                   function_space_parameter_type( W2 ), &
+                   function_space_parameter_type( W3 ), &
+                   function_space_parameter_type( Wtheta ), &
+                   function_space_parameter_type( W2V ), &
+                   function_space_parameter_type( W2H ) ]
 
+  end function getParameters
 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
 
+    use configuration_mod,     only : QUAD
+    use mesh_mod,              only : PLANE_BI_PERIODIC
+    use reference_element_mod, only : reference_cube, reference_element
+
+    implicit none
+
+    class(test_function_space_type), intent(inout) :: this
+
+    type(function_space_description_type) :: description
 
     reference_element = QUAD
     call reference_cube()
 
-    scalar=1
-    vector=3
+    ! Dummy mesh mod has 9 cells, 3 layers and is uniform in vertical
+    this%mesh = mesh_type(PLANE_BI_PERIODIC)
 
-    epsilon = 1.0e-14_r_def
+    description = function_space_description(this%function_space)
 
-    nqp_h = 9
-    nqp_v = 3
+    allocate( this%test_basis ( description%dim_space,      &
+                                description%ndof_cell, &
+                                nqp_h, nqp_v) )
+    allocate( this%test_diff_basis( description%dim_space_diff, &
+                                    description%ndof_cell, &
+                                    nqp_h, nqp_v) )
+
+  end subroutine setUp
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine tearDown( this )
+
+    use function_space_mod,    only :purge_function_spaces
+    use reference_element_mod, only : deallocate_reference
+
+    implicit none
+
+    class(test_function_space_type), intent(inout) :: this
+
+    deallocate(this%test_basis)
+    deallocate(this%test_diff_basis)
+
+    call purge_function_spaces()
+    call deallocate_reference()
+
+  end subroutine tearDown
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_space( this )
+
+    implicit none
+
+    class(test_function_space_type), intent(inout) :: this
+
+    integer(i_def), parameter :: scalar = 1
+    integer(i_def), parameter :: vector = 3
+
+    real(r_def), parameter :: margin = 1.0e-14_r_def
+
+    type(quadrature_type) :: qr
+
+    type(function_space_description_type) :: description
+
+    type(function_space_type), pointer :: test_fs => null()
+
+    real(r_def), pointer :: xp(:,:), zp(:)
+
+    real(r_def),    pointer :: nodal_coords(:,:)
+    integer(i_def), pointer :: dofmap(:,:)
+    real(r_def),    pointer :: basis_function(:,:,:,:)
+    real(r_def),    pointer :: basis_diff_function(:,:,:,:)
+
+    integer(i_def) :: test_ncells
+    integer(i_def) :: test_ndof_cell
+    integer(i_def) :: test_dim_space
+    integer(i_def) :: test_dim_space_diff
+
+    integer :: cell
+
     qr = quadrature_type(3, GAUSSIAN)
     xp => qr%get_xqp_h()
     zp => qr%get_xqp_v()
 
-    ! Dummy mesh mod has 9 cells, 3 layers and is uniform in vertical
-    mesh = mesh_type(PLANE_BI_PERIODIC)
+    description = function_space_description(this%function_space)
 
-    ! Set element order
-    element_order = 0
+    ! TODO: Work out if there is a way of including this information in the
+    !       description array from fs_test_data.
+    !
+    select case (this%function_space)
+      case (W0)
+        nodal_coords   => fs0k0_nodal_coords
+        dofmap         => fs0k0_dofmap
+        basis_function => fs0k0_basis_function
+        basis_diff_function => fs0k0_basis_diff_function
+      case (W1)
+        nodal_coords   => fs1k0_nodal_coords
+        dofmap         => fs1k0_dofmap
+        basis_function => fs1k0_basis_function
+        basis_diff_function => fs1k0_basis_diff_function
+      case (W2)
+        nodal_coords   => fs2k0_nodal_coords
+        dofmap         => fs2k0_dofmap
+        basis_function => fs2k0_basis_function
+        basis_diff_function => fs2k0_basis_diff_function
+      case (W3)
+        nodal_coords   => fs3k0_nodal_coords
+        dofmap         => fs3k0_dofmap
+        basis_function => fs3k0_basis_function
+        basis_diff_function => fs3k0_basis_diff_function
+      case (Wtheta)
+        nodal_coords   => fstk0_nodal_coords
+        dofmap         => fstk0_dofmap
+        basis_function => fstk0_basis_function
+        basis_diff_function => fstk0_basis_diff_function
+      case (W2V)
+        nodal_coords   => fs2vk0_nodal_coords
+        dofmap         => fs2vk0_dofmap
+        basis_function => fs2vk0_basis_function
+        basis_diff_function => fs2vk0_basis_diff_function
+      case (W2H)
+        nodal_coords   => fs2hk0_nodal_coords
+        dofmap         => fs2hk0_dofmap
+        basis_function => fs2hk0_basis_function
+        basis_diff_function => fs2hk0_basis_diff_function
+    end select
 
-    ! Make the function spaces
-    test_fs0k0 => fs%get_instance(mesh, element_order, W0)
-    test_fs1k0 => fs%get_instance(mesh, element_order, W1)
-    test_fs2k0 => fs%get_instance(mesh, element_order, W2)
-    test_fs3k0 => fs%get_instance(mesh, element_order, W3)
-    test_fs4k0 => fs%get_instance(mesh, element_order, WTHETA)
-    test_fs5k0 => fs%get_instance(mesh, element_order, W2V)
-    test_fs6k0 => fs%get_instance(mesh, element_order, W2H)
+    test_fs => test_fs%get_instance( this%mesh,     &
+                                     element_order, &
+                                     this%function_space )
 
+    @assertEqual( this%function_space, test_fs%which() )
+    @assertEqual( description%element_order, test_fs%get_element_order() )
 
-    ! -----------------------------------
-    ! Test w0, order-0
-    ! -----------------------------------
-    @assertEqual( fs0k0_dynamo_fs,     test_fs0k0%which()             )
-    @assertEqual( fs0k0_element_order, test_fs0k0%get_element_order() )
+    test_ncells    = test_fs%get_ncell()
+    test_ndof_cell = test_fs%get_ndf()
 
-    test_ncells    = test_fs0k0%get_ncell()
-    test_ndof_cell = test_fs0k0%get_ndf()
+    @assertEqual( description%ndof_cell, test_ndof_cell        )
+    @assertEqual( 9,                     test_ncells           )
+    @assertEqual( 3,                     test_fs%get_nlayers() )
+    @assertEqual( description%ndof_glob, test_fs%get_undf()    )
+    @assertEqual( description%ndof_cell, test_fs%get_ndf()     )
+    @assertEqual( nodal_coords,          test_fs%get_nodes()   )
 
-    @assertEqual( fs0k0_ndof_cell,    test_ndof_cell           )
-    @assertEqual( 9,                  test_ncells              )
-    @assertEqual( 3,                  test_fs0k0%get_nlayers() )
-    @assertEqual( fs0k0_ndof_glob,    test_fs0k0%get_undf()    )
-    @assertEqual( fs0k0_ndof_cell,    test_fs0k0%get_ndf()     ) 
-    @assertEqual( fs0k0_nodal_coords, test_fs0k0%get_nodes()   )
-
-    test_dim_space      = test_fs0k0%get_dim_space()
-    test_dim_space_diff = test_fs0k0%get_dim_space_diff()
-    @assertEqual( fs0k0_dim_space,      test_dim_space         )  
-    @assertEqual( fs0k0_dim_space_diff, test_dim_space_diff    ) 
-   
-
-    do cell=1, test_ncells
-      @assertEqual( fs0k0_dofmap(:,cell),      test_fs0k0%get_cell_dofmap(cell)      )
-    end do
-
-
-    allocate( test_basis ( test_dim_space, test_ndof_cell, nqp_h, nqp_v) )
-    call test_fs0k0%compute_basis_function                                     &
-       ( test_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs0k0_basis_function, test_basis, epsilon)
-    deallocate(test_basis)
-
-
-    allocate( test_diff_basis( test_dim_space_diff, test_ndof_cell             &
-                             , nqp_h, nqp_v) )
-    call test_fs0k0%compute_diff_basis_function                                &
-       ( test_diff_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs0k0_basis_diff_function, test_diff_basis, epsilon)
-    deallocate(test_diff_basis)
-
-
-
-
-
-    ! -----------------------------------
-    ! Test w1, order-0
-    ! -----------------------------------
-    @assertEqual( fs1k0_dynamo_fs,     test_fs1k0%which()             )
-    @assertEqual( fs1k0_element_order, test_fs1k0%get_element_order() )
-
-    test_ncells    = test_fs1k0%get_ncell()
-    test_ndof_cell = test_fs1k0%get_ndf()
-
-    @assertEqual( fs1k0_ndof_cell,    test_ndof_cell           )
-    @assertEqual( 9,                  test_ncells              )
-    @assertEqual( 3,                  test_fs1k0%get_nlayers() )
-    @assertEqual( fs1k0_ndof_glob,    test_fs1k0%get_undf()    )
-    @assertEqual( fs1k0_ndof_cell,    test_fs1k0%get_ndf()     ) 
-    @assertEqual( fs1k0_nodal_coords, test_fs1k0%get_nodes()   )
-
-    test_dim_space      = test_fs1k0%get_dim_space()
-    test_dim_space_diff = test_fs1k0%get_dim_space_diff()
-    @assertEqual( fs1k0_dim_space,      test_dim_space         )  
-    @assertEqual( fs1k0_dim_space_diff, test_dim_space_diff    ) 
-   
+    test_dim_space      = test_fs%get_dim_space()
+    test_dim_space_diff = test_fs%get_dim_space_diff()
+    @assertEqual( description%dim_space,      test_dim_space      )
+    @assertEqual( description%dim_space_diff, test_dim_space_diff )
 
     do cell=1, test_ncells
-      @assertEqual( fs1k0_dofmap(:,cell),      test_fs1k0%get_cell_dofmap(cell)      )
+      @assertEqual( dofmap(:,cell), test_fs%get_cell_dofmap(cell) )
     end do
 
+    call test_fs%compute_basis_function( this%test_basis, &
+                                         test_ndof_cell,  &
+                                         nqp_h, nqp_v,    &
+                                         xp, zp )
+    @assertEqual(basis_function, this%test_basis, margin)
 
-    allocate( test_basis ( test_dim_space, test_ndof_cell, nqp_h, nqp_v) )
-    call test_fs1k0%compute_basis_function                                     &
-       ( test_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs1k0_basis_function, test_basis, epsilon)
-    deallocate(test_basis)
+    call test_fs%compute_diff_basis_function( this%test_diff_basis, &
+                                              test_ndof_cell,       &
+                                              nqp_h, nqp_v,         &
+                                              xp, zp )
+    @assertEqual(basis_diff_function, this%test_diff_basis, margin)
 
+  end subroutine test_space
 
-    allocate( test_diff_basis( test_dim_space_diff, test_ndof_cell             &
-                             , nqp_h, nqp_v) )
-    call test_fs1k0%compute_diff_basis_function                                &
-       ( test_diff_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs1k0_basis_diff_function, test_diff_basis, epsilon)
-    deallocate(test_diff_basis)
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine test_stencil_point( this )
 
+    use stencil_dofmap_mod,    only: stencil_dofmap_type, STENCIL_POINT
 
-    ! Test the stencil dofmap linked list structure
-    stencil_dofmap => test_fs1k0%ll_get_instance(STENCIL_1DX,3)
-    stencil_map    => stencil_dofmap%get_dofmap(1)
+    implicit none
 
-    map => test_fs1k0%get_cell_dofmap(1)
+    class(test_function_space_type), intent(inout) :: this
+
+    type(function_space_type), pointer :: test_fs => null()
+
+    type(stencil_dofmap_type), pointer :: stencil_dofmap   => null()
+    integer(i_def),            pointer :: stencil_map(:,:) => null()
+    integer(i_def),            pointer :: map(:)           => null()
+
+    test_fs => test_fs%get_instance( this%mesh,     &
+                                     element_order, &
+                                     this%function_space )
+
+    stencil_dofmap => test_fs%ll_get_instance(STENCIL_POINT,1)
+    stencil_map => stencil_dofmap%get_dofmap(1)
+    map => test_fs%get_cell_dofmap(1)
     @assertEqual( map, stencil_map(:,1) )
-    map => test_fs1k0%get_cell_dofmap(mesh%get_cell_next(1,1))
+
+  end subroutine test_stencil_point
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine test_stencil_1dx( this )
+
+    use stencil_dofmap_mod,    only: stencil_dofmap_type, STENCIL_1DX
+
+    implicit none
+
+    class(test_function_space_type), intent(inout) :: this
+
+    type(function_space_type), pointer :: test_fs => null()
+
+    type(stencil_dofmap_type), pointer :: stencil_dofmap   => null()
+    integer(i_def),            pointer :: stencil_map(:,:) => null()
+    integer(i_def),            pointer :: map(:)           => null()
+
+    test_fs => test_fs%get_instance( this%mesh,     &
+                                     element_order, &
+                                     this%function_space )
+
+    stencil_dofmap => test_fs%ll_get_instance( STENCIL_1DX, 3 )
+    stencil_map    => stencil_dofmap%get_dofmap( 1 )
+
+    map => test_fs%get_cell_dofmap(1)
+    @assertEqual( map, stencil_map(:,1) )
+    map => test_fs%get_cell_dofmap(this%mesh%get_cell_next( W, 1 ))
     @assertEqual( map, stencil_map(:,2) )
-    map => test_fs1k0%get_cell_dofmap(mesh%get_cell_next(3,1))
+    map => test_fs%get_cell_dofmap(this%mesh%get_cell_next( E, 1 ))
     @assertEqual( map, stencil_map(:,3) )
 
-    stencil_dofmap => test_fs1k0%ll_get_instance(STENCIL_1DY,5)
+  end subroutine test_stencil_1dx
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine test_stencil_1dy( this )
+
+    use stencil_dofmap_mod,    only: stencil_dofmap_type, STENCIL_1DY
+
+    implicit none
+
+    class(test_function_space_type), intent(inout) :: this
+
+    type(function_space_type), pointer :: test_fs => null()
+
+    type(stencil_dofmap_type), pointer :: stencil_dofmap   => null()
+    integer(i_def),            pointer :: stencil_map(:,:) => null()
+    integer(i_def),            pointer :: map(:)           => null()
+
+    test_fs => test_fs%get_instance( this%mesh,     &
+                                     element_order, &
+                                     this%function_space )
+
+    stencil_dofmap => test_fs%ll_get_instance( STENCIL_1DY, 5 )
     stencil_map => stencil_dofmap%get_dofmap(1)
 
-    map => test_fs1k0%get_cell_dofmap(1)
+    map => test_fs%get_cell_dofmap(1)
     @assertEqual( map, stencil_map(:,1) )
-    map => test_fs1k0%get_cell_dofmap(mesh%get_cell_next(2,1))
+    map => test_fs%get_cell_dofmap(this%mesh%get_cell_next( N, 1 ))
     @assertEqual( map, stencil_map(:,2) )
-    map => test_fs1k0%get_cell_dofmap(mesh%get_cell_next(4,1))
+    map => test_fs%get_cell_dofmap(this%mesh%get_cell_next( S, 1 ))
     @assertEqual( map, stencil_map(:,3) )
-    map => test_fs1k0%get_cell_dofmap(&
-           mesh%get_cell_next(2,mesh%get_cell_next(2,1)))
+    map => test_fs%get_cell_dofmap(&
+          this%mesh%get_cell_next(2,this%mesh%get_cell_next( N, 1 )))
     @assertEqual( map, stencil_map(:,4) )
-    map => test_fs1k0%get_cell_dofmap(&
-              mesh%get_cell_next(4,mesh%get_cell_next(4,1)))
+    map => test_fs%get_cell_dofmap(&
+              this%mesh%get_cell_next(4,this%mesh%get_cell_next( S, 1 )))
     @assertEqual( map, stencil_map(:,5) )
 
+  end subroutine test_stencil_1dy
 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine test_stencil_cross( this )
 
-    ! -----------------------------------
-    ! Test w2, order-0
-    ! -----------------------------------
-    @assertEqual( fs2k0_dynamo_fs,     test_fs2k0%which()             )
-    @assertEqual( fs2k0_element_order, test_fs2k0%get_element_order() )
+    use stencil_dofmap_mod,    only: stencil_dofmap_type, STENCIL_CROSS
 
-    test_ncells    = test_fs2k0%get_ncell()
-    test_ndof_cell = test_fs2k0%get_ndf()
+    implicit none
 
-    @assertEqual( fs2k0_ndof_cell,    test_ndof_cell           )
-    @assertEqual( 9,                  test_ncells              )
-    @assertEqual( 3,                  test_fs2k0%get_nlayers() )
-    @assertEqual( fs2k0_ndof_glob,    test_fs2k0%get_undf()    )
-    @assertEqual( fs2k0_ndof_cell,    test_fs2k0%get_ndf()     ) 
-    @assertEqual( fs2k0_nodal_coords, test_fs2k0%get_nodes()   )
+    class(test_function_space_type), intent(inout) :: this
 
-    test_dim_space      = test_fs2k0%get_dim_space()
-    test_dim_space_diff = test_fs2k0%get_dim_space_diff()
-    @assertEqual( fs2k0_dim_space,      test_dim_space         )  
-    @assertEqual( fs2k0_dim_space_diff, test_dim_space_diff    ) 
-   
+    type(function_space_type), pointer :: test_fs => null()
 
-    do cell=1, test_ncells
-      @assertEqual( fs2k0_dofmap(:,cell),      test_fs2k0%get_cell_dofmap(cell)      )
-    end do
+    type(stencil_dofmap_type), pointer :: stencil_dofmap   => null()
+    integer(i_def),            pointer :: stencil_map(:,:) => null()
+    integer(i_def),            pointer :: map(:)           => null()
 
+    integer :: i
 
-    allocate( test_basis ( test_dim_space, test_ndof_cell, nqp_h, nqp_v) )
-    call test_fs2k0%compute_basis_function                                     &
-       ( test_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs2k0_basis_function, test_basis, epsilon)
-    deallocate(test_basis)
+    test_fs => test_fs%get_instance( this%mesh,     &
+                                     element_order, &
+                                     this%function_space )
 
-
-    allocate( test_diff_basis( test_dim_space_diff, test_ndof_cell             &
-                             , nqp_h, nqp_v) )
-    call test_fs2k0%compute_diff_basis_function                                &
-       ( test_diff_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs2k0_basis_diff_function, test_diff_basis, epsilon)
-    deallocate(test_diff_basis)
-
-
-    ! Test the stencil dofmap linked list structure
-    stencil_dofmap => test_fs2k0%ll_get_instance(STENCIL_POINT,1)
+    stencil_dofmap => test_fs%ll_get_instance(STENCIL_CROSS,5)
     stencil_map => stencil_dofmap%get_dofmap(1)
-    map => test_fs2k0%get_cell_dofmap(1)
-    @assertEqual( map, stencil_map(:,1) )
-
-    stencil_dofmap => test_fs2k0%ll_get_instance(STENCIL_CROSS,5)
-    stencil_map => stencil_dofmap%get_dofmap(1)
-    map => test_fs2k0%get_cell_dofmap(1)
+    map => test_fs%get_cell_dofmap(1)
     @assertEqual( map, stencil_map(:,1) )
     do i = 1,4
-      map => test_fs2k0%get_cell_dofmap(mesh%get_cell_next(i,1))
+      map => test_fs%get_cell_dofmap(this%mesh%get_cell_next(i,1))
       @assertEqual( map, stencil_map(:,i+1) )
     end do
 
+  end subroutine test_stencil_cross
 
-    ! -----------------------------------
-    ! Test w3, order-0
-    ! -----------------------------------
-    @assertEqual( fs3k0_dynamo_fs,     test_fs3k0%which()             )
-    @assertEqual( fs3k0_element_order, test_fs3k0%get_element_order() )
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine test_mesh( this )
 
-    test_ncells    = test_fs3k0%get_ncell()
-    test_ndof_cell = test_fs3k0%get_ndf()
+    implicit none
 
-    @assertEqual( fs3k0_ndof_cell,    test_ndof_cell           )
-    @assertEqual( 9,                  test_ncells              )
-    @assertEqual( 3,                  test_fs3k0%get_nlayers() )
-    @assertEqual( fs3k0_ndof_glob,    test_fs3k0%get_undf()    )
-    @assertEqual( fs3k0_ndof_cell,    test_fs3k0%get_ndf()     ) 
-    @assertEqual( fs3k0_nodal_coords, test_fs3k0%get_nodes()   )
+    class(test_function_space_type), intent(inout) :: this
 
-    test_dim_space      = test_fs3k0%get_dim_space()
-    test_dim_space_diff = test_fs3k0%get_dim_space_diff()
-    @assertEqual( fs3k0_dim_space,      test_dim_space         )  
-    @assertEqual( fs3k0_dim_space_diff, test_dim_space_diff    ) 
-   
+    type(function_space_type), pointer :: test_fs => null()
+    type(mesh_type),           pointer :: mesh_out => null()
 
-    do cell=1, test_ncells
-      @assertEqual( fs3k0_dofmap(:,cell),      test_fs3k0%get_cell_dofmap(cell)      )
-    end do
+    test_fs => test_fs%get_instance( this%mesh,     &
+                                     element_order, &
+                                     this%function_space )
 
-
-    allocate( test_basis ( test_dim_space, test_ndof_cell, nqp_h, nqp_v) )
-    call test_fs3k0%compute_basis_function                                     &
-       ( test_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs3k0_basis_function, test_basis, epsilon)
-    deallocate(test_basis)
-
-
-    allocate( test_diff_basis( test_dim_space_diff, test_ndof_cell             &
-                             , nqp_h, nqp_v) )
-    call test_fs3k0%compute_diff_basis_function                                &
-       ( test_diff_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs3k0_basis_diff_function, test_diff_basis, epsilon)
-    deallocate(test_diff_basis)
-
-
-    ! -----------------------------------
-    ! Test wtheta, order-0
-    ! -----------------------------------
-    @assertEqual( fs4k0_dynamo_fs,     test_fs4k0%which()             )
-    @assertEqual( fs4k0_element_order, test_fs4k0%get_element_order() )
-
-    test_ncells    = test_fs4k0%get_ncell()
-    test_ndof_cell = test_fs4k0%get_ndf()
-
-    @assertEqual( fs4k0_ndof_cell,    test_ndof_cell           )
-    @assertEqual( 9,                  test_ncells              )
-    @assertEqual( 3,                  test_fs4k0%get_nlayers() )
-    @assertEqual( fs4k0_ndof_glob,    test_fs4k0%get_undf()    )
-    @assertEqual( fs4k0_ndof_cell,    test_fs4k0%get_ndf()     ) 
-    @assertEqual( fs4k0_nodal_coords, test_fs4k0%get_nodes()   )
-
-    test_dim_space      = test_fs4k0%get_dim_space()
-    test_dim_space_diff = test_fs4k0%get_dim_space_diff()
-    @assertEqual( fs4k0_dim_space,      test_dim_space         )  
-    @assertEqual( fs4k0_dim_space_diff, test_dim_space_diff    ) 
-   
-
-    do cell=1, test_ncells
-      @assertEqual( fs4k0_dofmap(:,cell),      test_fs4k0%get_cell_dofmap(cell)      )
-    end do
-
-
-    allocate( test_basis ( test_dim_space, test_ndof_cell, nqp_h, nqp_v) )
-    call test_fs4k0%compute_basis_function                                     &
-       ( test_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs4k0_basis_function, test_basis, epsilon)
-    deallocate(test_basis)
-
-
-    allocate( test_diff_basis( test_dim_space_diff, test_ndof_cell             &
-                             , nqp_h, nqp_v) )
-    call test_fs4k0%compute_diff_basis_function                                &
-       ( test_diff_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs4k0_basis_diff_function, test_diff_basis, epsilon)
-    deallocate(test_diff_basis)
-
-
-    ! -----------------------------------
-    ! Test w2v, order-0
-    ! -----------------------------------
-    @assertEqual( fs5k0_dynamo_fs,     test_fs5k0%which()             )
-    @assertEqual( fs5k0_element_order, test_fs5k0%get_element_order() )
-
-    test_ncells    = test_fs5k0%get_ncell()
-    test_ndof_cell = test_fs5k0%get_ndf()
-
-    @assertEqual( fs5k0_ndof_cell,    test_ndof_cell           )
-    @assertEqual( 9,                  test_ncells              )
-    @assertEqual( 3,                  test_fs5k0%get_nlayers() )
-    @assertEqual( fs5k0_ndof_glob,    test_fs5k0%get_undf()    )
-    @assertEqual( fs5k0_ndof_cell,    test_fs5k0%get_ndf()     ) 
-    @assertEqual( fs5k0_nodal_coords, test_fs5k0%get_nodes()   )
-
-    test_dim_space      = test_fs5k0%get_dim_space()
-    test_dim_space_diff = test_fs5k0%get_dim_space_diff()
-    @assertEqual( fs5k0_dim_space,      test_dim_space         )  
-    @assertEqual( fs5k0_dim_space_diff, test_dim_space_diff    ) 
-   
-
-    do cell=1, test_ncells
-      @assertEqual( fs5k0_dofmap(:,cell),      test_fs5k0%get_cell_dofmap(cell)      )
-    end do
-
-
-    allocate( test_basis ( test_dim_space, test_ndof_cell, nqp_h, nqp_v) )
-    call test_fs5k0%compute_basis_function                                     &
-       ( test_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs5k0_basis_function, test_basis, epsilon)
-    deallocate(test_basis)
-
-
-    allocate( test_diff_basis( test_dim_space_diff, test_ndof_cell             &
-                             , nqp_h, nqp_v) )
-    call test_fs5k0%compute_diff_basis_function                                &
-       ( test_diff_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs5k0_basis_diff_function, test_diff_basis, epsilon)
-    deallocate(test_diff_basis)
-
-
-    ! -----------------------------------
-    ! Test w2h, order-0
-    ! -----------------------------------
-    @assertEqual( fs6k0_dynamo_fs,     test_fs6k0%which()             )
-    @assertEqual( fs6k0_element_order, test_fs6k0%get_element_order() )
-
-    test_ncells    = test_fs6k0%get_ncell()
-    test_ndof_cell = test_fs6k0%get_ndf()
-
-    @assertEqual( fs6k0_ndof_cell,    test_ndof_cell           )
-    @assertEqual( 9,                  test_ncells              )
-    @assertEqual( 3,                  test_fs6k0%get_nlayers() )
-    @assertEqual( fs6k0_ndof_glob,    test_fs6k0%get_undf()    )
-    @assertEqual( fs6k0_ndof_cell,    test_fs6k0%get_ndf()     ) 
-    @assertEqual( fs6k0_nodal_coords, test_fs6k0%get_nodes()   )
-
-    test_dim_space      = test_fs6k0%get_dim_space()
-    test_dim_space_diff = test_fs6k0%get_dim_space_diff()
-    @assertEqual( fs6k0_dim_space,      test_dim_space         )  
-    @assertEqual( fs6k0_dim_space_diff, test_dim_space_diff    ) 
-   
-
-    do cell=1, test_ncells
-      @assertEqual( fs6k0_dofmap(:,cell),      test_fs6k0%get_cell_dofmap(cell)      )
-    end do
-
-
-    allocate( test_basis ( test_dim_space, test_ndof_cell, nqp_h, nqp_v) )
-    call test_fs6k0%compute_basis_function                                     &
-       ( test_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs6k0_basis_function, test_basis, epsilon)
-    deallocate(test_basis)
-
-
-    allocate( test_diff_basis( test_dim_space_diff, test_ndof_cell             &
-                             , nqp_h, nqp_v) )
-    call test_fs6k0%compute_diff_basis_function                                &
-       ( test_diff_basis, test_ndof_cell, nqp_h, nqp_v, xp, zp )
-    @assertEqual(fs6k0_basis_diff_function, test_diff_basis, epsilon)
-    deallocate(test_diff_basis)
-
-
-
-
-    !-------------------------------------------------------------------
-    ! Test if the function space returns the correct mesh
-    ! Use a subset of the tests from mesh_mod_test.pf
-    !-------------------------------------------------------------------
-    mesh_out => test_fs0k0%get_mesh()
+    mesh_out => test_fs%get_mesh()
 
     !-------------------------------------------------------------------
     ! Test get_face_on_cell()
-    iface=3
-    lid=9
-    test_integer = mesh_out%get_face_on_cell(iface, lid)
-    @assertEqual ( 28, test_integer )
+    @assertEqual ( 28, mesh_out%get_face_on_cell(3, 9) )
 
     !-------------------------------------------------------------------
     ! Test get_edge_on_cell()
-    iedge=1
-    lid=5
-    test_integer = mesh_out%get_edge_on_cell(iedge, lid)
-    @assertEqual ( 27, test_integer )
+    @assertEqual ( 27, mesh_out%get_edge_on_cell(1, 5) )
 
-    iedge=5
-    lid=5
-    test_integer = mesh_out%get_edge_on_cell(iedge, lid)
-    @assertEqual ( 11, test_integer )
+    @assertEqual ( 11, mesh_out%get_edge_on_cell( 5, 5 ) )
 
-    iedge=9
-    lid=5
-    test_integer = mesh_out%get_edge_on_cell(iedge, lid)
-    @assertEqual ( 28, test_integer )
+    @assertEqual ( 28, mesh_out%get_edge_on_cell( 9, 5 ) )
 
-    iedge=12
-    lid=5
-    test_integer = mesh_out%get_edge_on_cell(iedge, lid)
-    @assertEqual ( 36, test_integer )
+    @assertEqual ( 36, mesh_out%get_edge_on_cell( 12, 5 ) )
 
-    iedge=6
-    lid=9
-    test_integer = mesh_out%get_edge_on_cell(iedge, lid)
-    @assertEqual ( 32, test_integer )
+    @assertEqual ( 32, mesh_out%get_edge_on_cell( 6, 9 ) )
 
-    !-------------------------------------------------------------------
-    ! Test colouring via function space
+  end subroutine test_mesh
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine test_colouring( this )
+
+    implicit none
+
+    class(test_function_space_type), intent(inout) :: this
+
+    type(function_space_type), pointer :: test_fs => null()
+
+    integer(i_def) :: num_colours
+    integer(i_def) :: total_colours
+    integer(i_def) :: nc_colour
+    integer(i_def) :: cic_colour
+
+    integer(i_def), pointer :: num_cell_per_colour(:)
+    integer(i_def), pointer :: cells_in_colour(:,:)
+
+    integer :: colour_idx
+
+    test_fs => test_fs%get_instance( this%mesh,     &
+                                     element_order, &
+                                     this%function_space )
 
     ! Must set colours before use...
-    call test_fs0k0%set_colours()
+    call test_fs%set_colours()
 
-    call test_fs0k0%get_colours(num_colours, num_cell_per_colour, cells_in_colour)
+    call test_fs%get_colours(num_colours, num_cell_per_colour, cells_in_colour)
 
     ! Is there storage for colour map...
     @assertTrue(associated(cells_in_colour), "Colours not set for function space.")
@@ -530,12 +473,7 @@ contains
       cic_colour = count(cells_in_colour(colour_idx,:) /= 0)
       @assertEqual(nc_colour, cic_colour, "Mismatch between num-per-colour total and cell count.")
     end do
-    !-------------------------------------------------------------------
 
-    ! Tear down
-    call deallocate_reference()
-    call purge_function_spaces()
-    return
-  end subroutine test_func_space 
+  end subroutine test_colouring
 
 end module function_space_mod_test

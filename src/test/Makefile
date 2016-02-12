@@ -48,7 +48,8 @@ test: $(OBJ_DIR)/test
 	                    -max-launch-duration  2.0
 
 .PRECIOUS: $(OBJ_DIR)/%.F90
-$(OBJ_DIR)/%.F90: %.pf | $(OBJ_DIR) $(OBJ_SUBDIRS) $(DRIVER_OBJ)
+$(OBJ_DIR)/%.F90: %.pf | $(OBJ_DIR) $(OBJ_SUBDIRS) $(DRIVER_OBJ) \
+                         $(SUPPORT_OBJECTS)
 	@echo -e $(VT_BOLD)Generating$(VT_RESET) $@
 	$(Q)$(PFUNIT_INSTALL_DIR)/bin/pFUnitParser.py $< $@
 

@@ -9,116 +9,101 @@
 !>
 module mesh_mod_test
 
-  use pFUnit_Mod
-  use reference_element_mod, only: reference_cube,                 &
-                                   deallocate_reference,           &
-                                   reference_element
+  use configuration_mod,     only: l_spherical, earth_scaling,          &
+                                   EARTH_RADIUS_UNSCALED, earth_radius, &
+                                   QUAD,                                &
+                                   VGRID_UNIFORM,                       &
+                                   VGRID_QUADRATIC,                     &
+                                   VGRID_GEOMETRIC,                     &
+                                   VGRID_DCMIP
   use constants_mod,         only: r_def, i_def, PI
-  use mesh_mod,              only: mesh_type, domain_limits
-
   use coord_transform_mod,   only: llr2xyz
-  use configuration_mod,     only: l_spherical, earth_scaling                  &
-                                 , EARTH_RADIUS_UNSCALED, earth_radius         &
-                                 , QUAD, VGRID_UNIFORM, VGRID_QUADRATIC        &
-                                 , VGRID_GEOMETRIC, VGRID_DCMIP
   use global_mesh_mod,       only: global_mesh_type
   use partition_mod,         only: partition_type
-
+  use mesh_mod,              only: mesh_type, domain_limits
+  use pFUnit_Mod
 
   implicit none
 
   private
-  public test_mesh, setUp, tearDown
+  public :: mesh_test_type,  &
+            test_get_scalar, test_get_integer, test_get_boolean, &
+            test_get_1d_array, test_get_2d_array, test_get_3d_array, &
+            test_dz_array
 
 
   @testCase
-  type, public, extends( TestCase ) :: mesh_test_type
+  type, extends( TestCase ) :: mesh_test_type
+    private
+    type(global_mesh_type) :: global_mesh
+    type(partition_type)   :: partition
   contains
     procedure :: setUp
     procedure :: tearDown
-    procedure :: test_mesh
+    procedure :: test_get_scalar
+    procedure :: test_get_1d_array
+    procedure :: test_get_2d_array
+    procedure :: test_get_3d_array
+    procedure :: test_dz_array
   end type mesh_test_type
+
+  integer(i_def), parameter :: nlayers    = 5_i_def
+  real(r_def),    parameter :: domain_top = 10000.0_r_def
 
 contains
 
-  subroutine setUp(this)
-    implicit none
-    class( mesh_test_type ), intent( inout ) :: this
-    reference_element = QUAD
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
 
+    use reference_element_mod, only : reference_cube, reference_element
+
+    implicit none
+
+    class( mesh_test_type ), intent( inout ) :: this
+
+    l_spherical   = .true.
+    earth_scaling = 125.0_r_def
+    earth_radius  = EARTH_RADIUS_UNSCALED/earth_scaling
+
+    reference_element = QUAD
     call reference_cube()
+
+    this%global_mesh = global_mesh_type()
+    this%partition   = partition_type()
 
   end subroutine setUp
 
-  subroutine tearDown(this)
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine tearDown( this )
+
+    use reference_element_mod, only : deallocate_reference
+
     implicit none
+
     class( mesh_test_type ), intent( inout ) :: this
+
     call deallocate_reference()
+
   end subroutine tearDown
 
-
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   @test
-  !> @brief Test mesh object functionality
-  subroutine test_mesh(this)
+  subroutine test_get_scalar( this )
 
     implicit none
 
     class( mesh_test_type ), intent( inout ) :: this
 
-    type (global_mesh_type)   :: global_mesh
-    type (partition_type)     :: partition
-
-    type (mesh_type)          :: mesh_1
-    type (mesh_type)          :: mesh_2
-    type (mesh_type)          :: mesh_3
-    type (mesh_type)          :: mesh_4
-    type (mesh_type)          :: mesh_5
-
+    type (mesh_type) :: mesh_1
     type (domain_limits)      :: domain
 
-    integer (i_def) :: nlayers
-    real    (r_def) :: dz_uni, dz_quad, dz_geom, dz_dcmip
-    real    (r_def) :: domain_top
-
-    ! Dummy test variables
-    integer(i_def) :: err
-    integer(i_def) :: gid, lid, iface, iedge
     integer(i_def) :: test_integer
-    integer(i_def) :: test_integer2
-    real(r_def)    :: test_real
 
-    real(r_def), allocatable :: test_real_array1(:)
-    real(r_def), allocatable :: test_real_array2(:)
-    real(r_def), allocatable :: test_real_array1_2d(:,:)
-    real(r_def), allocatable :: test_real_array2_2d(:,:)
-    real(r_def), allocatable :: test_real_array1_3d(:,:,:)
-    real(r_def), allocatable :: test_real_array2_3d(:,:,:)
-    real(r_def), allocatable :: dz_test(:)
-
-    ! Get unit test data objects
-    global_mesh = global_mesh_type()
-    partition   = partition_type()
-
-    ! Set the input variables for mesh construction and testing
-    l_spherical = .true.
-    earth_scaling = 125.0_r_def
-    earth_radius = EARTH_RADIUS_UNSCALED/earth_scaling  
-    nlayers     = 5_i_def
-    domain_top  = 10000.0_r_def
-    ! Set vertical grid spacings values to test meshes with
-    dz_uni      = 2000.0_r_def
-    dz_quad     = 400.0_r_def
-    dz_geom     = 1883.545714005761_r_def
-    dz_dcmip    = 883.0368802245059_r_def
-   
-    ! Instantiate the mesh - uniform in vertical
-    mesh_1 = mesh_type( partition, global_mesh, nlayers                        & 
-                      , domain_top, VGRID_UNIFORM)
-
-
-    !========================================
-    ! Test output from mesh object methods
-    !========================================
+    mesh_1 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,     &
+                        domain_top,  &
+                        VGRID_UNIFORM )
 
     !-------------------------------------------------------------------
     ! Test get_nlayers
@@ -182,132 +167,138 @@ contains
 
     !-------------------------------------------------------------------
     ! Test get_cell_gid
-    lid=2
-    test_integer = mesh_1%get_cell_gid(lid)
+    test_integer = mesh_1%get_cell_gid( 2 )
     @assertEqual ( 2, test_integer )
 
     !-------------------------------------------------------------------
     ! Test get_cell_lid
-    gid=3
-    test_integer = mesh_1%get_cell_lid(gid)
+    test_integer = mesh_1%get_cell_lid( 3 )
     @assertEqual ( 3, test_integer )
 
     !-------------------------------------------------------------------
     ! Test get_cell_next()
-    iface=6
-    lid=23
-    test_integer = mesh_1%get_cell_next(iface, lid)
+    test_integer = mesh_1%get_cell_next( 6, 23 )
     @assertEqual ( 32, test_integer )
 
-    iface=3
-    lid=9
-    test_integer = mesh_1%get_cell_next(iface, lid)
+    test_integer = mesh_1%get_cell_next( 3, 9 )
     @assertEqual ( 0, test_integer )
 
-    iface=3
-    lid=18
-    test_integer = mesh_1%get_cell_next(iface, lid)
+    test_integer = mesh_1%get_cell_next( 3, 18 )
     @assertEqual ( 0, test_integer )
 
     !-------------------------------------------------------------------
     ! Test get_face_on_cell()
-    iface=3
-    lid=9
-    test_integer = mesh_1%get_face_on_cell(iface, lid)
+    test_integer = mesh_1%get_face_on_cell( 3, 9 )
     @assertEqual ( 39, test_integer )
 
     !-------------------------------------------------------------------
     ! Test get_edge_on_cell()
-    iedge=1
-    lid=5
-    test_integer = mesh_1%get_edge_on_cell(iedge, lid)
+    test_integer = mesh_1%get_edge_on_cell( 1, 5 )
     @assertEqual ( 31, test_integer )
 
-    iedge=5
-    lid=5
-    test_integer = mesh_1%get_edge_on_cell(iedge, lid)
+    test_integer = mesh_1%get_edge_on_cell( 5, 5 )
     @assertEqual ( 11, test_integer )
 
-    iedge=9
-    lid=5
-    test_integer = mesh_1%get_edge_on_cell(iedge, lid)
+    test_integer = mesh_1%get_edge_on_cell( 9, 5 )
     @assertEqual ( 32, test_integer )
 
-    iedge=12
-    lid=5
-    test_integer = mesh_1%get_edge_on_cell(iedge, lid)
+    test_integer = mesh_1%get_edge_on_cell( 12, 5 )
     @assertEqual ( 40, test_integer )
 
-    iedge=6
-    lid=9
-    test_integer = mesh_1%get_edge_on_cell(iedge, lid)
+    test_integer = mesh_1%get_edge_on_cell( 6, 9 )
     @assertEqual ( 46, test_integer )
+
+  end subroutine test_get_scalar
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine test_get_1d_array( this )
+
+    implicit none
+
+    class( mesh_test_type ), intent( inout ) :: this
+
+    type (mesh_type) :: mesh_1
+
+    real(r_def) :: test_real_array1(3)
+    real(r_def) :: test_real_array2(3)
+
+    mesh_1 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,     &
+                        domain_top,  &
+                        VGRID_UNIFORM )
 
     !-------------------------------------------------------------------
     ! Test get_vert_coords
     ! Note: Returns coords in cartesian coords [x,y,z]
     ! Test multiple vertices
-    allocate( test_real_array1(3), test_real_array2(3) )
-
-    lid=3
     test_real_array2(:) = [  14879.4488_r_def, -23173.3685_r_def, -42889.6347_r_def ]
-    call mesh_1%get_vert_coords(lid, test_real_array1)
+    call mesh_1%get_vert_coords(3, test_real_array1)
     @assertEqual ( test_real_array2, test_real_array1, 1.0e-2_r_def )
 
-    lid=4
     test_real_array2(:) = [ -11460.3167_r_def, -25041.2489_r_def, -42889.6347_r_def ]
-    call mesh_1%get_vert_coords(lid, test_real_array1)
+    call mesh_1%get_vert_coords(4, test_real_array1)
     @assertEqual ( test_real_array2, test_real_array1, 1.0e-2_r_def )
 
-    lid=7
     test_real_array2(:) = [   8826.8632_r_def, -19287.0480_r_def, -46346.7371_r_def ]
-    call mesh_1%get_vert_coords(lid, test_real_array1)
+    call mesh_1%get_vert_coords(7, test_real_array1)
     @assertEqual ( test_real_array2, test_real_array1, 1.0e-2_r_def )
 
-    lid=10
     test_real_array2(:) = [ -11460.3167_r_def, -25041.2489_r_def,  42889.6347_r_def ]
-    call mesh_1%get_vert_coords(lid, test_real_array1)
+    call mesh_1%get_vert_coords(10, test_real_array1)
     @assertEqual ( test_real_array2, test_real_array1, 1.0e-2_r_def )
 
-    lid=16
     test_real_array2(:) = [   8826.8632_r_def, -19287.0480_r_def,  46346.7371_r_def ]
-    call mesh_1%get_vert_coords(lid, test_real_array1)
+    call mesh_1%get_vert_coords(16, test_real_array1)
     @assertEqual ( test_real_array2, test_real_array1, 1.0e-2_r_def )
 
-    lid=17
-    test_real_array2(:) = [   9173.2196_r_def,  20043.8505_r_def, -48165.3319_r_def ]    
-    call mesh_1%get_vert_coords(lid, test_real_array1)
+    test_real_array2(:) = [   9173.2196_r_def,  20043.8505_r_def, -48165.3319_r_def ]
+    call mesh_1%get_vert_coords(17, test_real_array1)
     @assertEqual ( test_real_array2, test_real_array1, 1.0e-2_r_def )
 
-    lid=22
-    test_real_array2(:) = [  15463.3020_r_def,  24082.6660_r_def, -44572.5767_r_def ]    
-    call mesh_1%get_vert_coords(lid, test_real_array1)
+    test_real_array2(:) = [  15463.3020_r_def,  24082.6660_r_def, -44572.5767_r_def ]
+    call mesh_1%get_vert_coords(22, test_real_array1)
     @assertEqual ( test_real_array2, test_real_array1, 1.0e-2_r_def )
 
-    lid=24
     test_real_array2(:) = [ -11910.0069_r_def,  26023.8399_r_def, -44572.5767_r_def ]
-    call mesh_1%get_vert_coords(lid, test_real_array1)
+    call mesh_1%get_vert_coords(24, test_real_array1)
     @assertEqual ( test_real_array2, test_real_array1, 1.0e-2_r_def )
 
-    deallocate( test_real_array1, test_real_array2 )
+  end subroutine test_get_1d_array
 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_get_2d_array( this )
+
+    implicit none
+
+    class( mesh_test_type ), intent( inout ) :: this
+
+    type (mesh_type) :: mesh_1
+
+    real(r_def) :: test_real_array1_2d(3,8)
+    real(r_def) :: test_real_array2_2d(3,8)
+
+    mesh_1 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,     &
+                        domain_top,  &
+                        VGRID_UNIFORM )
 
     !-------------------------------------------------------------------
     ! Test get_cell_coords
     ! Note: Returns coords in cartesian coords [x,y,z]
     ! Test a couple of cell ids
-    allocate( test_real_array1_2d(3,8), test_real_array2_2d(3,8) )
-
     test_real_array2_2d(:,1) = [   9865.9324_r_def,  21557.4555_r_def, -51802.5216_r_def ]
-    test_real_array2_2d(:,2) = [ -12809.3873_r_def,  19949.4387_r_def, -51802.5216_r_def ] 
-    test_real_array2_2d(:,3) = [  16631.0083_r_def, -25901.2608_r_def, -47938.4606_r_def ]  
-    test_real_array2_2d(:,4) = [ -12809.3873_r_def, -27989.0219_r_def, -47938.4606_r_def ]   
-    test_real_array2_2d(:,5) = [  10212.2887_r_def,  22314.2580_r_def, -53621.1165_r_def ]    
+    test_real_array2_2d(:,2) = [ -12809.3873_r_def,  19949.4387_r_def, -51802.5216_r_def ]
+    test_real_array2_2d(:,3) = [  16631.0083_r_def, -25901.2608_r_def, -47938.4606_r_def ]
+    test_real_array2_2d(:,4) = [ -12809.3873_r_def, -27989.0219_r_def, -47938.4606_r_def ]
+    test_real_array2_2d(:,5) = [  10212.2887_r_def,  22314.2580_r_def, -53621.1165_r_def ]
     test_real_array2_2d(:,6) = [ -13259.0775_r_def,  20649.7897_r_def, -53621.1165_r_def ]
-    test_real_array2_2d(:,7) = [  17214.8615_r_def, -26810.5582_r_def, -49621.4026_r_def ]   
+    test_real_array2_2d(:,7) = [  17214.8615_r_def, -26810.5582_r_def, -49621.4026_r_def ]
     test_real_array2_2d(:,8) = [ -13259.0775_r_def, -28971.6129_r_def ,-49621.4026_r_def ]
-    lid=28
-    call mesh_1%get_cell_coords(lid, test_real_array1_2d)
+
+    call mesh_1%get_cell_coords(28, test_real_array1_2d)
     @assertEqual ( test_real_array2_2d, test_real_array1_2d, 1.0e-2_r_def )
 
 
@@ -320,21 +311,35 @@ contains
     test_real_array2_2d(:,7) = [  16631.0083_r_def,  25901.2608_r_def,  47938.4606_r_def ]
     test_real_array2_2d(:,8) = [  16631.0083_r_def, -25901.2608_r_def , 47938.4606_r_def ]
 
-    lid=23
-    call mesh_1%get_cell_coords(lid, test_real_array1_2d)
+    call mesh_1%get_cell_coords(23, test_real_array1_2d)
     @assertEqual ( test_real_array2_2d, test_real_array1_2d, 1.0e-2_r_def )
 
+  end subroutine test_get_2d_array
 
-    deallocate( test_real_array1_2d, test_real_array2_2d )
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_get_3d_array( this )
 
+    implicit none
+
+    class( mesh_test_type ), intent( inout ) :: this
+
+    type (mesh_type) :: mesh_1
+
+    real(r_def) :: test_real_array1_3d(3,8,5)
+    real(r_def) :: test_real_array2_3d(3,8,5)
+
+    mesh_1 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,          &
+                        domain_top,       &
+                        VGRID_UNIFORM )
 
     !-------------------------------------------------------------------
     ! Test get_column_coords
     ! Note: Returns coords in cartesian coords [x,y,z]
     ! Test two cells in the same column, they should return the same
     ! column of coords
-    allocate( test_real_array1_3d(3,8,5), test_real_array2_3d(3,8,5) )
-
     test_real_array2_3d(:,1,1) = [ -11460.3167_r_def, -25041.2489_r_def,  42889.6347_r_def ]
     test_real_array2_3d(:,2,1) = [  14879.4488_r_def, -23173.3685_r_def,  42889.6347_r_def ]
     test_real_array2_3d(:,3,1) = [ -11460.3167_r_def,  17848.3858_r_def,  46346.7371_r_def ]
@@ -344,16 +349,16 @@ contains
     test_real_array2_3d(:,7,1) = [ -11910.0069_r_def,  18548.7368_r_def,  48165.3319_r_def ]
     test_real_array2_3d(:,8,1) = [   9173.2196_r_def,  20043.8505_r_def,  48165.3319_r_def ]
 
-    test_real_array2_3d(:,1,2) = [ -11910.0069_r_def, -26023.8399_r_def,  44572.5767_r_def ]  
+    test_real_array2_3d(:,1,2) = [ -11910.0069_r_def, -26023.8399_r_def,  44572.5767_r_def ]
     test_real_array2_3d(:,2,2) = [  15463.3020_r_def, -24082.6660_r_def,  44572.5767_r_def ]
-    test_real_array2_3d(:,3,2) = [ -11910.0069_r_def,  18548.7368_r_def,  48165.3319_r_def ]  
-    test_real_array2_3d(:,4,2) = [   9173.2196_r_def,  20043.8505_r_def,  48165.3319_r_def ] 
-    test_real_array2_3d(:,5,2) = [ -12359.6971_r_def, -27006.4309_r_def,  46255.5187_r_def ]    
+    test_real_array2_3d(:,3,2) = [ -11910.0069_r_def,  18548.7368_r_def,  48165.3319_r_def ]
+    test_real_array2_3d(:,4,2) = [   9173.2196_r_def,  20043.8505_r_def,  48165.3319_r_def ]
+    test_real_array2_3d(:,5,2) = [ -12359.6971_r_def, -27006.4309_r_def,  46255.5187_r_def ]
     test_real_array2_3d(:,6,2) = [  16047.1552_r_def, -24991.9634_r_def,  46255.5187_r_def ]
     test_real_array2_3d(:,7,2) = [ -12359.6971_r_def,  19249.0878_r_def,  49983.9268_r_def ]
     test_real_array2_3d(:,8,2) = [   9519.5760_r_def,  20800.6530_r_def,  49983.9268_r_def ]
 
-    test_real_array2_3d(:,1,3) = [ -12359.6971_r_def, -27006.4309_r_def,  46255.5187_r_def ]  
+    test_real_array2_3d(:,1,3) = [ -12359.6971_r_def, -27006.4309_r_def,  46255.5187_r_def ]
     test_real_array2_3d(:,2,3) = [  16047.1552_r_def, -24991.9634_r_def,  46255.5187_r_def ]
     test_real_array2_3d(:,3,3) = [ -12359.6971_r_def,  19249.0878_r_def,  49983.9268_r_def ]
     test_real_array2_3d(:,4,3) = [   9519.5760_r_def,  20800.6530_r_def,  49983.9268_r_def ]
@@ -380,42 +385,106 @@ contains
     test_real_array2_3d(:,7,5) = [ -13708.7677_r_def,  21350.1407_r_def,  55439.7114_r_def ]
     test_real_array2_3d(:,8,5) = [  10558.6451_r_def,  23071.0605_r_def,  55439.7114_r_def ]
 
-    lid=7
-    call mesh_1%get_column_coords(lid, test_real_array1_3d)
+    call mesh_1%get_column_coords(7, test_real_array1_3d)
     @assertEqual ( test_real_array2_3d, test_real_array1_3d, 1.0e-2_r_def )
 
-    lid=43
-    call mesh_1%get_column_coords(lid, test_real_array1_3d)
+    call mesh_1%get_column_coords(43, test_real_array1_3d)
     @assertEqual ( test_real_array2_3d, test_real_array1_3d, 1.0e-2_r_def )
 
-    deallocate( test_real_array1_3d, test_real_array2_3d )
+  end subroutine test_get_3d_array
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_dz_array( this )
+
+    implicit none
+
+    class( mesh_test_type ), intent( inout ) :: this
+
+    ! Set vertical grid spacings values to test meshes with
+    real(r_def), parameter :: dz_uni   = 2000.0_r_def
+    real(r_def), parameter :: dz_quad  = 400.0_r_def
+    real(r_def), parameter :: dz_geom  = 1883.545714005761_r_def
+    real(r_def), parameter :: dz_dcmip = 883.0368802245059_r_def
+
+    type (mesh_type) :: mesh_1, mesh_3, mesh_4, mesh_5
+
+    real(r_def) :: dz_test(nlayers)
+    real(r_def) :: test_real
+
+    mesh_1 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,          &
+                        domain_top,       &
+                        VGRID_UNIFORM )
+    mesh_3 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,          &
+                        domain_top,       &
+                        VGRID_QUADRATIC )
+    mesh_4 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,          &
+                        domain_top,       &
+                        VGRID_GEOMETRIC )
+    mesh_5 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,          &
+                        domain_top,       &
+                        VGRID_DCMIP )
 
     !-------------------------------------------------------------------
-    ! Test get_domain_size
-    ! Note: At present, it returns coords in cartesian coords [x,y,z]
-    !       or in spherical coords depending on the logical l_spherical.
-    !       This should be change to only output in [x,y,z]
-    domain = mesh_1%get_domain_size()
-    test_real = domain % maximum % x
-    @assertEqual ( test_real,  2.0_r_def*PI )
-    test_real = domain % minimum % y
-    @assertEqual ( test_real, -0.5_r_def*PI )
-    test_real = domain % maximum % z
-    @assertEqual ( test_real, 10000.0_r_def )
-
+    ! Test get_dz for different meshes
 
     ! Uniform mesh_1, first layer depth
-    allocate( dz_test(nlayers) )
+    dz_test = 0.0_r_def
     call mesh_1%get_dz(dz_test)
     test_real = dz_test(1)
-    deallocate( dz_test )
     @assertEqual ( test_real, dz_uni, 1.0e-2_r_def )
 
+    ! Quadratic mesh_3, first layer depth
+    dz_test = 0.0_r_def
+    call mesh_3%get_dz(dz_test)
+    test_real = dz_test(1)
+    @assertEqual ( test_real, dz_quad, 1.0e-2_r_def )
 
-    !-------------------------------------------------------------------
-    ! Test get_domain_top
-    test_real = mesh_1%get_domain_top()
-    @assertEqual ( test_real, domain_top, 1.0e-2_r_def )
+    ! Geometric mesh_4 with stretching_factor = 1.03_r_def, first layer depth
+    dz_test = 0.0_r_def
+    call mesh_4%get_dz(dz_test)
+    test_real = dz_test(1)
+    @assertEqual ( test_real, dz_geom, 1.0e-2_r_def )
+
+    ! DCMIP mesh_5 with phi_flatten = 15.0_r_def, first layer depth
+    dz_test = 0.0_r_def
+    call mesh_5%get_dz(dz_test)
+    test_real = dz_test(1)
+    @assertEqual ( test_real, dz_dcmip, 1.0e-2_r_def )
+
+  end subroutine test_dz_array
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_get_integer( this )
+
+    implicit none
+
+    class( mesh_test_type ), intent( inout ) :: this
+
+    type (mesh_type) :: mesh_1, mesh_2
+
+    integer(i_def) :: test_integer
+    integer(i_def) :: test_integer2
+
+    mesh_1 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,     &
+                        domain_top,  &
+                        VGRID_UNIFORM )
+    mesh_2 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,     &
+                        domain_top,  &
+                        VGRID_UNIFORM )
 
     !-------------------------------------------------------------------
     ! Test get_vert_cell_owner
@@ -426,18 +495,6 @@ contains
     ! Test get_edge_cell_owner
     test_integer=mesh_1%get_edge_cell_owner(4,4)
     @assertEqual( 7, test_integer )
-
-    !-------------------------------------------------------------------
-    ! Test is_vertex_owned
-    @assertTrue( mesh_1%is_vertex_owned(1,1) )
-
-    !-------------------------------------------------------------------
-    ! Test is_edge_owned
-    @assertTrue( mesh_1%is_edge_owned(1,1) )
-
-    !-------------------------------------------------------------------
-    ! Test is_vertex_owned
-    @assertTrue( mesh_1%is_vertex_owned(1,1) )
 
     !-------------------------------------------------------------------
     ! Test get_num_cells_core
@@ -472,43 +529,76 @@ contains
     !-------------------------------------------------------------------
     ! Test Mesh_1 and Mesh_2 have different ids
     test_integer = mesh_1%get_id()
-    mesh_2 = mesh_type( partition, global_mesh, nlayers                        &
-                      , domain_top, VGRID_UNIFORM )
     test_integer2 = mesh_2%get_id()
     @assertFalse ( test_integer == test_integer2 )
 
+  end subroutine test_get_integer
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_get_boolean( this )
+
+    implicit none
+
+    class( mesh_test_type ), intent( inout ) :: this
+
+    type(mesh_type)     :: mesh_1
+
+    mesh_1 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,          &
+                        domain_top,       &
+                        VGRID_UNIFORM )
+
     !-------------------------------------------------------------------
-    ! Test get_dz for different meshes
-    allocate( dz_test(nlayers) )
+    ! Test is_vertex_owned
+    @assertTrue( mesh_1%is_vertex_owned(1,1) )
 
-    ! Quadratic mesh_3, first layer depth
-    dz_test = 0.0_r_def
-    mesh_3 = mesh_type( partition, global_mesh, nlayers                        &
-                      , domain_top, VGRID_QUADRATIC)
-    call mesh_3%get_dz(dz_test)
-    test_real = dz_test(1)
-    @assertEqual ( test_real, dz_quad, 1.0e-2_r_def )
+    !-------------------------------------------------------------------
+    ! Test is_edge_owned
+    @assertTrue( mesh_1%is_edge_owned(1,1) )
 
-    ! Geometric mesh_4 with stretching_factor = 1.03_r_def, first layer depth
-    dz_test = 0.0_r_def
-    mesh_4 = mesh_type( partition, global_mesh, nlayers                        &
-                      , domain_top, VGRID_GEOMETRIC )
-    call mesh_4%get_dz(dz_test)
-    test_real = dz_test(1)
-    @assertEqual ( test_real, dz_geom, 1.0e-2_r_def )
+    !-------------------------------------------------------------------
+    ! Test is_vertex_owned
+    @assertTrue( mesh_1%is_vertex_owned(1,1) )
 
-    ! DCMIP mesh_5 with phi_flatten = 15.0_r_def, first layer depth
-    dz_test = 0.0_r_def
-    mesh_5 = mesh_type( partition, global_mesh, nlayers                        &
-                      , domain_top, VGRID_DCMIP )
-    call mesh_5%get_dz(dz_test)
-    test_real = dz_test(1)
-    @assertEqual ( test_real, dz_dcmip, 1.0e-2_r_def )
+  end subroutine test_get_boolean
 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine test_get_domain( this )
 
-    deallocate( dz_test )
+    implicit none
 
+    class( mesh_test_type ), intent( inout ) :: this
 
-  end subroutine test_mesh
+    type(mesh_type)     :: mesh_1
+    type(domain_limits) :: domain
+    real(r_def)         :: test_real
+
+    mesh_1 = mesh_type( this%partition,   &
+                        this%global_mesh, &
+                        nlayers,          &
+                        domain_top,       &
+                        VGRID_UNIFORM )
+
+    !-------------------------------------------------------------------
+    ! Test get_domain_size
+    ! Note: At present, it returns coords in cartesian coords [x,y,z]
+    !       or in spherical coords depending on the logical l_spherical.
+    !       This should be change to only output in [x,y,z]
+    domain = mesh_1%get_domain_size()
+    test_real = domain % maximum % x
+    @assertEqual ( test_real,  2.0_r_def*PI )
+    test_real = domain % minimum % y
+    @assertEqual ( test_real, -0.5_r_def*PI )
+    test_real = domain % maximum % z
+    @assertEqual ( test_real, 10000.0_r_def )
+
+    !-------------------------------------------------------------------
+    ! Test get_domain_top
+    test_real = mesh_1%get_domain_top()
+    @assertEqual ( test_real, domain_top, 1.0e-2_r_def )
+
+  end subroutine test_get_domain
 
 end module mesh_mod_test

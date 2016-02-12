@@ -12,8 +12,10 @@
 !-------------------------------------------------------------------------------
 module mesh_colouring_mod_test
 !-------------------------------------------------------------------------------
+  use constants_mod, only         : i_def, r_def, str_def
   use pFUnit_Mod
   use suite_fixture_mod, only : get_esmf_handle
+
   implicit none 
 
   private
@@ -34,8 +36,11 @@ end type compute_colours_test_type
 contains
 !-------------------------------------------------------------------------------
 subroutine setUp(this)
+
+  use configuration_mod,     only : QUAD
   use ESMF
-  use reference_element_mod,      only : reference_cube
+  use reference_element_mod, only : reference_cube, reference_element
+
   implicit none
 
   class(compute_colours_test_type), intent(inout)  :: this 
@@ -49,6 +54,7 @@ subroutine setUp(this)
                   rc=rc)
   if (rc  /=  ESMF_SUCCESS) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
+  reference_element = QUAD
   call reference_cube()
 
   this%total_ranks = 1
@@ -61,9 +67,9 @@ subroutine setUp(this)
 end subroutine setUp
 !-------------------------------------------------------------------------------
 subroutine tearDown(this)
-  use pFUnit_Mod
-  use ESMF
-  use reference_element_mod,      only : deallocate_reference
+
+  use reference_element_mod, only : deallocate_reference
+
   implicit none
 
   class(compute_colours_test_type), intent(inout) :: this
@@ -76,15 +82,13 @@ end subroutine tearDown
 !-------------------------------------------------------------------------------
 @test
 subroutine test_compute_colours_cubedsphere(this)
-  use pFUnit_Mod
+
   use mesh_mod, only              : mesh_type
   use partition_mod, only         : partition_type, &
                                     partitioner_interface, &
                                     partitioner_cubedsphere_serial
-
   use global_mesh_mod, only       : global_mesh_type
-  use constants_mod, only         : i_def, r_def, str_def
-  use configuration_mod, only     : QUAD, VGRID_UNIFORM
+  use configuration_mod, only     : VGRID_UNIFORM
 
   implicit none
 

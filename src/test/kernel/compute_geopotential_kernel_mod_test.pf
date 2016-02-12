@@ -7,45 +7,88 @@
 !
 !-------------------------------------------------------------------------------
 module compute_geopotential_kernel_mod_test
-  implicit none 
+
+  use constants_mod, only : i_def, r_def
+  use pFUnit_Mod
+
+  implicit none
+
+  private
+  public :: compute_geopotential_kernel_test_type, test_all
+
+  @TestCase
+  type, extends(TestCase) :: compute_geopotential_kernel_test_type
+    private
+    integer(i_def), allocatable :: map(:)
+    real(r_def),    allocatable :: x(:), y(:), z(:), phi(:)
+  contains
+    procedure setUp
+    procedure tearDown
+    procedure test_all
+  end type compute_geopotential_kernel_test_type
+
+  integer,parameter :: nlayers = 1, &
+                       ndf     = 1, &
+                       undf    = 1
 
 contains
 
-  @test
-  subroutine test_of_compute_geopotential()
-    use pFUnit_Mod
-    use compute_geopotential_kernel_mod, only : compute_geopotential_code
-    use constants_mod,                   only : r_def, GRAVITY
-    use configuration_mod,               only : earth_radius
-    
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
+
     implicit none
 
-    real(kind=r_def) :: tol, answer
-    
-    integer              :: nlayers, ndf, undf
-    integer, allocatable :: map(:)
-    real(kind=r_def), allocatable :: x(:),y(:),z(:), phi(:)
+    class(compute_geopotential_kernel_test_type), intent(inout) :: this
 
-    nlayers = 1
-    ndf     = 1
-    undf    = 1
+    allocate( this%map(ndf), &
+              this%x(undf),  &
+              this%y(undf),  &
+              this%z(undf),  &
+              this%phi(undf) )
 
-    allocate( map(ndf), x(undf), y(undf), z(undf), phi(undf) )
-    map(1)  = 1
-    x(1) = 0.0_r_def
-    y(1) = 0.0_r_def
-    z(1) = earth_radius
-    
-    call compute_geopotential_code(nlayers, &
-                                   phi, x, y, z, ndf, undf, map)
-    
-    tol = 1.0e-12_r_def     
+  end subroutine setUp
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine tearDown( this )
+
+    implicit none
+
+    class(compute_geopotential_kernel_test_type), intent(inout) :: this
+
+    deallocate( this%map, this%x, this%y, this%z, this%phi )
+
+  end subroutine tearDown
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_all( this )
+
+    use constants_mod,                   only : GRAVITY
+    use compute_geopotential_kernel_mod, only : compute_geopotential_code
+    use configuration_mod,               only : earth_radius
+
+    implicit none
+
+    class(compute_geopotential_kernel_test_type), intent(inout) :: this
+
+    real(r_def), parameter :: tol = 1.0e-12_r_def
+
+    real(r_def)          :: answer
+
+    this%map(1) = 1
+    this%x(1) = 0.0_r_def
+    this%y(1) = 0.0_r_def
+    this%z(1) = earth_radius
+
+    call compute_geopotential_code( nlayers,                         &
+                                   this%phi, this%x, this%y, this%z, &
+                                   ndf, undf,                        &
+                                   this%map )
+
     answer = earth_radius*GRAVITY
 
-    @assertEqual( answer, phi(1), tol ) 
+    @assertEqual( answer, this%phi(1), tol )
 
-    deallocate( map, x, y, z, phi )
-
-  end subroutine test_of_compute_geopotential
+  end subroutine test_all
 
 end module compute_geopotential_kernel_mod_test

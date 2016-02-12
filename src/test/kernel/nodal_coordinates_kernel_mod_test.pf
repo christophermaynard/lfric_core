@@ -7,77 +7,134 @@
 
 module nodal_coordinates_kernel_mod_test
 
+  use constants_mod,              only : i_def, r_def
+  use field_mod,                  only : field_type,      &
+                                         field_proxy_type
+  use fs_continuity_mod,          only : W0, W2
+  use function_space_mod,         only : function_space_type
+  use mesh_mod,                   only : mesh_type
+  use pFUnit_Mod
+  use quadrature_mod,             only : quadrature_type, GAUSSIAN
+
   implicit none 
 
+  private
+  public :: test_all
+
+  @TestCase
+  type, extends(TestCase), public :: nodal_coordinates_test_type
+    private
+    type(mesh_type)          :: mesh
+    type(field_type)         :: x(3)
+    type(field_type)         :: chi(3)
+    real(r_def), allocatable :: basis_chi(:,:,:)
+  contains
+    procedure setUp
+    procedure tearDown
+    procedure test_all
+  end type nodal_coordinates_test_type
+
+  integer(i_def), parameter :: element_order = 0
 
 contains
 
-  @test
-  subroutine nodal_coordinates_kernel_test()
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
 
-    use pFUnit_Mod
-    use field_mod,                  only : field_type,      &
-                                           field_proxy_type
-    use function_space_mod,         only : function_space_type &
-                                         , purge_function_spaces  
-    use fs_continuity_mod,          only : W0, W2
-    use configuration_mod,          only : QUAD
-    use constants_mod,              only : r_def
-    use quadrature_mod,             only : quadrature_type, GAUSSIAN
-    use mesh_mod,                   only : mesh_type, PLANE_BI_PERIODIC
-    use reference_element_mod,      only : reference_cube, deallocate_reference &
-                                         , reference_element
-    
+    use configuration_mod,     only : QUAD
+    use mesh_mod,              only : PLANE_BI_PERIODIC
+    use reference_element_mod, only : reference_cube, reference_element
 
-    use nodal_coordinates_kernel_mod, only: nodal_coordinates_code
     implicit none
 
+    class(nodal_coordinates_test_type), intent(inout) :: this
+
     type(function_space_type) :: fs
-    type( quadrature_type)    :: qr
-    type(mesh_type)  :: mesh
+    type(quadrature_type)     :: qr
+    type(field_proxy_type)    :: x_p(3), chi_p(3)
 
-    real(kind=r_def) :: tol, answer
+    integer(i_def) :: ndf_chi, ndf_x
+    integer(i_def) :: dim_chi
 
-    integer :: i, j, k, cell
+    integer :: i
 
-    ! Variables for creating the chi fields
-    real(kind=r_def), parameter :: dx = 6000.0_r_def, &
-                                   dy = 1000.0_r_def, &
-                                   dz = 2000.0_r_def
-    ! Variables for testing kernel
-    type(field_type) :: x(3)
-    type(field_type) :: chi(3)
- 
-    type(field_proxy_type) :: x_p(3), chi_p(3)
-   
-    integer                 :: nlayers
-    integer                 :: ndf_chi, ndf_x
-    integer                 :: undf_chi, undf_x
-    integer                 :: dim_chi
-    integer                 :: element_order
-    integer, pointer        :: map_chi(:), map_x(:) => null()
-
-    real(kind=r_def), allocatable  :: basis_chi(:,:,:)
-    real(kind=r_def), pointer :: nodes(:,:) => null()
- 
-    ! Setup
-    tol = 1.0e-6_r_def  
     qr = quadrature_type(3, GAUSSIAN)
 
     reference_element = QUAD
     call reference_cube()
 
-    mesh = mesh_type(PLANE_BI_PERIODIC)
+    this%mesh = mesh_type(PLANE_BI_PERIODIC)
 
-    ! Set element order
-    element_order = 0
+    do i = 1,3
+      this%x(i)   = field_type( vector_space = fs%get_instance( this%mesh, element_order, W2 ) )
+      this%chi(i) = field_type( vector_space = fs%get_instance( this%mesh, element_order, W0 ) )
+      x_p(i)      = this%x(i)%get_proxy()
+      chi_p(i)    = this%chi(i)%get_proxy()
+    end do
+
+    ndf_x    = x_p(1)%vspace%get_ndf( )
+    ndf_chi  = chi_p(1)%vspace%get_ndf( )
+    dim_chi  = chi_p(1)%vspace%get_dim_space( )
+
+    allocate( this%basis_chi(dim_chi, ndf_chi, ndf_x) )
+
+  end subroutine setUp
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine tearDown( this )
+
+    use function_space_mod,    only : purge_function_spaces
+    use reference_element_mod, only : deallocate_reference
+
+    implicit none
+
+    class(nodal_coordinates_test_type), intent(inout) :: this
+
+    deallocate( this%basis_chi )
+
+    call purge_function_spaces()
+    call deallocate_reference()
+
+  end subroutine tearDown
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_all( this )
+
+    use nodal_coordinates_kernel_mod, only: nodal_coordinates_code
+
+    implicit none
+
+    class(nodal_coordinates_test_type), intent(inout) :: this
+
+    real(r_def), parameter :: dx = 6000.0_r_def, &
+                              dy = 1000.0_r_def, &
+                              dz = 2000.0_r_def
+    real(r_def), parameter :: tol = 1.0e-6_r_def
+
+    type(quadrature_type)     :: qr
+
+    real(r_def) :: answer
+
+    integer :: i, j, k, cell
+
+    type(field_proxy_type) :: x_p(3), chi_p(3)
+
+    integer                 :: nlayers
+    integer                 :: ndf_chi, ndf_x
+    integer                 :: undf_chi, undf_x
+    integer                 :: element_order
+    integer, pointer        :: map_chi(:), map_x(:) => null()
+
+    real(kind=r_def), pointer :: nodes(:,:) => null()
+
+    ! Setup
+    qr = quadrature_type(3, GAUSSIAN)
 
     ! Insert Psykal_lite unpacking code here
     do i = 1,3
-      x(i)     = field_type( vector_space = fs%get_instance( mesh, element_order, W2 ) )
-      chi(i)   = field_type( vector_space = fs%get_instance( mesh, element_order, W0 ) )
-      x_p(i)   = x(i)%get_proxy()
-      chi_p(i) = chi(i)%get_proxy()
+      x_p(i)   = this%x(i)%get_proxy()
+      chi_p(i) = this%chi(i)%get_proxy()
     end do
 
     ! Compute coordinates
@@ -85,7 +142,7 @@ contains
     do j = 1,3
       do i = 1,3
         map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
-        do k = 0,3          
+        do k = 0,3
           chi_p(1)%data(map_chi(1) + k) = real(i-1)*dx
           chi_p(2)%data(map_chi(1) + k) = real(j-1)*dy
           chi_p(3)%data(map_chi(1) + k) = real(k)  *dz
@@ -102,18 +159,15 @@ contains
     ndf_chi  = chi_p(1)%vspace%get_ndf( )
     undf_chi = chi_p(1)%vspace%get_undf()
 
-    dim_chi = chi_p(1)%vspace%get_dim_space( )
-    allocate(basis_chi(dim_chi, ndf_chi, ndf_x))
-
     nodes => x_p(1)%vspace%get_nodes( )
-    call chi_p(1)%vspace%compute_nodal_basis_function(basis_chi, ndf_chi, ndf_x, nodes)    
+    call chi_p(1)%vspace%compute_nodal_basis_function(this%basis_chi, ndf_chi, ndf_x, nodes)
 
-    ! Create the data   
+    ! Create the data
     x_p(1)%data(:) = 0.0_r_def
     x_p(2)%data(:) = 0.0_r_def
     x_p(3)%data(:) = 0.0_r_def
 
-    ! Call the kernel    
+    ! Call the kernel
     cell = 3
     map_x   => x_p(1)%vspace%get_cell_dofmap( cell )
     map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
@@ -126,9 +180,9 @@ contains
                                 chi_p(3)%data, &
                                 ndf_x, undf_x, map_x, &
                                 ndf_chi, undf_chi, map_chi, &
-                                basis_chi &
+                                this%basis_chi &
                                )
-     
+
     !Test the answer
     answer = chi_p(1)%data(map_chi(1))
     @assertEqual(answer, x_p(1)%data(map_x(1)), tol)
@@ -137,10 +191,6 @@ contains
     answer = chi_p(3)%data(map_chi(5))
     @assertEqual(answer, x_p(3)%data(map_x(6)), tol)
 
-    call deallocate_reference()
-    call purge_function_spaces()
-
-  
-  end subroutine nodal_coordinates_kernel_test
+  end subroutine test_all
 
 end module nodal_coordinates_kernel_mod_test
