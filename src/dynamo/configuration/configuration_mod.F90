@@ -108,6 +108,8 @@ module configuration_mod
   real(kind=r_def)    :: dt = 10.0_r_def                              !< Timestep in seconds.   
   !> @}
 
+
+
   !=========================== Linear solver ==================================!
 
   !> @name Enumeration of the available choices for the linear solver 
@@ -143,8 +145,6 @@ module configuration_mod
   logical :: write_nodal_output        = .false.
   !> @}
 
-
-
   !=========================== Subgrid rho approximation ==================================!
   !> @name Enumeration of the available choices for the subgrid approximation of rho
   !> @{
@@ -158,16 +158,15 @@ module configuration_mod
   integer (kind=i_def), parameter :: PPM_POSITIVE_MONOTONE      = 303  !< PPM with positivity and monotonicity imposed
   !> @}
 
+  !=========================== Split Advection Scheme =========================!
+
   !> @name Direction of 1D subgrid approximation and local stencil length
   !> @{
-  integer (kind=i_def), parameter :: x_direction                = 888  !< Subgrid approximation in x direction
-  integer (kind=i_def), parameter :: y_direction                = 999  !< Subgrid approximation in y direction
+  integer (kind=i_def), parameter :: x_direction                = 777  !< Flux calculation in x direction
+  integer (kind=i_def), parameter :: y_direction                = 888  !< Flux calculation in y direction
+  integer (kind=i_def), parameter :: transport_stencil_length   = 7    !< Length of stencil for split advection scheme
   integer (kind=i_def), parameter :: rho_stencil_length         = 5    !< Length of stencil required for PPM
-  !> @}
-
-  !> @name Choice of subgrid approximation
-  !> @{
-  integer (kind=i_def) :: subgridrho_option = CONSTANT_SUBGRID    !< Choice of solver from the list of options.
+  integer (kind=i_def)            :: subgridrho_option = CONSTANT_SUBGRID !< Choice of solver from the list of options.
   !> @}
 
 contains
