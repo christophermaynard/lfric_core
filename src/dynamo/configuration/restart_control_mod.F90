@@ -161,7 +161,7 @@ contains
     self%diagnostic_frequency = diagnostic_frequency
 
     ! Do some sanity checks 
-    if(self%timestep_start >= self%timestep_end) then
+    if(self%timestep_start > self%timestep_end) then
        write(log_scratch_space,'(A,I6,",",I6)') & 
             "restart_control: timestep_start must be less than timestep_end:", &
             self%timestep_start,self%timestep_end
@@ -173,9 +173,22 @@ contains
             self%timestep_start
        call log_event(log_scratch_space,LOG_LEVEL_ERROR)
     end if
-    if(self%timestep_end<0) then
+    if(self%timestep_end<=0) then
        write(log_scratch_space,'(A,I6)')    &
-            "restart_control: timestep_end cannot be negative", self%timestep_end
+            "restart_control: timestep_end cannot be negative or zero", &
+            self%timestep_end
+       call log_event(log_scratch_space,LOG_LEVEL_ERROR)
+    end if
+    if(.not. (self%checkpoint_read) .and. self%timestep_start>1) then
+       write(log_scratch_space, '(A,L3,",",I6)') &
+            "restart_control: timestep_start cannot be larger than 1 without restart option:", &
+            self%checkpoint_read, self%timestep_start
+       call log_event(log_scratch_space, LOG_LEVEL_ERROR)
+    end if
+    if(self%diagnostic_frequency<=0) then
+       write(log_scratch_space, '(A,I6,",",I6)') &
+            "restart_control: diagnostic_frequency cannot be negative or zero:",  &
+            self%diagnostic_frequency
        call log_event(log_scratch_space,LOG_LEVEL_ERROR)
     end if
     if(self%timestep_start>=timestep_limit) then

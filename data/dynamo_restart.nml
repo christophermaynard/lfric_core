@@ -2,6 +2,6 @@
 checkpoint_read = .F
 timestep_start = 1
 timestep_end = 3
-checkpoint_write = .T
+checkpoint_write = .F
 restart_stem_name="restartDynamo"
 /
