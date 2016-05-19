@@ -252,7 +252,7 @@ The extrusion of the 2D mesh into a 3D mesh {\tt n} cells deep
 requires us to extend and vary the list of mesh entities. We now have:
 
 \begin{itemize}
-\item Vertices - a vertical column of vertices all at the same
+\item Vertices -- a vertical column of vertices all at the same
   latitude and longitude of the 2D mesh.
 \item Edges:
  \begin{itemize}
@@ -390,7 +390,7 @@ Method (FEM) that are required to understand the design of Dynamo.
 In the Finite Difference method (as commonly used in atmosphere models
 such as the Unified Model) fields are represented as discrete values
 at particular locations of the mesh. For example, in the Arakawa-C
-mesh, mass fields are represented by values at the centre of cells,
+grid, mass fields are represented by values at the centre of cells,
 and vector fields by values located on the edges of cells.
 
 In FEM, fields are additionally represented by spatial functions in a
@@ -514,8 +514,8 @@ sense that it is easy to understand whether a field is continuous or
 discontinuous. It is also informative in the sense that it is easier
 to understand which data points are accessed by particular operations
 which impacts strategies for carrying out concurrent computations on a
-data field. For example, an operation on the dofs in a cell of the
-field in Figure~\ref{fig:differentContinuity1D}a affects one of the
+data field. For example, an operation on the dofs at the edges of the
+cells in Figure~\ref{fig:differentContinuity1D}a affects one of the
 edge dofs of each neighbouring cells meaning that these neighbours
 cannot be operated on concurrently without risk of data contention
 (writing two values to the same edge dof at the same time). Operation
@@ -554,11 +554,11 @@ space is which, note that $\mathbb{W}_0$ has dofs on the
 zero-dimensional vertices; $\mathbb{W}_1$ has dofs on the
 one-dimensional edges, and so forth. 
 
-The $\mathbb{W}_0$ and $\mathbb{W}_3$ function spaces represent mass
-fields so the dofs are represented as zero-dimension points in the
-figures. The $\mathbb{W}_1$ and $\mathbb{W}_2$ function spaces
-represent fluxes so the dofs are represented as a vectors in the
-figure.
+The $\mathbb{W}_0$ and $\mathbb{W}_3$ function spaces represent scalar
+fields (e.g. mass) so the dofs are represented as dots (zero-dimension
+points) in the figures. The $\mathbb{W}_1$ and $\mathbb{W}_2$ function
+spaces represent vectors (e.g. fluxes) so the dofs are represented as
+arrows in the figure.
 
 \begin{figure}
 \centering
@@ -584,7 +584,7 @@ figure.
 \end{minipage}%
 \begin{minipage}{.5\textwidth}
   \centering
-  \includegraphics[width=0.7\linewidth]{k1_W1_dofs}
+  \includegraphics[width=0.7\linewidth]{k1_W1_dofs_circ}
   \captionof*{figure}{d) $\mathbb{W}_{1}, k = 1$}
 %  \label{fig:k1w1}
 \end{minipage}
@@ -597,7 +597,7 @@ figure.
 \end{minipage}%
 \begin{minipage}{.5\textwidth}
   \centering
-  \includegraphics[width=0.7\linewidth]{k1_W2_dofs}
+  \includegraphics[width=0.7\linewidth]{k1_W2_dofs_circ}
   \captionof*{figure}{f)$\mathbb{W}_{2}, k = 1$}
 %  \label{fig:k1w2}
 \end{minipage}
@@ -615,12 +615,38 @@ figure.
 %  \label{fig:k1w3}
 \end{minipage}
 
-
 \caption{Locations of dofs for spaces $\mathbb{W}_0$ to $\mathbb{W}_3$
-  for lowest order in left column, and next lowest in right. The
+  for lowest order in left column, and next lowest in right. These
   images are not precise enough to show the subtleties of dof
-  location. }
+  location -- see Figure~\ref{fig:cornerk1w1w2} for an expanded view
+  of dofs under the faint circles in d) and f)}
 \label{fig:k0k1w0-w3}
+\end{figure}
+
+\begin{figure}
+\centering
+
+\begin{minipage}{0.5\textwidth}
+  \centering
+  \includegraphics[width=0.7\linewidth]{corner_W1}
+  \captionof*{figure}{a) $\mathbb{W}_{1}, k = 1$
+  (figure~\ref{fig:k0k1w0-w3}d) expanded view \newline
+  of just one corner}
+\end{minipage}%
+\begin{minipage}{0.5\textwidth}
+  \centering
+  \includegraphics[width=0.7\linewidth]{corner_W2}
+  \captionof*{figure}{b) $\mathbb{W}_{2}, k = 1$
+  (figure~\ref{fig:k0k1w0-w3}f) expanded view \newline
+  of just one corner}
+\end{minipage}
+
+\caption{Details of the locations of dofs for the spaces
+  $\mathbb{W}_1$ and $\mathbb{W}_2, k = 1$. The faint boxes and lines
+  are, in reality, infinitesimally small but are drawn to allow
+  the mesh entity on which the dofs actually sit on to be seen}
+\label{fig:cornerk1w1w2}
+
 \end{figure}
 
 There are subtleties about the exact location of the dof. Function
@@ -631,14 +657,16 @@ of the field indicated by the dof, is continuous. But if the field is
 discontinuous as it crosses the entity then the cells on each side of
 the entity will have their own dof situated on the entity. This is
 often illustrated by showing the dof lying very close, but not on, the
-shared entity. For example, in Figure~\ref{fig:k0k1w0-w3}~d) the
-vertical arrows near each vertex actually lie on the vertical edge,
-very close, but not on, the vertex. This is because the dof is shared
-with horizontally-neighbouring cells that share the vertical edge, but
-not shared with the cells in the layer above or below that share the
-vertex. This dof location indicates that the vertical component of the
-field is continuous across vertical edges (and faces), but is
-discontinuous in the vertical.
+shared entity. For example, looking at the top-left-hand corner in
+Figure~\ref{fig:k0k1w0-w3}~d) in more detail -- see
+Figure~\ref{fig:cornerk1w1w2}~a) -- the vertical arrow near the vertex
+actually lies on the vertical edge, very close, but not on, the vertex.
+This is because the dof is shared with horizontally-neighbouring cells
+that share the vertical edge, but not shared with the cells in the
+layer above or below that share the vertex. This dof location
+indicates that the vertical component of the field is continuous
+across vertical edges (and faces), but is discontinuous in the
+vertical.
 
 In Figure~\ref{fig:k0k1w0-w3}~h) the dofs near the vertices are all
 just within the cell, indicating that the field is discontinuous
@@ -672,7 +700,7 @@ contributes to the change in the face dofs of the output field.
 
 \subsubsection{Ordering of data in the field}
 
-Where a field is continuous across a cell boundary and a dofs are,
+Where a field is continuous across a cell boundary and the dofs are,
 thereby, shared between entities, the shared dofs will appear in the
 dof map of more than one cell. The sharing of dofs has the following
 implications for the design of the infrastructure that allows
@@ -718,7 +746,7 @@ the three layers.
 \subsection{Algorithm layer}
 
 At the Algorithm Layer, scientists write code to operate on full
-global fields. {\em DRAFT} Operations may include:
+global fields. Operations may include:
 
 \begin{itemize}
 \item Point-wise operations, such as operations to initialise all
@@ -783,9 +811,9 @@ that future dynamical cores will employ a different choice of function
 space. Dynamo is designed to be adaptable to changes in these
 assumptions. 
 
-Dynamo is currently under develoment and this is indicated by the fact
-that some of the following sections describe features that are not yet
-complete. These are marked with ``TBD'' - To Be Done.
+Dynamo is currently under development and this is indicated by the
+fact that some of the following sections describe features that are
+not yet complete. These are marked with ``TBD'' -- To Be Done.
 
 Dynamo is written in Fortran 2003 and uses several object-oriented
 features of Fortran 2003.
@@ -879,16 +907,22 @@ operations on the core field. In future, PSyclone will support
 concurrent communication and computation, where halo operations occur
 while cells on the core field are operated on.
 
-The PSy-layer contains code that loop over cells owned by the local
-domain, not the halo cells. Some kernels require stencil data -- input
-data from neighbouring cells. PSyclone constructs stencil maps from
-the dof-maps to provide to the kernel.
+The PSy-layer contains code that loops over all cells that contribute
+to dofs owned by the local domain. For function spaces where dofs are
+shared between cells (($\mathbb{W}_0$), ($\mathbb{W}_1$) and
+($\mathbb{W}_2$)), that means looping over cells owned by the local
+domain and those in the first level of halo. For the ($\mathbb{W}_3$)
+function space (which has no shared dofs), the PSy-layer only has to
+loop over cells owned by the local domain.
 
-Currently, the halo in Dynamo is hard-wired to fulfil the needs of the
-largest required stencil. TBD Dynamo could be refined to create halos
-for each specific requirement:- either different halos for different
-function spaces or, going further, different halos for different
-fields.
+Some kernels require stencil data -- input data from neighbouring
+cells. PSyclone constructs stencil maps from the dof-maps to provide
+to the kernel. Currently, the maximum depth of halo in Dynamo is
+hard-wired to fulfil the needs of the largest required stencil,
+although individual halo exchanges can be over any depth up to this
+maximum. TBD Dynamo could be refined to create halos for each specific
+requirement:- either different halos for different function spaces or,
+going further, different halos for different fields.
 
 Given that kernels will loop over all the cells in a local domain,
 updates to dofs that exist on the boundary between two or more
@@ -923,88 +957,71 @@ triangular prism.
 
 \subsection{Partitions and halos}
 
-\begin{figure}
-\centering
+Each distributed memory rank creates a local mesh by applying a
+partitioning strategy to the 2D global mesh and extruding in the
+vertical direction. The partition strategy is mesh-type dependent in
+that specific strategies are provided to support a cubed-sphere mesh
+and a biperiodic mesh. To support other meshes, further mesh partition
+strategies or a generic mesh partitioner would need to be be added to the code base.
 
-\begin{minipage}{.4\textwidth}
-  \centering
-  \includegraphics[width=0.7\linewidth]{partitioning1-1}
-  \caption*{a) A part of a global 2D mesh with global cell numbering}
-  \label{fig:global}
-\end{minipage}%
-\begin{minipage}{.4\textwidth}
-  \centering
-  \includegraphics[width=0.7\linewidth]{partitioning2}
-  \caption*{b) The partitioned mesh with global cell numbering and halos. Core
-    cells are white; owned cells are light grey; halos are dark grey.}
-  \label{fig:partitioning_cells}
-\end{minipage}
-
-\begin{minipage}{.4\textwidth}
-  \centering
-  \includegraphics[width=0.7\linewidth]{partitioning3}
-  \caption*{c) Cells in each partition are locally numbered -- core
-    cells are numbered first followed by owned then halo cells.}
-  \label{fig:local_number}
-\end{minipage}%
-\begin{minipage}{.4\textwidth}
-  \centering
-  \includegraphics[width=0.7\linewidth]{partitioning4}
-  \caption*{b) Ownership of dofs on cell edges and vertices has to be
-    decided. In this case, the arrows indicate dofs on the cell
-    edge. The wide arrows are owned or core dofs. The narrow arrows
-    are halo dofs. The edge between the two partitions (indicated by
-    the edge between the owned and halo cells on each partition) is
-    owned by the right-hand rank.}
-  \label{fig:partitioning_dofs}
-\end{minipage}
-
-\end{figure}
-
-TBD: Update in relation to inner halos is required.
-
-Each distributed memory rank creates a local mesh based on the global
-mesh and a partition strategy. The partition strategy is mesh-type
-dependent in that specific strategies are provided to support a
-cubed-sphere mesh and a biperiodic mesh. TBD further mesh partition
-strategies can be added, including addition of a generic mesh
-partitioner.
-
-The partition strategy is stored within a partition object - see
+The partition strategy is stored within a partition object -- see
 Section~\ref{sec:partition_class}
 
-The partitioning of the global mesh between distributed memory ranks
-is based around partitioning of the cell entities of the 2D mesh, and
-extruding the local 2D partition.  Based on the number of distributed
-memory ranks and the chosen partition strategy, each rank computes a
-local partition of cells and then creates a 3D mesh by extruding the
-2D mesh into the vertical.
+Each rank computes a set of halo cells based on the stencil
+requirements of the model kernels. Currently, all halos are generated
+to the maximum halo size, which is hard-wired to a single fixed value
+for all field types according to the needs of kernels that currently
+exist in the Dynamo implementation of GungHo. TBD In the future, the
+halo size of a given field may be dependent on the specific
+requirements of the kernels.
 
-Based on the stencil requirements of the model kernels, each rank
-computes a set of halo cells. Currently, the halo size is hard-wired
-to a single fixed value for all field types according to the needs of
-kernels that currently exist in the Dynamo implementation of
-GungHo. TBD In the future, the halo size of a given field will be
-dependent on the specific requirements of the kernels.
+\begin{figure}
+\centering
+\resizebox{0.55\linewidth}{!}{
+\includegraphics*{ReverseHalos}}
+\caption{Description of the way halos and inner halos are organised.}
+\label{fig:halos}
+\end{figure}
 
-Having computed the set of cells in the local partition with halos the
-sets of cells are ordered as follows:
+In order to optimise the code, it is helpful to be able to overlap
+communication and computation. For some kernel operations this can be
+done by performing calculations on cells that are unaffected by halo
+cells at the same time as halo exchanges are being performed. The
+number of cells affected by halo cells depends to the size and shape
+of stencil being used by a kernel. Different kernels may use different
+stencils. Careful ordering of data is required to ensure that data for
+cells being computed concurrently with communication are sequential in
+memory for any choice of stencil.  This is achieved by using a system
+of ``inner'' halos, described in Figure~\ref{fig:halos}.
 
+In order to support stencil operations of depth $n$, the set of cells
+in the local partition with halos are ordered as follows:
 \begin{itemize}
-\item Core cells: cells that are not in the halo of any other rank.
-\item Owned cells: cells that are owned by the local partition, but
-  that are in the halo of another rank.
-\item Halo cells.
+\itemsep-0.5em
+\item Inner $n+1$ cells
+\item Inner $n$ cells
+\newline ...
+\item Inner 1 cells
+\item Edge cells
+\item Halo 1 cells
+\newline ...
+\item Halo $n-1$ cells
+\item Halo $n$ cells
+\item Halo $n+1$ cells 
 \end{itemize}
+
+For example, an operation which requires a depth-two stencil can be
+performed on all cells inside the inner halo 3 without using any input
+value that is dependent on having completed the halo swap
+communications -- see Figure~\ref{fig:halos}.
 
 To support concurrent computation within a shared memory domain, the
 mesh needs to be ``coloured''. Colouring involves dividing the mesh
-into sub-groups of cells and giving each sub-group a nominal
-colour. The degrees of freedom associated with the cells of a given
-colour subgroup are independent of all other cells of the same
-colour. Therefore, if operations on all cells of the same colour take
-place concurrently, the results of one operation do not overwrite the
-results of another.
+into groups of cells and giving each group a nominal colour. The
+degrees of freedom associated with the cells of a given colour group
+are independent of all other cells of the same colour. Therefore, if
+operations on all cells of the same colour take place concurrently,
+the results of one operation do not overwrite the results of another.
 
 \subsubsection{The Partition Class}
 
@@ -1012,12 +1029,12 @@ results of another.
 
 The partition class provides a set of functions to partition a global
 2D mesh and to access information about the local partition such as
-the range of cells in the core of the partition or in the halo. Such
-information can be used by PSyclone to break down the processing of
-data into, for example, loops over cells that are unaffected by
-distributed memory communications and loops over cells, such as halo
-cells, that are. This would allow strategies such as concurrent
-communication and computation to be applied.
+the range of cells in the partition or in the halo. Such information
+can be used by PSyclone to break down the processing of data into, for
+example, loops over cells that are unaffected by distributed memory
+communications and loops over cells, such as halo cells, that are.
+This allows strategies such as concurrent communication and
+computation to be applied.
 
 Also included in the partition class are functions required to manage
 distributed memory communications such as those used to relate the
@@ -1045,7 +1062,7 @@ used to construct instances of each function space required.
 The function space instance is created on demand the first time a
 field on that function space is requested. Additional fields of the
 same type use the same function space instance. The function space
-instance is created for a given mesh instance and a given order. Each
+instance is created for a given mesh, order and continuity. Each
 distributed memory rank creates a function space instance for its own
 local partition.
 
@@ -1063,19 +1080,61 @@ Information in the function space instance includes:
 \end{itemize}
 
 The function space instance defines the order of storage of dofs in
-the local 3D field. Essentially, dofs are ordered with the core dofs
-first: core dofs are those that are not represented in the core or
-halo of any other rank. Following the core cells, dofs are arranged in
-halo order, from inner to outer. 
+the local 3D field. The order of the dofs is determined by the
+requirement that the dofs passed in halo exchanges should be held
+contiguously in memory. Each dof within a column is held in a
+contiguous block, so all columns within a halo must be held together. 
+It is, therefore, necessary to determine which dofs are owned locally
+and which are halo dofs. That means all dofs must be assigned an
+owning MPI rank. When a dof is shared by more than one rank, its
+ownership is determined by compiling a list of all the surrounding
+cells, determining which of those has the highest global id, then
+assigning the ownership of the dof to the rank that owns that cell.
 
-This ordering supports two things:
+This leads to three distinct types of dof illustrated in
+Figure~\ref{fig:dofownership}.
+Only three example dofs are labelled, but all dofs are categorised in
+the same way. The dof labelled ``Owned dof'' forms part of an owned cell
+(cell 7) and will be owned by a local cell as it has the highest
+global cell id of all the cells that share it. The dof labelled
+``Annexed dof'' forms part of an owned cell (cell 7), but it will be
+assigned to cell 11, which is owned by rank P3. The dof labelled ``Halo
+dof'' forms part of a halo cell (cell 6) and will be assigned to cell
+6, which is a halo cell owned by rank P0. Note that the only way to
+know the global cell id of all the cells that surround this halo dof
+is to keep another level of halo cells outside the actual halo. These
+cells are known as ``ghost'' cells as they are not used in any other
+part of the code.
 
+The dofs are held in the dof array in the order of these types:
 \begin{itemize}
-\item Computation of the core cells can be done concurrently with
-  updating of any of the halo cells.
-\item Exchange of halo cells involves sending and updating arrays of
-  data that are contiguous in memory.
+\item ``Owned dofs''. (dofs that are on owned cells and are
+  actually owned by the local rank)
+\item ``Annexed dofs''. (dofs that are on owned cells but are
+  actually owned by another rank that shares them)
+\item ``Halo dofs''. (dofs on halo cells, that are owned by
+  other ranks). Where multiple depths of halo are used the dofs are 
+  ordered by halo depth from inside to outside.
 \end{itemize}
+
+This makes all collections of dofs within a particular halo contiguous
+in memory.
+
+\begin{figure}
+\centering
+\resizebox{0.55\linewidth}{!}{
+\includegraphics*{DofOwnership}}
+\caption{Description of the three different types of dof. Four
+partitions, P0-P3, of a distributed, lowest order $\mathbb{W}_{0}$
+field are shown. Only the halo cells for partition P1 are shown -
+other halos are omitted from the diagram for clarity. The cells within
+each partition are shown with their global cell id. Each dof in P1 is
+shown as a dot. In this function space, each dof is shared by a
+number of cells. Among the cells that share a given dof, the ownership of 
+the dof is assigned to the cell which has
+the highest global cell id. }
+\label{fig:dofownership}
+\end{figure}
 
 \subsubsection{Fields and Field Proxies}
 

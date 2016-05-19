@@ -13,7 +13,7 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.47 r22583"
-   sodipodi:docname="CG2_2D.dia">
+   sodipodi:docname="CG2_2D.svg">
   <metadata
      id="metadata72">
     <rdf:RDF>
@@ -22,7 +22,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -35,6 +35,27 @@
        inkscape:vp_z="1098.4252 : 265.74802 : 1"
        inkscape:persp3d-origin="549.21259 : 177.16534 : 1"
        id="perspective74" />
+    <inkscape:perspective
+       id="perspective2851"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective2851-3"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective2851-7"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
   </defs>
   <sodipodi:namedview
      pagecolor="#ffffff"
@@ -45,15 +66,15 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="640"
-     inkscape:window-height="497"
+     inkscape:window-width="1283"
+     inkscape:window-height="872"
      id="namedview68"
      showgrid="false"
-     inkscape:zoom="0.44402965"
+     inkscape:zoom="1.2559055"
      inkscape:cx="536.38123"
-     inkscape:cy="248.76659"
-     inkscape:window-x="0"
-     inkscape:window-y="25"
+     inkscape:cy="244.26239"
+     inkscape:window-x="629"
+     inkscape:window-y="22"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg2" />
   <g
@@ -211,7 +232,7 @@
      sodipodi:cy="301.008"
      sodipodi:rx="4.9499998"
      sodipodi:ry="4.9499998"
-     transform="translate(-7.0790444,-23.348898)" />
+     transform="translate(-9.7147472,-21.152479)" />
   <ellipse
      style="fill:#000000"
      cx="205.80701"
@@ -247,5 +268,41 @@
      sodipodi:cy="184.407"
      sodipodi:rx="4.9499998"
      sodipodi:ry="4.9499998"
-     transform="translate(-7.0790444,-23.348898)" />
+     transform="translate(-7.0790444,-24.666749)" />
+  <ellipse
+     style="fill:#000000"
+     cx="205.80701"
+     cy="228.80701"
+     rx="4.9499998"
+     ry="4.9499998"
+     id="ellipse62-6"
+     sodipodi:cx="205.80701"
+     sodipodi:cy="228.80701"
+     sodipodi:rx="4.9499998"
+     sodipodi:ry="4.9499998"
+     transform="translate(-77.228919,-8.1228306)" />
+  <ellipse
+     style="fill:#000000"
+     cx="205.80701"
+     cy="228.80701"
+     rx="4.9499998"
+     ry="4.9499998"
+     id="ellipse62-65"
+     sodipodi:cx="205.80701"
+     sodipodi:cy="228.80701"
+     sodipodi:rx="4.9499998"
+     sodipodi:ry="4.9499998"
+     transform="translate(63.341892,23.505603)" />
+  <ellipse
+     style="fill:#000000"
+     cx="205.80701"
+     cy="228.80701"
+     rx="4.9499998"
+     ry="4.9499998"
+     id="ellipse62-4"
+     sodipodi:cx="205.80701"
+     sodipodi:cy="228.80701"
+     sodipodi:rx="4.9499998"
+     sodipodi:ry="4.9499998"
+     transform="translate(204.35199,32.291279)" />
 </svg>
