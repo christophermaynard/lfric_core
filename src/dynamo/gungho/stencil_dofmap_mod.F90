@@ -41,6 +41,7 @@ type, extends(linked_list_data_type), public :: stencil_dofmap_type
   integer(i_def), allocatable :: dofmap(:,:,:) 
 contains
   procedure :: get_dofmap
+  procedure :: get_whole_dofmap
 end type stencil_dofmap_type
 
 integer(i_def), public, parameter :: STENCIL_POINT = 1100
@@ -217,6 +218,20 @@ function get_dofmap(self,cell) result(map)
   map => self%dofmap(:,:,cell)
   return
 end function get_dofmap
+!-----------------------------------------------------------------------------
+! Get the stencil dofmap for the whole mesh
+!-----------------------------------------------------------------------------
+!> Subroutine Returns a pointer to the dofmap for the mesh 
+!! @param[in] self The calling function_space
+!! @return The pointer which points to the dofmap
+function get_whole_dofmap(self) result(map)
+  implicit none
+  class(stencil_dofmap_type), target, intent(in) :: self
+  integer(i_def), pointer                        :: map(:,:,:) 
+
+  map => self%dofmap(:,:,:)
+  return
+end function get_whole_dofmap
 
 
 end module stencil_dofmap_mod

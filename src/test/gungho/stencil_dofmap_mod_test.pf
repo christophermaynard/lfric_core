@@ -33,6 +33,7 @@ contains
                                                    master_map_copy
     type(mesh_type), pointer                    :: mesh => null()
     integer, pointer                            :: map(:,:) => null()
+    integer, pointer                            :: whole_map(:,:,:) => null()
     integer(i_def)                              :: ncells, ndf, cell, df, id
     integer(i_def)                              :: mesh_id
     integer(i_def)                              :: err
@@ -69,6 +70,13 @@ contains
     end do
     id = STENCIL_POINT*100 + 1
     @assertEqual( id, dofmap%get_id() )
+
+    whole_map => dofmap%get_whole_dofmap()
+    do cell = 1,ncells
+      do df = 1,ndf
+        @assertEqual( whole_map(df,1,cell), master_map_copy(df,cell) ) 
+      end do
+    end do
 
     return
   end subroutine test_stencil_dofmap
