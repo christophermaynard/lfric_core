@@ -40,8 +40,6 @@ class FortranProcessor():
     #   fileStore - FileDependencies object to accept computed dependencies.
     #
     def determineFileDependencies( self, fileStore ):
-        currentUnit   = None
-        currentObject = None
         for unit, unitFilename, prerequisite, prerequisiteFilename \
                 in self._database.getAllDependencies():
             self._logger.logEvent( '{} depends on {}'.format( unit, \
@@ -56,16 +54,6 @@ class FortranProcessor():
                                            moduleFilename )
 
             fileStore.addFileDependency( objectPathname, modulePathname )
-
-            if unitFilename != currentUnit:
-                if currentUnit:
-                    fileStore.addFileDependency( currentObject, \
-                                                 currentUnit )
-                currentUnit = unitFilename
-                currentObject = objectPathname
-
-        if currentUnit:
-            fileStore.addFileDependency( currentObject, currentUnit )
 
     ###########################################################################
     # Determine all program units needed to build each program.

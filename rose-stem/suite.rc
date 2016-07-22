@@ -56,20 +56,22 @@
             target_purge_for_{{label}}     => export_for_{{label}}
             export_for_{{label}}           => copy_{{label}}_to_target
             copy_{{label}}_to_target       => compile_with_{{label}}
+{%-     if compiler in TARGET_PERFORM_RUN %}
             compile_with_{{label}}         => generate_{{label}}_cubedsphere
             compile_with_{{label}}         => generate_{{label}}_biperiodic
+{%-         if compiler in TARGET_PERFORM_KGO_TESTS %}
+            generate_{{label}}_cubedsphere => check_{{label}}_cubedsphere_metadata
+            generate_{{label}}_cubedsphere => check_{{label}}_cubedsphere_data
+            generate_{{label}}_biperiodic  => check_{{label}}_biperiodic_metadata
+            generate_{{label}}_biperiodic  => check_{{label}}_biperiodic_data
+{%-         endif %}
+{%-     endif %}
 {%-     if compiler in TARGET_PERFORM_UNIT_TESTS %}
             compile_with_{{label}}         => unit_test_with_{{label}}
 {%-     endif %}
 {%-    if compiler in TARGET_PERFORM_FUNCTIONAL_TESTS %}
             compile_with_{{label}}         => functional_test_with_{{label}}
 {%-    endif %}
-{%-    if compiler in TARGET_PERFORM_KGO_TESTS %}
-            generate_{{label}}_cubedsphere => check_{{label}}_cubedsphere_metadata
-            generate_{{label}}_cubedsphere => check_{{label}}_cubedsphere_data
-            generate_{{label}}_biperiodic  => check_{{label}}_biperiodic_metadata
-            generate_{{label}}_biperiodic  => check_{{label}}_biperiodic_data
-{%-     endif %}
 {%-     for config in science_configs %}
 {#-         At the point where we have more than one compiler or target we  #}
 {#-         will need some logic here.                                      #}

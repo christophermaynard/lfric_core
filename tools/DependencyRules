@@ -81,11 +81,14 @@ if __name__ == '__main__':
         with open( args.output, 'w' ) as listFile:
             print( '# Object dependendencies', file=listFile )
 
-            for filename, prerequisites in fileStore.getDependencies():
+            for filename, potentialPrerequisites in fileStore.getDependencies():
                 if args.moduleobjects:
                     modulename = ''
+                    prerequisites = [os.path.splitext( prereq )[0] + '.o' \
+                                     for prereq in potentialPrerequisites]
                 else:
                     modulename = replaceExtension( filename, 'mod' )
+                    prerequisites = potentialPrerequisites
 
                 print( '{} {} : {}'.format( filename, modulename, \
                                         ' '.join( prerequisites ) ), \
