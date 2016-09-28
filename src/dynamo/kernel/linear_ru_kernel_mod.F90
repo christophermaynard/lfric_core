@@ -172,8 +172,8 @@ subroutine linear_ru_code(nlayers, r_u, u, rho, theta, phi, chi_1, chi_2, chi_3,
 
   do k = 0, nlayers-1
   ! Extract element arrays of chi
-    do df = 1, ndf_w0
-      loc = map_w0(df) + k
+    do df = 1, ndf_chi
+      loc = map_chi(df) + k
       chi_1_e(df) = chi_1( loc )
       chi_2_e(df) = chi_2( loc )
       chi_3_e(df) = chi_3( loc )

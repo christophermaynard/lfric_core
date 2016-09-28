@@ -78,7 +78,7 @@ contains
 
     x = (/ 0.0_r_def, 0.0_r_def, 1000.0_r_def /)
 
-    call reference_profile(exner,rho,theta,x, idealised_test_gravity_wave )
+    call reference_profile(exner,rho,theta,x, idealised_test_gravity_wave)
 
     theta_exact = 300.0_r_def * exp ( bvf_square/gravity*x(3))
     exner_exact = 1.0_r_def - gravity**2/(Cp*300.0_r_def*bvf_square)   &

@@ -72,41 +72,39 @@ contains
   !! @param[in] nlayers Number of layers
   !! @param[in] ndf_w2 Number of degrees of freedom per cell for w2
   !! @param[in] undf_w2 Number unique of degrees of freedom  for w2
-  !! @param[in] map_w2 Dofmap for the cell at the base of the column for w2
+  !! @param[in] map_w2 Integer array holding the dofmap for the cell at the base of the column for w2
   !! @param[inout] r_u_bd Right hand side of the momentum equation
   !! @param[in] ndf_w3 Number of degrees of freedom per cell for w3
   !! @param[in] undf_w3 Number unique of degrees of freedom  for w3
-  !! @param[in] map_w3 Dofmap for the cell at the base of the column for w3
-  !! @param[in] map_w3_W Dofmap for the western face of the cell at the base of the column for w3
-  !! @param[in] map_w3_S Dofmap for the southern face of the cell at the base of the column for w3
-  !! @param[in] map_w3_E Dofmap for the eastern face of the cell at the base of the column for w3
-  !! @param[in] map_w3_N Dofmap for the northern face of the cell at the base of the column for w3
-  !! @param[in] rho Density
-  !! @param[in] theta Potential temperature
+  !! @param[in] stencil_w3_map W3 dofmaps for the stencil
+  !! @param[in] stencil_w3_size Size of the W3 stencil (number of cells)
   !! @param[in] ndf_wtheta Number of degrees of freedom per cell for wtheta
   !! @param[in] undf_wtheta Number unique of degrees of freedom  for wtheta
-  !! @param[in] map_wtheta Dofmap for the cell at the base of the column for wtheta
-  !! @param[in] map_wtheta_W Dofmap for the western face of the cell at the base of the column for wtheta
-  !! @param[in] map_wtheta_S Dofmap for the southern face of the cell at the base of the column for wtheta
-  !! @param[in] map_wtheta_E Dofmap for the eastern face of the cell at the base of the column for wtheta
-  !! @param[in] map_wtheta_N Dofmap for the northern face of the cell at the base of the column for wtheta
+  !! @param[in] stencil_wtheta_map W2 dofmaps for the stencil
+  !! @param[in] stencil_wtheta_size Size of the W2 stencil (number of cells)
+  !! @param[in] rho Density
+  !! @param[in] theta Potential temperature
   !! @param[in] nqp_v Number of quadrature points in the vertical
   !! @param[in] nqp_h_1d Number of quadrature points in a single horizontal direction
   !! @param[in] wqp_v Vertical quadrature weights
   !! @param[in] w2_basis_face Basis functions evaluated at gaussian quadrature points on horizontal faces
   !! @param[in] w3_basis_face Basis functions evaluated at gaussian quadrature points on horizontal faces
   !! @param[in] wtheta_basis_face Basis functions evaluated at gaussian quadrature points on horizontal faces
+  !! @param[in] adjacent_face Vector containing information on neighbouring face index for the current cell
+
   subroutine ru_bd_code(nlayers,                                &
-    ndf_w2, undf_w2, map_w2,                                    &
+    ndf_w2, undf_w2,                                            &
+    map_w2,                                                     &
+    ndf_w3, undf_w3,                                            &
+    stencil_w3_map,                                             &
+    stencil_w3_size,                                            &
+    ndf_wtheta, undf_wtheta,                                    &
+    stencil_wtheta_map,                                         &
+    stencil_wtheta_size,                                        &
     r_u_bd,                                                     &
-    ndf_w3, undf_w3, map_w3,                                    &
-    map_w3_W, map_w3_S, map_w3_E, map_w3_N,                     &
     rho, theta,                                                 &
-    ndf_wtheta, undf_wtheta, map_wtheta,                        &
-    map_wtheta_W, map_wtheta_S, map_wtheta_E, map_wtheta_N,     &
     nqp_v, nqp_h_1d, wqp_v, w2_basis_face, w3_basis_face,       &
-    wtheta_basis_face                                           &
-    )
+    wtheta_basis_face, adjacent_face)
 
     use calc_exner_pointwise_mod, only: calc_exner_pointwise
     use log_mod,                  only: log_event,         &
@@ -119,28 +117,21 @@ contains
     integer(kind=i_def), intent(in) :: undf_w2, undf_w3
     integer(kind=i_def), intent(in) :: ndf_wtheta, undf_wtheta
     integer(kind=i_def), dimension(ndf_w2), intent(in) :: map_w2
-    integer(kind=i_def), dimension(ndf_w3), intent(in) :: map_w3
-    integer(kind=i_def), dimension(ndf_wtheta), intent(in) :: map_wtheta
 
-    integer(kind=i_def), dimension(ndf_w3), intent(in) :: map_w3_W
-    integer(kind=i_def), dimension(ndf_wtheta), intent(in) :: map_wtheta_W
+    integer(kind=i_def), intent(in) :: stencil_w3_size
+    integer(kind=i_def), dimension(ndf_w3, stencil_w3_size), intent(in)  :: stencil_w3_map
 
-    integer(kind=i_def), dimension(ndf_w3), intent(in) :: map_w3_S
-    integer(kind=i_def), dimension(ndf_wtheta), intent(in) :: map_wtheta_S
+    integer(kind=i_def), intent(in) :: stencil_wtheta_size
+    integer(kind=i_def), dimension(ndf_wtheta, stencil_wtheta_size), intent(in)  :: stencil_wtheta_map
 
-    integer(kind=i_def), dimension(ndf_w3), intent(in) :: map_w3_E
-    integer(kind=i_def), dimension(ndf_wtheta), intent(in) :: map_wtheta_E
-
-    integer(kind=i_def), dimension(ndf_w3), intent(in) :: map_w3_N
-    integer(kind=i_def), dimension(ndf_wtheta), intent(in) :: map_wtheta_N
-
-    real(kind=r_def), dimension(4,3,ndf_w2,nqp_h_1d,nqp_v), intent(in) :: w2_basis_face
-
+    real(kind=r_def), dimension(4,3,ndf_w2,nqp_h_1d,nqp_v), intent(in)  :: w2_basis_face
+    real(kind=r_def), dimension(4,1,ndf_w3,nqp_h_1d,nqp_v), intent(in)  :: w3_basis_face
     real(kind=r_def), dimension(4,1,ndf_wtheta,nqp_h_1d,nqp_v), intent(in) :: wtheta_basis_face
-    real(kind=r_def), dimension(4,1,ndf_w3,nqp_h_1d,nqp_v), intent(in)     :: w3_basis_face
 
-    real(kind=r_def), dimension(undf_w2), intent(inout) :: r_u_bd
-    real(kind=r_def), dimension(undf_w3), intent(in)    :: rho
+    integer(kind=i_def), dimension(nfaces_h), intent(in) :: adjacent_face
+
+    real(kind=r_def), dimension(undf_w2), intent(inout)     :: r_u_bd
+    real(kind=r_def), dimension(undf_w3), intent(in)        :: rho
     real(kind=r_def), dimension(undf_wtheta), intent(in)    :: theta
 
     real(kind=r_def), dimension(nqp_v), intent(in)      ::  wqp_v
@@ -165,62 +156,31 @@ contains
       end do
       do face = 1, nfaces_h
 
-        bdary_term = 0.0_r_def
+        bdary_term     = 0.0_r_def
         av_pi_at_fquad = 0.0_r_def
 
         ! Storing opposite face number on neighbouring cell
-        face_next = mod(face+1, 4) + 1
+
+        face_next = adjacent_face(face)
 
         ! This is needed because the normal is inward for faces 1 and 4, outward for 2 and 3
         ! This gives -1 for face = 1,4 and +1 for face = 2,3
         sign_face_outward = (-1.0_r_def)**(int(floor(real(mod(face, 4))/2.0) + 1.0_r_def))
-        ! This vector then gives the outward normal
         face_outward_normal(:) = sign_face_outward * normal_to_face(face, :)
 
+        ! Computing rho and theta in local and adjacent cell
+
         do df = 1, ndf_w3
-          rho_e(df) = rho( map_w3(df) + k )
+          rho_e(df)      = rho( stencil_w3_map(df, 1) + k )
+          rho_next_e(df) = rho( stencil_w3_map(df, face+1) + k )
         end do
 
         do df = 1, ndf_wtheta
-          theta_e(df) = theta( map_wtheta(df) + k )
+          theta_e(df)      = theta( stencil_wtheta_map(df, 1) + k )
+          theta_next_e(df) = theta( stencil_wtheta_map(df, face+1) + k )
         end do
 
-        ! Computing rho and theta in adjacent cells
-        select case (face)
-          case (1)
-            do df = 1, ndf_w3
-              rho_next_e(df) = rho( map_w3_W(df) + k )
-            end do
-            do df = 1, ndf_wtheta
-              theta_next_e(df) = theta( map_wtheta_W(df) + k )
-            end do
-          case (2)
-            do df = 1, ndf_w3
-              rho_next_e(df) = rho( map_w3_S(df) + k )
-            end do
-            do df = 1, ndf_wtheta
-              theta_next_e(df) = theta( map_wtheta_S(df) + k )
-            end do
-          case (3)
-            do df = 1, ndf_w3
-              rho_next_e(df) = rho( map_w3_E(df) + k )
-            end do
-            do df = 1, ndf_wtheta
-              theta_next_e(df) = theta( map_wtheta_E(df) + k )
-            end do
-          case (4)
-            do df = 1, ndf_w3
-              rho_next_e(df) = rho( map_w3_N(df) + k )
-            end do
-            do df = 1, ndf_wtheta
-              theta_next_e(df) = theta( map_wtheta_N(df) + k )
-            end do
-          case default
-            call log_event( "Face number must be between 1 and 4 ", LOG_LEVEL_INFO )
-            stop
-        end select
-
-        ! compute the boundary RHS integrated over one horizontal face
+        ! Compute the boundary RHS integrated over one horizontal face
         do qp2 = 1, nqp_v
           do qp1 = 1, nqp_h_1d
             rho_at_fquad = 0.0_r_def
@@ -249,7 +209,6 @@ contains
 
               bdary_term = - cp * dot_product(v, face_outward_normal) *  theta_at_fquad * av_pi_at_fquad
               ru_bd_e(df) = ru_bd_e(df) + wqp_v(qp1)*wqp_v(qp2) * bdary_term
-
             end do
 
           end do ! qp1

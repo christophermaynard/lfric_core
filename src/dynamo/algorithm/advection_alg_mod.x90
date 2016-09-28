@@ -84,7 +84,7 @@ contains
 
   type(quadrature_type)     :: qr
   type(field_type), pointer :: u ,theta, rho, theta_np1, theta_n => null()
-  type(field_type)          :: r_xi, mass_flux, r_rho 
+  type(field_type)          :: r_xi, mass_flux, r_rho, ones 
 
   type(function_space_type), pointer :: xi_fs  => null()
   type(function_space_type), pointer :: u_fs   => null()
@@ -121,6 +121,9 @@ contains
   r_xi      = field_type( vector_space = xi_fs  )
   r_rho     = field_type( vector_space = rho_fs )
 
+  ones = field_type( vector_space = rho_fs )
+  call invoke_set_field_scalar( 1.0_r_def, ones )
+
   qr = quadrature_type(element_order+3, GAUSSIAN)
 
   ! Compute advection terms
@@ -148,7 +151,7 @@ contains
   call invoke_set_field_scalar( 0.0_r_def, advection(2) )
   if ( wtheta_on ) then
     call invoke (rtheta_wtheta_kernel_type ( advection(2), theta, u, qr))
-    call invoke_rtheta_bd_kernel ( advection(2), theta, mass_flux, rho, qr )
+    call invoke_rtheta_bd_kernel ( advection(2), theta, u, ones, qr )
   else
     call invoke( rtheta_kernel_type( advection(2), theta, mass_flux, rho, qr) )
   end if

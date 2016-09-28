@@ -107,7 +107,7 @@ implicit none
 
   real(kind=r_def) :: sin_tmp, cos_tmp, r, shape_function
 
-real(kind=r_def), parameter :: LAMBDAC = 2.0_r_def*pi/3.0_r_def,     &     ! Lon of Pert Center
+real(kind=r_def), parameter :: LAMBDAC = 2.0_r_def/3.0_r_def*pi,     &     ! Lon of Pert Center
                                  D       = 625000.0_r_def,             &     ! Width for Pert
                                  PHIC    = 0.0_r_def,                  &     ! Lat of Pert Center
                                  DELTA_THETA = 1.0_r_def,              &     ! Max Amplitude of Pert

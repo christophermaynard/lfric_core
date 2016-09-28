@@ -18,7 +18,7 @@ module conservation_algorithm_mod
   use constants_mod,                   only: r_def, i_def
   use function_space_collection_mod,   only: function_space_collection
   use field_mod,                       only: field_type
-  use finite_element_config_mod,       only: element_order
+  use finite_element_config_mod,       only: element_order, wtheta_on
   use fs_continuity_mod,               only: W3
   use function_space_mod,              only: function_space_type
   use log_mod,                         only: log_event,         &
@@ -86,20 +86,30 @@ contains
                                                   geopotential, chi, qr) )
     call invoke_sum_field(energy, total_energy)
 
-    ! Compute Ertel PV
-    pv = field_type( vector_space = w3_fs )
-    call invoke( compute_total_pv_kernel_type(pv, xi, theta, chi, qr) )
-    call invoke_sum_field(pv, total_pv)
+    ! Gradient of theta not defined for the Wtheta case, TBD
+    if (.not. wtheta_on) then
+      ! Compute Ertel PV
+      pv = field_type( vector_space = w3_fs )
+      call invoke( compute_total_pv_kernel_type(pv, xi, theta, chi, qr) )
+      call invoke_sum_field(pv, total_pv)
+    end if
 
     ! Compute axial angular momentum
     aam = field_type( vector_space = w3_fs )
     call invoke( compute_total_aam_kernel_type(aam, u, rho, chi, qr) )
     call invoke_sum_field(aam, total_aam)
 
-    write( log_scratch_space, '(A,I4,4E32.24)')  &
-           'Conservation  = ',&
-            tstep, total_mass, total_energy, total_pv, total_aam
+    if (wtheta_on) then
+      write( log_scratch_space, '(A,I4,4E32.24)')  &
+             'Conservation  = ',&
+              tstep, total_mass, total_energy, total_aam
+    else
+      write( log_scratch_space, '(A,I4,4E32.24)')  &
+             'Conservation  = ',&
+              tstep, total_mass, total_energy, total_pv, total_aam
+    end if
     call log_event( log_scratch_space, LOG_LEVEL_INFO )
+
   end subroutine conservation_algorithm
 
 end module conservation_algorithm_mod

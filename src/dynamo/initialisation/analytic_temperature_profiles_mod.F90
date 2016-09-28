@@ -15,6 +15,7 @@ use log_mod,                      only : log_event,                &
                                          log_scratch_space,        &
                                          LOG_LEVEL_ERROR
 use coord_transform_mod,          only : xyz2llr, central_angle
+use finite_element_config_mod,    only : wtheta_on
 use idealised_config_mod,         only : idealised_test_cold_bubble,   &
                                          idealised_test_gaussian_hill, &
                                          idealised_test_cosine_hill,   &
@@ -26,9 +27,9 @@ use initial_density_config_mod,    only : r1, x1, y1, r2, x2, y2,     &
 use base_mesh_config_mod,          only : geometry, &
                                           base_mesh_geometry_spherical
 use planet_config_mod,             only : p_zero, Rd, kappa, scaled_radius
-use reference_profile_mod,         only : reference_profile
+use reference_profile_mod,         only : reference_profile_wtheta
 use formulation_config_mod,        only : nonlinear
-use generate_global_gw_fields_mod, only: generate_global_gw_pert
+use generate_global_gw_fields_mod, only : generate_global_gw_pert
 
 implicit none
 
@@ -38,11 +39,12 @@ contains
 !> @param[in] chi Position in physical coordinates
 !> @param[in] choice Integer defining which specified formula to use
 !> @result temperature The result temperature field
-function analytic_temperature(chi, choice) result(temperature)
+function analytic_temperature(chi, choice, chi_surf) result(temperature)
 
   implicit none
   real(kind=r_def), intent(in) :: chi(3)
   integer,          intent(in) :: choice
+  real(kind=r_def), intent(in) :: chi_surf(3)
   real(kind=r_def)             :: temperature
 
   real(kind=r_def)             :: l, dt
@@ -55,13 +57,14 @@ function analytic_temperature(chi, choice) result(temperature)
                                   ZC_cold = 3000.0_r_def, &
                                   ZC_hot = 260.0_r_def, &
                                   ZR = 2000.0_r_def
-  real(kind=r_def)             :: long, lat, radius
+  real(kind=r_def)             :: long, lat, radius, long_surf, lat_surf, radius_surf
   real(kind=r_def)             :: l1, l2
   real(kind=r_def)             :: h1, h2
   real(kind=r_def)             :: pressure, density
           
   if ( geometry == base_mesh_geometry_spherical ) then
     call xyz2llr(chi(1),chi(2),chi(3),long,lat,radius)
+    call xyz2llr(chi_surf(1),chi_surf(2),chi_surf(3),long_surf,lat_surf,radius_surf)
     call central_angle(long,lat,x1,y1,l1)
     call central_angle(long,lat,x2,y2,l2)
   else
@@ -73,14 +76,19 @@ function analytic_temperature(chi, choice) result(temperature)
 
   temperature = 0.0_r_def
   if ( nonlinear ) &
-    call reference_profile(pressure, density, temperature, chi, choice)
+    call reference_profile_wtheta(pressure, density, temperature, chi, choice, chi_surf)
 
   select case( choice ) 
   
   case ( idealised_test_gravity_wave )
     if ( geometry == base_mesh_geometry_spherical ) then      
-      temperature = temperature &
-                  +  generate_global_gw_pert(long,lat,radius-scaled_radius)
+      if (wtheta_on ) then
+        temperature = temperature &
+                    +  generate_global_gw_pert(long,lat,radius-radius_surf)
+      else
+        temperature = temperature &
+                    +  generate_global_gw_pert(long,lat,radius-scaled_radius)
+      end if
     else
       temperature = temperature + THETA0 * sin ( PI * chi(3) / H ) &
                             / ( 1.0_r_def + ( chi(1) - XC )**2/A**2 )
