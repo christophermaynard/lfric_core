@@ -2266,6 +2266,8 @@ end subroutine invoke_calc_deppts
 
     field_proxy = field%get_proxy()
 
+    undf = field_proxy%vspace%get_undf()
+
     !$omp parallel do schedule(static), default(none), shared(field_proxy, undf, scalar),  private(i)
     do i = 1,undf
        field_proxy%data(i) = scalar*field_proxy%data(i)

@@ -14,7 +14,7 @@ use constants_mod,           only: r_def, i_def
 use kernel_mod,              only: kernel_type
 use argument_mod,            only: arg_type, func_type,                      &
                                    GH_OPERATOR, GH_FIELD, GH_READ, GH_WRITE, &
-                                   W0, W3, GH_BASIS, GH_DIFF_BASIS, &
+                                   ANY_SPACE_1, W3, GH_BASIS, GH_DIFF_BASIS, &
                                    CELLS
 use coordinate_jacobian_mod, only: coordinate_jacobian
 implicit none
@@ -27,11 +27,11 @@ type, public, extends(kernel_type) :: weighted_m3_rho_kernel_type
   type(arg_type) :: meta_args(3) = (/                                  &
        arg_type(GH_OPERATOR, GH_WRITE, W3, W3),                        &
        arg_type(GH_FIELD,    GH_READ,  W3),                            &
-       arg_type(GH_FIELD*3,  GH_READ,  W0)                             &
+       arg_type(GH_FIELD*3,  GH_READ,  ANY_SPACE_1)                    &
        /)
   type(func_type) :: meta_funcs(2) = (/                                &
        func_type(W3, GH_BASIS),                                        &
-       func_type(W0, GH_DIFF_BASIS)                                    &
+       func_type(ANY_SPACE_1, GH_DIFF_BASIS)                           &
        /)
   integer :: iterates_over = CELLS
 
