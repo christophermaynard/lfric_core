@@ -131,9 +131,9 @@ contains
     ndf_w2  = div_p%fs_from%get_ndf()
     ndf_w3  = div_p%fs_to%get_ndf()
    
-    div_p%local_stencil(:,:,cell) = 0.0_r_def
-    m_w3_1_p%local_stencil(:,:,cell) = 0.0_r_def
-    m_w3_2_p%local_stencil(:,:,cell) = 0.0_r_def
+    div_p%local_stencil(:,:,:)    = 0.0_r_def
+    m_w3_1_p%local_stencil(:,:,:) = 0.0_r_def
+    m_w3_2_p%local_stencil(:,:,:) = 0.0_r_def
 
     cell = 1
     
