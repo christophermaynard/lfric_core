@@ -20,7 +20,7 @@ use initial_temperature_config_mod, only : bvf_square
 use planet_config_mod,              only : gravity, &
                                            scaled_radius, scaled_omega, &
                                            Rd, Cp, p_zero, kappa, scaling_factor
-
+use initial_wind_config_mod,        only : u0
 implicit none
 
 contains
@@ -45,8 +45,7 @@ implicit none
                                    exner, &              ! exner pressure
                                    rho                   ! density (kg m^-3)
 
-  real(kind=r_def), parameter :: U0        = 0.0_r_def,    &     ! Reference Velocity
-                                 T_EQUATOR = 300.0_r_def,   &     ! Temperature at Equator
+  real(kind=r_def), parameter :: T_EQUATOR = 300.0_r_def,   &     ! Temperature at Equator
                                  ZTOP      = 10000.0_r_def        ! Model Top
 
   real(kind=r_def) :: bigG                                    ! G constant from DCMIP formulation                            
@@ -61,18 +60,18 @@ implicit none
   bigG = gravity**2/(bvf_square*Cp)
 
 ! Initialise wind field
-  u(1) = U0 * cos(lat)
+  u(1) = u0 * cos(lat)
   u(2) = 0.0_r_def
   u(3) = 0.0_r_def
 
 ! 
-  exp_fac = (U0+2.0_r_def*scaled_omega*scaled_radius)*(cos(2.0_r_def*lat)-1.0_r_def)
+  exp_fac = (u0+2.0_r_def*scaled_omega*scaled_radius)*(cos(2.0_r_def*lat)-1.0_r_def)
 
 ! Compute surface temperture
-  tsurf = bigG + (T_EQUATOR - bigG)*exp( -(U0*bvf_square/(4.0_r_def*gravity**2))*exp_fac )
+  tsurf = bigG + (T_EQUATOR - bigG)*exp( -(u0*bvf_square/(4.0_r_def*gravity**2))*exp_fac )
 
 ! Compute surface pressure
-  psurf = p_equator*exp( (U0/(4.0_r_def*bigG*Rd))*exp_fac  ) * (tsurf/T_EQUATOR)**(Cp/Rd)
+  psurf = p_equator*exp( (u0/(4.0_r_def*bigG*Rd))*exp_fac  ) * (tsurf/T_EQUATOR)**(Cp/Rd)
 
 ! Compute pressure and temperature
   pressure = psurf * ( (bigG/tsurf)*exp(-bvf_square*z/gravity)+1.0_r_def - (bigG/tsurf)  )**(Cp/Rd)

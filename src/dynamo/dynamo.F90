@@ -56,8 +56,7 @@ program dynamo
                                              LOG_LEVEL_ERROR,   &
                                              LOG_LEVEL_INFO,    &
                                              LOG_LEVEL_DEBUG,   &
-                                             LOG_LEVEL_TRACE,   &
-                                             log_scratch_space
+                                             LOG_LEVEL_TRACE
   use restart_config_mod,             only : filename
   use restart_control_mod,            only : restart_type
   use output_config_mod,              only : diagnostic_frequency
@@ -68,8 +67,8 @@ program dynamo
   use derived_config_mod,             only : set_derived_config
   use runtime_constants_mod,          only : create_runtime_constants, &
                                              get_geopotential
-
-
+  use checksum_alg_mod,               only : checksum_alg
+  
   implicit none
 
   type(ESMF_VM)      :: vm
@@ -265,15 +264,7 @@ program dynamo
   call u%log_field(     LOG_LEVEL_DEBUG, LOG_LEVEL_INFO, 'u' )
 
   ! Write checksums to file
-  open( 9, file="dynamo-checksums.txt", status="replace", iostat=rc)
-  if (rc /= 0) then
-    write( log_scratch_space, '("Unable to open checksum file")' )
-    call log_event( log_scratch_space, LOG_LEVEL_ERROR )
-  end if
-  call rho%write_checksum( 9, 'rho' )
-  call theta%write_checksum( 9, 'theta' )
-  call u%write_checksum( 9, 'u' )
-  close( 9 )
+  call checksum_alg(rho, 'rho', theta, 'theta', u, 'u')
 
   ! Write checkpoint/restart files if required
   if( restart%write_file() ) then 

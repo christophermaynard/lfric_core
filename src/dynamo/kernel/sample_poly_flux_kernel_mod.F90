@@ -137,7 +137,7 @@ subroutine sample_poly_flux_code( nlayers,              &
       direction = dot_product( wind(map_w2(df) + k )*basis_w2(:,df,df), &
                                out_face_normal(:,df))
 
-      if ( direction > 0.0_r_def ) then         
+      if ( direction >= 0.0_r_def ) then         
         do p = 1,np       
           density_stencil(p) = density( stencil_map(1,stencil(p,df)) + k )
         end do
@@ -160,7 +160,7 @@ subroutine sample_poly_flux_code( nlayers,              &
   df = 6
   direction = dot_product( wind(map_w2(df) + k )*basis_w2(:,df,df), &
                            out_face_normal(:,df))
-  if ( direction > 0.0_r_def ) &
+  if ( direction >= 0.0_r_def ) &
     flux(map_w2(df)) = wind(map_w2(df))*density(stencil_map(1,1))
 
   ! Internal cells
@@ -168,7 +168,7 @@ subroutine sample_poly_flux_code( nlayers,              &
     df = 5
     direction = dot_product( wind(map_w2(df) + k )*basis_w2(:,df,df), &
                              out_face_normal(:,df))
-    if ( direction > 0.0_r_def ) then
+    if ( direction >= 0.0_r_def ) then
       nv = np_v(1,k)
       do p = 1,nv
         i = stencil_map(1,1) + k + (nv-1)/2 ! Location of first upwind point
@@ -188,7 +188,7 @@ subroutine sample_poly_flux_code( nlayers,              &
     df = 6
     direction = dot_product( wind(map_w2(df) + k )*basis_w2(:,df,df), &
                              out_face_normal(:,df))
-    if ( direction > 0.0_r_def ) then
+    if ( direction >= 0.0_r_def ) then
       nv = np_v(2,k)
       do p = 1,nv
         i =  stencil_map(1,1) + k - (nv-1)/2 ! Location of first upwind point
@@ -212,7 +212,7 @@ subroutine sample_poly_flux_code( nlayers,              &
   df = 5
   direction = dot_product( wind(map_w2(df) + k )*basis_w2(:,df,df), &
                            out_face_normal(:,df))
-  if ( direction > 0.0_r_def ) &
+  if ( direction >= 0.0_r_def ) &
     flux(map_w2(df)+k) = wind(map_w2(df)+k)*density(stencil_map(1,1)+k)
   df = 6
   flux(map_w2(df)+k) = 0.0_r_def

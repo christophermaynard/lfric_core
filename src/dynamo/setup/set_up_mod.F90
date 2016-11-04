@@ -47,8 +47,15 @@ module set_up_mod
                                          partitioner_cubedsphere_serial,   &
                                          partitioner_cubedsphere,          &
                                          partitioner_biperiodic
-
-
+  use transport_config_mod,       only : operators, &
+                                         fv_flux_order, &
+                                         fv_advective_order, &
+                                         transport_operators_fv
+  use finite_element_config_mod,  only : wtheta_on
+  use transport_config_mod,       only : scheme, &
+                                         transport_scheme_cosmic
+  use subgrid_config_mod,          only: transport_stencil_extent, &
+                                         rho_stencil_extent
   implicit none
 
 contains
@@ -96,6 +103,7 @@ contains
 
     integer(i_def) :: global_mesh_id
     integer(i_def) :: npanels
+    integer(i_def) :: max_fv_stencil
 
     call log_event( "set_up: Generating/reading the mesh", LOG_LEVEL_INFO )
 
@@ -195,8 +203,21 @@ contains
       call log_event( log_scratch_space, LOG_LEVEL_INFO )
     end if
 
+
     ! Generate the partition object
-    max_stencil_depth=0
+    max_stencil_depth = 0
+    if ( operators == transport_operators_fv) then
+      ! Need larger haloes for fv operators
+      max_fv_stencil = int(real(max(fv_flux_order,fv_advective_order)+1)/2.0,i_def)
+      max_stencil_depth = max(max_stencil_depth,max_fv_stencil)
+    end if
+    if ( scheme == transport_scheme_cosmic ) then
+      max_stencil_depth = max(max_stencil_depth, &
+                              max(transport_stencil_extent, &
+                                  rho_stencil_extent))
+    end if
+    if ( wtheta_on ) max_stencil_depth = max(max_stencil_depth,1)
+
     partition = partition_type( global_mesh, &
                                partitioner_ptr, &
                                xproc, &

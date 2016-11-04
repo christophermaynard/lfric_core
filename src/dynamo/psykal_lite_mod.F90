@@ -98,7 +98,7 @@ contains
   subroutine invoke_initial_theta_kernel( theta, chi, evaluator )
 
     use initial_theta_kernel_mod, only : initial_theta_code
-
+    use mesh_mod,                 only : mesh_type
     implicit none
 
     type( field_type ), intent( inout )  :: theta
@@ -116,6 +116,8 @@ contains
 
     real(kind=r_def), allocatable :: basis_chi(:,:,:)
 
+    type(mesh_type), pointer :: mesh => null()
+
     theta_proxy  = theta%get_proxy()
     chi_proxy(1) = chi(1)%get_proxy()
     chi_proxy(2) = chi(2)%get_proxy()
@@ -132,7 +134,13 @@ contains
 
     call evaluator%compute_evaluate( BASIS, chi_proxy(1)%vspace, dim_chi, ndf_chi, basis_chi)
 
-    do cell = 1, theta_proxy%vspace%get_ncell()
+    if (chi_proxy(1)%is_dirty(depth=1)) call chi_proxy(1)%halo_exchange(depth=1)
+    if (chi_proxy(2)%is_dirty(depth=1)) call chi_proxy(2)%halo_exchange(depth=1)
+    if (chi_proxy(3)%is_dirty(depth=1)) call chi_proxy(3)%halo_exchange(depth=1)
+    if (theta_proxy%is_dirty(depth=1))  call theta_proxy%halo_exchange(depth=1)
+
+    mesh => theta%get_mesh()
+    do cell = 1, mesh%get_last_halo_cell(1)
 
       map_wtheta => theta_proxy%vspace%get_cell_dofmap( cell )
       map_chi => chi_proxy(1)%vspace%get_cell_dofmap( cell )
@@ -152,6 +160,8 @@ contains
         chi_proxy(3)%data                   &
         )
     end do
+
+    call theta_proxy%set_dirty()
   end subroutine invoke_initial_theta_kernel
 
   !-------------------------------------------------------------------------------
@@ -281,7 +291,10 @@ contains
 
     end do
 
-    do cell = 1, theta_proxy%vspace%get_ncell()
+    if(theta_proxy%is_dirty(depth=1) ) call theta_proxy%halo_exchange(depth=1)
+    if(  rho_proxy%is_dirty(depth=1) ) call   rho_proxy%halo_exchange(depth=1)
+    if(    f_proxy%is_dirty(depth=1) ) call     f_proxy%halo_exchange(depth=1)
+    do cell = 1, mesh%get_last_edge_cell()
 
       do ii = 1, nfaces_h
         do jj = 1, nfaces_h
@@ -310,6 +323,7 @@ contains
                           adjacent_face )
 
     end do
+    call r_theta_bd_proxy%set_dirty()
 
     deallocate(basis_w2_face, basis_w3_face, basis_wtheta_face, adjacent_face)
 
@@ -440,8 +454,11 @@ contains
 
     end do
 
+    if( theta_proxy%is_dirty(depth=1) ) call theta_proxy%halo_exchange(depth=2)
+    if(   rho_proxy%is_dirty(depth=1) ) call rho_proxy%halo_exchange(depth=2)
+    if(r_u_bd_proxy%is_dirty(depth=1) ) call r_u_bd_proxy%halo_exchange(depth=2)
 
-    do cell = 1, r_u_bd_proxy%vspace%get_ncell()
+    do cell = 1, mesh%get_last_halo_cell(1)
 
       map_w2 => r_u_bd_proxy%vspace%get_cell_dofmap( cell )
 
@@ -471,6 +488,7 @@ contains
                       adjacent_face)
 
     end do
+    call r_u_bd_proxy%set_dirty()
 
     deallocate(basis_w3_face, basis_w2_face, basis_wtheta_face, adjacent_face)
 
@@ -595,8 +613,11 @@ contains
 
     end do
 
+    if( theta_proxy%is_dirty(depth=1) ) call theta_proxy%halo_exchange(depth=2)
+    if( exner_proxy%is_dirty(depth=1) ) call exner_proxy%halo_exchange(depth=2)
+    if(r_u_bd_proxy%is_dirty(depth=1) ) call r_u_bd_proxy%halo_exchange(depth=2)
 
-    do cell = 1, r_u_bd_proxy%vspace%get_ncell()
+    do cell = 1,mesh%get_last_halo_cell(1)
 
       map_w2 => r_u_bd_proxy%vspace%get_cell_dofmap( cell )
       map_wtheta => theta_proxy%vspace%get_cell_dofmap( cell )
@@ -626,6 +647,7 @@ contains
                                    adjacent_face)
 
     end do
+    call r_u_bd_proxy%set_dirty()
 
     deallocate(basis_w3_face, basis_w2_face, basis_wtheta_face, adjacent_face, xp_f)
 
@@ -758,8 +780,14 @@ contains
 
     end do
 
+    if(theta_proxy%is_dirty(depth=1) )     call theta_proxy%halo_exchange(depth=2)
+    if(rho_proxy%is_dirty(depth=1) )       call rho_proxy%halo_exchange(depth=2)
+    if(theta_ref_proxy%is_dirty(depth=1) ) call theta_ref_proxy%halo_exchange(depth=2)
+    if(rho_ref_proxy%is_dirty(depth=1) )   call rho_ref_proxy%halo_exchange(depth=2)
+    if(r_u_bd_proxy%is_dirty(depth=1) )    call r_u_bd_proxy%halo_exchange(depth=2)
 
-    do cell = 1, r_u_bd_proxy%vspace%get_ncell()
+
+    do cell = 1, mesh%get_last_halo_cell(1)
 
       map_w2 => r_u_bd_proxy%vspace%get_cell_dofmap( cell )
 
@@ -791,6 +819,7 @@ contains
                                            adjacent_face)
 
     end do
+    call r_u_bd_proxy%set_dirty()
 
     deallocate(basis_w3_face, basis_w2_face, basis_wtheta_face, adjacent_face, xp_f)
 
@@ -1551,6 +1580,8 @@ contains
 !> invoke_sample_flux_kernel: Retrieve values from flux kernel  
   subroutine invoke_sample_flux_kernel(flux, u, multiplicity, q, evaluator)
     use sample_flux_kernel_mod, only: sample_flux_code
+    use mesh_mod,               only: mesh_type
+
     implicit none
 
     type(field_type), intent(in)         :: u, multiplicity, q
@@ -1566,6 +1597,8 @@ contains
     integer, pointer        :: map_f(:), map_q(:) => null()
 
     real(kind=r_def), allocatable  :: basis_q(:,:,:)
+
+    type(mesh_type), pointer :: mesh => null()
 
     u_p    = u%get_proxy()
     q_p    = q%get_proxy()
@@ -1584,20 +1617,14 @@ contains
 
     call evaluator%compute_evaluate( BASIS, q_p%vspace, dim_q, ndf_q, basis_q)
 
-    if(flux_p%is_dirty(depth=1) ) then
-      call flux_p%halo_exchange(depth=1)
-    end if
-    if(u_p%is_dirty(depth=1) ) then
-      call u_p%halo_exchange(depth=1)
-    end if
-    if(m_p%is_dirty(depth=1) ) then
-      call m_p%halo_exchange(depth=1)
-    end if
-    if(q_p%is_dirty(depth=1) ) then
-      call q_p%halo_exchange(depth=1)
-    end if
+    mesh => flux%get_mesh()
+    if (flux_p%is_dirty(depth=1)) call flux_p%halo_exchange(depth=1)
+    if (   m_p%is_dirty(depth=1)) call    m_p%halo_exchange(depth=1)
+    if (   u_p%is_dirty(depth=1)) call    u_p%halo_exchange(depth=1)
+    if (   q_p%is_dirty(depth=1)) call    q_p%halo_exchange(depth=1)
 
-    do cell = 1, flux_p%vspace%get_ncell()
+
+    do cell = 1, mesh%get_last_halo_cell(1)
        map_f => flux_p%vspace%get_cell_dofmap( cell )
        map_q => q_p%vspace%get_cell_dofmap( cell )
        call sample_flux_code(nlayers, &
@@ -1621,6 +1648,7 @@ contains
 
   subroutine invoke_nodal_coordinates_kernel(nodal_coords, chi, evaluator)
     use nodal_coordinates_kernel_mod, only: nodal_coordinates_code
+    use mesh_mod,                     only: mesh_type
     implicit none
     
     type(field_type), intent(inout)      :: nodal_coords(3)
@@ -1637,7 +1665,7 @@ contains
 
     real(kind=r_def), allocatable  :: basis_chi(:,:,:)
     integer :: i
-
+    type(mesh_type), pointer :: mesh => null()
 
     do i = 1,3
       x_p(i)   = nodal_coords(i)%get_proxy()
@@ -1668,8 +1696,9 @@ contains
     if (chi_p(3)%is_dirty(depth=1)) then
        call chi_p(3)%halo_exchange(depth=1)
     end if
+    mesh => nodal_coords(1)%get_mesh()
 
-    do cell = 1, x_p(1)%vspace%get_ncell()
+    do cell = 1, mesh%get_last_halo_cell(1)
        map_x   => x_p(1)%vspace%get_cell_dofmap( cell )
        map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
        call nodal_coordinates_code(nlayers, &
@@ -1696,6 +1725,7 @@ contains
 
   subroutine invoke_convert_hcurl_field(phys_field, comp_field, chi, evaluator)
     use convert_hcurl_field_kernel_mod, only: convert_hcurl_field_code
+    use mesh_mod,                       only: mesh_type
     implicit none
     
     type(field_type), intent(inout)      :: phys_field(3)
@@ -1712,6 +1742,7 @@ contains
 
     real(kind=r_def), allocatable  :: diff_basis_chi(:,:,:), basis_comp(:,:,:)
     integer(kind=i_def) :: i
+    type(mesh_type), pointer :: mesh => null()
 
     do i = 1,3
       phys_p(i) = phys_field(i)%get_proxy()
@@ -1758,8 +1789,9 @@ contains
     if (comp_p%is_dirty(depth=1)) then
       call comp_p%halo_exchange(depth=1)
     end if
+    mesh => phys_field(1)%get_mesh()
 
-    do cell = 1, comp_p%vspace%get_ncell()
+    do cell = 1, mesh%get_last_halo_cell(1)
        map     => comp_p%vspace%get_cell_dofmap( cell )
        map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
        call convert_hcurl_field_code(nlayers, &
@@ -1788,6 +1820,7 @@ contains
 
   subroutine invoke_convert_hdiv_field(phys_field, comp_field, chi, evaluator)
     use convert_hdiv_field_kernel_mod, only: convert_hdiv_field_code
+    use mesh_mod,                      only: mesh_type
     implicit none
     
     type(field_type), intent(inout)      :: phys_field(3)
@@ -1804,7 +1837,7 @@ contains
 
     real(kind=r_def), allocatable  :: diff_basis_chi(:,:,:), basis_comp(:,:,:)
     integer :: i
-
+    type(mesh_type), pointer :: mesh => null()
     do i = 1,3
       phys_p(i) = phys_field(i)%get_proxy()
       chi_p(i)  = chi(i)%get_proxy()
@@ -1849,8 +1882,8 @@ contains
     if (comp_p%is_dirty(depth=1)) then
       call comp_p%halo_exchange(depth=1)
     end if
-
-    do cell = 1, comp_p%vspace%get_ncell()
+    mesh => comp_field%get_mesh()
+    do cell = 1, mesh%get_last_halo_cell(1)
        map     => comp_p%vspace%get_cell_dofmap( cell )
        map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
        call convert_hdiv_field_code(nlayers, &
@@ -1938,23 +1971,23 @@ contains
   subroutine invoke_compute_dof_level_kernel(level)
 
   use compute_dof_level_kernel_mod, only: compute_dof_level_code
-
+  use mesh_mod,                     only: mesh_type
   implicit none
 
   type(field_type), intent(inout) :: level
   type(field_proxy_type) :: l_p
-  integer :: cell, ncell, ndf, undf
+  integer :: cell, ndf, undf
   real(kind=r_def), pointer :: nodes(:,:) => null()
   integer, pointer :: map(:) => null()
-
+  type(mesh_type), pointer :: mesh => null()
   l_p = level%get_proxy()
   undf = l_p%vspace%get_undf()
   ndf  = l_p%vspace%get_ndf()
   nodes => l_p%vspace%get_nodes( )
- 
-  ncell = l_p%vspace%get_ncell()
+  if (l_p%is_dirty(depth=1)) call l_p%halo_exchange(depth=1)
 
-  do cell = 1,ncell
+  mesh => level%get_mesh()
+  do cell = 1,mesh%get_last_halo_cell(1)
     map => l_p%vspace%get_cell_dofmap(cell)
     call compute_dof_level_code(l_p%vspace%get_nlayers(),                 &
                                 l_p%data,                                 &
@@ -1964,6 +1997,7 @@ contains
                                 nodes                                     &
                                )
   end do 
+  call l_p%set_dirty()
 
   end subroutine invoke_compute_dof_level_kernel
 
@@ -2015,7 +2049,7 @@ subroutine invoke_subgrid_coeffs(a0,a1,a2,rho,direction,rho_stencil_extent)
                                          STENCIL_1DY
     use subgrid_coeffs_kernel_mod, only: subgrid_coeffs_code
     use subgrid_config_mod,        only: rho_approximation
-
+    use mesh_mod,                  only: mesh_type
     implicit none
 
     type( field_type ), intent( inout ) :: a0
@@ -2037,6 +2071,9 @@ subroutine invoke_subgrid_coeffs(a0,a1,a2,rho,direction,rho_stencil_extent)
     integer                 :: nlayers
     integer                 :: ndf_w3
     integer                 :: undf_w3
+    type(mesh_type), pointer :: mesh => null()
+    integer                  :: d
+    logical                  :: swap
 
     a0_proxy   = a0%get_proxy()
     a1_proxy   = a1%get_proxy()
@@ -2060,7 +2097,14 @@ subroutine invoke_subgrid_coeffs(a0,a1,a2,rho,direction,rho_stencil_extent)
     end if
     rho_stencil_size = map%get_size()
 
-    do cell = 1, rho_proxy%vspace%get_ncell()
+    swap = .false.
+    do d = 1,rho_stencil_extent
+      if (rho_proxy%is_dirty(depth=d)) swap = .true.
+    end do
+    if ( swap ) call rho_proxy%halo_exchange(depth=rho_stencil_extent)
+
+    mesh => a0%get_mesh()
+    do cell = 1, mesh%get_last_edge_cell()
 
       stencil_map => map%get_dofmap(cell)
 
@@ -2077,6 +2121,9 @@ subroutine invoke_subgrid_coeffs(a0,a1,a2,rho,direction,rho_stencil_extent)
                                 )
 
     end do
+    call a0_proxy%set_dirty()
+    call a1_proxy%set_dirty()
+    call a2_proxy%set_dirty()
 
   end subroutine invoke_subgrid_coeffs
 
@@ -2097,7 +2144,7 @@ subroutine invoke_conservative_fluxes(    rho,          &
   use stencil_dofmap_mod,           only: stencil_dofmap_type, &
                                           STENCIL_1DX, STENCIL_1DY
   use timestepping_config_mod,      only: dt
-
+  use mesh_mod,                     only: mesh_type
   implicit none
 
   type(field_type), intent(in)      :: rho
@@ -2125,6 +2172,9 @@ subroutine invoke_conservative_fluxes(    rho,          &
   integer :: undf_w2, ndf_w2
   integer :: cell
   integer :: nlayers
+  type(mesh_type), pointer :: mesh => null()
+  integer                  :: d
+  logical                  :: swap
 
   rho_proxy     = rho%get_proxy()
   dep_pts_proxy = dep_pts%get_proxy()
@@ -2156,7 +2206,14 @@ subroutine invoke_conservative_fluxes(    rho,          &
   end if
   stencil_size = map%get_size()
 
-  do cell = 1, rho_proxy%vspace%get_ncell()
+  swap = .false.
+  do d = 1,stencil_extent
+    if (rho_proxy%is_dirty(depth=d)) swap = .true.
+  end do
+  if ( swap ) call rho_proxy%halo_exchange(depth=stencil_extent)
+
+  mesh => rho%get_mesh()
+  do cell = 1, mesh%get_last_halo_cell(1)
       map_rho => rho_proxy%vspace%get_cell_dofmap( cell )
       map_w2 => dep_pts_proxy%vspace%get_cell_dofmap( cell )
 
@@ -2182,12 +2239,17 @@ subroutine invoke_conservative_fluxes(    rho,          &
                                    dt )
 
   end do
+  call a0_coeffs_proxy%set_dirty()
+  call a1_coeffs_proxy%set_dirty()
+  call a2_coeffs_proxy%set_dirty()
+
 
 end subroutine invoke_conservative_fluxes
 
 !-------------------------------------------------------------------------------
 subroutine invoke_calc_departure_wind(u_departure_wind, u_piola, chi, evaluator)
   use calc_departure_wind_kernel_mod, only: calc_departure_wind_code
+  use mesh_mod,                       only: mesh_type
   implicit none
 
   type(field_type), intent(inout)      :: u_departure_wind
@@ -2205,6 +2267,7 @@ subroutine invoke_calc_departure_wind(u_departure_wind, u_piola, chi, evaluator)
   real(kind=r_def), allocatable  :: nodal_basis_u(:,:,:)
   real(kind=r_def), allocatable  :: diff_basis_chi(:,:,:)
   integer :: ii
+  type(mesh_type), pointer :: mesh => null()
 
   do ii = 1,3
     chi_p(ii)  = chi(ii)%get_proxy()
@@ -2227,7 +2290,13 @@ subroutine invoke_calc_departure_wind(u_departure_wind, u_piola, chi, evaluator)
   call evaluator%compute_evaluate( DIFF_BASIS, chi_p(1)%vspace, diff_dim_chi, ndf_chi, diff_basis_chi )
   call evaluator%compute_evaluate( BASIS, u_piola_p%vspace, dim_u, ndf, nodal_basis_u)
 
-  do cell = 1, u_piola_p%vspace%get_ncell()
+  if (u_piola_p%is_dirty(depth=1)) call u_piola_p%halo_exchange(depth=1)
+  if (chi_p(1)%is_dirty(depth=1))  call chi_p(1)%halo_exchange(depth=1)
+  if (chi_p(2)%is_dirty(depth=1))  call chi_p(2)%halo_exchange(depth=1)
+  if (chi_p(3)%is_dirty(depth=1))  call chi_p(3)%halo_exchange(depth=1)
+
+  mesh => u_piola%get_mesh()
+  do cell = 1,mesh%get_last_halo_cell(1)
      map     => u_piola_p%vspace%get_cell_dofmap( cell )
      map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
      call calc_departure_wind_code( nlayers,                                  &
@@ -2243,6 +2312,7 @@ subroutine invoke_calc_departure_wind(u_departure_wind, u_piola, chi, evaluator)
   end do
   deallocate(nodal_basis_u)
   deallocate(diff_basis_chi)
+  call u_departure_wind_p%set_dirty()
 end subroutine invoke_calc_departure_wind
 !-------------------------------------------------------------------------------
 
@@ -2256,7 +2326,7 @@ subroutine invoke_calc_deppts(u_n,u_np1,dep_pts,direction,dep_pt_method)
                                                STENCIL_1DY
   use flux_direction_mod,               only : x_direction, y_direction
   use subgrid_config_mod,               only : transport_stencil_extent
-
+  use mesh_mod,                         only : mesh_type
   implicit none
 
   type( field_type ), intent( in )    :: u_n
@@ -2277,7 +2347,10 @@ subroutine invoke_calc_deppts(u_n,u_np1,dep_pts,direction,dep_pt_method)
   integer                 :: nlayers
   integer                 :: ndf_w2
   integer                 :: undf_w2
-
+  type(mesh_type), pointer :: mesh => null()
+  integer                  :: d
+  logical                  :: swap
+  
   u_n_proxy    = u_n%get_proxy()
   u_np1_proxy  = u_np1%get_proxy()
   dep_pts_proxy = dep_pts%get_proxy()
@@ -2294,7 +2367,19 @@ subroutine invoke_calc_deppts(u_n,u_np1,dep_pts,direction,dep_pt_method)
 
   nlayers = u_n_proxy%vspace%get_nlayers()
 
-  do cell=1,u_n_proxy%vspace%get_ncell()
+  swap = .false.
+  do d = 1,transport_stencil_extent
+    if (u_n_proxy%is_dirty(depth=d)) swap = .true.
+  end do
+  if ( swap ) call u_n_proxy%halo_exchange(depth=transport_stencil_extent)
+  swap = .false.
+  do d = 1,transport_stencil_extent
+    if (u_np1_proxy%is_dirty(depth=d)) swap = .true.
+  end do
+  if ( swap ) call u_np1_proxy%halo_exchange(depth=transport_stencil_extent)
+
+  mesh => u_n%get_mesh()
+  do cell=1,mesh%get_last_halo_cell(1)
 
     stencil_map_w2 => map%get_dofmap(cell)
 
@@ -2310,6 +2395,7 @@ subroutine invoke_calc_deppts(u_n,u_np1,dep_pts,direction,dep_pt_method)
                                     dep_pt_method )
 
   end do
+  call dep_pts_proxy%set_dirty()
 
 end subroutine invoke_calc_deppts
 
@@ -2726,8 +2812,7 @@ subroutine invoke_sample_poly_flux( flux, wind, density, stencil_extent, evaluat
 
   use sample_poly_flux_kernel_mod, only: sample_poly_flux_code
   use stencil_dofmap_mod,          only: stencil_dofmap_type, STENCIL_CROSS
-  use log_mod, only : log_event, LOG_LEVEL_ERROR
-
+  use mesh_mod,                    only: mesh_type
   implicit none
 
   type(field_type), intent(inout)      :: flux
@@ -2748,7 +2833,9 @@ subroutine invoke_sample_poly_flux( flux, wind, density, stencil_extent, evaluat
   integer :: cell
   integer :: nlayers
   integer :: stencil_size 
-  
+  integer :: d
+  logical :: swap
+  type(mesh_type), pointer :: mesh => null()
   real(kind=r_def), allocatable :: basis_w2(:,:,:)
   integer :: dim_w2
 
@@ -2776,12 +2863,17 @@ subroutine invoke_sample_poly_flux( flux, wind, density, stencil_extent, evaluat
   if(wind_proxy%is_dirty(depth=1) ) then
     call wind_proxy%halo_exchange(depth=1)
   end if
-  ! This needs extending for larger haloes
-  if(density_proxy%is_dirty(depth=1) ) then
-    call density_proxy%halo_exchange(depth=1)
+  swap = .false.
+  do d = 1,stencil_extent+1
+    if(density_proxy%is_dirty(depth=d) ) swap = .true.
+  end do
+  if ( swap )  call density_proxy%halo_exchange(depth=stencil_extent+1)
+  if(flux_proxy%is_dirty(depth=1) ) then
+    call flux_proxy%halo_exchange(depth=1)
   end if
 
-  do cell = 1, flux_proxy%vspace%get_ncell()
+  mesh => flux%get_mesh()
+  do cell = 1,mesh%get_last_halo_cell(1)
 
       call sample_poly_flux_code( nlayers,                     &
                                   flux_proxy%data,             &
@@ -2807,7 +2899,7 @@ subroutine invoke_sample_poly_adv( adv, wind, tracer, stencil_extent, evaluator)
 
   use sample_poly_adv_kernel_mod, only: sample_poly_adv_code
   use stencil_dofmap_mod,          only: stencil_dofmap_type, STENCIL_CROSS
-  use log_mod, only : log_event, LOG_LEVEL_ERROR
+  use mesh_mod,                    only: mesh_type
 
   implicit none
 
@@ -2829,7 +2921,10 @@ subroutine invoke_sample_poly_adv( adv, wind, tracer, stencil_extent, evaluator)
   integer :: cell
   integer :: nlayers
   integer :: stencil_size
-  
+  integer :: d
+  logical :: swap
+  type(mesh_type), pointer :: mesh => null()
+
   real(kind=r_def), allocatable :: basis_w2(:,:,:)
   integer :: dim_w2
 
@@ -2858,12 +2953,17 @@ subroutine invoke_sample_poly_adv( adv, wind, tracer, stencil_extent, evaluator)
   if(wind_proxy%is_dirty(depth=1) ) then
     call wind_proxy%halo_exchange(depth=1)
   end if
-  ! This needs extending for larger haloes
-  if(tracer_proxy%is_dirty(depth=1) ) then
-    call tracer_proxy%halo_exchange(depth=1)
+  swap = .false.
+  do d = 1,stencil_extent+1
+    if(tracer_proxy%is_dirty(depth=d) ) swap = .true.
+  end do
+  if ( swap ) call tracer_proxy%halo_exchange(depth=stencil_extent+1)
+  if(adv_proxy%is_dirty(depth=1) ) then
+    call adv_proxy%halo_exchange(depth=1)
   end if
 
-  do cell = 1, adv_proxy%vspace%get_ncell()
+  mesh => adv%get_mesh()
+  do cell = 1,mesh%get_last_edge_cell()
 
       call sample_poly_adv_code( nlayers,                     &
                                  adv_proxy%data,              &

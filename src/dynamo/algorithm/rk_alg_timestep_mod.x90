@@ -30,11 +30,13 @@ module rk_alg_timestep_mod
                                        get_mass_matrix, &
                                        get_mass_matrix_diagonal, &
                                        get_qr
-
+  use transport_config_mod,      only: operators, &
+                                       transport_operators_fv
   ! PsyKAl-lite kernels
   use psykal_lite_mod,                   only: invoke_copy_field_data,  &
                                                invoke_set_field_scalar, &
-                                               invoke_ru_bd_kernel
+                                               invoke_ru_bd_kernel, &
+                                               invoke_divide_field
   use field_bundle_mod,                  only: clone_bundle, &
                                                bundle_axpy, & 
                                                bundle_axpby, &
@@ -62,7 +64,7 @@ module rk_alg_timestep_mod
   use solver_mod,                        only: solver_algorithm
   use conservation_algorithm_mod,        only: conservation_algorithm
   use rhs_alg_mod,                       only: rhs_alg
-  use advection_alg_mod,                 only: advection_alg
+  use advection_alg_mod,                 only: advection_alg, advection_alg_init
   use si_solver_alg_mod,                 only: si_solver_alg, si_solver_init
 
 
@@ -74,6 +76,7 @@ module rk_alg_timestep_mod
   ! 'State' items that need to be created once but used every step
   type( field_type ), allocatable :: state(:), state_n(:), rhs(:), inc(:)
   type( field_type ), allocatable :: rhs_prediction(:,:)
+  type( field_type )              :: mt_lumped
 
   public :: rk_alg_init
   public :: rk_alg_step
@@ -88,6 +91,7 @@ contains
   !> @param[inout] theta Potential temperature
 
   subroutine rk_alg_init( mesh_id, u, rho, theta)
+    use matrix_vector_kernel_mod, only: matrix_vector_kernel_type
     implicit none
 
     ! Mesh
@@ -100,7 +104,8 @@ contains
     type(function_space_type), pointer :: theta_fs => null()
     type(function_space_type), pointer :: u_fs     => null()
     type(function_space_type), pointer :: rho_fs   => null()
-
+    type(field_type)                   :: ones
+    type(operator_type)                :: mm_wt
 
     ! Timestepping variables
     integer :: stage
@@ -144,6 +149,15 @@ contains
     call invoke_copy_field_data(u,     state(1))
     call invoke_copy_field_data(theta, state(2))
     call invoke_copy_field_data(rho,   state(3))
+
+    call advection_alg_init(mesh_id)
+
+    mm_wt = get_mass_matrix(5)
+    ones  = field_type( vector_space = theta_fs )
+    mt_lumped  = field_type( vector_space = theta_fs )
+    call invoke_set_field_scalar( 1.0_r_def, ones )
+    call invoke_set_field_scalar( 0.0_r_def, mt_lumped )
+    call invoke(matrix_vector_kernel_type( mt_lumped, ones, mm_wt ) )
 
     call log_event( "Dynamo: initialised timestepping algorithm", LOG_LEVEL_INFO )
 
@@ -235,17 +249,23 @@ contains
 
       ! Invert mass matrices
       if( wtheta_on ) then
-        call solver_algorithm( inc(2), rhs(2),       &
-                               mesh_id, chi, method, mm=mm_wtheta,&
-                               mmd=mm_diagonal_wtheta, &
-                               preconditioner_choice=preconditioner )
+        if ( operators == transport_operators_fv) then
+          ! Use lumped mass matrix
+          call invoke_divide_field( rhs(2), mt_lumped, inc(2) )
+        else
+          ! Use full mass matrix
+          call solver_algorithm( inc(2), rhs(2), &
+                                 mesh_id, chi, method, mm=mm_wtheta, &
+                                 mmd=mm_diagonal_wtheta, &
+                                 preconditioner_choice=preconditioner )
+        end if
       else
-        call solver_algorithm( inc(2), rhs(2),       &
-                               mesh_id, chi, method, mm=mm_w0,&
+        call solver_algorithm( inc(2), rhs(2), &
+                               mesh_id, chi, method, mm=mm_w0, &
                                mmd=mm_diagonal_w0, &
                                preconditioner_choice=preconditioner )
       end if
-      call solver_algorithm( inc(1), rhs(1),       &
+      call solver_algorithm( inc(1), rhs(1), &
                              mesh_id,, chi, method, mm=mm_w2, &
                              mmd=mm_diagonal_w2, & 
                              preconditioner_choice=preconditioner )

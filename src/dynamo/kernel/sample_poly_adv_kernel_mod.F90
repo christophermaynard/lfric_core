@@ -155,7 +155,7 @@ subroutine sample_poly_adv_code( nlayers,              &
     dft = 1     
     ! Compute x stencil
     ! stencil_dir is East if u < 0 otherwise it is West
-    if (  u(1,k+dft) > 0.0_r_def ) then
+    if (  u(1,k+dft) >= 0.0_r_def ) then
       dir = W
     else
       dir = E
@@ -175,7 +175,7 @@ subroutine sample_poly_adv_code( nlayers,              &
 
     ! Compute y stencil
     ! stencil_dir is north if v < 0 otherwise it is south
-    if (  u(2,k+dft) > 0.0_r_def ) then
+    if (  u(2,k+dft) >= 0.0_r_def ) then
       dir = S
     else
       dir = N
@@ -194,7 +194,7 @@ subroutine sample_poly_adv_code( nlayers,              &
     advection_update = advection_update + abs(u(2,k+dft))*polynomial_tracer
    
     ! Compute z stencil, dir < 0 if w > 0
-    if (  u(3,k+dft) > 0.0_r_def ) then
+    if (  u(3,k+dft) >= 0.0_r_def ) then
       dir = -1
     else
       dir = 1

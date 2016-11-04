@@ -26,6 +26,8 @@ module advection_alg_mod
   use operator_mod,                   only: operator_type
   use psykal_lite_mod,                only: invoke_set_field_scalar, &
                                             invoke_multiply_field, &
+                                            invoke_sample_poly_flux, &
+                                            invoke_sample_poly_adv, &
                                             invoke_rtheta_bd_kernel
   use quadrature_mod,                 only: quadrature_type, GAUSSIAN
   use rrho_kernel_mod,                only: rrho_kernel_type
@@ -42,12 +44,53 @@ module advection_alg_mod
   use vorticity_advection_kernel_mod, only: vorticity_advection_kernel_type
   use vorticity_rhs_kernel_mod,       only: vorticity_rhs_kernel_type
   use derived_config_mod,             only: bundle_size 
+
+  use transport_config_mod,           only: operators, &
+                                            fv_flux_order, &
+                                            fv_advective_order, &
+                                            transport_operators_fv, &
+                                            transport_operators_fem
+  use log_mod,                        only: log_event,         &
+                                            LOG_LEVEL_ERROR
+  use evaluator_xyz_mod,              only: evaluator_xyz_type
   implicit none
 
   private
+  integer(i_def) :: flux_stencil_extent, &
+                    advective_stencil_extent
+
   public :: advection_alg
+  public :: advection_alg_init
 
 contains
+!>@brief Initialisation routine to advection algortithm
+  subroutine advection_alg_init(mesh_id)
+    use mesh_mod,                          only: mesh_type
+    use mesh_collection_mod,               only: mesh_collection
+    use sample_poly_flux_kernel_mod,       only: sample_poly_flux_init
+    use sample_poly_adv_kernel_mod,        only: sample_poly_adv_init
+    
+    integer(i_def),  intent(in) :: mesh_id
+
+    type(mesh_type), pointer :: mesh => null()
+
+    if ( operators == transport_operators_fv ) then
+      if ( element_order == 0 ) then
+        mesh => mesh_collection%get_mesh( mesh_id )
+        call sample_poly_flux_init(fv_flux_order, mesh%get_nlayers())
+        call sample_poly_adv_init (fv_advective_order, mesh%get_nlayers())
+        ! Compute stencil extents
+        flux_stencil_extent      = int(real(fv_flux_order+1)/2.0,i_def)
+        advective_stencil_extent = int(real(fv_advective_order+1)/2.0,i_def)
+      else
+        call log_event( "Dynamo: subgrid mappings needed for FV MoL with high order elements", LOG_LEVEL_ERROR )
+      end if
+    end if
+
+
+  end subroutine advection_alg_init
+
+!=============================================================================!
 !>@details A wrapper algorithm for computing the advection of the prognostic
 !>         equations, namely:
 !>         \f[ \mathbf{R_u} = \xi \times \frac{\mathbf{F}}{\rho} \f]
@@ -86,9 +129,8 @@ contains
   type(field_type), pointer :: u ,theta, rho, theta_np1, theta_n => null()
   type(field_type)          :: r_xi, mass_flux, r_rho, ones 
 
-  type(function_space_type), pointer :: xi_fs  => null()
-  type(function_space_type), pointer :: u_fs   => null()
-  type(function_space_type), pointer :: rho_fs => null()
+  type(function_space_type), pointer :: xi_fs, u_fs, rho_fs, theta_fs  => null()
+  type(evaluator_xyz_type)           :: evaluator_u, evaluator_theta
 
   mm_w1  => get_mass_matrix(1)
   mm_w2  => get_mass_matrix(2)
@@ -106,16 +148,18 @@ contains
   theta_np1 => state_np1(2)
   theta_n => state_n(2)
  
-  u_fs   => function_space_collection%get_fs( mesh, &
-                                              element_order, &
-                                              u%which_function_space()   )
-  xi_fs  => function_space_collection%get_fs( mesh, &
-                                              element_order, &
-                                              xi%which_function_space()  )
-  rho_fs => function_space_collection%get_fs( mesh, &
-                                              element_order, &
-                                              rho%which_function_space() )
-
+  u_fs     => function_space_collection%get_fs( mesh, &
+                                                element_order, &
+                                                u%which_function_space() )
+  xi_fs    => function_space_collection%get_fs( mesh, &
+                                                element_order, &
+                                                xi%which_function_space() )
+  rho_fs   => function_space_collection%get_fs( mesh, &
+                                                element_order, &
+                                                rho%which_function_space() )
+  theta_fs => function_space_collection%get_fs( mesh, &
+                                                element_order, &
+                                                theta%which_function_space() )
 
   mass_flux = field_type( vector_space = u_fs   )
   r_xi      = field_type( vector_space = xi_fs  )
@@ -129,12 +173,19 @@ contains
   ! Compute advection terms
   ! 1) mass flux ( F = rho * u )
   call invoke_set_field_scalar( 0.0_r_def, advection(1) ) 
-  call invoke(flux_rhs_kernel_type( advection(1), u, rho, chi, qr ) )
-  call invoke(enforce_bc_kernel_type( advection(1) ) )
-  call invoke_set_field_scalar( 0.0_r_def, mass_flux ) 
-  call solver_algorithm( mass_flux, advection(1), mesh, chi, method, &
-                         mm=mm_w2, mmd=mmd_w2, &
-                         preconditioner_choice=solver_preconditioner_diagonal)
+  select case(operators)
+    case(transport_operators_fv)
+     evaluator_u = evaluator_xyz_type(u_fs%get_ndf( ), u_fs%get_nodes( ))
+     call invoke_sample_poly_flux( mass_flux, u, rho, &
+                                   flux_stencil_extent, evaluator_u )
+    case(transport_operators_fem)      
+      call invoke(flux_rhs_kernel_type( advection(1), u, rho, chi, qr ) )
+      call invoke(enforce_bc_kernel_type( advection(1) ) )
+      call invoke_set_field_scalar( 0.0_r_def, mass_flux ) 
+      call solver_algorithm( mass_flux, advection(1), mesh, chi, method, &
+                             mm=mm_w2, mmd=mmd_w2, &
+                             preconditioner_choice=solver_preconditioner_diagonal)
+  end select
 
   ! 2) Vorticity advection ( F/rho \cross curl(u))
   call invoke_set_field_scalar( 0.0_r_def, r_xi )
@@ -150,9 +201,18 @@ contains
   ! 3) theta_advection ( F/rho . grad(theta) )
   call invoke_set_field_scalar( 0.0_r_def, advection(2) )
   if ( wtheta_on ) then
-    call invoke (rtheta_wtheta_kernel_type ( advection(2), theta, u, qr))
-    call invoke_rtheta_bd_kernel ( advection(2), theta, u, ones, qr )
+    select case(operators)
+      case(transport_operators_fv)
+        evaluator_theta = evaluator_xyz_type(theta_fs%get_ndf( ), theta_fs%get_nodes( ))
+        call invoke_sample_poly_adv( advection(2), u, theta, &
+                                     advective_stencil_extent, evaluator_theta )
+        call invoke_multiply_field(-1.0_r_def, advection(2), advection(2)) 
+      case(transport_operators_fem)
+        call invoke (rtheta_wtheta_kernel_type ( advection(2), theta, u, qr))
+        call invoke_rtheta_bd_kernel ( advection(2), theta, u, ones, qr )
+     end select
   else
+    ! Only FEM operators available
     call invoke( rtheta_kernel_type( advection(2), theta, mass_flux, rho, qr) )
   end if
   if ( supg ) &

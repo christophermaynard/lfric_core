@@ -1,0 +1,60 @@
+!-------------------------------------------------------------------------------
+! (c) The copyright relating to this work is owned jointly by the Crown,
+! Met Office and NERC 2014.
+! However, it has been created with the help of the GungHo Consortium,
+! whose members are identified at https://puma.nerc.ac.uk/trac/GungHo/wiki
+!-------------------------------------------------------------------------------
+
+!>@brief Write checksums to file for input fields
+module checksum_alg_mod
+
+  implicit none
+
+  private
+  public :: checksum_alg
+
+contains
+
+  subroutine checksum_alg(field1, name1, field2, name2, field3, name3)
+    use field_mod,       only: field_type
+    use psykal_lite_mod, only: invoke_inner_prod
+    use ESMF
+    use constants_mod,   only: i_def, r_def
+    use log_mod,         only: log_event,         &
+                               LOG_LEVEL_ERROR
+    implicit none
+
+    type(field_type), intent(in) :: field1, field2, field3
+    character(len=*), intent(in) :: name1, name2, name3
+
+    type(ESMF_VM)      :: vm
+    integer(i_def)     :: rc
+    integer(i_def)     :: stat
+    integer(i_def)     :: petCount, localPET
+    real(r_def)        :: chksum
+
+    call ESMF_VMGetCurrent(vm=vm, rc=rc)
+    call ESMF_VMGet(vm, localPet=localPET, petCount=petCount, rc=rc)
+
+    ! Write checksums to file
+    open( 9, file="dynamo-checksums.txt", status="replace", iostat=stat)
+    if (stat /= 0) then
+      call log_event( "Unable to open checksum file", LOG_LEVEL_ERROR )
+    end if
+    if ( petCount == 1_i_def ) then
+      call field1%write_checksum( 9, trim(name1) )
+      call field2%write_checksum( 9, trim(name2) )
+      call field3%write_checksum( 9, trim(name3) )
+    else
+      ! Use inner product as a proxy until we get correct mpi checksums
+      call invoke_inner_prod(field1, field1, chksum) 
+      write(9, '(A,A,A,E18.12)' ) 'Inner product checksum ',trim(name1),' = ',chksum
+      call invoke_inner_prod(field2, field2, chksum) 
+      write(9, '(A,A,A,E18.12)' ) 'Inner product checksum ',trim(name2),' = ',chksum
+      call invoke_inner_prod(field3, field3, chksum) 
+      write(9, '(A,A,A,E18.12)' ) 'Inner product checksum ',trim(name3),' = ',chksum
+    end if
+    close( 9 )
+  end subroutine checksum_alg
+end module checksum_alg_mod
+

@@ -2,7 +2,8 @@
 {%- set science_configurations = 'runge-kutta', 'semi-implicit',
                                  'semi-implicit-360ts', 'si-helmholtz', 
                                  'transport-cosmic', 'transport-rk',
-                                 'biperiodic_p0_gw', 'biperiodic_p1_gw' %}
+                                 'biperiodic_p0_gw', 'biperiodic_p1_gw',
+                                 'dcmip301' %}
 {%- set groups = {'developer': ['science(semi-implicit)',
                                 'science(si-helmholtz)',
                                 'science(runge-kutta)',
@@ -15,6 +16,7 @@
                                 'godlines',
                                 'cleanlines'],
                   'nightly': ['science(semi-implicit-360ts, True)',
+                              'science(dcmip301, True)',
                               'check_compilers(full-debug, True)',
                               'godlines(True)',
                               'publish_index']} %}

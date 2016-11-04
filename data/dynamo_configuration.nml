@@ -5,6 +5,7 @@
   fplane      = .false.
   f_lat_deg   = 45.0
 /
+/
 
 &extrusion
   method           = 'uniform'
@@ -49,7 +50,7 @@
 
 &initial_wind
   profile        = 'none'
-  u0             = 38.61073731
+  u0             = 0.0
   v0             = 0.0
   rotation_angle = 0.0
 /

@@ -17,11 +17,15 @@ module lhs_alg_mod
   use field_mod,                         only: field_type
   use function_space_mod,                only: function_space_type
 
+  use finite_element_config_mod,         only: element_order, wtheta_on
+  use transport_config_mod,              only: operators, &
+                                               transport_operators_fv
   implicit none
 
-  type(field_type),              private      :: ones, w2_multiplicity, f_star, r_rho
-  type(field_type), allocatable, private      :: lhs_tmp(:)
-  type(function_space_type), pointer, private :: u_fs => null()
+  type(field_type),              private :: ones, w2_multiplicity, f_star, r_rho
+  type(field_type), allocatable, private :: lhs_tmp(:)
+  type( field_type )                     :: mt_lumped
+  type(function_space_type), pointer     :: u_fs => null()
 
   private
   public  :: lhs_alg
@@ -33,19 +37,21 @@ contains
 !>@brief Initialise fields to be used for computing the lhs
   subroutine lhs_init(state)
     use field_bundle_mod,          only: clone_bundle
-    use finite_element_config_mod, only: element_order
     use psykal_lite_mod,           only: invoke_set_field_scalar
     use mesh_mod,                  only: mesh_type
     use multiplicity_kernel_mod,   only: multiplicity_kernel_type
     use derived_config_mod,        only: si_bundle_size
+    use matrix_vector_kernel_mod,  only: matrix_vector_kernel_type
+    use operator_mod,              only: operator_type
 
     implicit none
 
     type(field_type), intent(in) :: state(si_bundle_size)
 
-    type(function_space_type), pointer :: rho_fs => null()
+    type(function_space_type), pointer :: rho_fs, theta_fs => null()
     integer(i_def),                    :: mesh_id
     integer                            :: fs_handle
+    type(operator_type)                :: mm_wt
 
     allocate( lhs_tmp(si_bundle_size) )
     call clone_bundle(state, lhs_tmp, si_bundle_size)
@@ -59,6 +65,17 @@ contains
     ones = field_type( vector_space = rho_fs )
     call invoke_set_field_scalar( 1.0_r_def, ones )
     r_rho = field_type( vector_space = rho_fs )
+
+    if ( wtheta_on .and.  operators == transport_operators_fv) then
+      fs_handle = state(2)%which_function_space()
+      theta_fs => function_space_collection%get_fs(mesh_id, element_order, fs_handle)
+      mm_wt = get_mass_matrix(5)
+      ones  = field_type( vector_space = theta_fs )
+      mt_lumped  = field_type( vector_space = theta_fs )
+      call invoke_set_field_scalar( 1.0_r_def, ones )
+      call invoke_set_field_scalar( 0.0_r_def, mt_lumped)
+      call invoke( matrix_vector_kernel_type(mt_lumped, ones, mm_wt) )
+    end if
 
     ! for computing lhs rho
     fs_handle = state(1)%which_function_space()
@@ -123,7 +140,8 @@ contains
                                                invoke_set_field_scalar,   &
                                                invoke_rtheta_bd_kernel,   &
                                                invoke_exner_gradient_bd_kernel, &
-                                               invoke_pert_pressure_gradient_bd_kernel
+                                               invoke_pert_pressure_gradient_bd_kernel, &
+                                               invoke_multiply_field_data
   use matrix_vector_kernel_mod,          only: matrix_vector_kernel_type
   use operator_mod,                      only: operator_type
   use quadrature_mod,                    only: quadrature_type, GAUSSIAN
@@ -132,7 +150,6 @@ contains
   use w3_solver_kernel_mod,              only: w3_solver_kernel_type
   use derived_config_mod,                only: si_bundle_size, bundle_size
   use lhs_exner_kernel_mod,              only: lhs_exner_kernel_type
-  use finite_element_config_mod,         only: element_order, wtheta_on
 
   implicit none
 
@@ -207,7 +224,14 @@ contains
   call invoke_set_field_scalar( 0.0_r_def, lhs(2) )
   if(wtheta_on) then
     call invoke_rtheta_bd_kernel ( lhs_tmp(2), theta_ref, u, ones, qr )
-    call invoke( rtheta_wtheta_kernel_type( lhs_tmp(2), theta_ref, u, qr) )
+    if ( operators == transport_operators_fv ) then
+      ! Use lumed mass matrix
+      call invoke( rtheta_wtheta_kernel_type( lhs_tmp(2), theta_ref, u, qr ) )
+      call invoke_multiply_field_data( theta, mt_lumped, lhs(2) )
+    else
+      ! Use full mass matrix
+      call invoke( rtheta_wtheta_kernel_type( lhs_tmp(2), theta_ref, u, qr) )
+    end if
   else
     call invoke( rtheta_kernel_type( lhs_tmp(2), theta_ref, u, ones, qr) )
   end if
