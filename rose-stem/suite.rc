@@ -19,6 +19,8 @@
                                 'cleanlines'],
 		  'csar':    ['science(robert)',
                               'science(robert-moist)',
+                              'science(biperiodic_p0_gw)',
+                              'science(dcmip301)',
                               'science(sbr)'],
                   'nightly': ['science(semi-implicit-360ts, True, T000360)',
                               'science(dcmip301, True, T000018)',
