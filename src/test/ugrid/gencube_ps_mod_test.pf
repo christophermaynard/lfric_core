@@ -4,10 +4,10 @@
 ! However, it has been created with the help of the GungHo Consortium, 
 ! whose members are identified at https://puma.nerc.ac.uk/trac/GungHo/wiki
 !-------------------------------------------------------------------------------
-module gencube_mod_test
+module gencube_ps_mod_test
 
   use constants_mod,     only: i_def, r_def
-  use gencube_mod,       only: gencube_ps_type
+  use gencube_ps_mod,    only: gencube_ps_type
   use pFUnit_Mod
 
   implicit none
@@ -16,7 +16,7 @@ module gencube_mod_test
   public :: test_all
 
   @TestCase
-  type, extends(TestCase), public :: gencube_test_type
+  type, extends(TestCase), public :: gencue_ps_test_type
     private
     integer(i_def), allocatable :: faces_on_face(:,:)
     integer(i_def), allocatable :: nodes_on_face(:,:)
@@ -27,7 +27,7 @@ module gencube_mod_test
     procedure setUp
     procedure tearDown
     procedure test_all
-  end type gencube_test_type
+  end type gencue_ps_test_type
 
   integer(kind=i_def), parameter :: ndivs = 3
   integer(kind=i_def), parameter :: nsmooth = 1
@@ -39,7 +39,7 @@ contains
 
     implicit none
 
-    class(gencube_test_type), intent(inout) :: this
+    class(gencue_ps_test_type), intent(inout) :: this
 
     allocate( this%faces_on_face(4, 6*ndivs*ndivs) )
     allocate( this%nodes_on_face(4, 6*ndivs*ndivs) )
@@ -54,7 +54,7 @@ contains
 
     implicit none
 
-    class(gencube_test_type), intent(inout) :: this
+    class(gencue_ps_test_type), intent(inout) :: this
 
     deallocate( this%faces_on_face )
     deallocate( this%nodes_on_face )
@@ -70,7 +70,7 @@ contains
 
     implicit none
 
-    class(gencube_test_type), intent(inout) :: this
+    class(gencue_ps_test_type), intent(inout) :: this
 
     type(gencube_ps_type)                  :: csgen
     integer(kind=i_def)                    :: nodes, edges, faces
@@ -129,4 +129,4 @@ contains
 
   end subroutine test_all
 
-end module gencube_mod_test
+end module gencube_ps_mod_test

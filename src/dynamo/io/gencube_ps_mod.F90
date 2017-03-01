@@ -21,7 +21,7 @@
 !!      +---+
 !! 
 !-------------------------------------------------------------------------------
-module gencube_mod
+module gencube_ps_mod
 !-------------------------------------------------------------------------------
 use ugrid_generator_mod,   only : ugrid_generator_type
 use constants_mod,         only : r_def, i_def
@@ -1100,4 +1100,4 @@ subroutine smooth(self)
 
 end subroutine smooth
 
-end module gencube_mod
+end module gencube_ps_mod
