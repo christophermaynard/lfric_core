@@ -1,0 +1,57 @@
+!-------------------------------------------------------------------------------
+! (c) The copyright relating to this work is owned jointly by the Crown, 
+! Met Office and NERC 2014. 
+! However, it has been created with the help of the GungHo Consortium, 
+! whose members are identified at https://puma.nerc.ac.uk/trac/GungHo/wiki
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+module enforce_operator_bc_kernel_mod_test
+
+  use constants_mod, only : r_def, i_def
+  use pFUnit_Mod
+
+  implicit none
+
+contains
+
+  @test
+  subroutine test_of_enforce_operator_bc()
+
+    use enforce_operator_bc_kernel_mod, only : enforce_operator_bc_code
+
+    implicit none
+
+    real(kind=r_def)            :: d(4,2),dd(4,2)
+    integer(kind=i_def)         :: bc(4,2)
+    real(kind=r_def), parameter :: tol = 1.0e-14_r_def
+
+    ! Make up a matrix
+    d(1,:) = (/ 2.0_r_def, -2.0_r_def /)
+    d(2,:) = (/ 3.0_r_def, -1.0_r_def /)
+    d(3,:) = (/ 0.4_r_def,  1.3_r_def /)
+    d(4,:) = (/ -4.5_r_def, 7.9_r_def /)
+
+    dd(1,:) = (/ 0.0_r_def,  0.0_r_def /)
+    dd(2,:) = (/ 3.0_r_def, -1.0_r_def /)
+    dd(3,:) = (/ 0.4_r_def,  1.3_r_def /)
+    dd(4,:) = (/ 0.0_r_def,  0.0_r_def /)
+    
+    bc(:,:) = 1_i_def
+    bc(1,1) = 0_i_def
+    bc(4,2) = 0_i_def
+ 
+    call enforce_operator_bc_code(1, &
+                                  1, &
+                                  d, &
+                                  1, &
+                                  4, &
+                                  2, &
+                                  bc)
+
+
+    @assertEqual( dd, d, tol )
+
+  end subroutine test_of_enforce_operator_bc
+
+end module enforce_operator_bc_kernel_mod_test

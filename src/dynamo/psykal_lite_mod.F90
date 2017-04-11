@@ -3868,4 +3868,56 @@ end subroutine invoke_sample_poly_adv
 
   end subroutine invoke_mpi_calc_cell_orientation
 
+!=============================================================================!
+! #999 Requires psyclone support for enforce_operator_bc_code,
+! being implemented as part of issue #22
+! #1001 will implement algortihm layer calls to the kernel
+  subroutine invoke_enforce_operator_bc_kernel_type(op)
+    use enforce_operator_bc_kernel_mod, only: enforce_operator_bc_code
+    use mesh_mod, only: mesh_type
+    type(operator_type), intent(inout) :: op
+    integer, pointer                   :: boundary_dofs(:,:) => null()
+    integer                            :: cell, ncell_3d
+    integer                            :: ndf1, ndf2
+    type(mesh_type), pointer           :: mesh => null()
+    integer                            :: nlayers
+    type(operator_proxy_type)          :: op_proxy
+    !
+    ! Initialise operator proxies
+    !
+    op_proxy = op%get_proxy()
+    !
+    ! Initialise number of layers
+    !
+    nlayers = op_proxy%fs_to%get_nlayers()
+    !
+    ! Create a mesh object
+    !
+    mesh => op%get_mesh()
+    !
+    ! Get size of operator array
+    !
+    ncell_3d = op_proxy%ncell_3d
+    ndf1 = op_proxy%fs_to%get_ndf()
+    ndf2 = op_proxy%fs_from%get_ndf()
+    !
+    ! Pull out boundary array
+    !
+    boundary_dofs => op_proxy%fs_to%get_boundary_dofs()
+    !
+    ! Call kernels and communication routines
+    !
+    do cell=1,mesh%get_last_halo_cell(1)
+      !
+      call enforce_operator_bc_code(cell, &
+                                    nlayers, &
+                                    op_proxy%local_stencil, &
+                                    ncell_3d, &
+                                    ndf1, &
+                                    ndf2, &
+                                    boundary_dofs)
+    end do 
+  end subroutine invoke_enforce_operator_bc_kernel_type
+
+
 end module psykal_lite_mod
