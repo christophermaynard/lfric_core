@@ -2598,9 +2598,9 @@ subroutine invoke_subgrid_coeffs(a0,a1,a2,rho,direction,rho_approximation_stenci
     ! 1DX --> |4|2|1|3|5|  OR  1DY -->  |1|
     !                                   |2|
     !                                   |4|
-    if (direction .EQ. x_direction) then
+    if (direction == x_direction) then
       map => rho_proxy%vspace%get_stencil_dofmap(STENCIL_1DX,rho_approximation_stencil_extent)
-    elseif (direction .EQ. y_direction) then
+    elseif (direction == y_direction) then
       map => rho_proxy%vspace%get_stencil_dofmap(STENCIL_1DY,rho_approximation_stencil_extent)
     end if
     rho_stencil_size = map%get_size()
@@ -2711,9 +2711,9 @@ subroutine invoke_conservative_fluxes(    rho,          &
   ! 1DX --> |4|2|1|3|5|  OR  1DY -->  |1|
   !                                   |2|
   !                                   |4|
-  if (direction .EQ. x_direction) then
+  if (direction == x_direction) then
     map => rho_proxy%vspace%get_stencil_dofmap(STENCIL_1DX,stencil_extent)
-  elseif (direction .EQ. y_direction) then
+  elseif (direction == y_direction) then
     map => rho_proxy%vspace%get_stencil_dofmap(STENCIL_1DY,stencil_extent)
   end if
   stencil_size = map%get_size()
@@ -2855,6 +2855,7 @@ end subroutine invoke_calc_departure_wind
 subroutine invoke_calc_deppts(  u_n,                  &
                                 u_np1,                &
                                 dep_pts,              &
+                                cell_orientation,     &
                                 direction,            &
                                 dep_pt_method,        &
                                 dep_pt_stencil_extent )
@@ -2870,6 +2871,7 @@ subroutine invoke_calc_deppts(  u_n,                  &
   type( field_type ), intent( in )    :: u_n
   type( field_type ), intent( in )    :: u_np1
   type( field_type ), intent( inout ) :: dep_pts
+  type( field_type ), intent( in )    :: cell_orientation
   integer, intent(in)                 :: direction
   integer, intent(in)                 :: dep_pt_method
   integer, intent(in)                 :: dep_pt_stencil_extent
@@ -2877,15 +2879,20 @@ subroutine invoke_calc_deppts(  u_n,                  &
   type( field_proxy_type )        :: u_n_proxy
   type( field_proxy_type )        :: u_np1_proxy
   type( field_proxy_type )        :: dep_pts_proxy
+  type( field_proxy_type )        :: cell_orientation_proxy
   type(stencil_dofmap_type), pointer  :: map=>null()
+  type(stencil_dofmap_type), pointer  :: map_w3=>null()
 
   integer, pointer        :: stencil_map_w2(:,:) => null()
+  integer, pointer        :: stencil_map_w3(:,:) => null()
   integer                 :: transport_stencil_size
 
   integer                 :: cell
   integer                 :: nlayers
   integer                 :: ndf_w2
   integer                 :: undf_w2
+  integer                 :: ndf_w3
+  integer                 :: undf_w3
   type(mesh_type), pointer :: mesh => null()
   integer                  :: d
   logical                  :: swap
@@ -2893,14 +2900,20 @@ subroutine invoke_calc_deppts(  u_n,                  &
   u_n_proxy    = u_n%get_proxy()
   u_np1_proxy  = u_np1%get_proxy()
   dep_pts_proxy = dep_pts%get_proxy()
+  cell_orientation_proxy = cell_orientation%get_proxy()
 
   ndf_w2  = u_n_proxy%vspace%get_ndf()
   undf_w2 = u_n_proxy%vspace%get_undf()
 
-  if (direction .EQ. x_direction) then
+  ndf_w3  =   cell_orientation_proxy%vspace%get_ndf()
+  undf_w3 =   cell_orientation_proxy%vspace%get_undf()
+
+  if (direction == x_direction) then
     map => u_n_proxy%vspace%get_stencil_dofmap(STENCIL_1DX,dep_pt_stencil_extent)
-  elseif (direction .EQ. y_direction) then
+    map_w3 => cell_orientation_proxy%vspace%get_stencil_dofmap(STENCIL_1DX,dep_pt_stencil_extent)
+  elseif (direction == y_direction) then
     map => u_n_proxy%vspace%get_stencil_dofmap(STENCIL_1DY,dep_pt_stencil_extent)
+    map_w3 => cell_orientation_proxy%vspace%get_stencil_dofmap(STENCIL_1DY,dep_pt_stencil_extent)
   endif
   transport_stencil_size = map%get_size()
 
@@ -2921,6 +2934,7 @@ subroutine invoke_calc_deppts(  u_n,                  &
   do cell=1,mesh%get_last_halo_cell(1)
 
     stencil_map_w2 => map%get_dofmap(cell)
+    stencil_map_w3 => map_w3%get_dofmap(cell)
 
     call calc_departure_point_code( nlayers,                      &
                                     dep_pts_proxy%data,           &
@@ -2928,6 +2942,10 @@ subroutine invoke_calc_deppts(  u_n,                  &
                                     undf_w2,                      &
                                     ndf_w2,                       &
                                     stencil_map_w2,               &
+                                    undf_w3,                      &
+                                    ndf_w3,                       &
+                                    stencil_map_w3,               &
+                                    cell_orientation_proxy%data,  &
                                     u_n_proxy%data,               &
                                     u_np1_proxy%data,             &
                                     direction,                    &

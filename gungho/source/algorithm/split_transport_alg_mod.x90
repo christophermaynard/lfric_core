@@ -28,8 +28,8 @@ module split_transport_alg_mod
                                                invoke_copy_field_data,         &
                                                invoke_axpby
 
-  use oned_advective_density_update_alg_mod,     only: oned_advective_density_update_alg
-  use oned_conservative_flux_alg_mod,    only: oned_conservative_flux_alg
+  use oned_advective_density_update_alg_mod,  only: oned_advective_density_update_alg
+  use oned_conservative_flux_alg_mod,         only: oned_conservative_flux_alg
 
   implicit none
 
@@ -46,8 +46,8 @@ contains
 !> @param[in] u_n     Winds at time level n
 !> @param[in] u_np1   Winds at time level n+1
 !> @param[in] rho     Density at time level n
-!> @param[in] chi     the fem coordinate field array
-!> @param[inout] mass_flux   mass fluxes in 2D used to update density
+!> @param[in] chi     The fem coordinate field array
+!> @param[inout] mass_flux   Mass fluxes in 2D used to update density
   subroutine split_transport_alg( u_n,            &
                                   u_np1,          &
                                   rho,            &
@@ -65,6 +65,7 @@ contains
     type( field_type ) :: departure_wind_n, departure_wind_np1, dep_pts_x, dep_pts_y
     type( field_type ) :: mass_flux_x, mass_flux_y
     type( field_type ) :: rho_n, rho_adv_x, rho_adv_y, rho_hat_adv_x, rho_hat_adv_y
+    type( field_type ) :: cell_orientation
 
     type(function_space_type), pointer :: rho_fs   => null()
     type(function_space_type), pointer :: u_fs     => null()
@@ -85,6 +86,8 @@ contains
     rho_hat_adv_x      = field_type( vector_space = rho_fs )
     rho_hat_adv_y      = field_type( vector_space = rho_fs )
 
+    cell_orientation   = field_type( vector_space = rho_fs )
+
     call invoke_copy_field_data(rho,rho_n)
 
     ! Calculate the departure wind used to calculate the departure points
@@ -93,10 +96,11 @@ contains
 
     ! Calculate the departure points for W2 nodal points at lowest order
     call invoke( set_field_scalar(0.0_r_def,dep_pts_x), &
-                 set_field_scalar(0.0_r_def,dep_pts_y) )
+                 set_field_scalar(0.0_r_def,dep_pts_y), &
+                 set_field_scalar(1.0_r_def,cell_orientation) )
 
-    call invoke_calc_deppts(departure_wind_n,departure_wind_np1,dep_pts_x,x_direction,method,dep_pt_stencil_extent)
-    call invoke_calc_deppts(departure_wind_n,departure_wind_np1,dep_pts_y,y_direction,method,dep_pt_stencil_extent)
+    call invoke_calc_deppts(departure_wind_n,departure_wind_np1,dep_pts_x,cell_orientation,x_direction,method,dep_pt_stencil_extent)
+    call invoke_calc_deppts(departure_wind_n,departure_wind_np1,dep_pts_y,cell_orientation,y_direction,method,dep_pt_stencil_extent)
 
     ! Perform two 1D advective updates in the x and y directions (horizontal)
     call oned_advective_density_update_alg(x_direction,u_n, dep_pts_x, rho_n, rho_adv_x)

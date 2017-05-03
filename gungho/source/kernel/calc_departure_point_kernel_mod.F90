@@ -67,34 +67,46 @@ end function calc_departure_point_kernel_constructor
 !! @param[in]    departure_pt_stencil_length  Length of stencil
 !! @param[in]    undf_w2 Number of unique degrees of freedom for W2
 !! @param[in]    ndf_w2 Number of degrees of freedom per cell in W2
-!! @param[in]    stencil_map_w2  Stencil map in W2 space in Y direction
+!! @param[in]    stencil_map_w2  Stencil map in W2 space
+!! @param[in]    undf_w3 Number of unique degrees of freedom for W3
+!! @param[in]    ndf_w3 Number of degrees of freedom per cell in W3
+!! @param[in]    stencil_map_w3  Stencil map in W3 space
+!! @param[in]    cell_orientation Orientation of cells, inparticular halo cells
 !! @param[in]    u_n Wind in W2 space at time n
 !! @param[in]    u_np1 Wind in W2 space at time n+1
 !! @param[in]    direction Direction in which to calculate departure points
-!! @param[in]    dep_pt_method Enumaration of method to use
+!! @param[in]    dep_pt_method Enumeration of method to use
 subroutine calc_departure_point_code( nlayers,                       &
                                       dep_pts,                       &
                                       departure_pt_stencil_length,   &
                                       undf_w2,                       &
                                       ndf_w2,                        &
                                       stencil_map_w2,                &
+                                      undf_w3,                       &
+                                      ndf_w3,                        &
+                                      stencil_map_w3,                &
+                                      cell_orientation,              &
                                       u_n,                           &
                                       u_np1,                         &
                                       direction,                     &
                                       dep_pt_method )
 
   use biperiodic_deppts_mod, only : calc_dep_point
-  use cosmic_flux_mod, only : calc_stencil_ordering
-  use flux_direction_mod, only : x_direction, y_direction
+  use cosmic_flux_mod,       only : calc_stencil_ordering, w2_dof, reorientate_w2field
+  use flux_direction_mod,    only : x_direction, y_direction
 
   integer, intent(in)                     :: nlayers
   integer, intent(in)                     :: undf_w2
   real(kind=r_def), intent(inout)         :: dep_pts(1:undf_w2)
   integer, intent(in)                     :: departure_pt_stencil_length
   integer, intent(in)                     :: ndf_w2
+  integer, intent(in)                     :: undf_w3
+  integer, intent(in)                     :: ndf_w3
   integer, intent(in)                     :: stencil_map_w2(1:ndf_w2,1:departure_pt_stencil_length)
+  integer, intent(in)                     :: stencil_map_w3(1:ndf_w3,1:departure_pt_stencil_length)
   real(kind=r_def), intent(in)            :: u_n(1:undf_w2)
   real(kind=r_def), intent(in)            :: u_np1(1:undf_w2)
+  real(kind=r_def), intent(inout)         :: cell_orientation(1:undf_w3)
   integer, intent(in)                     :: direction
   integer, intent(in)                     :: dep_pt_method
 
@@ -103,29 +115,54 @@ subroutine calc_departure_point_code( nlayers,                       &
   real(kind=r_def)     :: u_np1_local(1:departure_pt_stencil_length+1)
 
   integer              :: nCellEdges
-  integer              :: k, df, df1, df2
+  integer              :: k, df, df1, df2, ii, jj
   integer              :: stencil_order_out(1:departure_pt_stencil_length)
+
+  real(kind=r_def)     :: unordered_u_n(1:4,1:departure_pt_stencil_length)
+  real(kind=r_def)     :: unordered_u_np1(1:4,1:departure_pt_stencil_length)
+  real(kind=r_def)     :: orientated_unordered_u_n(1:4,1:departure_pt_stencil_length)
+  real(kind=r_def)     :: orientated_unordered_u_np1(1:4,1:departure_pt_stencil_length)
+  real(kind=r_def)     :: orientated_ordered_u_n(1:4,1:departure_pt_stencil_length)
+  real(kind=r_def)     :: orientated_ordered_u_np1(1:4,1:departure_pt_stencil_length)
 
   nCellEdges = departure_pt_stencil_length+1
 
   call calc_stencil_ordering(departure_pt_stencil_length,stencil_order_out)
 
-  if (direction .EQ. x_direction) then
+  if (direction == x_direction) then
     df1 = 1
     df2 = 3
-  elseif (direction .EQ. y_direction) then
+  elseif (direction == y_direction) then
     df1 = 2
     df2 = 4
   end if
 
-  do k=0, nlayers-1
+  do k= 0, nlayers-1
 
-    do df=1,nCellEdges-1
-      u_n_local(df)   = u_n(stencil_map_w2(df1,stencil_order_out(df))+k)
-      u_np1_local(df) = u_np1(stencil_map_w2(df1,stencil_order_out(df))+k)
+    do ii = 1, departure_pt_stencil_length
+      do jj = 1, 4
+        unordered_u_n(jj,ii) = u_n(stencil_map_w2(jj,ii))
+        unordered_u_np1(jj,ii) = u_np1(stencil_map_w2(jj,ii))
+      end do
     end do
-    u_n_local(nCellEdges)   = u_n(stencil_map_w2(df2,stencil_order_out(nCellEdges-1))+k)
-    u_np1_local(nCellEdges) = u_np1(stencil_map_w2(df2,stencil_order_out(nCellEdges-1))+k)
+
+    do ii = 1, departure_pt_stencil_length
+      orientated_unordered_u_n(:,ii) = reorientate_w2field(unordered_u_n(:,ii), int(cell_orientation(stencil_map_w3(1,ii))))
+      orientated_unordered_u_np1(:,ii) = reorientate_w2field(unordered_u_np1(:,ii), int(cell_orientation(stencil_map_w3(1,ii))))
+    end do
+
+    do ii = 1, departure_pt_stencil_length
+      orientated_ordered_u_n(:,ii) = orientated_unordered_u_n(:,stencil_order_out(ii))
+      orientated_ordered_u_np1(:,ii) = orientated_unordered_u_np1(:,stencil_order_out(ii))
+    end do
+
+    nCellEdges = departure_pt_stencil_length+1
+    do ii = 1, nCellEdges-1
+      u_n_local(ii)      = orientated_ordered_u_n(df1,ii)
+      u_np1_local(ii)    = orientated_ordered_u_np1(df1,ii)
+    end do
+    u_n_local(nCellEdges)      = orientated_ordered_u_n(df2,nCellEdges-1)
+    u_np1_local(nCellEdges)    = orientated_ordered_u_np1(df2,nCellEdges-1)
 
     ! xArrival = 0.0 represents the arrival point at a flux edge in a finite
     ! element cell in the local coordinates
