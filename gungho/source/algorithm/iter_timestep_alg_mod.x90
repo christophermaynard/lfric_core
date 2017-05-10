@@ -29,9 +29,8 @@ module iter_timestep_alg_mod
 
   ! PsyKAl-lite kernels
 use psykal_lite_mod,                   only: invoke_axpby, &
-                                             invoke_viscosity
-
-
+                                             invoke_viscosity, &
+                                             invoke_inner_prod
 
   use field_bundle_mod,                  only: clone_bundle, & 
                                                bundle_axpy, & 
@@ -185,6 +184,9 @@ contains
     real(kind=r_def)   :: varalpha, varbeta ! alpha, beta weight to use
                                             ! these may differ from input values
                                             ! during the spinup period
+
+    real(kind=r_def), dimension(3) :: si_err
+
     if ( subroutine_timers ) call timer('iter_timestep_alg')
 
     qr = get_qr()
@@ -239,6 +241,21 @@ contains
         write( log_scratch_space, '(A,2I3)' ) 'loop indices (o, i): ', &
                                                   , outer, inner
         call log_event( log_scratch_space, LOG_LEVEL_INFO )
+
+        ! Write out si residuals
+        call invoke_inner_prod(rhs_np1(1),rhs_np1(1),si_err(1))
+        call invoke_inner_prod(rhs_np1(2),rhs_np1(2),si_err(2))
+        call invoke_inner_prod(rhs_np1(3),rhs_np1(3),si_err(3))
+        write( log_scratch_space, '(A,E16.8)' ) &
+          'Residual in momentum equation:  ',sqrt(si_err(1))
+        call log_event( log_scratch_space, LOG_LEVEL_INFO )
+        write( log_scratch_space, '(A,E16.8)' ) &
+          'Residual in energy equation:    ',sqrt(si_err(2))
+        call log_event( log_scratch_space, LOG_LEVEL_INFO )
+        write( log_scratch_space, '(A,E16.8)' ) &
+          'Residual in continuity equation:',sqrt(si_err(3))
+        call log_event( log_scratch_space, LOG_LEVEL_INFO )
+
         call si_solver_alg(state, rhs_np1, state_n)
         !=== End Section 3.3 ===============================================!
       end do ! INNER
