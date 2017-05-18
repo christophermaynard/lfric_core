@@ -3258,53 +3258,6 @@ end subroutine invoke_calc_deppts
 
 !-------------------------------------------------------------------------------   
 
-!-------------------------------------------------------------------------------
-subroutine invoke_set_boundary_kernel(field, bc)
-  use set_boundary_kernel_mod, only: set_boundary_code
-  use mesh_mod,                only: mesh_type ! Work around for intel_v15 failues on the Cray
-
-  implicit none
-
-  type(field_type), intent(inout) :: field
-  real(kind=r_def), intent(in)    :: bc
-
-  integer, pointer :: boundary_dofs(:,:) => null()
-  integer, pointer :: map(:) => null()
-  integer :: cell,  nlayers
-  integer :: ndf, undf
-  type(mesh_type), pointer :: mesh => null()
-  type(field_proxy_type)   :: f_proxy
-
-  f_proxy = field%get_proxy()
-  nlayers = f_proxy%vspace%get_nlayers()
-  mesh => field%get_mesh()
-  undf = f_proxy%vspace%get_undf()
-  ndf  = f_proxy%vspace%get_ndf()
-      
-  if (f_proxy%is_dirty(depth=1)) then
-    call f_proxy%halo_exchange(depth=1)
-  end if 
-
-  boundary_dofs => f_proxy%vspace%get_boundary_dofs()
-
-  do cell=1,mesh%get_last_halo_cell(1)
-         
-    map => f_proxy%vspace%get_cell_dofmap(cell)
-         
-    CALL set_boundary_code(nlayers, &
-                           f_proxy%data, &
-                           ndf, &
-                           undf, &
-                           map, &
-                           boundary_dofs, &
-                           bc)
-         
-  end do 
-       
-  call f_proxy%set_dirty()
-       
-end subroutine invoke_set_boundary_kernel
-
 !> invoke_times_field: times the values of field1 by field2 and put result in
 !>field_res
 !> c = a/b

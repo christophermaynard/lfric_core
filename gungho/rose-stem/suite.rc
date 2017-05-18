@@ -7,7 +7,7 @@
                                  'sbr', 'sbr_spinupwinds', 'sbr_spinupalpha',
                                  'straka_x', 'straka_y', 'straka_200m',
                                  'baroclinic'%}
-{%- set miniapp_configurations = 'gravity_wave', 'boundary_test' %}
+{%- set miniapp_configurations = 'gravity_wave', %}
 {%- set groups = {'developer': ['science(semi-implicit)',
                                 'science(runge-kutta)',
                                 'science(transport-rk)',
@@ -40,7 +40,6 @@
                               'science(dcmip301, plotstr="dcmip301.py $NODAL_DATA_DIR theta T000180:T000252:T000324:T000360 $PLOT_DIR")',
                               'science(sbr)',
                               'miniapp(gravity_wave, plotstr="slices.py gravity_wave $NODAL_DATA_DIR buoyancy T000036 150 0 6 $PLOT_DIR")',
-                              'miniapp(boundary_test)',
                               'check_compilers(full-debug, True)',
                               'godlines(True)',
                               'publish_commit']} %}
