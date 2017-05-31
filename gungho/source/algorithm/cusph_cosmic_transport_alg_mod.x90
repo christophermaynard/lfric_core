@@ -78,13 +78,15 @@ contains
 !> @param[inout] chi Coordinate field array
 !> @param[inout] rho Density field
 !> @param[in] cell_orientation Orientation of cells, held in a W3 field
-  subroutine cusph_cosmic_transport_step(mesh_id, rho, cell_orientation)
+!> @param[in] detj_at_w2 detj values at W2 dof locations held in a W2 field
+  subroutine cusph_cosmic_transport_step(mesh_id, rho, cell_orientation, detj_at_w2)
 
     implicit none
 
     integer(i_def),      intent(in)    :: mesh_id
     type(field_type),    intent(inout) :: rho
     type(field_type),    intent(in)    :: cell_orientation
+    type(field_type),    intent(in)    :: detj_at_w2
 
     type(field_type), pointer :: chi(:) => null()
 

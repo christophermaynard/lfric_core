@@ -71,7 +71,7 @@ program gungho
   use mr_indices_mod,                 only : imr_v, imr_c, imr_r, imr_nc, &
                                              imr_nr, nummr
   use set_rho_alg_mod,                only : set_rho_alg
-  use runtime_constants_mod,          only : get_cell_orientation
+  use runtime_constants_mod,          only : get_cell_orientation, get_detj_at_w2
   use timer_mod,                      only : timer, output_timer
   implicit none
 
@@ -97,6 +97,8 @@ program gungho
 
   ! Array to hold cell orientation values in W3 field
   type( field_type )               :: cell_orientation
+  ! Array to hold detj values at W2 dof locations
+  type( field_type )               :: detj_at_w2
 
   integer                          :: timestep, ts_init
 
@@ -153,6 +155,9 @@ program gungho
     cell_orientation = get_cell_orientation()
   end if
 
+  ! Create detj values at W2 dof locations
+  detj_at_w2 = get_detj_at_w2()
+
   ! Initial output
   ts_init = max( (restart%ts_start() - 1), 0 ) ! 0 or t previous.
   call output_alg('theta', ts_init, theta, mesh_id)
@@ -205,7 +210,7 @@ program gungho
             call log_event( "Dynamo: Outputting initial fields", LOG_LEVEL_INFO )
           end if
           call set_rho_alg(rho, timestep)
-          call cusph_cosmic_transport_step(mesh_id, rho, cell_orientation)
+          call cusph_cosmic_transport_step(mesh_id, rho, cell_orientation, detj_at_w2)
         case default
          call log_event("Dynamo: Incorrect transport option chosen, "// &
                         "stopping program! ",LOG_LEVEL_ERROR)

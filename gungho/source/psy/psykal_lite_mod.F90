@@ -4101,8 +4101,6 @@ end subroutine invoke_sample_poly_adv
     end do
   end subroutine invoke_inc_X_times_Y
 
-
-
   !-------------------------------------------------------------------------------
   !> In #937, the evaluator was removed in the PSy-lite layer. In #938, evaluator
   !> (not quadrature) will be removed and the functionality will be implemented via
@@ -4171,14 +4169,14 @@ end subroutine invoke_sample_poly_adv
     do cell = 1, mesh%get_last_halo_cell(1)
        map_x   => x_p%vspace%get_cell_dofmap( cell )
        map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
-       call get_height_code(nlayers, &
-                            x_p%data, &
-                            chi_p(1)%data, &
-                            chi_p(2)%data, &
-                            chi_p(3)%data, &
-                            ndf_x, undf_x, map_x, &
+       call get_height_code(nlayers,                    &
+                            x_p%data,                   &
+                            chi_p(1)%data,              &
+                            chi_p(2)%data,              &
+                            chi_p(3)%data,              &
+                            ndf_x, undf_x, map_x,       &
                             ndf_chi, undf_chi, map_chi, &
-                            basis_chi &
+                            basis_chi                   &
                             )
     end do
 
@@ -4186,5 +4184,88 @@ end subroutine invoke_sample_poly_adv
 
     deallocate(basis_chi)
   end subroutine invoke_get_height_kernel
+  
+  !-------------------------------------------------------------------------------
+  !> In #937, the evaluator was removed in the PSy-lite layer. In #938, evaluator
+  !> (not quadrature) will be removed and the functionality will be implemented via
+  !> PSY using kernal meta data. 
+  !> PSyclone support is required - documented in #942
+  subroutine invoke_mpi_detj_at_w2(detj_at_w2, chi)
+    use calc_detj_at_w2_kernel_mod, only : calc_detj_at_w2_code
+    use mesh_mod, only                   : mesh_type
+
+    implicit none
+
+    type(field_type), intent(inout) :: detj_at_w2
+    type(field_type), intent(in)    :: chi(3)
+
+    type(field_proxy_type)          :: detj_at_w2_p, chi_p(3)
+    type(mesh_type)                 :: mesh
+
+    integer                         :: cell, nlayers
+    integer                         :: ndf_chi, ndf_w2
+    integer                         :: undf_chi, undf_w2
+    integer                         :: dim_u, diff_dim_chi
+    integer, pointer                :: map_chi(:) => null()
+    integer, pointer                :: map_w2(:)  => null()
+
+
+    real(kind=r_def), allocatable   :: nodal_basis_u(:,:,:)
+    real(kind=r_def), allocatable   :: diff_basis_chi(:,:,:)
+    real(kind=r_def), pointer       :: nodes(:,:) => null()
+    integer                         :: ii, df_chi, df_w2
+
+    do ii = 1,3
+      chi_p(ii)  = chi(ii)%get_proxy()
+    end do
+    detj_at_w2_p = detj_at_w2%get_proxy()
+
+    nlayers = detj_at_w2_p%vspace%get_nlayers()
+
+    ndf_w2  = detj_at_w2_p%vspace%get_ndf( )
+    undf_w2 = detj_at_w2_p%vspace%get_undf()
+    dim_u = detj_at_w2_p%vspace%get_dim_space()
+    allocate(nodal_basis_u(dim_u, ndf_w2, ndf_w2))
+
+    ndf_chi  = chi_p(1)%vspace%get_ndf( )
+    undf_chi = chi_p(1)%vspace%get_undf()
+    diff_dim_chi = chi_p(1)%vspace%get_dim_space_diff( )
+    allocate(diff_basis_chi(diff_dim_chi, ndf_chi, ndf_w2))
+
+    nodes => detj_at_w2_p%vspace%get_nodes( )
+
+    do df_w2 = 1, ndf_w2
+      do df_chi = 1, ndf_chi
+        diff_basis_chi(:,df_chi,df_w2) = chi_p(1)%vspace%call_function(DIFF_BASIS,df_chi,nodes(:,df_w2))
+      end do
+    end do
+
+    do df_w2 = 1, ndf_w2
+      do df_chi = 1, ndf_w2
+        nodal_basis_u(:,df_chi,df_w2) =  detj_at_w2_p%vspace%call_function(BASIS,df_chi,nodes(:,df_w2))
+      end do
+    end do
+
+    mesh = detj_at_w2%get_mesh()
+
+    do cell = 1, mesh%get_last_halo_cell(1)
+      map_w2  => detj_at_w2_p%vspace%get_cell_dofmap( cell )
+      map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
+
+      call calc_detj_at_w2_code( nlayers,       &
+         detj_at_w2_p%data,                     &
+         chi_p(1)%data,                         &
+         chi_p(2)%data,                         &
+         chi_p(3)%data,                         &
+         ndf_w2, undf_w2, map_w2,               &
+         ndf_chi, undf_chi, map_chi,            &
+         diff_basis_chi                         )
+
+    end do
+
+    deallocate(nodal_basis_u)
+    deallocate(diff_basis_chi)
+
+  end subroutine invoke_mpi_detj_at_w2
 
 end module psykal_lite_mod
