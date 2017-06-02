@@ -51,6 +51,10 @@ build: build-gungho build-mesh_tools
 .PHONY: test
 test: test-infrastructure test-gungho test-mesh_tools
 
+.PHONY: documentation doc docs
+documentation doc docs: document-infrastructure document-gungho
+	$(Q)echo > /dev/null
+
 .PHONY: test-suite
 test-suite: SUITE_GROUP ?= developer
 test-suite:
@@ -77,6 +81,26 @@ export LDFLAGS := $(LDFLAGS) $(OPENMP_ARG)
 extract-infrastructure:export SOURCE_DIR   = infrastructure/source
 extract-infrastructure:
 	$(MAKE) -f $(LFRIC_BUILD)/extract.mk
+
+##############################################################################
+# Infrastructure documentation
+#
+.PHONY: document-infrastructure
+document-infrastructure: document-uml-infrastructure document-api-infrastructure
+
+.PHONY: document-api-infrastructure
+document-api-infrastructure: DOCUMENT_DIR = documentation/infrastructure-api
+document-api-infrastructure: CONFIG_DIR   = infrastructure/documentation
+document-api-infrastructure: SOURCE_DIR   = infrastructure/source
+document-api-infrastructure: WORKING_DIR := $(WORKING_DIR)/infrastructure/api
+document-api-infrastructure: api-documentation-infrastructure
+
+.PHONY: document-uml-infrastructure
+document-uml-infrastructure: export DOCUMENT_DIR = documentation/infrastructure-uml
+document-uml-infrastructure: export SOURCE_DIR   = infrastructure/documentation/uml
+document-uml-infrastructure: export WORKING_DIR := $(WORKING_DIR)/infrastructure/uml
+document-uml-infrastructure:
+	$(MAKE) uml-documentation-infrastructure
 
 ##############################################################################
 # Test infrastructure
@@ -164,6 +188,36 @@ generate-psykal-gungho: extract-gungho extract-infrastructure
 extract-gungho: export SOURCE_DIR = gungho/source
 extract-gungho:
 	$(MAKE) -f $(LFRIC_BUILD)/extract.mk
+
+##############################################################################
+# GungHo documentation
+#
+.PHONY: document-gungho
+document-gungho: document-uml-gungho document-api-gungho document-latex-gungho
+
+.PHONY: document-api-gungho
+document-api-gungho: DOCUMENT_DIR = $(ROOT)/documentation/gungho-api
+document-api-gungho: CONFIG_DIR   = gungho/documentation
+document-api-gungho: SOURCE_DIR   = gungho/source
+document-api-gungho: WORKING_DIR := $(WORKING_DIR)/gungho/api
+document-api-gungho: api-documentation-gungho
+
+.PHONY: document-uml-gungho
+document-uml-gungho: export DOCUMENT_DIR = $(ROOT)/documentation/gungho-uml
+document-uml-gungho: export SOURCE_DIR   = gungho/documentation/uml
+document-uml-gungho: export WORKING_DIR := $(WORKING_DIR)/gungho/uml
+document-uml-gungho:
+	$(MAKE) uml-documentation-gungho
+
+.PHONY: document-latex-gungho
+document-latex-gungho: export DOCUMENT_DIR   = $(ROOT)/documentation
+document-latex-gungho: export SOURCE_DIR     = gungho/documentation
+document-latex-gungho: export DOCUMENTS      = $(shell find gungho/documentation -name '*.latex' -print)
+document-latex-gungho: export WORKING_DIR   := $(WORKING_DIR)/gungho/latex
+document-latex-gungho: export TEX_STUFF      = gungho/documentation/tex:/project/ukmo/rhel6/LaTeX/texlive/texmf-local//
+document-latex-gungho: export COMMON_FIGURES = gungho/documentation/common-figures
+document-latex-gungho:
+	$(MAKE) -f $(LFRIC_BUILD)/latex.mk
 
 ##############################################################################
 # Test GungHo
@@ -272,5 +326,7 @@ clean: ALWAYS
 	$(Q)-rm -rf $(WORKING_DIR)
 	$(call MESSAGE,Removing,binaries)
 	$(Q)-rm -rf bin
+	$(call MESSAGE,Removing,documentation)
+	$(Q)-rm -rf documentation
 	$(call MESSAGE,Removing,tests)
 	$(Q)-rm -rf tests

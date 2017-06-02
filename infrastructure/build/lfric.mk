@@ -90,9 +90,11 @@ export FFLAGS
 ifdef VERBOSE
   Q :=
   VERBOSE_ARG = -verbose
+  SHORT_VERBOSE_ARG = -v
   DOUBLE_VERBOSE_ARG = --verbose
 else
   Q := @
+  VERBOSE_REDIRECT = >/dev/null
 endif
 export Q
 
@@ -121,6 +123,37 @@ ALWAYS:
 # create that directory.
 #
 TARGET_DIR = $(patsubst $(PERCENT)/,$(PERCENT),$(dir $@))
+
+##############################################################################
+# Build API documentation
+#
+PHONY: api-documentation-%
+api-documentation-%:
+	$(call MESSAGE,API,$*)
+	$(Q)mkdir -p $(DOCUMENT_DIR)
+	$(Q)( cat $(CONFIG_DIR)/Doxyfile; \
+	      echo INPUT = $(SOURCE_DIR); \
+	      echo OUTPUT_DIRECTORY = $(DOCUMENT_DIR) ) \
+	    | doxygen - $(VERBOSE_REDIRECT)
+
+##############################################################################
+# Build UML documentation
+#
+.PHONY: uml-documentation-%
+uml-documentation-%: $$(patsubst $$(SOURCE_DIR)/$$(PERCENT).puml,$$(DOCUMENT_DIR)/$$(PERCENT).pdf,$$(wildcard $$(SOURCE_DIR)/*.puml))
+	$(Q)echo >/dev/null
+
+.PRECIOUS: $(DOCUMENT_DIR)/%.pdf
+$(DOCUMENT_DIR)/%.pdf: $(DOCUMENT_DIR)/%.svg
+	$(call MESSAGE,Translating,$@)
+	$(Q)inkscape $< --export-pdf=$@
+
+.PRECIOUS: $(DOCUMENT_DIR)/%.svg
+$(DOCUMENT_DIR)/%.svg: $(SOURCE_DIR)/%.puml \
+                      $$(addprefix $$(SOURCE_DIR)/,$$(shell sed -n -e 's/!include[ ]*\([^ \n]*\)/\1/p' $$(SOURCE_DIR)/$$*.puml))
+	$(call MESSAGE,Generating,$@)
+	$(Q)mkdir -p $(DOCUMENT_DIR)
+	$(Q)plantuml $(SHORT_VERBOSE_ARG) -tsvg -o $(realpath $(dir $@)) $(abspath $<)
 
 ##############################################################################
 # Run integration tests.

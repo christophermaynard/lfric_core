@@ -161,10 +161,12 @@
             purge_local => purge_target
             purge_target => export_for_{{label}}
             export_for_{{label}} => api_documentation
+            export_for_{{label}} => uml_documentation
             export_for_{{label}} => design_documentation
 {%-     if publish %}
             api_documentation    => publish_api_documentation
             api_documentation    => publish_api_log
+            uml_documentation    => publish_uml_documentation
             design_documentation => publish_design_documentation
 {%-     endif %}
 {%-   endif %}
@@ -410,11 +412,20 @@ test -w "{{directory}}" -o ! -e "{{directory}}" && rm -rf {{directory}} || ( ech
         pre-script = """
                      {{'\n'|commandList( LOCAL_BASE_SETUP, LOCAL_TECHNICAL_SETUP, LOCAL_REVEAL_SETUP, 'mkdir -p $DESTINATION_DIRECTORY') }}
                      """
-        script = make -C $SOURCE_DIRECTORY/documentation api-documents
+        script = make -C $SOURCE_DIRECTORY document-api-gungho
         post-script = """
                       # Future publisher stages need this information
                       echo $CYLC_TASK_LOG_ROOT > $DESTINATION_DIRECTORY/api.doxygen.log.path
                       """
+{%- endif %}
+
+{%- if 'uml_documentation' in allTasks %}
+    [[uml_documentation]]
+      inherit = None, LOCAL, TECHNICAL
+        pre-script = """
+                     {{'\n'|commandList( LOCAL_BASE_SETUP, LOCAL_TECHNICAL_SETUP, LOCAL_REVEAL_SETUP, 'mkdir -p $DESTINATION_DIRECTORY') }}
+                     """
+        script = make -C $SOURCE_DIRECTORY document-uml-gungho
 {%- endif %}
 
 {%- if 'publish_api_log' in allTasks %}
@@ -449,7 +460,7 @@ test -w "{{directory}}" -o ! -e "{{directory}}" && rm -rf {{directory}} || ( ech
         pre-script = """
                      {{'\n'|commandList( LOCAL_BASE_SETUP, LOCAL_TECHNICAL_SETUP, LOCAL_REVEAL_SETUP) }}
                      """
-        script = make -C $SOURCE_DIRECTORY/documentation design-documents.tar
+        script = make -C $SOURCE_DIRECTORY document-latex-gungho
 {%- endif %}
 
 {%- if 'publish_design_documentation' in allTasks %}

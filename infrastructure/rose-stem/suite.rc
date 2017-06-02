@@ -1,6 +1,8 @@
 #!jinja2
-{%- set groups = {'developer': ['check_compilers(fast-debug)'],
-                  'nightly': ['check_compilers(full-debug, True)']} %}
+{%- set groups = {'developer': ['check_compilers(fast-debug)',
+                                'documentation'],
+                  'nightly': ['check_compilers(full-debug, True)',
+                              'documentation(True)']} %}
 
 {%- set publish_destination = '$CYLC_SUITE_SHARE_DIR/publish-infrastructure-' + TARGET_OPT %}
 
@@ -36,6 +38,21 @@
     export_for_{{label}} => integration_test_with_{{label}}
 {%-     endif %}
 {%-   endfor %}
+{%- endmacro %}
+{#- #########################################################################}
+{%- macro documentation( publish=False ) %}
+{%-   set label =  TARGET_TECHNICAL_COMPILER | lower + '_fast-debug' %}
+{%-   if 'documentation' in TECHNICAL_DEVELOPER_TESTS %}
+            purge_local => purge_target
+            purge_target => export_for_{{label}}
+            export_for_{{label}} => api_documentation
+            export_for_{{label}} => uml_documentation
+{%-     if publish %}
+            api_documentation => publish_api_documentation
+            api_documentation => publish_api_log
+            uml_documentation => publish_uml_documentation
+{%-     endif %}
+{%-   endif %}
 {%- endmacro %}
 {#- #########################################################################}
 {%- macro schedule() %}
@@ -78,10 +95,10 @@
 
 [runtime]
   [[root]]
-    initial scripting = """
-                        export CYLC_VERSION={{CYLC_VERSION}}
-                        export ROSE_VERSION={{ROSE_VERSION}}
-                        """
+    init-script = """
+                  export CYLC_VERSION={{CYLC_VERSION}}
+                  export ROSE_VERSION={{ROSE_VERSION}}
+                  """
     script = "rose task-run"
     [[[events]]]
 {%- if TROUBLE_MAIL_ADDRESS is defined %}
@@ -174,6 +191,62 @@
 
 ##############################################################################
 
+    [[TECHNICAL]]
+        [[[environment]]]
+            SOURCE_DIRECTORY      = $SOURCE_ROOT/{{TARGET_TECHNICAL_COMPILER}}_fast-debug
+            DESTINATION_DIRECTORY = $OUTPUT_ROOT/{{TARGET_TECHNICAL_COMPILER}}_fast-debug
+            WORKING_DIR           = {{TARGET_BUILD_ROOT}}/{{TARGET_TECHNICAL_COMPILER}}_fast-debug
+
+    # Run locally as they need workstation tools such as Doxygen.
+{%- if 'api_documentation' in scheduledTasks %}
+    [[api_documentation]]
+        inherit = None, LOCAL, TECHNICAL
+        pre-script = """
+                     {{'\n'|commandList( LOCAL_BASE_SETUP, LOCAL_TECHNICAL_SETUP, LOCAL_REVEAL_SETUP, 'mkdir -p $DESTINATION_DIRECTORY') }}
+                     """
+        script = make -C $SOURCE_DIRECTORY document-api-infrastructure
+        post-script = """
+                      # Future publisher stages need this information
+                      echo $CYLC_TASK_LOG_ROOT > $DESTINATION_DIRECTORY/api.doxygen.log.path
+                      """
+{%- endif %}
+
+{%- if 'uml_documentation' in scheduledTasks %}
+    [[uml_documentation]]
+      inherit = None, LOCAL, TECHNICAL
+        pre-script = """
+                     {{'\n'|commandList( LOCAL_BASE_SETUP, LOCAL_TECHNICAL_SETUP, LOCAL_REVEAL_SETUP, 'mkdir -p $DESTINATION_DIRECTORY') }}
+                     """
+        script = make -C $SOURCE_DIRECTORY document-uml-infrastructure
+{%- endif %}
+
+{%- if 'publish_api_log' in scheduledTasks %}
+    [[publish_api_log]]
+        inherit = PUBLISH, TECHNICAL, LOCAL
+        pre-script = """
+{{ensureDestination()}}
+                     cp `cat $DESTINATION_DIRECTORY/api.doxygen.log.path`.out $DESTINATION_DIRECTORY/api.doxygen.out
+                     cp `cat $DESTINATION_DIRECTORY/api.doxygen.log.path`.err $DESTINATION_DIRECTORY/api.doxygen.err
+                     """
+        script = rose task-run --app-key=publish --command-key=doxygen
+        [[[environment]]]
+            LOG_OUT = $DESTINATION_DIRECTORY/api.doxygen.out
+            LOG_ERR = $DESTINATION_DIRECTORY/api.doxygen.err
+{%- endif %}
+
+{%- if 'publish_api_documentation' in scheduledTasks %}
+    [[publish_api_documentation]]
+        inherit = PUBLISH, LOCAL, TECHNICAL
+        pre-script = """
+{{ensureDestination()}}
+                     """
+        script = rose task-run --app-key=publish --command-key=directory
+        [[[environment]]]
+            DIRECTORY = $SOURCE_DIRECTORY/documentation/api
+{%- endif %}
+
+##############################################################################
+
 {%- for compiler in compiler_setup.keys() -%}
 {%-   for build in 'fast-debug', 'full-debug' %}
 {%-     set label = compiler | lower + '_' + build | lower %}
@@ -213,15 +286,14 @@
                  """
     script = rose task-run --app-key=compile
     post-script = """
-                  {{'\n'|commandList('cp -rp $WORKING_DIR $SOURCE_DIRECTORY/build',
-                                     deleteDirectory("$WORKING_DIR"),
-                                     '# Future publisher stages need this information',
-                                     'echo $CYLC_TASK_LOG_ROOT > $DESTINATION_DIRECTORY/lfric.infrastructure.{{compiler}}.log.path')}}
+                  {{'\n'|commandList('cp -rp $WORKING_DIR $SOURCE_DIRECTORY/working',
+                                     deleteDirectory("$WORKING_DIR"))}}
                   """
     [[[environment]]]
-      TARGET      = unit-test-infrastructure
-      PROFILE     = {{build}}
-      WORKING_DIR = {{TARGET_BUILD_ROOT}}/{{label}}/unit-test
+      TARGET       = unit-test-infrastructure
+      PROFILE      = {{build}}
+      MAKE_THREADS = 4
+      WORKING_DIR  = {{TARGET_BUILD_ROOT}}/{{label}}/unit-test
     [[[directives]]]
 {%-       for DIRECTIVE in TARGET_BUILD_BATCHER_DIRECTIVES %}
       {{DIRECTIVE}}
@@ -240,14 +312,13 @@
     script = rose task-run --app-key=compile
     post-script = """
                   {{'\n'|commandList('cp -rp $WORKING_DIR $SOURCE_DIRECTORY/build',
-                                     deleteDirectory("$WORKING_DIR"),
-                                     '# Future publisher stages need this information',
-                                     'echo $CYLC_TASK_LOG_ROOT > $DESTINATION_DIRECTORY/lfric.infrastructure.{{compiler}}.log.path')}}
+                                     deleteDirectory("$WORKING_DIR"))}}
                   """
     [[[environment]]]
-      TARGET      = integration-test-infrastructure
-      PROFILE     = {{build}}
-      WORKING_DIR = {{TARGET_BUILD_ROOT}}/{{label}}/integration-test
+      TARGET       = integration-test-infrastructure
+      PROFILE      = {{build}}
+      MAKE_THREADS = 1
+      WORKING_DIR  = {{TARGET_BUILD_ROOT}}/{{label}}/integration-test
     [[[directives]]]
 {%-       for DIRECTIVE in TARGET_BUILD_BATCHER_DIRECTIVES %}
       {{DIRECTIVE}}
