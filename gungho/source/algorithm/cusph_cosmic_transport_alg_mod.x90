@@ -117,7 +117,7 @@ contains
     integer(i_def),      intent(in)    :: mesh_id
     type(field_type),    intent(inout) :: rho
     type(field_type),    intent(in)    :: cell_orientation
-    type(field_type),    intent(in)    :: detj_at_w2
+    type(field_type),    intent(inout) :: detj_at_w2
 
     type(field_type), pointer :: chi(:) => null()
 

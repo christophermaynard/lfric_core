@@ -3990,8 +3990,7 @@ end subroutine invoke_sample_poly_adv
   ! iteration is over core cells and a halo depth of 1. The cosmic transport scheme
   ! uses a larger halo depth and this routine requires iteration over all values
   ! in the halo as well.
-  ! PSyclone support is required - This routine will be removed by #1261
-  subroutine invoke_cosmic_departure_wind(dep_wind_x,dep_wind_y,u_piola_x,u_piola_y,chi,direction)
+  subroutine invoke_cosmic_departure_wind(dep_wind_x,dep_wind_y,u_piola_x,u_piola_y,detj_at_w2,direction)
     use cosmic_departure_wind_kernel_mod, only: cosmic_departure_wind_code
     use mesh_mod,                         only: mesh_type
     use flux_direction_mod,               only: x_direction, y_direction
@@ -4000,71 +3999,36 @@ end subroutine invoke_sample_poly_adv
     implicit none
 
     type(field_type), intent(inout)      :: dep_wind_x, dep_wind_y
-    type(field_type), intent(in)         :: chi(3), u_piola_x, u_piola_y
+    type(field_type), intent(in)         :: u_piola_x, u_piola_y
     integer, intent(in)                  :: direction
+    type(field_type), intent(in)         :: detj_at_w2
 
-    type(field_proxy_type) :: dep_wind_x_p, dep_wind_y_p, chi_p(3)
+    type(field_proxy_type) :: dep_wind_x_p, dep_wind_y_p
     type(field_proxy_type) :: u_piola_x_p, u_piola_y_p
+    type(field_proxy_type) :: detj_at_w2_p
 
     integer                 :: cell, nlayers
-    integer                 :: ndf_chi, ndf_w2, ndf_udep
-    integer                 :: undf_chi, undf_w2
-    integer                 :: dim_w2, diff_dim_chi
-    integer                 :: df_u, df_chi, df_udep
-
-    integer, pointer        :: map_chi(:) => null()
+    integer                 :: ndf_w2
+    integer                 :: undf_w2
     integer, pointer        :: map(:) => null()
-    real(kind=r_def), pointer :: nodes_udep(:,:) => null()
 
-    real(kind=r_def), allocatable  :: nodal_basis_u(:,:,:)
-    real(kind=r_def), allocatable  :: diff_basis_chi(:,:,:)
-    integer :: ii
     type(mesh_type), pointer :: mesh => null()
     integer :: halo_depth
 
-    do ii = 1,3
-      chi_p(ii)  = chi(ii)%get_proxy()
-    end do
     u_piola_x_p = u_piola_x%get_proxy()
     u_piola_y_p = u_piola_y%get_proxy()
     dep_wind_x_p = dep_wind_x%get_proxy()
     dep_wind_y_p = dep_wind_y%get_proxy()
-
-    nlayers = u_piola_x_p%vspace%get_nlayers()
-
-    ndf_udep   = dep_wind_x_p%vspace%get_ndf()
-    nodes_udep => dep_wind_x_p%vspace%get_nodes()
-
-    ndf_w2  = u_piola_x_p%vspace%get_ndf()
-    undf_w2 = u_piola_x_p%vspace%get_undf()
-    dim_w2 = u_piola_x_p%vspace%get_dim_space()
-
-    ndf_chi  = chi_p(1)%vspace%get_ndf()
-    undf_chi = chi_p(1)%vspace%get_undf()
-    diff_dim_chi = chi_p(1)%vspace%get_dim_space_diff()
-
-    ! Evaluate the basis function
-    allocate(diff_basis_chi(diff_dim_chi, ndf_chi, ndf_w2))
-    do df_udep = 1, ndf_udep
-      do df_chi = 1, ndf_chi
-        diff_basis_chi(:,df_chi,df_udep) = chi_p(1)%vspace%call_function(DIFF_BASIS,df_chi,nodes_udep(:,df_udep))
-      end do
-    end do
-
-    ! Evaluate the basis function
-    allocate(nodal_basis_u(dim_w2, ndf_w2, ndf_w2))
-    do df_udep = 1, ndf_udep
-      do df_u = 1, ndf_w2
-        nodal_basis_u(:,df_u,df_udep) = u_piola_x_p%vspace%call_function(BASIS,df_u,nodes_udep(:,df_udep))
-      end do
-    end do
+    detj_at_w2_p = detj_at_w2%get_proxy()
 
     mesh => u_piola_x%get_mesh()
     halo_depth = mesh%get_halo_depth()
-    ! Do not halo exchange the input u_piola winds on purpose
-    if (chi_p(1)%is_dirty(depth=1))  call chi_p(1)%halo_exchange(depth=halo_depth)
-    if (chi_p(2)%is_dirty(depth=1))  call chi_p(2)%halo_exchange(depth=halo_depth)
-    if (chi_p(3)%is_dirty(depth=1))  call chi_p(3)%halo_exchange(depth=halo_depth)
+    call detj_at_w2_p%halo_exchange(depth=halo_depth)
+
+    nlayers = u_piola_x_p%vspace%get_nlayers()
+
+    ndf_w2  = u_piola_x_p%vspace%get_ndf()
+    undf_w2 = u_piola_x_p%vspace%get_undf()
 
 
     ! NOTE: The default looping limits for this type of field would be 
@@ -4074,32 +4038,22 @@ end subroutine invoke_sample_poly_adv
     if (direction == x_direction) then
       do cell = 1,mesh%get_ncells_2d()
          map     => u_piola_x_p%vspace%get_cell_dofmap( cell )
-         map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
          call cosmic_departure_wind_code( nlayers,                                  &
                                           dep_wind_x_p%data,                        &
                                           u_piola_x_p%data,                         &
-                                          chi_p(1)%data,                            &
-                                          chi_p(2)%data,                            &
-                                          chi_p(3)%data,                            &
-                                          ndf_w2, undf_w2, map, nodal_basis_u,      &
-                                          ndf_chi, undf_chi, map_chi,               &
-                                          diff_basis_chi,                           &
+                                          detj_at_w2_p%data,                        &
+                                          ndf_w2, undf_w2, map,                     &
                                           direction                                 &
                                            )
       end do
     elseif (direction == y_direction) then
       do cell = 1,mesh%get_ncells_2d()
          map     => u_piola_y_p%vspace%get_cell_dofmap( cell )
-         map_chi => chi_p(1)%vspace%get_cell_dofmap( cell )
          call cosmic_departure_wind_code( nlayers,                                  &
                                           dep_wind_y_p%data,                        &
                                           u_piola_y_p%data,                         &
-                                          chi_p(1)%data,                            &
-                                          chi_p(2)%data,                            &
-                                          chi_p(3)%data,                            &
-                                          ndf_w2, undf_w2, map, nodal_basis_u,      &
-                                          ndf_chi, undf_chi, map_chi,               &
-                                          diff_basis_chi,                           &
+                                          detj_at_w2_p%data,                        &
+                                          ndf_w2, undf_w2, map,                     &
                                           direction                                 &
                                            )
       end do
@@ -4107,8 +4061,6 @@ end subroutine invoke_sample_poly_adv
       call log_event("Direction incorrectly specified in invoke_cosmic_departure_wind",LOG_LEVEL_ERROR)
     end if
 
-    deallocate(nodal_basis_u)
-    deallocate(diff_basis_chi)
     call dep_wind_x_p%set_dirty()
     call dep_wind_y_p%set_dirty()
 

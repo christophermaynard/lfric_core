@@ -81,10 +81,8 @@ end function cosmic_departure_wind_kernel_constructor
   subroutine cosmic_departure_wind_code(nlayers,                                  &
                                         u_departure_wind,                         &
                                         u_piola,                                  &
-                                        chi1, chi2, chi3,                         &
-                                        ndf, undf, map, nodal_basis_u,            &
-                                        ndf_chi, undf_chi, map_chi,               &
-                                        diff_basis_chi,                           &
+                                        detj_at_w2,                               &
+                                        ndf, undf, map,                           &
                                         direction                                 &
                                         )
 
@@ -94,21 +92,15 @@ end function cosmic_departure_wind_kernel_constructor
 
     !Arguments
     integer,                                    intent(in)    :: nlayers
-    integer,                                    intent(in)    :: ndf, undf, &
-                                                                 ndf_chi, undf_chi
+    integer,                                    intent(in)    :: ndf, undf
     integer,          dimension(ndf),           intent(in)    :: map
-    real(kind=r_def), dimension(3,ndf,ndf),     intent(in)    :: nodal_basis_u
-    integer,          dimension(ndf_chi),       intent(in)    :: map_chi
     real(kind=r_def), dimension(undf),          intent(in)    :: u_piola
-    real(kind=r_def), dimension(undf_chi),      intent(in)    :: chi1, chi2, chi3
+    real(kind=r_def), dimension(undf),          intent(in)    :: detj_at_w2
     real(kind=r_def), dimension(undf),          intent(inout) :: u_departure_wind
-    real(kind=r_def), dimension(3,ndf_chi,ndf), intent(in)    :: diff_basis_chi
     integer,                                    intent(in)    :: direction
 
     !Internal variables
     integer                              :: df, k
-    real(kind=r_def)                     :: jacobian(3,3,ndf,1), dj(ndf,1)
-    real(kind=r_def), dimension(ndf_chi) :: chi1_e, chi2_e, chi3_e
     real(kind=r_def)                     :: mult_factor
 
     ! Change the sign of the output winds depending on whether it is an x or y
@@ -119,18 +111,10 @@ end function cosmic_departure_wind_kernel_constructor
       mult_factor = -1.0_r_def
     end if
 
-    ! Calculate the detJ value at the W2 dofs and divide the input Piola wind
-    ! values by the corresponding detJ value.
+    ! Divide the input Piola wind values by the corresponding detJ value.
     do k = 0, nlayers-1
-      do df = 1,ndf_chi
-        chi1_e(df) = chi1(map_chi(df) + k)
-        chi2_e(df) = chi2(map_chi(df) + k)
-        chi3_e(df) = chi3(map_chi(df) + k)
-      end do
-      call coordinate_jacobian(ndf_chi, ndf, 1, chi1_e, chi2_e, chi3_e,  &
-                               diff_basis_chi, jacobian, dj)
       do df = 1,ndf
-        u_departure_wind(map(df)+k) = mult_factor*u_piola(map(df)+k)/dj(df,1)
+        u_departure_wind(map(df)+k) = mult_factor*u_piola(map(df)+k)/detj_at_w2(map(df)+k)
       end do
     end do
 
