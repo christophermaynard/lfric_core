@@ -140,8 +140,8 @@ subroutine calc_departure_point_code( nlayers,                       &
 
     do ii = 1, departure_pt_stencil_length
       do jj = 1, 4
-        unordered_u_n(jj,ii) = u_n(stencil_map_w2(jj,ii))
-        unordered_u_np1(jj,ii) = u_np1(stencil_map_w2(jj,ii))
+        unordered_u_n(jj,ii) = u_n(stencil_map_w2(jj,ii)+k)
+        unordered_u_np1(jj,ii) = u_np1(stencil_map_w2(jj,ii)+k)
       end do
     end do
 
