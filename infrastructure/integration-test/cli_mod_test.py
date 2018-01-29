@@ -30,7 +30,7 @@ class cli_mod_normal_test(Test):
   def test( self, returncode, out, err ):
     if returncode != 0:
       raise TestFailed( 'Unexpected failure of test executable: {code}' \
-                        .format( code=process.returncode ) )
+                        .format( code=returncode ) )
 
     if out.strip() != self._INJECT:
       raise TestFailed( 'Expected filename "{expected}" but found "{found}"'\
