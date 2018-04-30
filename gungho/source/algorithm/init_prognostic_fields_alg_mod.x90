@@ -22,9 +22,8 @@ module init_prognostic_fields_alg_mod
 
   ! Configuration and restart/checkpoint options
   use finite_element_config_mod,       only: element_order
-  use formulation_config_mod,          only: use_moisture
-  use initial_density_config_mod,      only: sample_init_rho, &
-                                             set_hydrostatic_density
+  use formulation_config_mod,          only: use_moisture, set_hydrostatic_init
+  use initial_density_config_mod,      only: sample_init_rho
   use initial_wind_config_mod,         only: smp_init_wind
   use restart_control_mod,             only: restart_type
 
@@ -40,7 +39,8 @@ module init_prognostic_fields_alg_mod
   use enforce_bc_kernel_mod,           only: enforce_bc_kernel_type
   use initial_theta_kernel_mod,        only: initial_theta_kernel_type
   use project_pressure_kernel_mod,     only: project_pressure_kernel_type
-  use hydrostatic_rho_kernel_mod,      only: hydrostatic_rho_kernel_type
+  use sample_eos_rho_kernel_mod,  only: sample_eos_rho_kernel_type
+  use hydrostatic_exner_kernel_mod,    only: hydrostatic_exner_kernel_type
 
   ! Derived Types
   use field_mod,                       only: field_type
@@ -122,13 +122,16 @@ contains
                      initial_u_kernel_type( r_u, chi, initial_time, qr ), &
                      enforce_bc_kernel_type( r_u ) )
         call solver_algorithm(u, r_u)
-     end if
+      end if
 
-      if (set_hydrostatic_density) then
+      if (set_hydrostatic_init) then
         height_w3 => get_height(W3)
         height_wth => get_height(Wtheta)
-        call invoke( hydrostatic_rho_kernel_type( rho, theta, height_wth, &
-                                                  height_w3 ) )
+
+        ! Initialize working up from theta distro and hydrostatic balance
+        call invoke( hydrostatic_exner_kernel_type( exner, theta, height_wth, &
+                                                    height_w3, chi ), &
+                     sample_eos_rho_kernel_type( rho, exner, theta ) )
       else
         if(sample_init_rho) then
           call invoke_initial_rho_sample_kernel  ( rho,   chi, initial_time )
@@ -136,14 +139,16 @@ contains
         else
           call invoke( set_rho_kernel_type   ( rho,   chi, initial_time, qr ), &
                        set_exner_kernel_type ( exner, chi, initial_time, qr ) )
+          call log_event( "Gungho: Computing initial pressure as projection..", LOG_LEVEL_INFO )
+          m3_inv => get_mass_matrix(w3inv_id)
+          qr = quadrature_xyoz_type(1, quadrature_rule)
+
+          ! Pressure has already been initialized
+          call invoke( project_pressure_kernel_type( exner, rho, theta, &
+                                                     chi, m3_inv, qr ) )
+
         end if
       end if
-
-      call log_event( "Gungho: Computing initial pressure as projection..", LOG_LEVEL_INFO )
-      m3_inv => get_mass_matrix(w3inv_id)
-      qr = quadrature_xyoz_type(1, quadrature_rule)
-      call invoke( project_pressure_kernel_type( exner, rho, theta, &
-                                                 chi, m3_inv, qr ) )
 
       call log_event( "Gungho: Mapping rho->rho_in_wth in same space as theta..", LOG_LEVEL_INFO )
       call map_physics_scalars(rho_in_wth, rho) 

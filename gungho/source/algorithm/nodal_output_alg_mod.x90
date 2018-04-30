@@ -15,6 +15,7 @@ use fs_continuity_mod,              only: W0, W1, W2, W3
 use log_mod,                        only: log_event,         &
                                           log_scratch_space, &
                                           LOG_LEVEL_INFO
+use multiplicity_kernel_mod,        only: multiplicity_kernel_type
 use psykal_lite_mod,                only: invoke_convert_cart2sphere_vector, &
                                           invoke_pointwise_convert_xyz2llr,  &
                                           invoke_compute_dof_level_kernel
@@ -30,13 +31,14 @@ contains
 
 subroutine nodal_output_alg(field, chi, nodal_output, nodal_coordinates, level)
 
-    type(field_type),            intent(in) :: field, chi(3)
+    type(field_type), intent(in)            :: field, chi(3)
     type(field_type), intent(inout)         :: nodal_output(3)
     type(field_type), intent(inout)         :: nodal_coordinates(3)
     type(field_type), intent(inout)         :: level
 
     ! Local variables
     type(field_type), pointer          :: nodal_rmultiplicity
+    integer                            :: nodal_output_unit
     integer                            :: i, output_fs, output_dim
     type(function_space_type), pointer :: output_field_fs   => null()
 

@@ -65,9 +65,13 @@ contains
     call feign_formulation_config(transport_only=.false., rotating=.false., &
                                   use_moisture=.false.,                     &
                                   shallow=.true., use_physics=.false.,      &
-				  use_wavedynamics=.true.,                  &
-				  dry_static_adjust=.false.,                &
-				  dlayer_on=.false.)
+                                  use_wavedynamics=.true.,                  &
+                                  dry_static_adjust=.false.,                &
+                                  dlayer_on=.false.,                        &
+                                  set_hydrostatic_init = .false.,           &
+                                  init_exner_bt        = .true.,            &
+                                  hard_wired_j         = .false.,           &
+                                  hard_wired_detj      = .false.  )
   end subroutine setUp
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -23,14 +23,18 @@
 /
 
 &formulation
-  transport_only = .false.
-  rotating       = .true.
-  use_moisture   = .false.
-  shallow        = .false.
-  use_physics    = .false.
-  use_wavedynamics  = .true. 
-  dlayer_on         = .false.
-  dry_static_adjust = .false.
+  transport_only       = .false.
+  rotating             = .true.
+  use_moisture         = .false.
+  shallow              = .false.
+  use_physics          = .false.
+  use_wavedynamics     = .true. 
+  dlayer_on            = .false.
+  dry_static_adjust    = .false.
+  set_hydrostatic_init = .false.
+  init_exner_bt        = .true.
+  hard_wired_j         = .false.
+  hard_wired_detj      = .false.
 /
 
 &idealised
@@ -39,7 +43,6 @@
 
 &initial_density
   sample_init_rho = .false.
-  set_hydrostatic_density = .false.
   tracer_max = 2.0
   tracer_background = 0.1
   r1 = 0.4
@@ -71,6 +74,7 @@
   nodal_output_on_w3        = .false.
   subroutine_timers         = .true.
   subroutine_counters       = .true.
+  write_minmax_tseries      = .false.
 /
 
 &physics

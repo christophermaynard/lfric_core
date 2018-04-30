@@ -19,7 +19,8 @@ module gungho_driver_mod
                                          cusph_cosmic_transport_step
   use derived_config_mod,         only : set_derived_config
   use diagnostic_alg_mod,         only : divergence_diagnostic_alg, &
-                                         density_diagnostic_alg
+                                         density_diagnostic_alg,    &
+                                         hydbal_diagnostic_alg
   use ESMF
   use field_mod,                  only : field_type
   use formulation_config_mod,     only : transport_only, &
@@ -50,10 +51,14 @@ module gungho_driver_mod
   use mesh_collection_mod,        only : mesh_collection
   use mod_wait
   use mpi
+  use minmax_tseries_mod,         only : minmax_tseries, &
+                                         minmax_tseries_init, &
+                                         minmax_tseries_final
   use mr_indices_mod,             only : imr_v, imr_c, imr_r, imr_nc, &
                                          imr_nr, nummr
   use output_config_mod,          only : diagnostic_frequency, &
                                          subroutine_timers, &
+                                         write_minmax_tseries, &
                                          subroutine_counters, &
                                          write_nodal_output, &
                                          write_xios_output
@@ -283,7 +288,15 @@ contains
 
       end if
 
+      if(write_minmax_tseries .and. ts_init == 0) then
+
+         call minmax_tseries_init('u', mesh_id)
+         call minmax_tseries(u, 'u', mesh_id)
+
+      end if
+
       call divergence_diagnostic_alg(u, ts_init, mesh_id)
+      call hydbal_diagnostic_alg(theta, exner, mesh_id)
 
     end if
 
@@ -366,6 +379,10 @@ contains
 
         call conservation_algorithm(timestep, rho, u, theta, exner, xi)
 
+        if(write_minmax_tseries) call minmax_tseries(u, 'u', mesh_id)
+
+       call u%log_minmax(LOG_LEVEL_INFO, ' u')
+
       end if
 
       write( log_scratch_space, '(A,I0)' ) 'End of timestep ', timestep
@@ -422,6 +439,7 @@ contains
         end if
 
         call divergence_diagnostic_alg(u, timestep, mesh_id)
+        call hydbal_diagnostic_alg(theta, exner, mesh_id)
       end if
 
     end do ! end ts loop
@@ -438,7 +456,7 @@ contains
 
     integer(i_def) :: rc
     integer(i_def) :: ierr
-    integer(i_def) :: i
+    integer(i_def) :: i 
 
     character(5) :: name
 
@@ -513,6 +531,8 @@ contains
     do i=1, nummr
       call mr(i)%field_final()
     end do
+
+    if(write_minmax_tseries) call minmax_tseries_final(mesh_id)
 
     call iter_alg_final()
     call rk_alg_final()

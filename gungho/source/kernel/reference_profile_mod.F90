@@ -22,7 +22,8 @@ use idealised_config_mod,           only : idealised_test_gravity_wave,     &
                                            idealised_test_warm_bubble,      &
                                            idealised_test_warm_bubble_3d,   &
                                            idealised_test_held_suarez,      &
-                                           idealised_test_isentropic
+                                           idealised_test_isentropic,       &
+                                           idealised_test_dry_cbl
 use initial_temperature_config_mod, only : bvf_square, theta_surf
 use planet_config_mod,              only : scaled_radius, gravity, Cp, Rd, &
                                            kappa, p_zero
@@ -87,6 +88,18 @@ else                     ! BIPERIODIC PLANE DOMAIN
                   **(1.0_r_def-gravity/(Cp*lapse_rate)))
       exner_s = exner_surf * ((1.0_r_def - lapse_rate/theta_surf * z) &
                   **(gravity/(Cp*lapse_rate)))
+    case( idealised_test_dry_cbl )   ! Dry convective boundary layer
+      if(z<=1000.0_r_def) then
+        ! Isentropic
+        theta_s = theta_surf
+        exner_s = exner_surf - gravity/(Cp*theta_surf)*z
+      else if(z>1000.0_r_def) then
+        ! Isothermal
+        nsq_over_g = bvf_square/gravity
+        theta_s = theta_surf * exp ( nsq_over_g * z )
+        exner_s = exner_surf - gravity**2/(Cp*theta_surf*bvf_square)   &
+                     * (1.0_r_def - exp ( - nsq_over_g * z ))
+      end if
   end select
   ! Calculate rho for all biperiodic tests
   rho_s   = p_zero/(Rd*theta_s) * exner_s ** ((1.0_r_def - kappa)/kappa)

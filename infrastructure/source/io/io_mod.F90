@@ -67,7 +67,7 @@ contains
 !> @param[in] n Time step index
 !> @param[inout] field Field to output 
 !> @param[in] mesh_id  Id of the mesh all fields are on
-subroutine output_nodal(field_name,n, field, mesh_id)
+subroutine output_nodal(field_name, n, field, mesh_id)
 
   implicit none
 
@@ -161,7 +161,8 @@ subroutine output_nodal(field_name,n, field, mesh_id)
           fname=trim(ts_fname("nodal_", field_name, n, rank_name))
 
           ! Transform the field data
-          call nodal_output_alg(field, chi, nodal_output, nodal_coordinates, level)
+          call nodal_output_alg(field, chi, nodal_output, nodal_coordinates, &
+                                  level)
 
         end if
 

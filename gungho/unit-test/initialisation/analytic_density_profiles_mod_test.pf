@@ -41,8 +41,7 @@ contains
                                        y1=3.0_r_def, z1=4.0_r_def,      &
                                        r2=1.0_r_def, x2=0.0_r_def,      &
                                        y2=0.0_r_def, z2=0.0_r_def,      &
-                                       sample_init_rho=.false.,         &
-                                       set_hydrostatic_density=.false. )
+                                       sample_init_rho=.false. )
 
   end subroutine setUp
 

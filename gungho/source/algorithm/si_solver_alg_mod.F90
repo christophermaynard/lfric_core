@@ -377,6 +377,8 @@ contains
            " iters, init=", init_err,                      &
            " final=", err
       call log_event( log_scratch_space, LOG_LEVEL_DEBUG )
+      ! Add increments to field
+      call bundle_axpy(1.0_r_def, dx, x0, x0, bundle_size)
       return
     else
       write( log_scratch_space, '(A,I3,A,2E15.8)' )        &

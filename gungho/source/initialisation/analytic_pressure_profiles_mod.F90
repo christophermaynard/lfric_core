@@ -30,9 +30,9 @@ use idealised_config_mod,       only : idealised_test_cold_bubble_x,           &
                                        idealised_test_deep_baroclinic_wave,    &
                                        idealised_test_isentropic,              &
                                        idealised_test_isot_atm,                &
-                                       idealised_test_isot_mild_atm,           &
                                        idealised_test_isot_cold_atm,           &
-                                       idealised_test_const_lapse_rate
+                                       idealised_test_const_lapse_rate,        &
+                                       idealised_test_dry_cbl
 use initial_density_config_mod, only : r1, x1, y1, r2, x2, y2,     &
                                        tracer_max, tracer_background
 use base_mesh_config_mod,       only : geometry, &
@@ -142,8 +142,8 @@ contains
 
     select case( choice )   
     case (idealised_test_gravity_wave, idealised_test_isentropic, &
-          idealised_test_isot_atm, idealised_test_isot_mild_atm, &
-          idealised_test_isot_cold_atm, idealised_test_const_lapse_rate)
+          idealised_test_isot_atm, idealised_test_isot_cold_atm,  &
+          idealised_test_const_lapse_rate)
       call reference_profile(pressure, density, temperature, chi, choice)
  
     case (idealised_test_cold_bubble_x, idealised_test_cold_bubble_y ) 
@@ -239,6 +239,9 @@ contains
       call deep_baroclinic_wave(long, lat, radius-scaled_radius, &
                                 pressure, temperature, density, &
                                 u, v, w) 
+    case(idealised_test_dry_cbl)
+      call reference_profile(pressure, density, temperature, chi, choice)
+
     case default
       write( log_scratch_space, '(A)' )  'Invalid pressure profile choice, stopping'
       call log_event( log_scratch_space, LOG_LEVEL_ERROR )

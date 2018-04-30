@@ -1,0 +1,134 @@
+!-----------------------------------------------------------------------------
+! Copyright (c) 2017,  Met Office, on behalf of HMSO and Queen's Printer
+! For further details please refer to the file LICENCE.original which you
+! should have received as part of this distribution.
+!-----------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+!> @brief Computes density from equation of state
+
+module sample_eos_rho_kernel_mod
+
+use argument_mod,               only : arg_type, func_type,            &
+                                       GH_FIELD, GH_READ, GH_WRITE,    &
+                                       ANY_SPACE_9, ANY_SPACE_1,       &
+                                       GH_BASIS, CELLS, GH_EVALUATOR
+use constants_mod,              only : r_def, i_def
+use planet_config_mod,          only : gravity, cp, rd, p_zero
+use idealised_config_mod,       only : test
+use fs_continuity_mod,          only : WTHETA, W3
+use kernel_mod,                 only : kernel_type
+
+implicit none
+
+!-------------------------------------------------------------------------------
+! Public types
+!-------------------------------------------------------------------------------
+!> The type declaration for the kernel. Contains the metadata needed by the Psy layer
+type, public, extends(kernel_type) :: sample_eos_rho_kernel_type
+  private
+  type(arg_type) :: meta_args(3) = (/                                 &
+       arg_type(GH_FIELD,   GH_WRITE, W3),                            &
+       arg_type(GH_FIELD,   GH_READ,  W3),                            &
+       arg_type(GH_FIELD,   GH_READ,  ANY_SPACE_1)                    &
+       /)
+  type(func_type) :: meta_funcs(2) = (/                     &
+       func_type(W3, GH_BASIS),                             &
+       func_type(ANY_SPACE_1, GH_BASIS)                     &
+       /)
+       integer :: iterates_over = CELLS
+       integer :: gh_shape = GH_EVALUATOR
+contains
+  procedure, nopass ::sample_eos_rho_code
+end type
+
+!-------------------------------------------------------------------------------
+! Constructors
+!-------------------------------------------------------------------------------
+
+! overload the default structure constructor for function space
+interface sample_eos_rho_kernel_type
+   module procedure sample_eos_rho_kernel_constructor
+end interface
+
+!-------------------------------------------------------------------------------
+! Contained functions/subroutines
+!-------------------------------------------------------------------------------
+public sample_eos_rho_code
+contains
+
+type(sample_eos_rho_kernel_type) &
+   function sample_eos_rho_kernel_constructor() result(self)
+  return
+end function sample_eos_rho_kernel_constructor
+
+!> @brief Computes density from equation of state
+!! @param[in] nlayers Number of layers
+!! @param[out] rho Density field
+!! @param[in] exner Exner pressure field
+!! @param[in] theta Potential temperature field
+!! @param[in] height_wt Height coordinate in wtheta
+!! @param[in] height_w3 Height coordinate in w3
+!! @param[in] ndf_w3 Number of degrees of freedom per cell for w3
+!! @param[in] undf_w3 Number unique of degrees of freedom  for w3
+!! @param[in] map_w3 Dofmap for the cell at the base of the column for w3
+!! @param[in] ndf_wt Number of degrees of freedom per cell for wtheta
+!! @param[in] undf_wt Number unique of degrees of freedom  for wtheta
+!! @param[in] map_wt Dofmap for the cell at the base of the column for wt
+subroutine sample_eos_rho_code(nlayers, rho, exner, theta, &
+                                    ndf_w3, undf_w3, map_w3, basis_3, ndf_wt, &
+                                    undf_wt, map_wt, basis_t)
+  
+  use analytic_temperature_profiles_mod, only : analytic_temperature
+
+  implicit none
+  
+  !Arguments
+  integer, intent(in) :: nlayers, ndf_w3, undf_w3,  ndf_wt, undf_wt
+  integer, dimension(ndf_w3), intent(in)  :: map_w3
+  integer, dimension(ndf_wt), intent(in) :: map_wt
+
+  real(kind=r_def), dimension(undf_w3),  intent(inout)       :: rho
+  real(kind=r_def), dimension(undf_w3),  intent(in)          :: exner
+  real(kind=r_def), dimension(undf_wt),  intent(in)          :: theta 
+  real(kind=r_def), dimension(1,ndf_w3,ndf_w3),  intent(in)  :: basis_3
+  real(kind=r_def), dimension(1,ndf_wt,ndf_w3),  intent(in)  :: basis_t
+
+
+  !Internal variables
+  integer(kind=i_def)                  :: k, df, dft, df3
+  real(kind=r_def), dimension(ndf_w3)  :: exner_e
+  real(kind=r_def), dimension(ndf_wt)  :: theta_e
+  real(kind=r_def)                     :: exner_cell, theta_cell
+
+  !Compute density from eqn of state
+  do k = 0, nlayers-1
+
+    do df3 = 1, ndf_w3
+      exner_e(df3) = exner( map_w3(df3) + k)
+    end do
+
+    do dft = 1, ndf_wt
+      theta_e(dft) = theta( map_wt(dft) + k)
+    end do
+    
+    do df = 1, ndf_w3
+      
+      exner_cell = 0.0_r_def 
+      do df3 = 1, ndf_w3
+        exner_cell = exner_cell + exner_e(df3)*basis_3(1,df3,df)
+      end do
+ 
+      theta_cell = 0.0_r_def
+      do dft = 1, ndf_wt
+        theta_cell = theta_cell + theta_e(dft)*basis_t(1,dft,df)
+      end do
+      
+      rho(map_w3(df)+k) = (p_zero*exner_cell**(1.0/(rd/cp)-1.0))/(rd*theta_cell)
+    end do
+
+  end do
+end subroutine sample_eos_rho_code
+
+end module sample_eos_rho_kernel_mod

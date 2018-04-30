@@ -19,6 +19,7 @@ module diagnostic_alg_mod
    public :: divergence_diagnostic_alg
    public :: pressure_diagnostic_alg
    public :: density_diagnostic_alg
+   public :: hydbal_diagnostic_alg
 
 contains
 
@@ -213,5 +214,56 @@ contains
     nullify( mm_w3 )
 
   end subroutine density_diagnostic_alg
+
+!=============================================================================!
+  !> @details An algorithm for calculating the l2 norm for the hydrostatic
+  !>          imbalance. It calculates the sum of pressure gradient and
+  !>          gravity term at each timestep using the hydrostatic kernel.
+  !> @param[in] theta   Potential temperature
+  !> @param[in] exner   Exner pressure
+  !> @param[in] mesh_id Mesh_id
+  subroutine hydbal_diagnostic_alg(theta, exner, mesh_id)
+    use field_mod,                   only: field_type
+    use quadrature_xyoz_mod,         only: quadrature_xyoz_type
+    use fs_continuity_mod,           only: W2V
+    use psykal_lite_mod,             only: invoke_inner_prod
+    use log_mod,                     only: log_event,         &
+                                           log_scratch_space, &
+                                           LOG_LEVEL_INFO
+
+    ! PsyKAl PSYClone kernels
+    use enforce_bc_kernel_mod,               only: enforce_bc_kernel_type
+    use hydrostatic_kernel_mod,              only: hydrostatic_kernel_type
+    use runtime_constants_mod,               only: get_geopotential,         &
+                                                   get_qr
+
+
+    implicit none
+    type(field_type), intent(in) :: theta, exner
+    type(field_type), pointer    :: geopotential => null()
+    type(field_type)             :: hyd_imbal
+    integer(i_def),   intent(in) :: mesh_id
+
+    ! the quadrature object
+    type( quadrature_xyoz_type ) :: qr
+
+    real(r_def)                  :: l2
+
+    hyd_imbal =  field_type( vector_space = function_space_collection%get_fs(mesh_id,element_order, W2V) )
+
+    qr = get_qr()
+
+    ! Get geopotential field from runtime_constants
+    geopotential => get_geopotential()
+
+    call invoke( setval_c(hyd_imbal, 0.0_r_def), &
+                 hydrostatic_kernel_type( hyd_imbal, exner, theta, geopotential, qr ), & 
+                 enforce_bc_kernel_type( hyd_imbal ), &
+                 X_innerproduct_X(l2, hyd_imbal) )
+    write( log_scratch_space, '(A,E16.8)' )  &
+       'L2 of hydrostatic imbalance =',sqrt(l2)
+    call log_event( log_scratch_space, LOG_LEVEL_INFO )
+
+  end subroutine hydbal_diagnostic_alg
 
 end module diagnostic_alg_mod
