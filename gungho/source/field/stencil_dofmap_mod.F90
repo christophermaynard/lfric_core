@@ -314,46 +314,46 @@ end function compute_dofmap_size
 !==============================================================================
 function generate_stencil_dofmap_id( stencil_shape,   &
                                      stencil_extent ) &
-	                             result( stencil_id )
-	
+                                     result( stencil_id )
+
   implicit none
-	
+
   integer(i_def), intent(in) :: stencil_shape
   integer(i_def), intent(in) :: stencil_extent
-	
+
   integer(i_def) :: stencil_id
-	
+
   stencil_id = stencil_shape*100 + stencil_extent
-	
+
   return
 end function generate_stencil_dofmap_id
-	
+
 !==============================================================================
 !> @brief Routine to destroy object.
 !> @param[in] self, The calling object type
 subroutine clear(self)
-	
+
   implicit none
-	
+
   class (stencil_dofmap_type), intent(inout) :: self
-	
+
   if (allocated(self%dofmap)) deallocate( self%dofmap)
-	
+
   return
 end subroutine clear
-	
+
 !==============================================================================
 !> @brief Finalizer routine which should automatically call clear
 !>        when object is out of scope.
 !> @param[in] self, The calling object_type
 subroutine stencil_dofmap_destructor(self)
-	
+
   implicit none
-	
+
   type (stencil_dofmap_type), intent(inout) :: self
-	
+
   call self%clear()
-	
+
   return
 end subroutine stencil_dofmap_destructor
 

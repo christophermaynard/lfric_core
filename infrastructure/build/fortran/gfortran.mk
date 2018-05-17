@@ -19,6 +19,8 @@ endif
 
 F_MOD_DESTINATION_ARG     = -J
 OPENMP_ARG = -fopenmp
+# Option for checking code meets Fortran standard - currently 2008
+STANDARDS_CHECK_ARG       = -std=f2008
 
 FFLAGS_COMPILER           = -ffree-line-length-none
 FFLAGS_NO_OPTIMISATION    = -O0

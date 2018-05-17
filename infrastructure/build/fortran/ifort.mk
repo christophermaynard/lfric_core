@@ -20,6 +20,8 @@ endif
 
 F_MOD_DESTINATION_ARG = -module$(SPACE)
 OPENMP_ARG            = -qopenmp
+# Option for checking code meets Fortran standard - currently 2008
+STANDARDS_CHECK_ARG       = -stand f08
 FORTRAN_RUNTIME       = 
 
 FFLAGS_COMPILER           =

@@ -8,8 +8,10 @@
 !>
 !> @details Implements the following types:
 !>   * abstract operator base type
-!>   * locally assembled operator (i.e. the stencil is assembled in each cell of the 3d grid)
-!>   * columnwise assembled operator for horizontally discontinuous spaces (i.e. the matrix is assembled in each vertical column of the grid)
+!>   * locally assembled operator (i.e. the stencil is assembled in each cell
+!>      of the 3d grid)
+!>   * columnwise assembled operator for horizontally discontinuous spaces 
+!>      (i.e. the matrix is assembled in each vertical column of the grid)
 module operator_mod
 
   use constants_mod,            only : r_def, i_def
@@ -455,10 +457,14 @@ contains
    ! Check that we are really horizontally discontinuous by comparing to
    ! total number of dofs in general formula
     if (self%ndof_cell_to /= self%fs_to%get_ndf()) then
-       call log_event("Operator_mod:extract_mesh_fs_info():Function space mapped to in columnwise operator is not horizontally discontinuous", LOG_LEVEL_ERROR)
+       call log_event("Operator_mod:extract_mesh_fs_info():Function space " // &
+          "mapped to in columnwise operator is not horizontally discontinuous",&
+          LOG_LEVEL_ERROR)
     endif 
     if (self%ndof_cell_from /= self%fs_from%get_ndf()) then
-       call log_event("Operator_mod:extract_mesh_fs_info():Function space mapped from in columnwise operator is not horizontally discontinuous", LOG_LEVEL_ERROR)
+       call log_event("Operator_mod:extract_mesh_fs_info():Function space " //   &
+          "mapped from in columnwise operator is not horizontally discontinuous",&
+          LOG_LEVEL_ERROR)
     endif
 
     ! number of vertical layers

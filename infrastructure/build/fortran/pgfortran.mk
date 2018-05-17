@@ -20,6 +20,8 @@ endif
 
 F_MOD_DESTINATION_ARG = -module$(SPACE)
 OPENMP_ARG            = -mp
+# Option for checking code meets Fortran standard (not available for PGI)
+STANDARDS_CHECK_ARG       =
 
 FFLAGS_COMPILER           =
 FFLAGS_NO_OPTIMISATION    = -O0

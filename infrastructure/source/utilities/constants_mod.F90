@@ -72,8 +72,10 @@ module constants_mod
 
   !> @name Platform constants
   !> @{
-  real(kind=r_def), parameter :: LARGE_REAL = huge(0.0_r_def) !< The largest number of kind r_def that is not an infinity.
-  integer, parameter :: cache_block = 256 !< Size of a cache block, used for padding arrays to ensure access to different cache lines
+  real(kind=r_def), parameter :: LARGE_REAL = huge(0.0_r_def) !< The largest
+  !<                            number of kind r_def that is not an infinity.
+  integer, parameter :: cache_block = 256 !< Size of a cache block, for padding
+  !<                           arrays to ensure access to different cache lines
 
   !> @}
 

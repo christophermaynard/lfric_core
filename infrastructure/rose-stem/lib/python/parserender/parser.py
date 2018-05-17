@@ -324,6 +324,7 @@ class CrayCompileParser(CompileParser):
     _levelMap = {'comment': 'comment', \
                  'note'   : 'comment', \
                  'caution': 'beware',  \
+                 'ansi'   : 'warning', \
                  'warning': 'warning', \
                  'error':   'error'}
 

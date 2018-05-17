@@ -255,7 +255,9 @@ contains
     real(kind=r_def), intent(in) ::   right_limit
 
     if (x_in < left_limit .OR. x_in > right_limit) then
-      write(log_scratch_space, '(A,E12.4E3,A,2E12.4E3)') 'Departure distance ', x_in,' is out of bounds. Limits are ', left_limit, right_limit
+      write(log_scratch_space, '(A,E12.4E3,A,2E12.4E3)')           &
+         'Departure distance ', x_in,                              &
+         ' is out of bounds. Limits are ', left_limit, right_limit
       call log_event( log_scratch_space, LOG_LEVEL_ERROR )
     end if
 

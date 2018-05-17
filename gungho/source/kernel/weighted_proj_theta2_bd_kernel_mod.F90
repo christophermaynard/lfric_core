@@ -96,9 +96,12 @@ contains
   !! @param[in] nqp_h_1d Number of quadrature points in a single horizontal direction
   !! @param[in] nqp_v Integer, number of quadrature points in the vertical
   !! @param[in] wqp_v Real array. Quadrature weights vertical
-  !! @param[in] w2_basis_face Real 5-dim array holding w2 basis functions evaluated at gaussian quadrature points on horizontal faces
-  !! @param[in] wtheta_basis_face Real 5-dim array holding wtheta basis functions evaluated at gaussian quadrature points on horizontal faces
-  !! @param[in] adjacent_face Vector containing information on neighbouring face index for the current cell
+  !! @param[in] w2_basis_face Real 5-dim array holding w2 basis functions 
+  !!            evaluated at Gaussian quadrature points on horizontal faces
+  !! @param[in] wtheta_basis_face Real 5-dim array holding wtheta basis functions
+  !!            evaluated at Gaussian quadrature points on horizontal faces
+  !! @param[in] adjacent_face Vector containing information on neighbouring face
+  !!            index for the current cell
   !! @param[in] normal_to_face Vector of normal to reference element faces.
   !! @param[in] out_face_normal Vector of normal to reference element "out
   !!                            faces".

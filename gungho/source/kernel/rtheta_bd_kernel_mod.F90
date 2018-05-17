@@ -222,8 +222,8 @@ contains
 
                   if (upwind) then
                     flux_term = flux_term + 0.5_r_def * abs(dot_product(u_at_uquad, out_face_normal(:, face))) * &
-                                            (dot_product(theta_at_uquad      * out_face_normal(:, face), out_face_normal(:, face)) - &
-                                             dot_product(theta_next_at_uquad * face_next_inward_normal , face_next_inward_normal))
+                                  (dot_product(theta_at_uquad      * out_face_normal(:, face), out_face_normal(:, face)) - &
+                                   dot_product(theta_next_at_uquad * face_next_inward_normal , face_next_inward_normal))
                   end if
 
                   do df = 1, ndf_wtheta

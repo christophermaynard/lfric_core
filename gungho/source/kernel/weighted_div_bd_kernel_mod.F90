@@ -150,8 +150,8 @@ contains
 
     real(kind=r_def), dimension(nqp_v), intent(in)      ::  wqp_v
 
-    integer(i_def), intent(in) :: adjacent_face(number_horizontal_faces)
     integer(i_def), intent(in) :: number_horizontal_faces
+    integer(i_def), intent(in) :: adjacent_face(number_horizontal_faces)
     real(r_def),    intent(in) :: out_face_normal(:,:)
 
     ! Internal variables

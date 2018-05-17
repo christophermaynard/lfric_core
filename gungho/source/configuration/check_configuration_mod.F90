@@ -99,8 +99,9 @@ contains
         call log_event( log_scratch_space, LOG_LEVEL_WARNING )
       end if
       if ( use_physics .and. transport_only ) then
-        write( log_scratch_space, '(A,L,A,L)' ) 'Invalid choice: physics = ', use_physics, &
-          'and transport only = ', transport_only
+        write( log_scratch_space, '(A,L1,A,L1)' )     &
+           'Invalid choice: physics = ', use_physics, &
+           ' and transport only = ', transport_only
         call log_event( log_scratch_space, LOG_LEVEL_ERROR )
       end if
 

@@ -4030,7 +4030,12 @@ end subroutine invoke_sample_poly_adv
   ! iteration is over core cells and a halo depth of 1. The cosmic transport scheme
   ! uses a larger halo depth and this routine requires iteration over all values
   ! in the halo as well.
-  subroutine invoke_correct_cosmic_wind(wind_x_out,wind_y_out,departure_wind_x_in,departure_wind_y_in,orientation_of_cells,direction)
+  subroutine invoke_correct_cosmic_wind(wind_x_out,                   &
+                                        wind_y_out,                   &
+                                        departure_wind_x_in,          &
+                                        departure_wind_y_in,          &
+                                        orientation_of_cells,         &
+                                        direction)
 
     use correct_cosmic_wind_kernel_mod, only: correct_cosmic_wind_code
     use flux_direction_mod,             only: x_direction, y_direction

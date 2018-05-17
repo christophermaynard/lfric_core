@@ -96,9 +96,6 @@ contains
 
     implicit none
 
-    integer(i_def), intent(out) :: cell_next( nfaces, ncells_3d )
-    integer(i_def), intent(out) :: vert_on_cell( nverts, ncells_3d )
-    real(r_def),    intent(out) :: vertex_coords( 3, nverts_3d )
     integer(i_def), intent(in)  :: nfaces
     integer(i_def), intent(in)  :: nverts
     integer(i_def), intent(in)  :: nverts_per_2d_cell
@@ -113,6 +110,9 @@ contains
                                                    ncells_2d)
     real(r_def),    intent(in)  :: vertex_coords_2d( 3, nverts_2d )
     real(r_def),    intent(in)  :: dz( nlayers )
+    integer(i_def), intent(out) :: cell_next( nfaces, ncells_3d )
+    integer(i_def), intent(out) :: vert_on_cell( nverts, ncells_3d )
+    real(r_def),    intent(out) :: vertex_coords( 3, nverts_3d )
     class(reference_element_type), &
                     intent(in)  :: reference_element
 
@@ -297,14 +297,14 @@ contains
 
     implicit none
 
-    integer(i_def), intent(out) :: face_on_cell( nfaces_per_cell, ncells_2d )
-    integer(i_def), intent(out) :: edge_on_cell( nedges_per_cell, ncells_2d )
     integer(i_def), intent(in)  :: ncells_2d
     integer(i_def), intent(in)  :: ncells_3d
     integer(i_def), intent(in)  :: nfaces_per_cell
     integer(i_def), intent(in)  :: nedges_per_cell
     integer(i_def), intent(in)  :: cell_next(:, :)
     integer(i_def), intent(in)  :: vert_on_cell(:, :)
+    integer(i_def), intent(out) :: face_on_cell( nfaces_per_cell, ncells_2d )
+    integer(i_def), intent(out) :: edge_on_cell( nedges_per_cell, ncells_2d )
     class(reference_element_type), &
                     intent(in)  :: reference_element
 
@@ -494,8 +494,8 @@ contains
 
     type(domain_size_type), intent(out) :: domain_size
     real(r_def),            intent(in)  :: domain_top
-    real(r_def),            intent(in)  :: vertex_coords(3,nverts)
     integer(i_def),         intent(in)  :: nverts
+    real(r_def),            intent(in)  :: vertex_coords(3,nverts)
 
     if ( geometry == base_mesh_geometry_spherical ) then
       domain_size%minimum%x   =  0.0_r_def
@@ -532,8 +532,8 @@ contains
 
     implicit none
 
-    real(r_def),    intent(inout)  :: vertex_coords_2d( 3, nverts_2d )
     integer(i_def), intent(in)     :: nverts_2d
+    real(r_def),    intent(inout)  :: vertex_coords_2d( 3, nverts_2d )
 
     ! The height of the lowest z-level
     real(r_def) :: base_z
@@ -570,11 +570,11 @@ contains
 
     implicit none
 
-    real(r_def),    intent(inout) :: dz(nlayers)
-    real(r_def),    intent(in)    :: eta(0:nlayers)
     integer(i_def), intent(in)    :: nlayers
     real(r_def),    intent(in)    :: surface_height
     real(r_def),    intent(in)    :: domain_top
+    real(r_def),    intent(inout) :: dz(nlayers)
+    real(r_def),    intent(in)    :: eta(0:nlayers)
 
     real(r_def)    :: domain_depth
 

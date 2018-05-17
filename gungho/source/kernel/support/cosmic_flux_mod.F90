@@ -433,7 +433,10 @@ contains
     ! Now check that the values are in the limits [0,nlayers-1]
     do jj=1,n_cells_to_sum
       if (local_index(jj)<0 .or. local_index(jj)>(nlayers-1)) then
-        write( log_scratch_space, '( A, E12.4E3, A, I6, A, 10I6 )' ) "ERROR: Departure distance", departure_dist, " is too big. Layer of interest is ",k ,' Index values are ', local_index
+        write( log_scratch_space, '( A, E12.4E3, A, I6, A, 10I6 )' ) &
+           "ERROR: Departure distance", departure_dist,              &
+           " is too big. Layer of interest is ",k ,                  &
+           " Index values are ", local_index
         call log_event( log_scratch_space, LOG_LEVEL_ERROR )
       end if
     end do
