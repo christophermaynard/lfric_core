@@ -26,7 +26,7 @@ $(WORKING_DIR)/%.pdf: $(WORKING_DIR)/%.aux $(WORKING_DIR)/%.bbl
 	while ( grep "Rerun to get" $(WORKING_DIR)/$*.log ); \
 	do \
 	    echo Rerunning build for cross-references; \
-	    pdflatex -interaction errorstopmode -output-directory $(dir $@) $(SOURCE_DIR)/$*.latex $(VERBOSE_REDIRECT); \
+	    pdflatex -interaction errorstopmode -output-directory $(dir $@) $(SOURCE_DIR)/$*.latex ; \
 	done
 	$(Q)mkdir -p $(DOCUMENT_DIR)
 	$(Q)cp $@ $(DOCUMENT_DIR)
@@ -51,7 +51,7 @@ $(WORKING_DIR)/%.aux: $(SOURCE_DIR)/%.latex \
                       $(WORKING_DIR)/figures.$$(dir $$*)
 	$(call MESSAGE,Laying out,$@)
 	$(Q)mkdir -p $(dir $@)
-	$(Q)TEXINPUTS=$(WORKING_DIR)/figures/$(dir $*):$(TEXINPUTS); pdflatex -interaction errorstopmode -output-directory $(dir $@) $< $(VERBOSE_REDIRECT)
+	$(Q)TEXINPUTS=$(WORKING_DIR)/figures/$(dir $*):$(TEXINPUTS); pdflatex -interaction errorstopmode -output-directory $(dir $@) $< 
 
 .PHONY: $(WORKING_DIR)/figures.common
 $(WORKING_DIR)/figures.common: $(patsubst $(COMMON_FIGURES)/%,$(WORKING_DIR)/figures/%.pdf,$(basename $(wildcard $(COMMON_FIGURES)/*)))
