@@ -1,11 +1,8 @@
-!-----------------------------------------------------------------------------
-! Copyright (c) 2017,  Met Office, on behalf of HMSO and Queen's Printer
-! For further details please refer to the file LICENCE.original which you
-! should have received as part of this distribution.
-!-----------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
-
+!----------------------------------------------------------------------------
+! (c) Crown copyright 2017 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!----------------------------------------------------------------------------
 !> @brief Provides an implementation of the Psy layer for physics
 
 !> @details Contains hand-rolled versions of the Psy layer that can be used for
