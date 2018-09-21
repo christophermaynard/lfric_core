@@ -9,7 +9,9 @@ module function_space_constructor_helper_functions_mod
 
   use constants_mod,         only: i_def, i_halo_index, r_def, dp_xios, IMDI
   use mesh_mod,              only: mesh_type
-  use fs_continuity_mod,     only: W0, W1, W2, W3, Wtheta, W2V, W2H, Wchi
+  use fs_continuity_mod,     only: W0, W1, W2, W2V, W2H,   &
+                                   W2broken, W2trace,      &
+                                   W3, Wtheta, Wchi
   use reference_element_mod, only: reference_element_type, &
                                    V,                      &
                                    W, S, E, N, B, T,       &
@@ -329,16 +331,63 @@ contains
       !
       ! For order 0 the value of the vector normal to the
       ! face is constant across the face(tangential) but can
+      ! vary linearly passing through the face(normal) to
+      ! the next cell.
+      !
+      ! So linear   in normal: 1-dim, ndof = 2
+      ! So constant in tangential: 2-dim, each ndof = 1
+      ! So 3 dimensions each with ndof (k+2)(k+1)(k+1)
+      !
+      ! NOTE: Not correct for simplices
+      ndof_face =   (k+1)*(k+1)
+      ndof_vol  = 3*(k+1)*(k+1)*k
+      ndof_cell = 3*(k+1)*(k+1)*(k+2)
+
+
+    case (W2H)
+      nfaces_exterior = 0
+      ndof_face  =     (k+1)*(k+1)
+      ndof_vol   = 2*k*(k+1)*(k+1)
+      ndof_cell  = 2*(k+2)*(k+1)*(k+1)
+
+
+    case (W2V)
+      nfaces_interior = 0
+      ndof_face  =     (k+1)*(k+1)
+      ndof_vol   = 1*k*(k+1)*(k+1)
+      ndof_cell  = 1*(k+2)*(k+1)*(k+1)
+
+
+    case (W2broken)
+      ! Dofs are geometrically located on faces for
+      ! vector fields and direction is normal to the face.
+      ! However, they are topologically associated with
+      ! the cell volume. Hence, this function space is
+      ! discontinuous between cells.
+      !
+      ! For order 0 the value of the vector normal to the
+      ! face is constant across the face(tangential) but can
       ! varying linearly passing through the face(normal) to
       ! the next cell.
       !
       ! So linear   in normal: 1-dim, ndof = 2
       ! So constant in tangengial: 2-dim, each ndof = 1
       ! So 3 dimensions each with ndof (k+2)(k+1)(k+1)
-      ndof_face =   (k+1)*(k+1)
-      ndof_vol  = 3*(k+1)*(k+1)*k
-      ndof_cell = 3*(k+1)*(k+1)*(k+2)
+      !
+      ! NOTE: Not correct for simplices
+      ndof_vol  = 3*(k+1)*(k+1)*(k+2)
+      ndof_cell = ndof_vol
 
+    case (W2trace)
+      ! This function space is the result of taking the trace
+      ! of a W2 Hdiv space. The result is a scalar-valued space
+      ! with functions defined only on cell faces.
+      !
+      ! This space is discontinuous across edges/vertices.
+      !
+      ! NOTE: Not correct for simplices
+      ndof_face = (k+1)*(k+1)
+      ndof_cell = 6*ndof_face
 
     case (W3)
       ! Order of this function space is same as base order
@@ -358,21 +407,6 @@ contains
       ndof_face  =   (k+1)*(k+1)
       ndof_vol   = k*(k+1)*(k+1)
       ndof_cell  = (k+2)*(k+1)*(k+1)
-
-
-    case (W2H)
-      nfaces_exterior = 0
-      ndof_face  =     (k+1)*(k+1)
-      ndof_vol   = 2*k*(k+1)*(k+1)
-      ndof_cell  = 2*(k+2)*(k+1)*(k+1)
-
-
-    case (W2V)
-      nfaces_interior = 0
-      ndof_face  =     (k+1)*(k+1)
-      ndof_vol   = 1*k*(k+1)*(k+1)
-      ndof_cell  = 1*(k+2)*(k+1)*(k+1)
-
     case (WCHI)
       ndof_vol  = (k+1)*(k+1)*(k+1)
       ndof_cell = ndof_vol
@@ -389,11 +423,11 @@ contains
 
     ! Calculated the global number of dofs on the function space
     select case (gungho_fs)
-    case (W0,W1,W2,W3,WCHI)
+    case (W0, W1, W2, W2broken, W2trace, W3, WCHI)
       ndof_glob = ncells*nlayers*ndof_vol + nface_g*ndof_face                    &
                   + nedge_g*ndof_edge     + nvert_g*ndof_vert
 
-    case (WTHETA,W2V)
+    case (WTHETA, W2V)
       ndof_glob = ncells*nlayers*ndof_vol + ncells*(nlayers+1)*ndof_face
 
     case (W2H)
@@ -484,7 +518,7 @@ contains
     !                           direction
     ! basis_index(3): The index of the nodal points array at which the basis
     !                 function is unity
-    ! basis_vector(3): Additionally if the function space is a vectro then a
+    ! basis_vector(3): Additionally if the function space is a vector then a
     !                  unit vector is needed.
 
     ! Although not strictly needed the nodal coordinates at which each basis
@@ -583,7 +617,7 @@ contains
 
     ! Allocate arrays to allow on the fly evaluation of basis functions
     select case (gungho_fs)
-    case (W1, W2, W2H, W2V)
+    case (W1, W2, W2H, W2V, W2broken, W2trace)
       allocate( unit_vec(ndof_cell,3) )
     end select
 
@@ -841,9 +875,9 @@ contains
 
 
 
-    case(W2)
+    case(W2, W2broken)
       !---------------------------------------------------------------------------
-      ! Section for test/trial functions of Hdiv spaces
+      ! Section for test/trial functions of Hdiv/discontinuous Hdiv spaces
       !---------------------------------------------------------------------------
 
       poly_order = k + 1
@@ -930,9 +964,9 @@ contains
         nodal_coords(3,i) = abs(unit_vec(i,3))*x1(lz(i))                         &
                           + (1.0_r_def - abs(unit_vec(i,3)))*x2(lz(i))
 
-        basis_order(1,i)  = poly_order - int(1 - abs(unit_vec(i,1)))
-        basis_order(2,i)  = poly_order - int(1 - abs(unit_vec(i,2)))
-        basis_order(3,i)  = poly_order - int(1 - abs(unit_vec(i,3)))
+        basis_order(1,i)  = poly_order - int(1.0_r_def - abs(unit_vec(i,1)), i_def)
+        basis_order(2,i)  = poly_order - int(1.0_r_def - abs(unit_vec(i,2)), i_def)
+        basis_order(3,i)  = poly_order - int(1.0_r_def - abs(unit_vec(i,3)), i_def)
 
         basis_x(:,1,i)    = abs(unit_vec(i,1))*x1(:)                             &
                           + (1.0_r_def - abs(unit_vec(i,1)))*x2(:)
@@ -950,6 +984,67 @@ contains
       basis_index(1,:) = lx(1:ndof_cell)
       basis_index(2,:) = ly(1:ndof_cell)
       basis_index(3,:) = lz(1:ndof_cell)
+
+
+
+    case(W2trace)
+      !---------------------------------------------------------------------------
+      ! Section for test/trial functions of Hdiv trace spaces
+      !---------------------------------------------------------------------------
+      poly_order = k
+
+      ! Compute indices of functions
+      idx = 1
+
+      ! ===============================
+      ! dofs on faces
+      ! ===============================
+      do i = 1, number_faces
+        do j1 = 1, k + 1
+          do j2 = 1, k + 1
+            j(1) = j1
+            j(2) = j2
+            j(3) = face_idx(i)
+            lx(idx) = j(j2l_face(i, 1))
+            ly(idx) = j(j2l_face(i, 2))
+            lz(idx) = j(j2l_face(i, 3))
+
+            ! Gather normals corresponding to each face
+            call reference_element%get_normal_to_out_face( i, unit_vec(idx, :) )
+            ! Label face degrees of freedom
+            entity_dofs(idx) = reference_element%get_face_entity(i)
+            idx = idx + 1
+          end do
+        end do
+      end do
+
+      do i = 1, ndof_cell
+        nodal_coords(1, i) = abs(unit_vec(i, 1))*x1(lx(i))              &
+                           + (1.0_r_def - abs(unit_vec(i, 1)))*x2(lx(i))
+        nodal_coords(2, i) = abs(unit_vec(i, 2))*x1(ly(i))              &
+                           + (1.0_r_def - abs(unit_vec(i, 2)))*x2(ly(i))
+        nodal_coords(3, i) = abs(unit_vec(i, 3))*x1(lz(i))              &
+                           + (1.0_r_def - abs(unit_vec(i, 3)))*x2(lz(i))
+
+        basis_order(1, i) = poly_order*int(1.0_r_def - abs(unit_vec(i, 1)), i_def) &
+                          + int(abs(unit_vec(i, 1)), i_def)
+        basis_order(2, i) = poly_order*int(1.0_r_def - abs(unit_vec(i, 2)), i_def) &
+                          + int(abs(unit_vec(i, 2)), i_def)
+        basis_order(3, i) = poly_order*int(1.0_r_def - abs(unit_vec(i, 3)), i_def) &
+                          + int(abs(unit_vec(i, 3)), i_def)
+
+        basis_x(:, 1, i) = abs(unit_vec(i, 1))*x1(:)              &
+                         + (1.0_r_def - abs(unit_vec(i, 1)))*x2(:)
+        basis_x(:, 2, i) = abs(unit_vec(i, 2))*x1(:)              &
+                         + (1.0_r_def - abs(unit_vec(i, 2)))*x2(:)
+        basis_x(:, 3, i) = abs(unit_vec(i, 3))*x1(:)              &
+                         + (1.0_r_def - abs(unit_vec(i, 3)))*x2(:)
+      end do
+
+      basis_index(1, :)  = lx(1:ndof_cell)
+      basis_index(2, :)  = ly(1:ndof_cell)
+      basis_index(3, :)  = lz(1:ndof_cell)
+      basis_vector(:, :) = 1.0_r_def
 
 
 
@@ -1117,9 +1212,9 @@ contains
         nodal_coords(3,i) = abs(unit_vec(i,3))*x1(lz(i))                         &
                           + (1.0_r_def - abs(unit_vec(i,3)))*x2(lz(i))
 
-        basis_order(1,i)  = poly_order - int(1 - abs(unit_vec(i,1)))
-        basis_order(2,i)  = poly_order - int(1 - abs(unit_vec(i,2)))
-        basis_order(3,i)  = poly_order - int(1 - abs(unit_vec(i,3)))
+        basis_order(1,i)  = poly_order - int(1.0_r_def - abs(unit_vec(i,1)), i_def)
+        basis_order(2,i)  = poly_order - int(1.0_r_def - abs(unit_vec(i,2)), i_def)
+        basis_order(3,i)  = poly_order - int(1.0_r_def - abs(unit_vec(i,3)), i_def)
 
         basis_x(:,1,i)    = abs(unit_vec(i,1))*x1(:)                             &
                           + (1.0_r_def - abs(unit_vec(i,1)))*x2(:)
@@ -1217,9 +1312,9 @@ contains
         nodal_coords(3,i) = abs(unit_vec(i,3))*x1(lz(i))                         &
                           + (1.0_r_def - abs(unit_vec(i,3)))*x2(lz(i))
 
-        basis_order(1,i)  = poly_order - int(1 - abs(unit_vec(i,1)))
-        basis_order(2,i)  = poly_order - int(1 - abs(unit_vec(i,2)))
-        basis_order(3,i)  = poly_order - int(1 - abs(unit_vec(i,3)))
+        basis_order(1,i)  = poly_order - int(1.0_r_def - abs(unit_vec(i,1)), i_def)
+        basis_order(2,i)  = poly_order - int(1.0_r_def - abs(unit_vec(i,2)), i_def)
+        basis_order(3,i)  = poly_order - int(1.0_r_def - abs(unit_vec(i,3)), i_def)
 
         basis_x(:,1,i)    = abs(unit_vec(i,1))*x1(:)                             &
                           + (1.0_r_def - abs(unit_vec(i,1)))*x2(:)
@@ -1283,7 +1378,7 @@ contains
 
     ! Allocate arrays to allow on the fly evaluation of basis functions
     select case (gungho_fs)
-    case (W1, W2, W2H, W2V)
+    case (W1, W2, W2H, W2V, W2broken, W2trace)
       deallocate( unit_vec )
     end select
 
@@ -1506,7 +1601,7 @@ contains
           mesh%get_num_cells_halo(1)
 
     select case (gungho_fs)
-    case(W0,W1,W2,W3,WCHI)
+    case(W0, W1, W2, W2broken, W2trace, W3, WCHI)
       select_entity => select_entity_all
     case(WTHETA)
       select_entity => select_entity_theta
@@ -1959,7 +2054,7 @@ contains
                            tmp_levs,                     &
                            idx )
 
-    case (W2)
+    case (W2, W2broken, W2trace)
       ! W2 locates data on faces
 
       call compute_levels( nlayers,                      &

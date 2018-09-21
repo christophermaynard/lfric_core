@@ -4,14 +4,11 @@
 ! should have received as part of this distribution.
 !-----------------------------------------------------------------------------
 !> @brief Provides access to the members of the w0_kernel class.
-!>
-!> Accessor functions for the w0_kernel class are defined in this module.
-!>
 module invert_local_operator_kernel_mod
 
   use argument_mod,      only: arg_type, func_type,                      &
                                GH_OPERATOR, GH_FIELD, GH_READ, GH_WRITE, &
-                               CELLS
+                               CELLS, ANY_SPACE_1
   use constants_mod,     only: r_def
   use fs_continuity_mod, only: W3
   use kernel_mod,        only: kernel_type
@@ -19,14 +16,16 @@ module invert_local_operator_kernel_mod
 
   implicit none
 
+  private
+
   !---------------------------------------------------------------------------
   ! Public types
   !---------------------------------------------------------------------------
   type, public, extends(kernel_type) :: invert_local_operator_kernel_type
     private
-    type(arg_type) :: meta_args(2) = (/          &
-        arg_type(GH_OPERATOR, GH_WRITE, W3, W3), &
-        arg_type(GH_OPERATOR, GH_READ,  W3, W3)  &
+    type(arg_type) :: meta_args(2) = (/                            &
+        arg_type(GH_OPERATOR, GH_WRITE, ANY_SPACE_1, ANY_SPACE_1), &
+        arg_type(GH_OPERATOR, GH_READ,  ANY_SPACE_1, ANY_SPACE_1)  &
         /)
     integer :: iterates_over = CELLS
 
@@ -61,11 +60,13 @@ end function invert_local_operator_constructor
 !! @param[in] ndf Number of degrees of freedom per cell.
 !! @param[in] ncell3d ncell*nlayers
 !! @param[in] ncell3d_inv ncell*nlayers
-!! @param[inout] matrix_inv Inverse matrix
+!! @param[out] matrix_inv Inverse matrix
 !! @param[in] matrix Input matrix
 subroutine invert_local_operator_code(cell, nlayers, ncell3d_inv,       &
                                       matrix_inv, ncell3d, matrix,          &
                                       ndf)
+
+  implicit none
 
   !Arguments
   integer, intent(in)     :: cell
@@ -73,8 +74,8 @@ subroutine invert_local_operator_code(cell, nlayers, ncell3d_inv,       &
   integer, intent(in)     :: ncell3d, ncell3d_inv
 
 
-  real(kind=r_def), dimension(ndf,ndf,ncell3d),     intent(in)     :: matrix
-  real(kind=r_def), dimension(ndf,ndf,ncell3d_inv), intent(inout)  :: matrix_inv
+  real(kind=r_def), dimension(ndf,ndf,ncell3d),     intent(in)   :: matrix
+  real(kind=r_def), dimension(ndf,ndf,ncell3d_inv), intent(out)  :: matrix_inv
 
   !Internal variables
   integer                                      :: k, ik

@@ -54,6 +54,9 @@ type, public, extends(quadrature_type) :: quadrature_edge_type
   !> Total number of edges
   integer(kind=i_def) :: nedges
 
+  !> Edges in the horizontal and vertical
+  integer(kind=i_def) :: nedges_horizontal, nedges_vertical
+
 contains
 
   ! Get a proxy with public pointers to the data in a quadrature_edge type.
@@ -84,8 +87,10 @@ type, public :: quadrature_edge_proxy_type
 
   !> Number of points
   integer(kind=i_def), public       :: np_xyz
-  !> Number of edges
+
+  !> Number of edges (vertical, horizontal, and total)
   integer(kind=i_def), public       :: nedges
+  integer(kind=i_def), public       :: nedges_horizontal, nedges_vertical
 
 contains
 
@@ -127,21 +132,23 @@ function init_quadrature(np_1, horizontal_edges, vertical_edges, &
 
   real(kind=r_def), allocatable           :: points_weights_1(:,:)
 
-  integer(kind=i_def)                     :: nedges
 
-  if ( horizontal_edges ) then
-    nedges = 8
-  end if
-  if ( vertical_edges ) then
-    nedges = 4
-  end if
-  if ( horizontal_edges .and. vertical_edges ) then
-      write( log_scratch_space, '(A)' )  'All edge quadrature not supported'
-      call log_event( log_scratch_space, LOG_LEVEL_ERROR )
-  end if
   if ( .not. (horizontal_edges .or. vertical_edges) ) then
       write( log_scratch_space, '(A)' )  'Invalid edge choice for quadrature'
       call log_event( log_scratch_space, LOG_LEVEL_ERROR )
+  end if
+
+  if ( horizontal_edges ) then
+    self%nedges_horizontal = reference_element%get_number_horizontal_edges()
+  else
+    self%nedges_horizontal = 0
+  end if
+
+  if ( vertical_edges ) then
+    self%nedges_vertical   = reference_element%get_number_edges() &
+                           - reference_element%get_number_horizontal_edges()
+  else
+    self%nedges_vertical   = 0
   end if
 
   ! Allocate space for the points and weights of the 1D with dimension defined
@@ -153,7 +160,7 @@ function init_quadrature(np_1, horizontal_edges, vertical_edges, &
 
   ! Initialise object data
   self%np_xyz = np_1
-  self%nedges = nedges
+  self%nedges = self%nedges_horizontal + self%nedges_vertical
   call create_quadrature( self, points_weights_1, reference_element, &
                           horizontal_edges, vertical_edges)
 
@@ -183,11 +190,13 @@ subroutine create_quadrature(self, points_weights_1, reference_element, &
   real(kind=r_def),              intent(in) :: points_weights_1(:,:)
   logical,                       intent(in) :: horizontal_edges, vertical_edges
   class(reference_element_type), intent(in) :: reference_element
-  integer(kind=i_def)                       :: i, j, edge, vertex ,nvertex, nedge
+  integer(kind=i_def)                       :: i, edge, vertex ,nvertex, nedge
   real(kind=r_def), dimension(3)            :: vert, tangent
 
   real(kind=r_def), allocatable, dimension(:)   :: vert_x, vert_y, edge_x, variable_x
   real(kind=r_def), allocatable, dimension(:,:) :: edge_coords
+
+  integer(kind=i_def) :: offset, vert_offset, horiz_extent
 
   ! Allocate space for the points of points weights in the quad type
   allocate( self%points_xyz(3, self%np_xyz, self%nedges) )
@@ -246,31 +255,58 @@ subroutine create_quadrature(self, points_weights_1, reference_element, &
     vert_y(vertex) = vert(2)
   end do
 
+  ! We fill arrays for horizontal edges in the same loop, so we only
+  ! need to loop over the 4 (cube) or 3 (tri. prisms) edges on a
+  ! horizontal face (top/bottom) of the reference element.
+  horiz_extent = self%nedges_horizontal/2
+
+  ! Determine offset based on whether all or a subset of edges are needed
+  if ( horizontal_edges .and. vertical_edges ) then
+    ! Based on the numbering of edges in the reference element, the
+    ! bottom face edges (WB, SB, EB, and NB) are labeled 1 through 4.
+    ! The top edges (WT, ST, ET, NT) are 9 through 12. The middle
+    ! edges 5 through 8 are vertically aligned.
+    ! These offsets ensure that the quadrature arrays match the correct
+    ! edge index.
+    offset   = horiz_extent
+    vert_offset = self%nedges_horizontal
+  else
+    ! Otherwise, no offset since this is only a strictly vertical or horizontal
+    ! quadrature rule.
+    offset   = 0
+    vert_offset = horiz_extent
+  end if
+
   ! Distribute the 1D points and weights
+  ! First we set the points and weights for the horizontally
+  ! aligned edges (if any)
   if ( horizontal_edges ) then
     ! Horizontal edges (X or Y quadrature + fixed Y or X and fixed Z)
-    do edge = 1, 4
-      do i = 1, size(points_weights_1,1)
-        self%points_xyz(1,i,edge) = points_weights_1(i,1)*variable_x(edge) + (1.0_r_def - variable_x(edge))*edge_x(edge)
-        self%points_xyz(2,i,edge) = points_weights_1(i,1)*(1.0_r_def - variable_x(edge)) + variable_x(edge)*edge_x(edge)
-        self%points_xyz(3,i,edge) = 0.0_r_def
-        self%weights_xyz(i,edge)  = points_weights_1(i,2)
+    do edge = 1, horiz_extent
+      do i = 1, size(points_weights_1, 1)
+        self%points_xyz(1, i, edge) = points_weights_1(i, 1)*variable_x(edge)               &
+                                    + (1.0_r_def - variable_x(edge))*edge_x(edge)
+        self%points_xyz(2, i, edge) = points_weights_1(i, 1)*(1.0_r_def - variable_x(edge)) &
+                                    + variable_x(edge)*edge_x(edge)
+        self%points_xyz(3, i, edge) = 0.0_r_def
+        self%weights_xyz(i,   edge) = points_weights_1(i, 2)
 
-        self%points_xyz(1,i,edge+4 ) = self%points_xyz(1,i,edge)
-        self%points_xyz(2,i,edge+4 ) = self%points_xyz(2,i,edge)
-        self%points_xyz(3,i,edge+4 ) = 1.0_r_def
-        self%weights_xyz(i,edge+4)  = self%weights_xyz(i,edge)
+        self%points_xyz(1, i, edge + vert_offset) = self%points_xyz(1, i, edge)
+        self%points_xyz(2, i, edge + vert_offset) = self%points_xyz(2, i, edge)
+        self%points_xyz(3, i, edge + vert_offset) = 1.0_r_def
+        self%weights_xyz(i,   edge + vert_offset) = self%weights_xyz(i, edge)
       end do
     end do
   end if
+  ! Now the vertical edges (if any)
   if ( vertical_edges ) then
-    do edge = 1,4
+    do edge = 1, self%nedges_vertical
       ! Vertical edges (Z quadrature, and fixed X and Y)
       do i = 1, size(points_weights_1,1)
-        self%points_xyz(1,i,edge) = vert_x(edge)
-        self%points_xyz(2,i,edge) = vert_y(edge)
-        self%points_xyz(3,i,edge) = points_weights_1(i,1)
-        self%weights_xyz(i,edge) = points_weights_1(i,2)         
+        self%points_xyz(1, i, edge + offset) = vert_x(edge)
+        self%points_xyz(2, i, edge + offset) = vert_y(edge)
+        self%points_xyz(3, i, edge + offset) = points_weights_1(i, 1)
+        self%weights_xyz(i,   edge + offset) = points_weights_1(i, 2)         
       end do
     end do
   end if

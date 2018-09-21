@@ -28,7 +28,9 @@ use log_mod,               only: log_event, log_scratch_space                  &
                                , LOG_LEVEL_INFO
 use reference_element_mod, only: reference_element_type
 
-use fs_continuity_mod,     only: W0, W1, W2, W3, Wtheta, W2V, W2H, Wchi
+use fs_continuity_mod,     only: W0, W1, W2, W3, Wtheta, &
+                                 W2broken, W2trace,      &
+                                 W2V, W2H, Wchi
 use function_space_constructor_helper_functions_mod, &
                            only: ndof_setup, basis_setup, &
                                  dofmap_setup, levels_setup
@@ -43,7 +45,7 @@ implicit none
 
 private
 
-public :: W0, W1, W2, W3, Wtheta, W2V, W2H, Wchi, &
+public :: W0, W1, W2, W2broken, W2trace, W3, Wtheta, W2V, W2H, Wchi, &
           generate_function_space_id
 
 integer(i_def), public, parameter :: BASIS      = 100
@@ -421,7 +423,7 @@ subroutine init_function_space( self )
 
 
   select case (self%fs)
-  case (W0,WTHETA,WCHI)
+  case (W0, WTHETA, WCHI)
     self%dim_space      = 1  ! Scalar field
     self%dim_space_diff = 3  ! Vector field
 
@@ -429,11 +431,11 @@ subroutine init_function_space( self )
     self%dim_space      = 3  ! Vector field
     self%dim_space_diff = 3  ! Vector field
 
-  case (W2,W2V,W2H)
+  case (W2, W2broken, W2V, W2H)
     self%dim_space      = 3  ! Vector field
     self%dim_space_diff = 1  ! Scalar field
 
-  case (W3)
+  case (W2trace, W3)
     self%dim_space      = 1  ! Scalar field
     self%dim_space_diff = 3  ! Vector field
 

@@ -11,7 +11,7 @@
 
 module fs_continuity_mod
 
-use constants_mod, only: i_native
+use constants_mod, only: i_native, str_short
 use log_mod,       only: log_event, log_scratch_space, log_level_error
 
 implicit none
@@ -21,37 +21,41 @@ public :: name_from_functionspace
 
 character(*), private, parameter :: module_name = 'fs_continuity_mod'
 
-integer(i_native), private, parameter :: label_length = 7
-
 !-------------------------------------------------------------------------------
 ! Module parameters
 !-------------------------------------------------------------------------------
-integer(i_native), public, parameter :: W0      = 173
-integer(i_native), public, parameter :: W1      = 194
-integer(i_native), public, parameter :: W2      = 889
-integer(i_native), public, parameter :: W3      = 424
-integer(i_native), public, parameter :: Wtheta  = 274
-integer(i_native), public, parameter :: W2V     = 857
-integer(i_native), public, parameter :: W2H     = 884
-integer(i_native), public, parameter :: Wchi    = 869
+integer(i_native), public, parameter :: W0       = 173
+integer(i_native), public, parameter :: W1       = 194
+integer(i_native), public, parameter :: W2       = 889
+integer(i_native), public, parameter :: W2V      = 857
+integer(i_native), public, parameter :: W2H      = 884
+integer(i_native), public, parameter :: W2broken = 211
+integer(i_native), public, parameter :: W2trace  = 213
+integer(i_native), public, parameter :: W3       = 424
+integer(i_native), public, parameter :: Wtheta   = 274
+integer(i_native), public, parameter :: Wchi     = 869
 
-integer(i_native), public, parameter :: fs_enumerator(8) = [W0,     &
-                                                            W1,     &
-                                                            W2,     &
-                                                            W3,     &
-                                                            Wtheta, &
-                                                            W2V,    &
-                                                            W2H,    &
-                                                            Wchi]
+integer(i_native), public, parameter :: fs_enumerator(10) = [W0,       &
+                                                             W1,       &
+                                                             W2,       &
+                                                             W2V,      &
+                                                             W2H,      &
+                                                             W2broken, &
+                                                             W2trace,  &
+                                                             W3,       &
+                                                             Wtheta,   &
+                                                             Wchi]
 
-character(label_length), public, parameter :: fs_name(8) &
-         = [character(label_length) :: 'W0',     &
-                                       'W1',     &
-                                       'W2',     &
-                                       'W3',     &
-                                       'Wtheta', &
-                                       'W2V',    &
-                                       'W2H',    &
+character(str_short), public, parameter :: fs_name(10) &
+         = [character(str_short)    :: 'W0',       &
+                                       'W1',       &
+                                       'W2',       &
+                                       'W2V',      &
+                                       'W2H',      &
+                                       'W2broken', &
+                                       'W2trace',  &
+                                       'W3',       &
+                                       'Wtheta',   &
                                        'Wchi']
 
 contains
@@ -68,7 +72,7 @@ contains
 
     integer(i_native), intent(in) :: fs
 
-    character(label_length) :: name_from_functionspace
+    character(str_short) :: name_from_functionspace
 
     integer(i_native) :: fs_index
 

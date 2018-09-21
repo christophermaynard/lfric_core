@@ -3,12 +3,10 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-----------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
-
 !> @brief Quadrature object for computing quadrature on faces of a
 !>        cell.
-!> @details Face quadrature object that contains quadrature points and weights stored in 3D (x-y-z), 
+!> @details Face quadrature object that contains quadrature points and weights 
+!> stored in 3D (x-y-z), 
 !> on one of a number of faces of a cell. A proxy  
 !> is used to access the data. A type bound procedure 'compute_function' 
 !> is also available. This method uses the call_function defined in 
@@ -49,8 +47,9 @@ type, public, extends(quadrature_type) :: quadrature_face_type
   !> Total number of points
   integer(kind=i_def) :: np_xyz
 
-  !> Total number of faces
+  !> Number of faces (vertical, horizontal, and total)
   integer(kind=i_def) :: nfaces
+  integer(kind=i_def) :: nfaces_horizontal, nfaces_vertical
 
 contains
 
@@ -82,8 +81,9 @@ type, public :: quadrature_face_proxy_type
 
   !> Number of points
   integer(kind=i_def), public       :: np_xyz
-  !> Number of faces
+  !> Number of faces (vertical, horizontal, and total)
   integer(kind=i_def), public       :: nfaces
+  integer(kind=i_def), public       :: nfaces_horizontal, nfaces_vertical
 
 contains
 
@@ -128,21 +128,22 @@ function init_quadrature_variable(np_1, np_2, horizontal_faces, vertical_faces, 
   real(kind=r_def), allocatable           :: points_weights_1(:,:)
   real(kind=r_def), allocatable           :: points_weights_2(:,:)
 
-  integer(kind=i_def)                     :: nfaces
-
-  if ( horizontal_faces ) then
-    nfaces = 4
-  end if
-  if ( vertical_faces ) then
-    nfaces = 2
-  end if
-  if ( horizontal_faces .and. vertical_faces ) then
-      write( log_scratch_space, '(A)' )  'All face quadrature not supported'
-      call log_event( log_scratch_space, LOG_LEVEL_ERROR )
-  end if
   if ( .not. (horizontal_faces .or. vertical_faces) ) then
       write( log_scratch_space, '(A)' )  'Invalid face choice for quadrature'
       call log_event( log_scratch_space, LOG_LEVEL_ERROR )
+  end if
+
+  ! Note: for both prisms and cubes, there will only ever be 2 vertical faces
+  if ( horizontal_faces ) then
+    self%nfaces_horizontal = reference_element%get_number_horizontal_faces()
+  else
+    self%nfaces_horizontal = 0
+  end if
+
+  if ( vertical_faces ) then
+    self%nfaces_vertical   = 2
+  else
+    self%nfaces_vertical   = 0
   end if
 
   ! Allocate space for the points and weights of the 1D with dimension defined
@@ -156,7 +157,7 @@ function init_quadrature_variable(np_1, np_2, horizontal_faces, vertical_faces, 
 
   ! Initialise object data
   self%np_xyz = np_1*np_2
-  self%nfaces = nfaces
+  self%nfaces = self%nfaces_horizontal + self%nfaces_vertical
   call create_quadrature( self, points_weights_1, points_weights_2, &
                           reference_element, horizontal_faces, vertical_faces)
 
@@ -190,18 +191,18 @@ function init_quadrature_symmetrical(np, horizontal_faces, vertical_faces, &
 
   real(kind=r_def), allocatable, target   :: points_weights_1(:,:)
   real(kind=r_def), pointer               :: points_weights_2(:,:) => null()
-  integer(kind=i_def)                     :: nfaces
 
-  if ( horizontal_faces ) then
-    nfaces = 4
-  end if
-  if ( vertical_faces ) then
-    nfaces = 2
-  end if
   if ( horizontal_faces .and. vertical_faces ) then
-      write( log_scratch_space, '(A)' )  'All face quadrature not supported'
-      call log_event( log_scratch_space, LOG_LEVEL_ERROR )
+    self%nfaces_horizontal = reference_element%get_number_horizontal_faces()
+    self%nfaces_vertical   = 2
+  else if ( horizontal_faces ) then
+    self%nfaces_horizontal = reference_element%get_number_horizontal_faces()
+    self%nfaces_vertical   = 0
+  else if ( vertical_faces ) then
+    self%nfaces_horizontal = 0
+    self%nfaces_vertical   = 2
   end if
+
   if ( .not. (horizontal_faces .or. vertical_faces) ) then
       write( log_scratch_space, '(A)' )  'Invalid face choice for quadrature'
       call log_event( log_scratch_space, LOG_LEVEL_ERROR )
@@ -217,8 +218,7 @@ function init_quadrature_symmetrical(np, horizontal_faces, vertical_faces, &
 
   ! Initialise object data
   self%np_xyz = np*np
-  self%nfaces = nfaces
-
+  self%nfaces = self%nfaces_horizontal + self%nfaces_vertical
   call create_quadrature( self, points_weights_1, points_weights_2, &
                           reference_element, horizontal_faces, vertical_faces)
 
@@ -251,7 +251,7 @@ subroutine create_quadrature(self, points_weights_1, points_weights_2, &
   class(reference_element_type), intent(in) :: reference_element
   integer(kind=i_def)             :: i, j, face, ij, edge, nedge
   real(kind=r_def), dimension(3)  :: tangent
-
+  integer(kind=i_def)             :: offset
   real(kind=r_def), allocatable, dimension(:)   :: face_x, variable_x
   real(kind=r_def), allocatable, dimension(:,:) :: edge_coords
 
@@ -272,7 +272,7 @@ subroutine create_quadrature(self, points_weights_1, points_weights_2, &
   ! |
   ! --------x
 
-  ! We do this for every edge but only need the first four
+  ! We do this for every edge
   nedge = reference_element%get_number_edges()
   allocate( face_x(nedge), variable_x(nedge) )
   call reference_element%get_edge_centre_coordinates(edge_coords)
@@ -286,35 +286,56 @@ subroutine create_quadrature(self, points_weights_1, points_weights_2, &
                  + (1.0_r_def-abs(tangent(2)))*edge_coords(edge,2)
   end do
 
-  ! Distribute the 1D points and weights
-  do face = 1, self%nfaces
-    ij = 1  
-    if ( horizontal_faces ) then
+  ! Determine offset based on whether all or a subset of faces are needed
+  if ( horizontal_faces .and. vertical_faces ) then
+    ! If all faces are needed: horizontal faces (ex. cubes) are labeled: 1, 2, 3, and 4.
+    ! Vertical faces (bottom and top resp.) are labeled: 5 and 6.
+    ! Offset in the quadrature arrays depends on the number of horizontal
+    ! faces that are present in the quadrature rule.
+    offset = self%nfaces_horizontal
+  else
+    ! Otherwise, no offset since this is only a strictly vertical or horizontal
+    ! quadrature rule.
+    offset = 0
+  end if
+
+  ! Distribute the 1D points and weights:
+  ! Collect horizontal face information (if any)
+  if ( horizontal_faces ) then
+    do face = 1, self%nfaces_horizontal 
+      ij = 1
       ! Horizontal faces (X-Z or Y-Z quadrature + fixed Y or X)
-      do i = 1, size(points_weights_1,1)
-        do j = 1, size(points_weights_2,1)
-          self%points_xyz(1,ij,face) = points_weights_1(i,1)*variable_x(face) + (1.0_r_def - variable_x(face))*face_x(face)
-          self%points_xyz(2,ij,face) = points_weights_1(i,1)*(1.0_r_def - variable_x(face)) + variable_x(face)*face_x(face)
-          self%points_xyz(3,ij,face) = points_weights_2(j,1)
-          self%weights_xyz(ij,face)  = points_weights_1(i,2)*points_weights_2(j,2)
+      do i = 1, size(points_weights_1, 1)
+        do j = 1, size(points_weights_2, 1)
+          self%points_xyz(1, ij, face) = points_weights_1(i, 1)*variable_x(face) &
+                                       + (1.0_r_def - variable_x(face))*face_x(face)
+          self%points_xyz(2, ij, face) = points_weights_1(i, 1)*(1.0_r_def       &
+                                       - variable_x(face)) + variable_x(face)*face_x(face)
+          self%points_xyz(3, ij, face) = points_weights_2(j, 1)
+          self%weights_xyz(ij,   face) = points_weights_1(i, 2)*points_weights_2(j, 2)
           ij = ij + 1
         end do
       end do
-    end if
-    if  ( vertical_faces ) then
+    end do
+  end if
+
+  ! Collect vertical face information (if any)
+  if ( vertical_faces ) then
+    do face = 1, self%nfaces_vertical
+      ij = 1
       ! Vertical faces (X-Y quadrature + Z = 0,1), assumes face 1 has z = 0 and
       ! face 2 has z = 1
-      do i = 1, size(points_weights_1,1)
-        do j = 1, size(points_weights_2,1)
-          self%points_xyz(1,ij,face) = points_weights_1(i,1)
-          self%points_xyz(2,ij,face) = points_weights_2(j,1)
-          self%points_xyz(3,ij,face) = real(face-1,r_def)
-          self%weights_xyz(ij,face)  = points_weights_1(i,2)*points_weights_2(j,2)
+      do i = 1, size(points_weights_1, 1)
+        do j = 1, size(points_weights_2, 1)
+          self%points_xyz(1, ij, face + offset) = points_weights_1(i, 1)
+          self%points_xyz(2, ij, face + offset) = points_weights_2(j, 1)
+          self%points_xyz(3, ij, face + offset) = real(face - 1, r_def)
+          self%weights_xyz(ij,   face + offset) = points_weights_1(i, 2)*points_weights_2(j, 2)
           ij = ij + 1
         end do
       end do
-    end if
-  end do
+    end do
+  end if
 
   deallocate(variable_x, face_x, edge_coords)
 
@@ -373,7 +394,7 @@ subroutine compute_function(self, function_to_call, function_space, &
       do df = 1, ndf
         basis(:,df,qp1,face) = function_space%call_function(function_to_call,df,&
                                                      self%points_xyz(:,qp1,face))
-      end do  
+      end do
     end do
   end do
 

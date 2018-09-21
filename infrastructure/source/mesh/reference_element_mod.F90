@@ -73,6 +73,7 @@ module reference_element_mod
     procedure, public :: get_normal_to_face
     procedure, public :: get_normals_to_faces
     procedure, public :: get_tangent_to_edge
+    procedure, public :: get_normal_to_out_face
     procedure, public :: get_normals_to_out_faces
     procedure, public :: get_face_entity
     procedure, public :: get_edge_entity
@@ -869,6 +870,24 @@ contains
     tangent = this%tangent_to_edge(edge_index, :)
 
   end subroutine get_tangent_to_edge
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !> @brief Gets the vector representing the outward normal to a face.
+  !>
+  !> @param[in]  face_index  Face enumerator.
+  !> @param[out] out_normal  Vector triple.
+  !>
+  pure subroutine get_normal_to_out_face( this, face_index, out_normal )
+
+    implicit none
+
+    class(reference_element_type), intent(in)  :: this
+    integer(i_def),                intent(in)  :: face_index
+    real(r_def),                   intent(out) :: out_normal(3)
+
+    out_normal = this%out_face_normal(:, face_index)
+
+  end subroutine get_normal_to_out_face
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !> @brief Gets the vectors normal to each "out face".

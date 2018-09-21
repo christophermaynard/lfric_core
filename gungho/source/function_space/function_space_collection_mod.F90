@@ -16,8 +16,8 @@ module function_space_collection_mod
 
   use constants_mod,      only: i_def, l_def
   use function_space_mod, only: function_space_type, generate_function_space_id
-  use fs_continuity_mod,  only: W0, W1, W2, W3, Wtheta, W2V, W2H, Wchi, &
-                                name_from_functionspace
+  use fs_continuity_mod,  only: W0, W1, W2, W2V, W2H, W2broken, W2trace, W3, &
+                                Wtheta, Wchi, name_from_functionspace
   use log_mod,            only: log_event, log_scratch_space, &
                                 LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE
   use linked_list_mod,    only: linked_list_type, &
@@ -99,7 +99,7 @@ function get_fs(self, mesh_id, element_order, lfric_fs) &
 
   select case (lfric_fs)
 
-  case (W0,W1,W2,W3,WTHETA,W2V,W2H, WCHI)
+  case (W0, W1, W2, W2V, W2H, W2broken, W2trace, W3, WTHETA, WCHI)
   case default
     write(log_scratch_space, '(A,I0,A)')                   &
         'Function space type continuity type (', lfric_fs, &
@@ -109,7 +109,7 @@ function get_fs(self, mesh_id, element_order, lfric_fs) &
         'Available integer ids are: 100-107, corresponding to:'
     call log_event(log_scratch_space, LOG_LEVEL_INFO)
     write(log_scratch_space, '(A)') &
-        '[ W0, W1, W2, W3, WTHETA, W2V, W2H, WCHI ]'
+        '[ W0, W1, W2, W2V, W2H, W2broken, W2trace, W3, WTHETA, WCHI ]'
     call log_event(log_scratch_space, LOG_LEVEL_ERROR)
   end select
 
@@ -206,6 +206,8 @@ end function get_fs_by_id
 !> held in the collection
 
 function get_fs_collection_size(self) result(fs_list_length)
+
+  implicit none
 
   class(function_space_collection_type), intent(in)   :: self
 
