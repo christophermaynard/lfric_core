@@ -41,7 +41,7 @@ module {{listname}}_config_mod
 {%-   if parameter.get_configure_type() == 'enumeration' %}
   integer(i_native), public, protected :: {{parameter.name}}
 {%-   elif parameter.get_configure_type() == 'array' %}
-{%-     if parameter.is_immdeiate_size() %}
+{%-     if parameter.is_immediate_size() %}
   {{parameter.fortran_type.declaration()}}, public, protected :: {{parameter.name}}({{parameter.bounds[0]}})
 {%-     else %}
   {{parameter.fortran_type.declaration()}}, public, protected, allocatable :: {{parameter.name}}(:)
@@ -212,7 +212,7 @@ contains
 {%- if arrays %}
 {{-   '\n'}}
 {%-   for name in arrays %}
-{%-     if not parameters[name].is_immdeiate_size() %}
+{%-     if not parameters[name].is_immediate_size() %}
     allocate( {{name}}(max_array_size), stat=condition )
     if (condition /= 0) then
       write( log_scratch_space, '(A)' ) &
@@ -325,7 +325,7 @@ contains
 
 {%- for name in arrays %}
 {%-   set parameter = parameters[name] %}
-{%-   if not parameter.is_immdeiate_size() %}
+{%-   if not parameter.is_immediate_size() %}
     {{parameter.fortran_type.declaration()}}, allocatable :: new_{{name}}(:)
 {%-   endif %}
 {%- endfor %}
@@ -341,7 +341,7 @@ contains
 {%-   if parameter.is_deferred_size() %}
     size = {{parameter.bounds}}
 {%-   endif %}
-{%-   if not parameter.is_immdeiate_size() %}
+{%-   if not parameter.is_immediate_size() %}
     allocate( new_{{name}}(size), stat=condition )
     if (condition /= 0) then
       write(log_scratch_space, '(A)') 'Unable to allocate "{{name}}"'

@@ -50,7 +50,7 @@ def main():
 
     meta_parser = namelist.NamelistConfigDescription()
 
-    # Generate namelists from the namelist configuration pickle file.
+    # Generate namelists from the namelist configuration file.
     description_list = meta_parser.process_config(meta_filename)
 
     for description in description_list:

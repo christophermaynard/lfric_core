@@ -19,8 +19,7 @@ $(CONFIG_DIR)/rose-meta.json $(CONFIG_DIR)/config_namelists.txt: $(META_FILE_DIR
 $(CONFIG_DIR)/rose-meta.json $(CONFIG_DIR)/config_namelists.txt:
 	$(call MESSAGE,Generating namelist configuration file.)
 	$(Q)mkdir -p $(dir $@)
-	$(Q)rose_picker $(VERBOSE_ARG) \
-                        $(META_FILE_DIR)/rose-meta.conf    \
+	$(Q)rose_picker $(META_FILE_DIR)/rose-meta.conf    \
                         -directory $(CONFIG_DIR)           \
                         -include_dirs $(ROOT_DIR)
 

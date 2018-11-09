@@ -201,7 +201,7 @@ class _Array(_Property):
     def get_configure_type(self):
         return 'array'
 
-    def is_immdeiate_size(self):
+    def is_immediate_size(self):
         if self.bounds.isdigit():
             return True
 
@@ -332,7 +332,7 @@ class NamelistDescription(object):
                    'allocatables':  [parameter.name
                                      for parameter in self._parameters.values()
                                      if (isinstance(parameter, _Array) and
-                                         not parameter.is_immdeiate_size())],
+                                         not parameter.is_immediate_size())],
                    'enumerations':  [parameter.name
                                      for parameter in self._parameters.values()
                                      if isinstance(parameter, _Enumeration)],
