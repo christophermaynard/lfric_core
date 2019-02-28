@@ -1,3 +1,8 @@
+!-----------------------------------------------------------------------------
+! Copyright (c) 2017,  Met Office, on behalf of HMSO and Queen's Printer
+! For further details please refer to the file LICENCE.original which you
+! should have received as part of this distribution.
+!-----------------------------------------------------------------------------
   module psykal_lite_field_vector_mod
     USE constants_mod, ONLY: r_def
     USE operator_mod, ONLY: operator_type, operator_proxy_type, columnwise_operator_type, columnwise_operator_proxy_type
@@ -176,7 +181,7 @@
       !
       !$omp parallel default(shared), private(df)
       !$omp do schedule(static)
-      DO df=1,self_vector_proxy%vspace%get_last_dof_owned()
+      DO df=1,self_vector_proxy%vspace%get_last_dof_annexed()
         self_vector_proxy%data(df) = self_vector_proxy%data(df) + alpha*y_vector_proxy%data(df)
       END DO 
       !$omp end do
@@ -223,7 +228,7 @@
       !
       !$omp parallel default(shared), private(df)
       !$omp do schedule(static)
-      DO df=1,self_vector_proxy%vspace%get_last_dof_owned()
+      DO df=1,self_vector_proxy%vspace%get_last_dof_annexed()
         self_vector_proxy%data(df) = scalar
       END DO 
       !$omp end do
@@ -244,10 +249,7 @@
       REAL(KIND=r_def), intent(in) :: alpha
       TYPE(field_type), intent(inout) :: self_vector
       TYPE(field_type), intent(in) :: x_vector
-      INTEGER df
-      INTEGER ndf_any_space_1_self_vector, undf_any_space_1_self_vector
-      TYPE(mesh_type), pointer :: mesh => null()
-      INTEGER nlayers
+      INTEGER :: df
       TYPE(field_proxy_type) self_vector_proxy, x_vector_proxy
       !
       ! Initialise field and/or operator proxies
@@ -255,24 +257,11 @@
       self_vector_proxy = self_vector%get_proxy()
       x_vector_proxy = x_vector%get_proxy()
       !
-      ! Initialise number of layers
-      !
-      nlayers = self_vector_proxy%vspace%get_nlayers()
-      !
-      ! Create a mesh object
-      !
-      mesh => self_vector%get_mesh()
-      !
-      ! Initialise number of DoFs for any_space_1_self_vector
-      !
-      ndf_any_space_1_self_vector = self_vector_proxy%vspace%get_ndf()
-      undf_any_space_1_self_vector = self_vector_proxy%vspace%get_undf()
-      !
       ! Call kernels and communication routines
       !
       !$omp parallel default(shared), private(df)
       !$omp do schedule(static)
-      DO df=1,self_vector_proxy%vspace%get_last_dof_owned()
+      DO df=1,self_vector_proxy%vspace%get_last_dof_annexed()
         self_vector_proxy%data(df) = alpha*self_vector_proxy%data(df) + x_vector_proxy%data(df)
       END DO 
       !$omp end do
@@ -319,7 +308,7 @@
       !
       !$omp parallel default(shared), private(df)
       !$omp do schedule(static)
-      DO df=1,self_vector_proxy%vspace%get_last_dof_owned()
+      DO df=1,self_vector_proxy%vspace%get_last_dof_annexed()
         self_vector_proxy%data(df) = scale*self_vector_proxy%data(df)
       END DO 
       !$omp end do

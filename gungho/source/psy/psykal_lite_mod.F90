@@ -1009,26 +1009,24 @@ contains
     type( field_type ), intent(in )    :: field1,field2
     type( field_type ), intent(inout ) :: field_res
     real(kind=r_def),   intent(in )    :: scalar
-    type( field_proxy_type)            :: field1_proxy,field2_proxy      &
-                                        , field_res_proxy
+    type( field_proxy_type)            :: field1_proxy, field2_proxy
+    type( field_proxy_type)            :: field_res_proxy
     integer(kind=i_def)                :: i,undf
-    integer(kind=i_def)                :: depth, dplp
-    type(mesh_type), pointer           :: mesh => null()
 
     field1_proxy = field1%get_proxy()
     field2_proxy = field2%get_proxy()
     field_res_proxy = field_res%get_proxy()
 
-    !sanity check
-    undf = field1_proxy%vspace%get_last_dof_owned()
-    if(undf /= field2_proxy%vspace%get_last_dof_owned() ) then
+    ! Sanity check
+    undf = field1_proxy%vspace%get_last_dof_annexed()
+    if(undf /= field2_proxy%vspace%get_last_dof_annexed() ) then
       ! they are not on the same function space
       call log_event("Psy:axpy:field1 and field2 live on different w-spaces" &
                     , LOG_LEVEL_ERROR)
       !abort
       stop
     endif
-    if(undf /= field_res_proxy%vspace%get_last_dof_owned() ) then
+    if(undf /= field_res_proxy%vspace%get_last_dof_annexed() ) then
       ! they are not on the same function space
       call log_event("Psy:axpy:field1 and result_field live on different w-spaces" &
                     , LOG_LEVEL_ERROR)
@@ -1044,17 +1042,7 @@ contains
     end do
     !$omp end parallel do
 
-    mesh => field_res%get_mesh()
-    depth = mesh%get_halo_depth()
-
-    do dplp = 1, depth
-      if( field1_proxy%is_dirty(depth=dplp) .or. &
-          field2_proxy%is_dirty(depth=dplp) ) then
-        call field_res_proxy%set_dirty()
-      else
-        call field_res_proxy%set_clean(dplp)
-      end if
-    end do
+    call field_res_proxy%set_dirty()
 
   end subroutine invoke_axpy
   
@@ -1175,15 +1163,15 @@ contains
     field_res_proxy = field_res%get_proxy()
 
     !sanity check
-    undf = field1_proxy%vspace%get_last_dof_owned()
-    if(undf /= field2_proxy%vspace%get_last_dof_owned() ) then
+    undf = field1_proxy%vspace%get_last_dof_annexed()
+    if(undf /= field2_proxy%vspace%get_last_dof_annexed() ) then
       ! they are not on the same function space
       call log_event("Psy:minus_field_data:field1 and field2 live on different w-spaces" &
                     , LOG_LEVEL_ERROR)
       !abort
       stop
     endif
-    if(undf /= field_res_proxy%vspace%get_last_dof_owned() ) then
+    if(undf /= field_res_proxy%vspace%get_last_dof_annexed() ) then
       ! they are not on the same function space
       call log_event("Psy:minus_field_data:field1 and result_field live on different w-spaces" &
                     , LOG_LEVEL_ERROR)
@@ -1218,15 +1206,15 @@ contains
     field_res_proxy = field_res%get_proxy()
 
     !sanity check
-    undf = field1_proxy%vspace%get_last_dof_owned()
-    if(undf /= field2_proxy%vspace%get_last_dof_owned() ) then
+    undf = field1_proxy%vspace%get_last_dof_annexed()
+    if(undf /= field2_proxy%vspace%get_last_dof_annexed() ) then
       ! they are not on the same function space
       call log_event("Psy:plus_field_data:field1 and field2 live on different w-spaces" &
                     , LOG_LEVEL_ERROR)
       !abort
       stop
     endif
-    if(undf /= field_res_proxy%vspace%get_last_dof_owned() ) then
+    if(undf /= field_res_proxy%vspace%get_last_dof_annexed() ) then
       ! they are not on the same function space
       call log_event("Psy:plus_field_data:field1 and result_field live on different w-spaces" &
                     , LOG_LEVEL_ERROR)
@@ -1281,30 +1269,28 @@ contains
 !> c = a/b
   subroutine invoke_divide_field(field1,field2,field_res)
     use log_mod, only : log_event, LOG_LEVEL_ERROR
-    use mesh_mod,only : mesh_type ! Work around for intel_v15 failues on the Cray
+
     implicit none
     type( field_type ), intent(in )    :: field1,field2
     type( field_type ), intent(inout ) :: field_res
     type( field_proxy_type)            :: field1_proxy,field2_proxy      &
                                         , field_res_proxy
     integer(kind=i_def)                :: i,undf
-    integer(kind=i_def)                :: depth, dplp
-    type(mesh_type), pointer           :: mesh => null()
 
     field1_proxy = field1%get_proxy()
     field2_proxy = field2%get_proxy()
     field_res_proxy = field_res%get_proxy()
 
     !sanity check
-    undf = field1_proxy%vspace%get_undf()
-    if(undf /= field2_proxy%vspace%get_undf() ) then
+    undf = field1_proxy%vspace%get_last_dof_annexed()
+    if(undf /= field2_proxy%vspace%get_last_dof_annexed() ) then
       ! they are not on the same function space
       call log_event("Psy:divide_field:field1 and field2 live on different w-spaces" &
                     , LOG_LEVEL_ERROR)
       !abort
       stop
     endif
-    if(undf /= field_res_proxy%vspace%get_undf() ) then
+    if(undf /= field_res_proxy%vspace%get_last_dof_annexed() ) then
       ! they are not on the same function space
       call log_event("Psy:divide_field:field1 and result_field live on different w-spaces" &
                     , LOG_LEVEL_ERROR)
@@ -1317,17 +1303,7 @@ contains
     end do
     !$omp end parallel do
 
-    mesh => field_res%get_mesh()
-    depth = mesh%get_halo_depth()
-    
-    do dplp = 1, depth
-      if( field1_proxy%is_dirty(depth=dplp) .or. &
-          field2_proxy%is_dirty(depth=dplp) ) then
-        call field_res_proxy%set_dirty()
-      else
-        call field_res_proxy%set_clean(dplp)
-      end if
-    end do
+    call field_res_proxy%set_dirty()
 
   end subroutine invoke_divide_field
 
@@ -1348,8 +1324,8 @@ contains
     field_res_proxy = field_res%get_proxy()
 
     !sanity check
-    undf = field1_proxy%vspace%get_last_dof_owned()
-    if(undf /= field_res_proxy%vspace%get_last_dof_owned() ) then
+    undf = field1_proxy%vspace%get_last_dof_annexed()
+    if(undf /= field_res_proxy%vspace%get_last_dof_annexed() ) then
       ! they are not on the same function space
       call log_event("Psy:copy_scaled_field_data:field1 and field_res live on different w-spaces" &
                     , LOG_LEVEL_ERROR)
@@ -1580,7 +1556,7 @@ contains
       x_p(i) = coords(i)%get_proxy()
     end do
 
-    undf = f_p(1)%vspace%get_last_dof_owned()
+    undf = f_p(1)%vspace%get_last_dof_annexed()
 
     do df = 1, undf
       vector_in(:)  = (/ f_p(1)%data(df), f_p(2)%data(df), f_p(3)%data(df) /)              
@@ -1611,7 +1587,7 @@ contains
       x_p(i) = coords(i)%get_proxy()
     end do
 
-    undf = x_p(1)%vspace%get_last_dof_owned()
+    undf = x_p(1)%vspace%get_last_dof_annexed()
 
     do df = 1, undf
       call xyz2llr(x_p(1)%data(df), x_p(2)%data(df), x_p(3)%data(df), &
@@ -2976,7 +2952,7 @@ end subroutine invoke_sample_poly_adv
 
     xp = x%get_proxy()
 
-    undf = xp%vspace%get_last_dof_owned()
+    undf = xp%vspace%get_last_dof_annexed()
     !$omp parallel do schedule(static), default(none), shared(xp, undf, a),  private(i)
     do i = 1,undf
       xp%data(i) = xp%data(i)**a
@@ -2997,7 +2973,7 @@ end subroutine invoke_sample_poly_adv
 
     xp = x%get_proxy()
 
-    undf = xp%vspace%get_last_dof_owned()
+    undf = xp%vspace%get_last_dof_annexed()
     !$omp parallel do schedule(static), default(none), shared(xp, undf, a),  private(i)
     do i = 1,undf
       xp%data(i) = xp%data(i)**a
