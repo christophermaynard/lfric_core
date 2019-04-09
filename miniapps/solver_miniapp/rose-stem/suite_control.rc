@@ -8,7 +8,7 @@
 
 {%- set application_configurations = { 'solver_miniapp' : ['cg','bicgstab','gmres','default'] } %}
 
-{%- set canned_configurations  = [] %}
+{%- set canned_configurations  = ['solver_miniapp'] %}
 
 {%- set groups = {
 'developer': [
