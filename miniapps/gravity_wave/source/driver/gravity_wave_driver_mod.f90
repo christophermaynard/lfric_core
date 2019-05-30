@@ -47,8 +47,8 @@ module gravity_wave_driver_mod
                                             use_xios_io,          &
                                             nodal_output_on_w3,   &
                                             checkpoint_write,     &
-                                            checkpoint_stem_name, &
                                             subroutine_timers
+  use files_config_mod,               only: checkpoint_stem_name
   use time_config_mod,                only: timestep_start, &
                                             timestep_end
   use timer_mod,                      only: timer, output_timer

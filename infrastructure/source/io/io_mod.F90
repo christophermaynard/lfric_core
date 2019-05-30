@@ -26,10 +26,17 @@ module io_mod
   use function_space_mod,            only: function_space_type, BASIS
   use function_space_collection_mod, only: function_space_collection
   use project_output_mod,            only: project_output
-  use io_config_mod,                 only: checkpoint_stem_name, &
-                                           diagnostic_frequency, &
+  use io_config_mod,                 only: diagnostic_frequency, &
                                            checkpoint_write,     &
-                                           checkpoint_read
+                                           checkpoint_read,      &
+                                           write_dump
+  use initialization_config_mod,     only: init_option,               &
+                                           init_option_fd_start_dump, &
+                                           ancil_option,              &
+                                           ancil_option_aquaplanet
+
+  use files_config_mod,              only: checkpoint_stem_name, &
+                                           start_dump_filename
   use time_config_mod,               only: timestep_start, &
                                            timestep_end
   use runtime_constants_mod,         only: get_coordinates
@@ -57,6 +64,10 @@ module io_mod
             checkpoint_read_xios,    &
             write_checkpoint,        &
             read_checkpoint,         &
+            dump_write_xios,         &
+            dump_read_xios,          &
+            write_state,             &
+            read_state,              &
             xios_domain_init,        &
             nodal_write_field,       &
             xios_write_field_node,   &
@@ -96,13 +107,17 @@ subroutine xios_domain_init(xios_ctx, mpi_comm, dtime, &
 
 
   ! Local variables 
-  type(xios_duration)                  :: xios_timestep, o_freq, cp_freq
+  type(xios_duration)                  :: xios_timestep
+  type(xios_duration)                  :: o_freq, cp_freq, dump_freq
   type(xios_duration)                  :: av_freq
   type(xios_context)                   :: xios_ctx_hdl
-  type(xios_file)                      :: cpfile_hdl, ofile_hdl, rsfile_hdl
-  type(xios_fieldgroup)                :: cpfieldgroup_hdl
+  type(xios_file)                      :: cpfile_hdl, rsfile_hdl, &
+                                          ofile_hdl, dumpfile_hdl
+  type(xios_fieldgroup)                :: cpfieldgroup_hdl, &
+                                          fdfieldgroup_hdl
   character(len=str_max_filename)      :: checkpoint_write_fname
   character(len=str_max_filename)      :: checkpoint_read_fname
+  character(len=str_max_filename)      :: dump_fname
   character(len=str_def)               :: domain_name, domain_fs_name
   integer(i_native), parameter         :: domain_function_spaces(5) &
                                                   = (/W0, W1, W2, W3, Wtheta/)
@@ -163,6 +178,55 @@ subroutine xios_domain_init(xios_ctx, mpi_comm, dtime, &
     
     call xios_get_handle("lfric_averages",ofile_hdl)
     call xios_set_attr(ofile_hdl, output_freq=av_freq)
+  end if
+
+ !!!!!!!!!!!!! Setup dump context information !!!!!!!!!!!!!!!!!!
+
+  if ( write_dump ) then
+
+    ! Enable the fd field group
+
+    call xios_get_handle("physics_fd_fields",fdfieldgroup_hdl)
+    call xios_set_attr(fdfieldgroup_hdl, enabled=.true.)
+
+    ! Create dump filename from base name and end timestep
+    write(dump_fname,'(A,A,I6.6)') &
+                              trim(start_dump_filename),"_", timestep_end
+
+
+    ! Set dump frequency (end timestep) in seconds
+    dump_freq%second = timestep_end*dtime
+
+    call xios_get_handle("lfric_fd_dump",dumpfile_hdl)
+    call xios_set_attr(dumpfile_hdl,name=dump_fname, enabled=.true.)
+    call xios_set_attr(dumpfile_hdl, output_freq=dump_freq)
+
+
+  end if
+
+  if( init_option == init_option_fd_start_dump .or. &
+      ancil_option == ancil_option_aquaplanet ) then    
+
+    ! Enable the fd field group
+
+    call xios_get_handle("physics_fd_fields",fdfieldgroup_hdl)
+    call xios_set_attr(fdfieldgroup_hdl, enabled=.true.)
+
+    ! Create dump filename from stem
+    write(dump_fname,'(A)') trim(start_dump_filename)
+
+    ! Set dump frequency (end timestep) in seconds
+    ! Note although this file is going to be read XIOS needs this
+    ! to be set otherwise horrible things happen
+
+    dump_freq%second = timestep_end*dtime
+
+    call xios_get_handle("read_lfric_fd_dump",dumpfile_hdl)
+    call xios_set_attr(dumpfile_hdl,name=dump_fname, enabled=.true.)
+    call xios_set_attr(dumpfile_hdl, output_freq=dump_freq)
+
+
+
   end if
 
   !!!!!!!!!!!!! Setup checkpoint context information !!!!!!!!!!!!!!!!!!
@@ -1272,7 +1336,7 @@ subroutine write_checkpoint(state, timestep)
                                   "", trim(adjustl(fld%get_name())),timestep,"")))
       else
 
-        call log_event( 'Checkpoint method for  '// trim(adjustl(fld%get_name())) // &
+        call log_event( 'Checkpointing for  '// trim(adjustl(fld%get_name())) // &
                         ' not set up', LOG_LEVEL_INFO )
 
       end if
@@ -1310,7 +1374,7 @@ subroutine read_checkpoint(state, timestep)
                               trim(ts_fname(checkpoint_stem_name, &
                               "", trim(adjustl(fld%get_name())),timestep,"")))
       else
-        call log_event( 'Restart method for  '// trim(adjustl(fld%get_name())) // &
+        call log_event( 'Checkpointing for  '// trim(adjustl(fld%get_name())) // &
                         ' not set up', LOG_LEVEL_INFO )
       end if
     end do
@@ -1318,6 +1382,108 @@ subroutine read_checkpoint(state, timestep)
     nullify(fld)
 
 end subroutine read_checkpoint
+
+! Currently the read / write dump routines just call the XIOS checkpoint 
+! mechanisms so that fields from UM2LFRic dumps (currently using the checkpoint
+! format) can be read.
+! They will be extended to read/write dumps in UGRID format in #1372
+
+!> @brief   Write a field to a dump via XIOS
+!> @details Write a field to a dump via XIOS
+!>@param[in] xios_field_name XIOS identifier for the field
+!>@param[in] field_proxy a field proxy containing the data to output
+subroutine dump_write_xios(xios_field_name, field_proxy)
+
+  implicit none
+
+  character(len=*), intent(in) :: xios_field_name
+  type(field_proxy_type), intent(in) :: field_proxy
+
+  call checkpoint_write_xios(xios_field_name, '', field_proxy)
+
+end subroutine dump_write_xios
+
+!> @brief   Read a field from a dump via XIOS
+!> @details Read a field from a dump via XIOS
+!>@param[in] xios_field_name XIOS identifier for the field
+!>@param[in,out] field_proxy a field proxy containing the data to output
+subroutine dump_read_xios(xios_field_name, field_proxy)
+
+  implicit none
+
+  character(len=*), intent(in) :: xios_field_name
+  type(field_proxy_type), intent(inout) :: field_proxy
+
+  call checkpoint_read_xios("read_"//xios_field_name, '', field_proxy)
+
+end subroutine dump_read_xios
+
+!> @brief   Write a collection of fields
+!> @details Iterate over a field collection and write each field
+!>          if it is enabled for write
+!>@param[in] state - a collection of fields
+subroutine write_state(state)
+
+    implicit none
+
+    type( field_collection_type ), intent(inout) :: state
+
+    type( field_collection_iterator_type) :: iter
+    type( field_type ), pointer :: fld => null()
+
+    iter=state%get_iterator()
+    do
+      if(.not.iter%has_next())exit
+      fld=>iter%next()
+      if (fld%can_write()) then
+        write(log_scratch_space,'(3A,I6)') &
+            "Writing ", trim(adjustl(fld%get_name()))
+        call log_event(log_scratch_space,LOG_LEVEL_INFO)
+        call fld%write_field(trim(adjustl(fld%get_name())))
+      else
+
+        call log_event( 'Write method for '// trim(adjustl(fld%get_name())) // &
+                        ' not set up', LOG_LEVEL_INFO )
+
+      end if
+
+    end do
+
+    nullify(fld)
+
+end subroutine write_state
+
+!> @brief   Read into a collection of fields
+!> @details Iterate over a field collection and read each field
+!>          into a collection, if it is enabled for read
+!>@param[in,out] state -  the collection of fields to populate
+subroutine read_state(state)
+
+    implicit none
+
+    type( field_collection_type ), intent(inout) :: state
+
+    type( field_collection_iterator_type) :: iter
+    type( field_type ), pointer :: fld => null()
+
+    iter=state%get_iterator()
+    do
+      if(.not.iter%has_next())exit
+      fld=>iter%next()
+      if (fld%can_read()) then
+        call log_event( &
+          'Reading '//trim(adjustl(fld%get_name())), &
+          LOG_LEVEL_INFO)
+        call fld%read_field(trim(adjustl(fld%get_name())))
+      else
+        call log_event( 'Read method for  '// trim(adjustl(fld%get_name())) // &
+                        ' not set up', LOG_LEVEL_INFO )
+      end if
+    end do
+
+    nullify(fld)
+
+end subroutine read_state
 
 
 !> @brief   Output a field in UGRID format on the node domain via XIOS

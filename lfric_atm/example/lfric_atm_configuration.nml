@@ -67,11 +67,21 @@
 /
 
 
+&initialization
+ init_option = 'analytic'
+ ancil_option = 'none'
+/
+
+&files
+  diag_stem_name            = 'diagLfricAtm'
+  checkpoint_stem_name      = 'restartLfricAtm'
+  start_dump_filename       = ''
+  start_dump_directory      = ''
+/
 &io
-  diag_stem_name            = 'diagGungho'
-  checkpoint_stem_name      = 'restartGungho'
   use_xios_io               = .true.
   write_diag                = .true.
+  write_dump                = .false.
   diagnostic_frequency      = 1
   nodal_output_on_w3        = .false.
   subroutine_timers         = .true.

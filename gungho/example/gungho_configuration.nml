@@ -67,11 +67,22 @@
   smp_init_wind=.false.
 /
 
-&io
+&initialization
+ init_option = 'analytic'
+ ancil_option = 'none'
+/
+
+&files
   diag_stem_name            = 'diagGungho'
   checkpoint_stem_name      = 'restartGungho'
+  start_dump_filename       = ''
+  start_dump_directory      = ''
+/
+
+&io
   use_xios_io               = .false.
   write_diag                = .true.
+  write_dump                = .false.
   diagnostic_frequency      = 10
   nodal_output_on_w3        = .false.
   subroutine_timers         = .true.

@@ -11,6 +11,10 @@ domain_top=10.0,
 method='uniform',
 number_of_layers=10,
 /
+&files
+diag_stem_name            = 'diagTransport'
+checkpoint_stem_name      = 'restartTransport'
+/
 &finite_element
 cellshape='quadrilateral',
 coordinate_order=2,
@@ -31,10 +35,9 @@ u0=38.61073731e-3,
 v0=0.0,
 /
 &io
-  diag_stem_name            = 'diagTransport'
-  checkpoint_stem_name      = 'restartTransport'
   use_xios_io               = .false.
   write_diag                = .true.
+  write_dump                = .true.
   diagnostic_frequency      = 32
   nodal_output_on_w3        = .false.
   subroutine_timers         = .true.

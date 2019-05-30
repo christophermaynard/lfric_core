@@ -9,7 +9,7 @@ module create_physics_prognostics_mod
 
   use constants_mod,                  only : i_def, l_def
   use field_mod,                      only : field_type, &
-                                             write_diag_interface, &
+                                             write_interface, &
                                              checkpoint_write_interface, &
                                              checkpoint_read_interface
   use finite_element_config_mod,      only : element_order
@@ -204,7 +204,7 @@ contains
     type(field_type)                           :: new_field
 
     ! pointers for xios write interface
-    procedure(write_diag_interface), pointer   :: write_diag_behaviour => null()
+    procedure(write_interface), pointer   :: write_diag_behaviour => null()
     procedure(checkpoint_write_interface), pointer  :: checkpoint_write_behaviour => null() 
     procedure(checkpoint_read_interface), pointer   :: checkpoint_read_behaviour => null()
 
@@ -221,7 +221,7 @@ contains
     if (use_xios_io .and. write_diag) then
       ! All physics fields currently require output on faces...
       write_diag_behaviour => xios_write_field_face
-      call new_field%set_write_diag_behaviour(write_diag_behaviour)
+      call new_field%set_write_behaviour(write_diag_behaviour)
     end if
     if (checkpoint_restart_flag) then
       call new_field%set_checkpoint_write_behaviour(checkpoint_write_behaviour)

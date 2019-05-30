@@ -13,7 +13,7 @@ module init_transport_mod
 
   use constants_mod,                  only: i_def
   use field_mod,                      only: field_type,               &
-                                            write_diag_interface
+                                            write_interface
   use finite_element_config_mod,      only: element_order
   use fs_continuity_mod,              only: W2, W3
   use runtime_constants_mod,          only: create_runtime_constants
@@ -64,7 +64,7 @@ module init_transport_mod
     type(field_type), intent(inout)   :: density_shifted
 
     type(function_space_type), pointer       :: function_space => null()
-    procedure(write_diag_interface), pointer :: tmp_write_diag_ptr => null()
+    procedure(write_interface), pointer :: tmp_write_ptr => null()
 
     wind    = field_type( vector_space = &
                           function_space_collection%get_fs( mesh_id, element_order, W2 ) )
@@ -102,14 +102,14 @@ module init_transport_mod
 
     if ( write_diag .and. use_xios_io ) then
        ! Fields that are output on the XIOS face domain
-       tmp_write_diag_ptr => xios_write_field_face
-       call wind%set_write_diag_behaviour( tmp_write_diag_ptr )
-       call density%set_write_diag_behaviour( tmp_write_diag_ptr )
-       call increment%set_write_diag_behaviour( tmp_write_diag_ptr )
-       call divergence%set_write_diag_behaviour( tmp_write_diag_ptr )
+       tmp_write_ptr => xios_write_field_face
+       call wind%set_write_behaviour( tmp_write_ptr )
+       call density%set_write_behaviour( tmp_write_ptr )
+       call increment%set_write_behaviour( tmp_write_ptr )
+       call divergence%set_write_behaviour( tmp_write_ptr )
     end if
 
-    nullify( function_space, tmp_write_diag_ptr )
+    nullify( function_space, tmp_write_ptr )
 
   end subroutine init_transport
 

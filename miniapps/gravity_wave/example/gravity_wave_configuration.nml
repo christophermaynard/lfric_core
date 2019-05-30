@@ -39,11 +39,22 @@
   sbr_angle_lon  = 0.0
 /
 
-&io
+&initialization
+ init_option = 'analytic'
+ ancil_option = 'none'
+/
+
+&files
   diag_stem_name            = 'gravity_wave'
   checkpoint_stem_name      = "restartGravityWave"
-  use_xios_io               = .false.
+  start_dump_filename       = 'UM2LFRic_dump'
+  start_dump_directory      = './'
+/
+
+&io
+  use_xios_io               = .true.
   write_diag                = .true.
+  write_dump                = .false.
   diagnostic_frequency      = 36
   nodal_output_on_w3        = .false.
   subroutine_timers         = .true.

@@ -13,7 +13,7 @@ module init_gravity_wave_mod
   use assign_coordinate_field_mod,    only : assign_coordinate_field
   use constants_mod,                  only : i_def
   use field_mod,                      only : field_type, &
-                                             write_diag_interface, &
+                                             write_interface, &
                                              checkpoint_write_interface, &
                                              checkpoint_read_interface
   use finite_element_config_mod,      only : element_order
@@ -68,7 +68,7 @@ module init_gravity_wave_mod
 
     integer(i_def) :: i
 
-    procedure(write_diag_interface), pointer :: tmp_write_diag_ptr
+    procedure(write_interface), pointer :: tmp_write_ptr
     procedure(checkpoint_write_interface), pointer :: tmp_checkpoint_write_ptr
     procedure(checkpoint_read_interface), pointer  :: tmp_checkpoint_read_ptr
 
@@ -127,17 +127,17 @@ module init_gravity_wave_mod
 
        ! Fields that are output on the XIOS face domain
 
-       tmp_write_diag_ptr => xios_write_field_face
+       tmp_write_ptr => xios_write_field_face
 
-       call wind%set_write_diag_behaviour(tmp_write_diag_ptr)
-       call pressure%set_write_diag_behaviour(tmp_write_diag_ptr)
+       call wind%set_write_behaviour(tmp_write_ptr)
+       call pressure%set_write_behaviour(tmp_write_ptr)
 
        if (buoyancy_space == W0) then
-         tmp_write_diag_ptr => xios_write_field_node
-         call buoyancy%set_write_diag_behaviour(tmp_write_diag_ptr)
+         tmp_write_ptr => xios_write_field_node
+         call buoyancy%set_write_behaviour(tmp_write_ptr)
        else
-         tmp_write_diag_ptr => xios_write_field_face
-         call buoyancy%set_write_diag_behaviour(tmp_write_diag_ptr)
+         tmp_write_ptr => xios_write_field_face
+         call buoyancy%set_write_behaviour(tmp_write_ptr)
        end if
        
     end if
@@ -185,7 +185,7 @@ module init_gravity_wave_mod
     ! Initialise prognostic fields
     call gw_init_fields_alg(wind, pressure, buoyancy)
 
-    nullify( tmp_write_diag_ptr, tmp_checkpoint_write_ptr, &
+    nullify( tmp_write_ptr, tmp_checkpoint_write_ptr, &
              tmp_checkpoint_read_ptr, function_space )
 
     call log_event( 'gravity_wave: Miniapp initialised', LOG_LEVEL_INFO )

@@ -13,6 +13,12 @@ method='uniform',
 number_of_layers=10,
 /
 
+&files
+checkpoint_stem_name='restartSolver',
+diag_stem_name='solver_miniapp',
+
+/
+
 &finite_element
 cellshape='quadrilateral',
 coordinate_order=2,
@@ -44,15 +50,14 @@ l_multigrid=.false.,
 &io
 checkpoint_frequency=9999,
 checkpoint_read=.false.,
-checkpoint_stem_name='restartSolver',
 checkpoint_write=.false.,
-diag_stem_name='solver_miniapp',
 diagnostic_frequency=1,
 nodal_output_on_w3=.false.,
 subroutine_counters=.false.,
 subroutine_timers=.false.,
 use_xios_io=.false.,
 write_diag=.true.,
+write_dump=.false.,
 write_minmax_tseries=.false.,
 /
 

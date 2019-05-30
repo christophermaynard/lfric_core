@@ -97,7 +97,6 @@ contains
     type(operator_type), pointer        :: m3_inv => null()
 
     integer :: i
-    character(str_short) :: name
 
     real(kind=r_def) :: initial_time
 

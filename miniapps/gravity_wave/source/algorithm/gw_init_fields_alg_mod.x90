@@ -21,8 +21,8 @@ module gw_init_fields_alg_mod
   ! Configuration options
   use finite_element_config_mod,         only: element_order
   use io_mod,                            only: ts_fname
-  use io_config_mod,                     only: checkpoint_read, &
-                                               checkpoint_stem_name
+  use io_config_mod,                     only: checkpoint_read
+  use files_config_mod,                  only: checkpoint_stem_name
   use time_config_mod,                   only: timestep_start
 
   ! PsyKAl PSYClone kernels

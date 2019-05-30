@@ -12,7 +12,7 @@ module create_gungho_prognostics_mod
 
   use constants_mod,                  only : i_def
   use field_mod,                      only : field_type, &
-                                             write_diag_interface, &
+                                             write_interface, &
                                              checkpoint_write_interface, &
                                              checkpoint_read_interface
   use field_collection_mod,           only : field_collection_type
@@ -46,13 +46,11 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !> @brief Create empty fields to be used as prognostics by the gungho model
   !> @param[in] mesh_id The identifier given to the current 3d mesh
-  !> @param[in] chi. An array of fields that hold the finite-element
-  !>                 representation of the mesh
   !> @param[inout] prognostic_fields A collection of the fields that make up the
   !>                                 prognostic variables in the model 
   !> @param[inout] mr An array of fields that hold the moisture mixing ratios
   !> @param[inout] moist_dyn An array of the moist dynamics fields
-  subroutine create_gungho_prognostics(mesh_id, chi, prognostic_fields, mr, &
+  subroutine create_gungho_prognostics(mesh_id, prognostic_fields, mr, &
                                        moist_dyn, xi)
     implicit none
 
@@ -63,16 +61,14 @@ contains
     ! Diagnostic fields
     type( field_type ), intent(inout)        :: xi
     type( field_type ), intent(inout)        :: moist_dyn(num_moist_factors)
-    ! Coordinate fields
-    type( field_type ), intent(in)           :: chi(:)
 
     type( field_type ), pointer              :: tmp_ptr
 
     integer(i_def)                           :: imr
 
-    procedure(write_diag_interface), pointer :: tmp_write_diag_ptr
-    procedure(checkpoint_write_interface), pointer :: tmp_checkpoint_write_ptr
-    procedure(checkpoint_read_interface), pointer  :: tmp_checkpoint_read_ptr
+    procedure(write_interface), pointer :: tmp_write_ptr => null()
+    procedure(checkpoint_write_interface), pointer :: tmp_checkpoint_write_ptr => null()
+    procedure(checkpoint_read_interface), pointer  :: tmp_checkpoint_read_ptr => null()
 
     ! Temp fields to create prognostics
     type( field_type )                         :: u, rho, theta, exner
@@ -125,36 +121,36 @@ contains
  
        ! Face domain
 
-       tmp_write_diag_ptr => xios_write_field_face
+       tmp_write_ptr => xios_write_field_face
 
        ! Vector fields that are projected to scalar components
-       call xi%set_write_diag_behaviour(tmp_write_diag_ptr)
-       call u%set_write_diag_behaviour(tmp_write_diag_ptr)
+       call xi%set_write_behaviour(tmp_write_ptr)
+       call u%set_write_behaviour(tmp_write_ptr)
 
        ! Scalar fields
-       call rho%set_write_diag_behaviour(tmp_write_diag_ptr)
-       call exner%set_write_diag_behaviour(tmp_write_diag_ptr)
+       call rho%set_write_behaviour(tmp_write_ptr)
+       call exner%set_write_behaviour(tmp_write_ptr)
 
        ! Theta is a special case as it can be on face (if function space is WTheta)
        ! or node (if function space is W0)
        if (theta%which_function_space() == Wtheta) then
 
-         call theta%set_write_diag_behaviour(tmp_write_diag_ptr)
+         call theta%set_write_behaviour(tmp_write_ptr)
 
        else
 
-        tmp_write_diag_ptr => xios_write_field_node
+        tmp_write_ptr => xios_write_field_node
 
-        call theta%set_write_diag_behaviour(tmp_write_diag_ptr)
+        call theta%set_write_behaviour(tmp_write_ptr)
 
        end if
 
        ! Moisture uses the same type of field write as Theta
 
-       call theta%get_write_diag_behaviour(tmp_write_diag_ptr)
+       call theta%get_write_behaviour(tmp_write_ptr)
 
        do imr = 1,nummr
-         call mr(imr)%set_write_diag_behaviour(tmp_write_diag_ptr)
+         call mr(imr)%set_write_behaviour(tmp_write_ptr)
        end do
 
     end if 
@@ -214,6 +210,8 @@ contains
         call prognostic_fields%add_reference_to_field( tmp_ptr )
       end do
     end if
+
+    nullify( tmp_write_ptr, tmp_checkpoint_write_ptr, tmp_checkpoint_read_ptr )
 
   end subroutine create_gungho_prognostics
 

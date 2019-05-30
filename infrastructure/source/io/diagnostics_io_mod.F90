@@ -14,8 +14,8 @@ module diagnostics_io_mod
                                            scalar_nodal_diagnostic_alg, &
                                            scalar_ugrid_diagnostic_alg, &
                                            vector_nodal_diagnostic_alg
-  use io_config_mod,                 only: use_xios_io, &
-                                           diag_stem_name
+  use io_config_mod,                 only: use_xios_io
+  use files_config_mod,              only: diag_stem_name
   use project_output_mod,            only: project_output
   use io_mod,                        only: ts_fname, &
                                            nodal_write_field, &
@@ -23,7 +23,7 @@ module diagnostics_io_mod
                                            xios_write_field_edge
   use mesh_mod,                      only: mesh_type
   use mesh_collection_mod,           only: mesh_collection 
-  use field_mod,                     only: field_type, write_diag_interface
+  use field_mod,                     only: field_type, write_interface
   use fs_continuity_mod,             only: W3
   use log_mod,                       only: log_event,         &
                                            log_set_level,     &
@@ -68,7 +68,7 @@ subroutine write_scalar_diagnostic(field_name, field, ts, mesh_id, W3_project)
   character(len=str_max_filename) :: fname
   integer(i_def), parameter       :: nodal_output_unit = 21
 
-  procedure(write_diag_interface), pointer  :: tmp_write_ptr => null()
+  procedure(write_interface), pointer  :: tmp_write_ptr => null()
 
   ! Nodal output
   if ( .not. (use_xios_io) )  then
@@ -117,15 +117,15 @@ subroutine write_scalar_diagnostic(field_name, field, ts, mesh_id, W3_project)
 
     ! Set a field I/O method appropriately
     tmp_write_ptr => xios_write_field_face
-    call output_field(1)%set_write_diag_behaviour(tmp_write_ptr)
+    call output_field(1)%set_write_behaviour(tmp_write_ptr)
 
     ! Call write on the output field
 
     ! Check if we need to write an initial field
     if (ts == 0) then
-       call output_field(1)%write_diag(trim('init_'//field_name))
+       call output_field(1)%write_field(trim('init_'//field_name))
     else
-       call output_field(1)%write_diag(trim(field_name))
+       call output_field(1)%write_field(trim(field_name))
     end if 
 
     nullify(tmp_write_ptr)
@@ -170,7 +170,7 @@ subroutine write_vector_diagnostic(field_name, field, ts, mesh_id, W3_project)
   integer(i_def)                  :: i
   integer(i_def)                  :: output_dim
 
-  procedure(write_diag_interface), pointer  :: tmp_write_ptr
+  procedure(write_interface), pointer  :: tmp_write_ptr => null()
 
   ! get pointer to local mesh
   mesh => mesh_collection%get_mesh( mesh_id )
@@ -242,7 +242,7 @@ subroutine write_vector_diagnostic(field_name, field, ts, mesh_id, W3_project)
 
       do i =1,output_dim
 
-        call projected_field(i)%set_write_diag_behaviour(tmp_write_ptr)
+        call projected_field(i)%set_write_behaviour(tmp_write_ptr)
 
         ! Write the component number into a new field name
         write(uchar,'(i1)') i
@@ -250,9 +250,9 @@ subroutine write_vector_diagnostic(field_name, field, ts, mesh_id, W3_project)
 
         ! Check if we need to write an initial field
         if (ts == 0) then
-          call projected_field(i)%write_diag(trim('init_'//field_name_new))
+          call projected_field(i)%write_field(trim('init_'//field_name_new))
         else
-          call projected_field(i)%write_diag(trim(field_name_new))
+          call projected_field(i)%write_field(trim(field_name_new))
         end if 
            
      end do
@@ -271,19 +271,19 @@ subroutine write_vector_diagnostic(field_name, field, ts, mesh_id, W3_project)
 
       ! Set up I/O handler as these are derived fields
       tmp_write_ptr => xios_write_field_face
-      call u3_wind%set_write_diag_behaviour(tmp_write_ptr)
+      call u3_wind%set_write_behaviour(tmp_write_ptr)
       tmp_write_ptr => xios_write_field_edge
-      call u1_wind%set_write_diag_behaviour(tmp_write_ptr)
-      call u2_wind%set_write_diag_behaviour(tmp_write_ptr)
+      call u1_wind%set_write_behaviour(tmp_write_ptr)
+      call u2_wind%set_write_behaviour(tmp_write_ptr)
 
       if (ts == 0) then
-        call u1_wind%write_diag("init_"//trim(field_name)//"1")
-        call u2_wind%write_diag("init_"//trim(field_name)//"2")
-        call u3_wind%write_diag("init_"//trim(field_name)//"3")
+        call u1_wind%write_field("init_"//trim(field_name)//"1")
+        call u2_wind%write_field("init_"//trim(field_name)//"2")
+        call u3_wind%write_field("init_"//trim(field_name)//"3")
       else
-        call u1_wind%write_diag(trim(field_name)//"1")
-        call u2_wind%write_diag(trim(field_name)//"2")
-        call u3_wind%write_diag(trim(field_name)//"3")
+        call u1_wind%write_field(trim(field_name)//"1")
+        call u2_wind%write_field(trim(field_name)//"2")
+        call u3_wind%write_field(trim(field_name)//"3")
       end if
 
     end if ! Check for wind fields

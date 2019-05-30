@@ -62,8 +62,9 @@ module field_mod
 
     ! IO interface procedure pointers
 
-    procedure(write_diag_interface), nopass, pointer  :: write_diag_method => null()
-    procedure(checkpoint_write_interface), nopass, pointer  :: checkpoint_write_method => null()
+    procedure(write_interface), nopass, pointer            :: write_method => null()
+    procedure(read_interface), nopass, pointer             :: read_method => null()
+    procedure(checkpoint_write_interface), nopass, pointer :: checkpoint_write_method => null()
     procedure(checkpoint_read_interface), nopass, pointer  :: checkpoint_read_method => null()
 
   contains
@@ -88,11 +89,17 @@ module field_mod
     !! the field lives
     procedure, public :: get_function_space
 
-    !> Setter for the diagnostic write method 
-    procedure, public :: set_write_diag_behaviour
+    !> Setter for the field write method 
+    procedure, public :: set_write_behaviour
 
-    !> Getter for the diagnostic write method
-    procedure, public :: get_write_diag_behaviour
+    !> Getter for the field write method
+    procedure, public :: get_write_behaviour
+
+    !> Setter for the read method 
+    procedure, public :: set_read_behaviour
+
+    !> Getter for the read method
+    procedure, public :: get_read_behaviour
 
     !> Setter for the checkpoint method 
     procedure, public :: set_checkpoint_write_behaviour
@@ -103,8 +110,17 @@ module field_mod
     !> Routine to return whether field can be checkpointed
     procedure, public :: can_checkpoint
 
-    !> Routine to write field as a diagnostic
-    procedure         :: write_diag
+    !> Routine to return whether field can be written
+    procedure, public :: can_write
+
+    !> Routine to return whether field can be read
+    procedure, public :: can_read
+
+    !> Routine to write field
+    procedure         :: write_field
+
+    !> Routine to read field
+    procedure         :: read_field
 
     !> Routine to read a checkpoint netCDF file
     procedure         :: read_checkpoint
@@ -249,11 +265,17 @@ module field_mod
 
   abstract interface
 
-    subroutine write_diag_interface(field_name, field_proxy)
+    subroutine write_interface(field_name, field_proxy)
       import r_def, field_proxy_type
       character(len=*),        intent(in)  :: field_name
       type(field_proxy_type ), intent(in)  :: field_proxy
-    end subroutine write_diag_interface
+    end subroutine write_interface
+
+    subroutine read_interface(field_name, field_proxy)
+      import r_def, field_proxy_type
+      character(len=*),        intent(in)    :: field_name
+      type(field_proxy_type ), intent(inout) :: field_proxy
+    end subroutine read_interface
 
     subroutine checkpoint_write_interface(field_name, file_name, field_proxy)
       import r_def, field_proxy_type
@@ -271,7 +293,8 @@ module field_mod
 
   end interface
 
- public :: write_diag_interface
+ public :: write_interface
+ public :: read_interface
  public :: checkpoint_write_interface
  public :: checkpoint_read_interface
 
@@ -360,8 +383,9 @@ contains
 
     if ( allocated(self%halo_dirty) ) deallocate(self%halo_dirty)
 
-    nullify( self%vspace,             &
-             self%write_diag_method,  &
+    nullify( self%vspace,                   &
+             self%write_method,             &
+             self%read_method,              &
              self%checkpoint_write_method,  &
              self%checkpoint_read_method )
 
@@ -425,7 +449,8 @@ contains
     real(kind=r_def), pointer   :: data_ptr( : ) => null()
 
     dest%vspace => self%vspace
-    dest%write_diag_method => self%write_diag_method
+    dest%write_method => self%write_method
+    dest%read_method => self%read_method
     dest%checkpoint_write_method => self%checkpoint_write_method
     dest%checkpoint_read_method => self%checkpoint_read_method
     dest%name = self%name
@@ -463,36 +488,65 @@ contains
     end if
   end subroutine field_type_assign
 
-  !> Setter for diagnostic write behaviour
-  !>
-  !> @param [in] pointer to procedure implementing write method
-  !>             for diagnostic
-  subroutine set_write_diag_behaviour(self, write_diag_behaviour)
+  !> Setter for field write behaviour
+  !> @param[in,out]  self  field_type 
+  !> @param [in] write_behaviour - pointer to procedure implementing write method
+  subroutine set_write_behaviour(self, write_behaviour)
     implicit none
     class(field_type), intent(inout)                  :: self
-    procedure(write_diag_interface), pointer, intent(in) :: write_diag_behaviour
-    self%write_diag_method => write_diag_behaviour
-  end subroutine set_write_diag_behaviour
+    procedure(write_interface), pointer, intent(in) :: write_behaviour
+    self%write_method => write_behaviour
+  end subroutine set_write_behaviour
 
-
-  !> Getter to get pointer to diagnostic write behaviour
-  !>
-  !> @return pointer to procedure for diagnostic write behaviour
-  subroutine get_write_diag_behaviour(self, write_diag_behaviour)
+  !> Getter to get pointer to field write behaviour
+  !> @param[in]  self  field_type 
+  !> @param [in] write_behaviour - 
+  !>             pointer to procedure implementing write method 
+  !> @return pointer to procedure for field write behaviour
+  subroutine get_write_behaviour(self, write_behaviour)
 
     implicit none
 
-    class (field_type) :: self
-    procedure(write_diag_interface), pointer, intent(inout) :: write_diag_behaviour
+    class(field_type), intent(in) :: self
+    procedure(write_interface), pointer, intent(inout) :: write_behaviour
 
-    write_diag_behaviour => self%write_diag_method
+    write_behaviour => self%write_method
 
     return
-  end subroutine get_write_diag_behaviour
+  end subroutine get_write_behaviour
+
+  !> Setter for read behaviour
+  !> @param[in,out]  self  field_type 
+  !> @param [in] read_behaviour - pointer to procedure implementing read method
+  subroutine set_read_behaviour(self, read_behaviour)
+    implicit none
+    class(field_type), intent(inout)               :: self
+    procedure(read_interface), pointer, intent(in) :: read_behaviour
+    self%read_method => read_behaviour
+  end subroutine set_read_behaviour
+
+  !> Getter to get pointer to read behaviour
+  !> @param[in]  self  field_type 
+  !> @param [in] read_behaviour - 
+  !>             pointer to procedure implementing read method 
+  !> @return pointer to procedure for read behaviour
+  subroutine get_read_behaviour(self, read_behaviour)
+
+    implicit none
+
+    class(field_type), intent(in) :: self
+    procedure(read_interface), pointer, intent(inout) :: read_behaviour
+
+    read_behaviour => self%read_method
+
+    return
+  end subroutine get_read_behaviour
+
 
   !> Setter for checkpoint write behaviour
   !>
-  !> @param [in] pointer to procedure implementing checkpoint write method 
+  !> @param [in] checkpoint_write_behaviour - 
+  !>             pointer to procedure implementing checkpoint write method 
   subroutine set_checkpoint_write_behaviour(self, checkpoint_write_behaviour)
     implicit none
     class(field_type), intent(inout)                  :: self
@@ -502,7 +556,8 @@ contains
 
   !> Setter for checkpoint read behaviour
   !>
-  !> @param [in] pointer to procedure implementing checkpoint read method 
+  !> @param [in] checkpoint_read_behaviour - 
+  !>             pointer to procedure implementing checkpoint read method 
   subroutine set_checkpoint_read_behaviour(self, checkpoint_read_behaviour)
     implicit none
     class(field_type), intent(inout)                  :: self
@@ -528,6 +583,34 @@ contains
     end if
 
   end function can_checkpoint
+
+  !> Returns whether field can be written
+  !>
+  !> @return .true. or .false.
+  function can_write(self) result(writeable)
+
+    implicit none
+
+    class(field_type), intent(in) :: self
+    logical(l_def) :: writeable
+
+    writeable = associated(self%write_method)
+
+  end function can_write
+
+  !> Returns whether field can be read
+  !>
+  !> @return .true. or .false.
+  function can_read(self) result(readable)
+
+    implicit none
+
+    class(field_type), intent(in) :: self
+    logical(l_def) :: readable
+
+    readable = associated(self%read_method)
+
+  end function can_read
 
   !---------------------------------------------------------------------------
   ! Contained functions/subroutines
@@ -709,9 +792,10 @@ contains
     return
   end function get_function_space
 
-  !> Calls the underlying IO implementation for writing a diagnostic
+  !> Calls the underlying IO implementation for writing a field
   !> throws an error if this has not been set
-  subroutine write_diag(this, field_name)
+  !> @param [in] field_name - field name / id to write
+  subroutine write_field(this, field_name)
 
     use log_mod,           only : log_event, &
                                   LOG_LEVEL_ERROR
@@ -721,20 +805,56 @@ contains
     class(field_type),   intent(in)     :: this
     character(len=*),    intent(in)     :: field_name
 
-    if (associated(this%write_diag_method)) then
+    if (associated(this%write_method)) then
 
-      call this%write_diag_method(trim(field_name), this%get_proxy())
+      call this%write_method(trim(field_name), this%get_proxy())
 
     else
 
       call log_event( 'Error trying to write field '// trim(field_name) // &
-                      ', write_field_method not set up', LOG_LEVEL_ERROR )
+                      ', write_method not set up', LOG_LEVEL_ERROR )
     end if
 
-  end subroutine write_diag
+  end subroutine write_field
+
+  !> Calls the underlying IO implementation for reading into the field
+  !> throws an error if this has not been set
+  !> @param [in] field_name - field name / id to read
+  subroutine read_field( self, field_name)
+    use log_mod,         only : log_event, &
+                                LOG_LEVEL_ERROR, &
+                                LOG_LEVEL_INFO
+
+    implicit none
+
+    class( field_type ),  target, intent( inout ) :: self
+    character(len=*),     intent(in)              :: field_name
+
+
+    type( field_proxy_type )                      :: tmp_proxy
+
+    if (associated(self%read_method)) then
+
+      tmp_proxy = self%get_proxy()
+
+      call self%read_method(trim(field_name), tmp_proxy)
+
+      ! Set halos dirty here as for parallel read we only read in data for owned
+      ! dofs and the halos will not be set
+
+      self%halo_dirty(:) = 1
+
+    else
+
+      call log_event( 'Error trying to read into field '// trim(field_name) // &
+                      ', read_method not set up', LOG_LEVEL_ERROR )
+    end if
+
+  end subroutine read_field
 
   !> Reads a checkpoint file into the field
-  !>
+  !> @param [in] field_name - field name / id to read
+  !> @param [in] file_name - file name to read from
   subroutine read_checkpoint( self, field_name, file_name)
     use log_mod,         only : log_event, &
                                 LOG_LEVEL_ERROR
@@ -769,7 +889,8 @@ contains
   end subroutine read_checkpoint
 
   !> Writes a checkpoint file
-  !>
+  !> @param [in] field_name - field name / id to write
+  !> @param [in] file_name - file name to write to
   subroutine write_checkpoint( self, field_name, file_name )
     use log_mod,         only : log_event, &
                                 LOG_LEVEL_ERROR

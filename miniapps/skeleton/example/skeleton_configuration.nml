@@ -20,6 +20,11 @@ method='uniform',
 number_of_layers=1,
 /
 
+&files
+  diag_stem_name            = 'diagSkeleton'
+  checkpoint_stem_name      = 'restartSkeleton'
+/
+
 &finite_element
 cellshape='quadrilateral',
 coordinate_order=2,
@@ -39,10 +44,9 @@ l_multigrid=.false.,
 
 
 &io
-  diag_stem_name            = 'diagSkeleton'
-  checkpoint_stem_name      = 'restartSkeleton'
-  use_xios_io               = .false.
+  use_xios_io               = .true.
   write_diag                = .true.
+  write_dump                = .false.
   diagnostic_frequency      = 1
   nodal_output_on_w3        = .false.
   subroutine_timers         = .false.

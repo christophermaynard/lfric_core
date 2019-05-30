@@ -19,8 +19,8 @@ module diagnostics_mod
                                            scalar_nodal_diagnostic_alg, &
                                            scalar_ugrid_diagnostic_alg, &
                                            vector_nodal_diagnostic_alg
-  use io_config_mod,                 only: use_xios_io,                 &
-                                           diag_stem_name
+  use io_config_mod,                 only: use_xios_io
+  use files_config_mod,              only: diag_stem_name
   use project_output_mod,            only: project_output
   use io_mod,                        only: ts_fname,                    &
                                            nodal_write_field,           &
@@ -30,7 +30,7 @@ module diagnostics_mod
                                            write_vector_diagnostic
   use mesh_mod,                      only: mesh_type
   use mesh_collection_mod,           only: mesh_collection 
-  use field_mod,                     only: field_type, write_diag_interface
+  use field_mod,                     only: field_type, write_interface
   use fs_continuity_mod,             only: W3
   use moist_dyn_mod,                 only: num_moist_factors
   use log_mod,                       only: log_event,         &
@@ -71,7 +71,7 @@ subroutine write_divergence_diagnostic(u_field, ts, mesh_id)
   real(r_def)                     :: l2_norm
   
 
-  procedure(write_diag_interface), pointer  :: tmp_write_ptr
+  procedure(write_interface), pointer  :: tmp_write_ptr
 
   ! Create the divergence diagnostic
   call divergence_diagnostic_alg(div_field, l2_norm, u_field, mesh_id)
@@ -83,7 +83,7 @@ subroutine write_divergence_diagnostic(u_field, ts, mesh_id)
   if (use_xios_io) then
       !If using XIOS, we need to set a field I/O method appropriately
       tmp_write_ptr => xios_write_field_face
-      call div_field%set_write_diag_behaviour(tmp_write_ptr)
+      call div_field%set_write_behaviour(tmp_write_ptr)
   end if 
 
   call write_scalar_diagnostic('divergence', div_field, ts, mesh_id, .false.)

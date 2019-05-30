@@ -22,7 +22,8 @@ module gungho_driver_mod
                                          write_density_diagnostic,    &
                                          write_hydbal_diagnostic
   use yaxt,                       only : xt_initialize, xt_finalize
-  use field_mod,                  only : field_type
+  use field_mod,                  only : field_type,     &
+                                         write_interface
   use formulation_config_mod,     only : transport_only, &
                                          use_moisture,   &
                                          use_physics
@@ -49,18 +50,36 @@ module gungho_driver_mod
   use runtime_constants_mod,      only : create_runtime_constants
   use io_mod,                     only : xios_domain_init, &
                                          ts_fname,         &
+                                         write_checkpoint, &
                                          read_checkpoint,  &
-                                         write_checkpoint
+                                         write_state,      &
+                                         dump_write_xios
   use io_config_mod,              only : write_diag,           &
                                          diagnostic_frequency, &
                                          use_xios_io,          &
                                          nodal_output_on_w3,   &
-                                         checkpoint_read,      &
                                          checkpoint_write,     &
-                                         checkpoint_stem_name, &
+                                         checkpoint_read,      &
+                                         write_dump,           &
                                          write_minmax_tseries, &
                                          subroutine_timers,    &
                                          subroutine_counters
+  use files_config_mod,           only:  checkpoint_stem_name
+  use initialization_config_mod,  only : init_option,                &
+                                         init_option_analytic,       & 
+                                         init_option_fd_start_dump,  &
+                                         init_option_checkpoint_dump,&
+                                         init_option_fe_start_dump,  &
+                                         ancil_option,               &
+                                         ancil_option_none,          &
+                                         ancil_option_analytic,      & 
+                                         ancil_option_aquaplanet
+  use create_fd_prognostics_mod,  &
+                                  only : create_fd_prognostics
+  use init_fd_prognostics_mod,    &
+                                  only : init_fd_prognostics_dump
+  use init_ancils_mod,            only : init_analytic_ancils, &
+                                         init_aquaplanet_ancils
   use iter_timestep_alg_mod,      only : iter_alg_init, &
                                          iter_alg_step, &
                                          iter_alg_final
@@ -113,12 +132,16 @@ module gungho_driver_mod
   type( field_collection_type ) :: cloud_fields
   type( field_collection_type ) :: twod_fields
   type( field_collection_type ) :: physics_incs
+  type( field_collection_type ) :: fd_fields
 
   ! Prognostic fields (pointers to fields in a collection)
   type( field_type ), pointer   :: u => null()
   type( field_type ), pointer   :: rho => null()
   type( field_type ), pointer   :: theta => null()
   type( field_type ), pointer   :: exner => null()
+
+  ! Pointer for tstar_2d to allow write to dump
+  type( field_type ), pointer   :: tstar_2d => null()
 
   ! Auxiliary prognostic fields
   ! Moisture mixing ratios
@@ -136,6 +159,9 @@ module gungho_driver_mod
   ! when iterating over them
   type( field_type ), pointer :: field_ptr  => null()
 
+  ! Pointer for setting I/O handlers on fields
+  procedure(write_interface), pointer    :: tmp_write_ptr => null()
+
 
   ! Coordinate field
   type(field_type), target :: chi(3)
@@ -146,6 +172,8 @@ module gungho_driver_mod
   character(str_def) :: name
 
   integer(i_def) :: i 
+
+  integer(i_def) :: prognostic_init_choice, ancil_choice
 
 contains
 
@@ -243,8 +271,8 @@ contains
     call create_runtime_constants(mesh_id, chi)
 
     ! Create gungho prognostics and auxilliary (diagnostic) fields
-    call create_gungho_prognostics( mesh_id, chi, &
-         prognostic_fields, mr, moist_dyn, xi )
+    call create_gungho_prognostics( mesh_id, prognostic_fields, &
+                                    mr, moist_dyn, xi )
 
     ! Create prognostics used by physics
     if (use_physics) then
@@ -254,29 +282,107 @@ contains
                                        twod_fields, physics_incs )
     end if
 
-    ! Either read prognostics from checkpoint/restart or set them analytically
-    if( checkpoint_read ) then 
-      call read_checkpoint(prognostic_fields, timestep_start-1)
+    !-------------------------------------------------------------------------
+    ! Select how to initialize model prognostic fields
+    !-------------------------------------------------------------------------
 
-      ! Update factors for moist dynamics
+    ! This way of setting up the initialisation options is not ideal, but
+    ! pragmatic for now and avoids extra namelist changes. It should be
+    ! reviewed in the next round of driver layer refactoring
+ 
+    ! Get the specified namelist options for prognostic initialisation
+    prognostic_init_choice = init_option
+    ancil_choice = ancil_option
+
+    ! If checkpoint reading has been specified then override these options
+    if (checkpoint_read) then
+      prognostic_init_choice = init_option_checkpoint_dump
+      ancil_choice = ancil_option_none
+    end if
+
+    ! Initialise prognostic fields appropriately
+    select case ( prognostic_init_choice )
+
+      case ( init_option_analytic )
+
+        ! Initialise prognostics analytically according to
+        ! namelist options
+
+        call init_gungho_prognostics_alg(prognostic_fields, mr, moist_dyn, xi)
+
+        if (use_physics) then
+          call init_physics_prognostics_alg(derived_fields, &
+                                            cloud_fields, &
+                                            twod_fields, &
+                                            physics_incs)
+        end if
+
+      case ( init_option_checkpoint_dump )
+ 
+        ! Initialize prognostics using a checkpoint file
+        ! from a previous run
+
+        call read_checkpoint(prognostic_fields, timestep_start-1)
+
+        ! Update factors for moist dynamics
         call moist_dyn_factors_alg(moist_dyn, mr)
 
-      ! if no cloud scheme, reset cloud variables
-      if (use_physics) then
-        if ( cloud == cloud_none ) then  
-          call initial_cloud_alg(cloud_fields)
+        ! if no cloud scheme, reset cloud variables
+        if (use_physics) then
+          if ( cloud == cloud_none ) then  
+            call initial_cloud_alg(cloud_fields)
+          end if
         end if
-      end if
 
-    else
-      call init_gungho_prognostics_alg(prognostic_fields, mr, moist_dyn, xi)
+      case ( init_option_fd_start_dump )
 
-      if (use_physics) then
-        call init_physics_prognostics_alg(derived_fields, &
-                                          cloud_fields, &
-                                          twod_fields, &
-                                          physics_incs)
-      end if
+        if (use_physics) then
+
+          ! Initialise FD prognostic fields from a UM2LFRic dump     
+
+          ! Create FD prognostic fields
+          call create_fd_prognostics(mesh_id, fd_fields)                          
+
+          ! Read in from a UM2LFRic dump file
+          call init_fd_prognostics_dump(fd_fields)
+
+        else
+          call log_event("Gungho: Prognostic initialisation from an FD dump not valid "// &
+                          "if use_physics is .false., stopping program! ",LOG_LEVEL_ERROR)
+
+        end if   
+
+      case ( init_option_fe_start_dump )
+        ! Initialise FE prognostic fields from an FE dump
+        ! Not yet supported
+        call log_event("Gungho: Prognostic initialisation from an FE dump not yet supported, "// &
+                          "stopping program! ",LOG_LEVEL_ERROR)
+      case default
+        ! No valid initialisation option selected
+        call log_event("Gungho: No valid prognostic initialisation option selected, "// &
+                          "stopping program! ",LOG_LEVEL_ERROR)
+
+    end select
+    
+    ! Assuming this is only relevant for physics runs at the moment
+    if (use_physics) then
+
+      ! Initialise ancillary fields
+      select case ( ancil_choice )
+        case ( ancil_option_none )
+          call log_event( "Gungho: No ancillaries to be read for this run.", LOG_LEVEL_INFO )
+        case ( ancil_option_aquaplanet )
+          call log_event( "Gungho: Reading ancillaries from aquaplanet dump ", LOG_LEVEL_INFO )
+          call init_aquaplanet_ancils(twod_fields)
+        case ( ancil_option_analytic )
+          call log_event( "Gungho: Setting ancillaries from analytic representation ", LOG_LEVEL_INFO )
+          call init_analytic_ancils(twod_fields)
+        case default
+          ! No valid ancil option selected
+          call log_event("Gungho: No valid ancillary initialisation option selected, "// &
+                          "stopping program! ",LOG_LEVEL_ERROR)
+      end select
+
     end if
 
     ! Get pointers to fields in the prognostic fields collection
@@ -512,6 +618,33 @@ contains
 
     end if
 
+    !===================== Write fields to dump ======================!
+
+    if( write_dump ) then
+
+      ! Current dump writing is only relevant for physics runs at the moment
+      if (use_physics) then
+
+        ! For the purposes of dumping from one collection, we add a pointer
+        ! to tstar to the fd_prognostics collection
+
+        tmp_write_ptr => dump_write_xios
+        tstar_2d => twod_fields%get_field('tstar')
+        call tstar_2d%set_write_behaviour(tmp_write_ptr)
+
+        call fd_fields%add_field(tstar_2d)
+
+        call log_event("Gungho: writing FD fields to dump", LOG_LEVEL_INFO)
+
+        ! Write prognostic fields to dump
+        call write_state(fd_fields)
+      
+        nullify(tmp_write_ptr, tstar_2d)
+
+      end if
+
+    end if
+
     ! Call timestep finalizers
     if ( transport_only .and. scheme == scheme_method_of_lines) then
       call rk_transport_final( rho, theta)
@@ -552,6 +685,20 @@ contains
       field_ptr => null()
 
     endif
+
+    ! Finalise the fd fields if we used them
+    if ( prognostic_init_choice  == init_option_fd_start_dump) then
+
+      iterator = fd_fields%get_iterator()
+      do
+        if ( .not.iterator%has_next() ) exit
+        field_ptr => iterator%next()
+        call field_ptr%field_final()
+      end do 
+      field_ptr => null()
+
+
+    end if
 
     if(write_minmax_tseries) call minmax_tseries_final(mesh_id)
 

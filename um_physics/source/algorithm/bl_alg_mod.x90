@@ -153,8 +153,8 @@ contains
                                 visc_m_blend, visc_h_blend ) )
 
     if (write_diag .and. use_xios_io) then
-      call dt_bl%write_diag('dt_bl')
-      call dmv_bl%write_diag('dmv_bl')
+      call dt_bl%write_field('dt_bl')
+      call dmv_bl%write_field('dmv_bl')
     end if
 
   end subroutine bl_alg_step

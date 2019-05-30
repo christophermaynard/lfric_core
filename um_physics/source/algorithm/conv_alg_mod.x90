@@ -58,8 +58,8 @@ contains
                                  exner_in_wth, exner) )
 
     if (write_diag .and. use_xios_io) then
-      call dt_conv%write_diag('dt_conv')
-      call dmv_conv%write_diag('dmv_conv')
+      call dt_conv%write_field('dt_conv')
+      call dmv_conv%write_field('dmv_conv')
     end if
 
   end subroutine conv_alg_step

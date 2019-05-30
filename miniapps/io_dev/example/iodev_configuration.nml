@@ -14,6 +14,11 @@
   number_of_layers = 30
 /
 
+&files
+  diag_stem_name            = 'diagIoDev'
+  checkpoint_stem_name      = 'restartIoDev'
+/
+
 &finite_element
   cellshape        = 'quadrilateral'
   element_order    = 0
@@ -69,10 +74,9 @@
 
 
 &io
-  diag_stem_name            = 'diagIoDev'
-  checkpoint_stem_name      = 'restartIoDev'
-  use_xios_io               = .false.
+  use_xios_io               = .true.
   write_diag                = .true.
+  write_dump                = .false.
   diagnostic_frequency      = 1
   nodal_output_on_w3        = .false.
   subroutine_timers         = .false.

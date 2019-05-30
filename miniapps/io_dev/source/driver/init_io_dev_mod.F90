@@ -11,7 +11,7 @@
 module init_io_dev_mod
 
   use constants_mod,                  only : i_def
-  use field_mod,                      only : field_type, write_diag_interface
+  use field_mod,                      only : field_type, write_interface
   use finite_element_config_mod,      only : element_order
   use function_space_collection_mod,  only : function_space_collection
   use fs_continuity_mod,              only : W3, Wtheta, W2
@@ -37,7 +37,7 @@ module init_io_dev_mod
     type( field_type ), intent(inout)        :: theta
     type( field_type ), intent(inout)        :: wind
 
-    procedure(write_diag_interface), pointer      :: tmp_diag_write_ptr
+    procedure(write_interface), pointer      :: tmp_write_ptr
 
     call log_event( 'io_dev: initialisation...', LOG_LEVEL_INFO )
 
@@ -48,10 +48,10 @@ module init_io_dev_mod
                    function_space_collection%get_fs(mesh_id, element_order, Wtheta) )
 
     ! Set up procedure pointer to IO behaviour
-    tmp_diag_write_ptr => xios_write_field_face
+    tmp_write_ptr => xios_write_field_face
 
-    call density%set_write_diag_behaviour(tmp_diag_write_ptr)
-    call theta%set_write_diag_behaviour(tmp_diag_write_ptr)
+    call density%set_write_behaviour(tmp_write_ptr)
+    call theta%set_write_behaviour(tmp_write_ptr)
 
     ! Create vector field
 
@@ -67,7 +67,7 @@ module init_io_dev_mod
     ! Initialise the test field to a fixed value
     call io_dev_init_fields_alg(density, theta, wind)
 
-    nullify( tmp_diag_write_ptr )
+    nullify( tmp_write_ptr )
 
     call log_event( 'io_dev: initialised', LOG_LEVEL_INFO )
 
