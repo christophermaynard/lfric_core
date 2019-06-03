@@ -4,9 +4,7 @@
 ! which you should have received as part of this distribution.
 !-----------------------------------------------------------------------------
 !> @brief Applies horizontal Smagorinsky diffusion visc_h * (d2dx2 + d2dy2) to a tracer
-!>        variable in the Wtheta space for lowest order elements. Currently using
-!>        visc_h=(cs*dx)^2*S but will eventually use the blended BL-Smagorinsky
-!>        diffusion coefficient.
+!>        variable in the Wtheta space for lowest order elements. 
 !>
 module tracer_smagorinsky_diff_kernel_mod
 
@@ -20,12 +18,14 @@ module tracer_smagorinsky_diff_kernel_mod
 
   implicit none
 
+  private
+
   !---------------------------------------------------------------------------
   ! Public types
   !---------------------------------------------------------------------------
   !> The type declaration for the kernel. Contains the metadata needed by the
   !> Psy layer.
-  !>
+
   type, public, extends(kernel_type) :: tracer_smagorinsky_diff_kernel_type
     private
     type(arg_type) :: meta_args(4) = (/                        &
@@ -66,7 +66,7 @@ end function tracer_smagorinsky_diff_kernel_constructor
 !! @param[in] theta_n Input temperature field
 !! @param[in] map_wt_stencil_size Number of cells in the stencil at the base of the column for wt
 !! @param[in] map_wt_stencil Array holding the dofmap for the stencil at the base of the column for wt
-!! @param[in] visc_h_blend Blended diffusion coefficient for scalars on wtheta points
+!! @param[in] visc_h Diffusion coefficient for scalars on wtheta points
 !! @param[in] chi1 First coordinate field
 !! @param[in] chi2 Second coordinate field
 !! @param[in] chi3 Third coordinate field
@@ -81,7 +81,7 @@ subroutine tracer_smagorinsky_diff_code( nlayers,                               
                                          theta_inc,                             & 
                                          theta_n,                               &
                                          map_wt_stencil_size, map_wt_stencil,   &
-                                         visc_h_blend,                          &
+                                         visc_h,                                &
                                          chi1, chi2, chi3,                      &
                                          ndf_wt, undf_wt, map_wt,               &
                                          ndf_chi, undf_chi, map_chi             &
@@ -98,7 +98,7 @@ subroutine tracer_smagorinsky_diff_code( nlayers,                               
 
   real(kind=r_def), dimension(undf_wt),  intent(inout) :: theta_inc
   real(kind=r_def), dimension(undf_wt),  intent(in)    :: theta_n
-  real(kind=r_def), dimension(undf_wt),  intent(in)    :: visc_h_blend
+  real(kind=r_def), dimension(undf_wt),  intent(in)    :: visc_h
   real(kind=r_def), dimension(undf_chi), intent(in)    :: chi1, chi2, chi3
 
   ! Internal variables
@@ -139,7 +139,7 @@ subroutine tracer_smagorinsky_diff_code( nlayers,                               
             theta_n(map_wt_stencil(1,4) + k) ) * idx2(k)
     d2dy = (theta_n(map_wt_stencil(1,3) + k)  - 2.0_r_def*theta_n(map_wt_stencil(1,1) + k) +      &
             theta_n(map_wt_stencil(1,5) + k) ) * idy2(k)
-    theta_inc(map_wt(1) + k) = visc_h_blend(map_wt(1) + k) * (d2dx + d2dy)
+    theta_inc(map_wt(1) + k) = visc_h(map_wt(1) + k) * (d2dx + d2dy)
   end do
 
   k = nlayers    

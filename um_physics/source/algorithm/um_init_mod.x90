@@ -21,8 +21,12 @@ module um_init_mod
   use log_mod,               only : log_event,         &
                                     log_scratch_space, &
                                     LOG_LEVEL_ERROR
-  use mixing_config_mod,     only : smagorinsky
-
+  use mixing_config_mod,     only : smagorinsky,                   &
+                                    mixing_method => method,       &
+                                    method_3d_smag,         &
+                                    method_2d_smag,         &
+                                    method_blending,        &
+                                    mix_factor_in => mix_factor
   implicit none
 
 contains
@@ -78,7 +82,9 @@ contains
     use timestep_mod, only: timestep
     use trignometric_mod, only: cos_theta_latitude
     use tuning_segments_mod, only: bl_segment_size, precip_segment_size
-    use turb_diff_ctl_mod, only: visc_m, visc_h, max_diff, delta_smag
+    use turb_diff_ctl_mod, only: visc_m, visc_h, max_diff, delta_smag, rneutml_sq
+    use turb_diff_mod, only: l_subfilter_horiz, l_subfilter_vert,        &
+         mix_factor, turb_startlev_vert, turb_endlev_vert
 
     ! LFRic modules with information we need
     use conversions_mod, only: pi_over_180
@@ -163,7 +169,6 @@ contains
     relax_sc_over_cu = 0
     kprof_cu         = 0
     bl_res_inv       = 0
-    blending_option  = 0
     a_ent_shr_nml    = 5.0_r_um
     allocate(alpha_cd(bl_levels))
     alpha_cd         = 1.5_r_um
@@ -324,15 +329,40 @@ contains
 
       allocate ( visc_h(row_length, rows, nlayers) )
       allocate ( visc_m(row_length, rows, nlayers) )
+      allocate ( rneutml_sq(row_length, rows, nlayers) )
       allocate ( max_diff  (row_length, rows) )
       allocate ( delta_smag(row_length, rows) )
+
+      select case ( mixing_method )
+        case( method_3d_smag ) 
+          l_subfilter_horiz = .true. 
+          l_subfilter_vert  = .true. 
+          blending_option   = 0
+        case( method_2d_smag ) 
+          l_subfilter_horiz = .true. 
+          l_subfilter_vert  = .false. 
+          blending_option   = 0
+        case( method_blending ) 
+          l_subfilter_horiz = .true. 
+          l_subfilter_vert  = .true. 
+          blending_option   = 1
+      end select
+
+      mix_factor = real(mix_factor_in, r_um)
+      turb_startlev_vert  = 1
+      turb_endlev_vert    = bl_levels
 
     else
 
       allocate ( visc_h(1,1,1) )
       allocate ( visc_m(1,1,1) )
+      allocate ( rneutml_sq(1,1,1) )
       allocate ( max_diff(1,1) )
       allocate ( delta_smag(1,1) )
+
+      blending_option   = 0
+      l_subfilter_horiz = .false. 
+      l_subfilter_vert  = .false. 
 
     end if 
 

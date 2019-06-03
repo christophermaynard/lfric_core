@@ -37,6 +37,7 @@ contains
   subroutine setUp( this )
 
     use feign_config_mod,          only : feign_mixing_config
+    use mixing_config_mod,         only : method_3d_smag
 
     implicit none
 
@@ -47,10 +48,11 @@ contains
     !Store the MPI communicator for later use
     call store_comm(this%getMpiCommunicator())
 
-    call feign_mixing_config( smagorinsky  = .false.,    &
-                              viscosity    = .false.,    &
-                              viscosity_mu = 10.0_r_def, &
-                              mix_factor   = 0.0_r_def )
+    call feign_mixing_config( smagorinsky   = .false.,    &
+                              viscosity     = .false.,    &
+                              viscosity_mu  = 10.0_r_def, &
+                              mix_factor    = 0.0_r_def,  &
+                              method        = method_3d_smag )
 
   end subroutine setUp
 

@@ -97,7 +97,7 @@ module iter_timestep_alg_mod
                                         map_physics_scalars
 
   ! Moisture species
-  use mr_indices_mod,             only: nummr
+  use mr_indices_mod,             only: nummr, imr_v, imr_cl
   use moist_dyn_mod,              only: num_moist_factors, gas_law
 
   ! Field indices
@@ -143,8 +143,8 @@ module iter_timestep_alg_mod
   type( field_vector_type ) :: vector_state, vector_rhs
  
   type( field_type ) :: shear ! shear term
-  type( field_type ) :: visc_m_blend ! blended BL-Smag diffusion coefficient for momentum
-  type( field_type ) :: visc_h_blend ! blended BL-Smag diffusion coefficient for scalars
+  type( field_type ) :: visc_m ! Smagorinsky diffusion coefficient for momentum
+  type( field_type ) :: visc_h ! Smagorinsky diffusion coefficient for scalars
   logical            :: helmholtz_solve
 
   public :: iter_alg_init
@@ -225,13 +225,13 @@ contains
       ! Set up the shear field to be in the same space as theta
       call theta%copy_field_properties( shear )
       ! Set up the diffusion coefficient fields to be in the same space as theta
-      call theta%copy_field_properties( visc_m_blend )
-      call theta%copy_field_properties( visc_h_blend )
+      call theta%copy_field_properties( visc_m )
+      call theta%copy_field_properties( visc_h )
       if ( smagorinsky)then
         ! Initialise to zero
         call invoke( setval_c(shear, 0.0_r_def),          &
-                     setval_c(visc_m_blend , 0.0_r_def),  &
-                     setval_c(visc_h_blend , 0.0_r_def) )
+                     setval_c(visc_m , 0.0_r_def),  &
+                     setval_c(visc_h , 0.0_r_def) )
       end if
     end if
 
@@ -361,6 +361,9 @@ contains
                                             ! during the spinup period
 
     real(kind=r_def), dimension(bundle_size) :: si_err
+
+    ! Stencil depth for the Smagorinsky diffusion kernel
+    integer(kind=i_def):: smag_stencil_depth
 
     if ( subroutine_timers ) call timer('iter_timestep_alg')
 
@@ -517,7 +520,7 @@ contains
                           state_n(igh_d), state_n(igh_p), mr_n,         &
                           shear, delta, max_diff_smag,                  &
                           derived_fields, cloud_fields, twod_fields,    &
-                          visc_m_blend, visc_h_blend,                   &
+                          visc_m, visc_h,                               &
                           physics_incs, height_w3, height_wth)
 
         if (use_wavedynamics) then
@@ -644,6 +647,80 @@ contains
     ! End of Outer (advection) loop
     !--------------------------------------------------------------------
 
+    !--------------------------------------------------------------------
+    ! Apply Smagorinsky subgrid mixing
+    !--------------------------------------------------------------------
+    if ( smagorinsky ) then
+      call log_event( 'Applying Smagorinsky mixing', LOG_LEVEL_INFO )
+
+      ! Stencil depth for the Smagorinsky diffusion kernel
+      smag_stencil_depth=1
+
+      if ( boundary_layer == boundary_layer_um ) then
+
+        ! Use stability-dependent diffusion coefficient from UM BL scheme
+        ! This will be the blended BL-Smag coefficient if mixing_option='blending'
+        call log_event( 'Using stability-dependent Smagorinsky coefficient', LOG_LEVEL_INFO )
+        ! Potential temperature:
+        call invoke( tracer_smagorinsky_diff_kernel_type( inc(igh_t),           &
+                                                          state(igh_t),         &
+                                                          smag_stencil_depth,   &
+                                                          visc_h,               &
+                                                          chi  ) )
+        if ( use_moisture ) then
+          ! Water vapour and cloud liquid:
+          call invoke( tracer_smagorinsky_diff_kernel_type( mr_inc(imr_v),      &
+                                                            mr(imr_v),          &
+                                                            smag_stencil_depth, &
+                                                            visc_h,             &
+                                                            chi  ),             &
+                       tracer_smagorinsky_diff_kernel_type( mr_inc(imr_cl),     &
+                                                            mr(imr_cl),         &
+                                                            smag_stencil_depth, &
+                                                            visc_h,             &
+                                                            chi  ) )
+        end if
+
+      else
+
+        call log_event( 'Using pure Smagorinsky coefficient', LOG_LEVEL_INFO )
+        ! Calculate visc_h as (mix_factor * delta)**2 * shear
+        ! Potential temperature:
+        call invoke( a_times_X( visc_h, mix_factor, delta ),                    &
+                     inc_X_powint_n( visc_h, 2 ),                               &
+                     inc_X_times_Y( visc_h, shear ),                            &
+                     tracer_smagorinsky_diff_kernel_type( inc(igh_t),           &
+                                                          state(igh_t),         &
+                                                          smag_stencil_depth,   &
+                                                          visc_h,               &
+                                                          chi  ) )
+        if (use_moisture) then
+          ! Water vapour and cloud liquid:
+          call invoke( tracer_smagorinsky_diff_kernel_type( mr_inc(imr_v),      &
+                                                            mr(imr_v),          &
+                                                            smag_stencil_depth, &
+                                                            visc_h,             &
+                                                            chi  ),             &
+                       tracer_smagorinsky_diff_kernel_type( mr_inc(imr_cl),     & 
+                                                            mr(imr_cl),         &
+                                                            smag_stencil_depth, &
+                                                            visc_h,             &
+                                                            chi  ) )
+        end if    
+
+      end if
+
+      !  Momentum mixing is to be implemented in a future ticket
+
+      ! Apply increments from Smagorinsky mixing
+      ! Set u increment to zero until momentum mixing is implemented:
+      call invoke( inc_X_plus_bY( state(igh_t), dt, inc(igh_t) ),   &
+                   inc_X_plus_bY( mr(imr_v), dt, mr_inc(imr_v) ),   &
+                   inc_X_plus_bY( mr(imr_cl), dt, mr_inc(imr_cl) ), &
+                   setval_c(inc(igh_u), 0.0_r_def),                 &
+                   inc_X_plus_bY( state(igh_u), dt, inc(igh_u) ) )
+    end if    
+    
     ! ----------------------------------------------------------------------
     ! Call cloud scheme to generate cloud and latent heating after pressure 
     ! changes are applied from the solver. First obtain current exner mapped 
@@ -689,40 +766,6 @@ contains
       call invoke_tracer_viscosity(   inc(igh_t), state(igh_t), 1, chi)
       call invoke_momentum_viscosity( inc(igh_u), state(igh_u), 1, chi)
       call invoke( inc_X_plus_bY( state(igh_t), dt, inc(igh_t) ), &
-                   inc_X_plus_bY( state(igh_u), dt, inc(igh_u) ) )
-    end if    
-    
-    !--------------------------------------------------------------------
-    ! Apply Smagorinsky subgrid mixing
-    !--------------------------------------------------------------------
-    if ( smagorinsky ) then
-      !  Tracer mixing:
-      call log_event( 'Applying Smagorinsky mixing', LOG_LEVEL_INFO )
-      if ( boundary_layer == boundary_layer_um ) then
-        ! Use blended BL-Smag diffusion coefficient
-        call log_event( 'Using blended BL-Smagorinsky coefficient', LOG_LEVEL_INFO )
-        call invoke( tracer_smagorinsky_diff_kernel_type( inc(igh_t),        &
-                                                          state(igh_t), 1,   &
-                                                          visc_h_blend,      &
-                                                          chi  ) )
-      else
-        ! Calculate visc_h_blend as (mix_factor * delta)**2 * shear
-        call log_event( 'Using non-blended Smagorinsky coefficient', LOG_LEVEL_INFO )
-        visc_h_blend = delta
-        call invoke( inc_a_times_X(mix_factor, visc_h_blend),                & 
-                     inc_X_powint_n (visc_h_blend, 2),                       &  
-                     inc_X_times_Y(visc_h_blend, shear),                     & 
-                     tracer_smagorinsky_diff_kernel_type( inc(igh_t),        &
-                                                          state(igh_t), 1,   &
-                                                          visc_h_blend,      &
-                                                          chi  ) )
-
-      end if
-      !  Placeholder code until the momentum mixing is implemented:
-      !call invoke_momentum_smagorinsky_diff(inc(igh_u), state(igh_u), 1, delta)
-      ! Set u increment to zero until momentum mixing is implemented:
-      call invoke( inc_X_plus_bY( state(igh_t), dt, inc(igh_t) ), &
-                   setval_c(inc(igh_u), 0.0_r_def),               &
                    inc_X_plus_bY( state(igh_u), dt, inc(igh_u) ) )
     end if    
     
@@ -776,8 +819,8 @@ contains
 
     if ( use_physics )then
       call shear%field_final()
-      call visc_m_blend%field_final()
-      call visc_h_blend%field_final()
+      call visc_m%field_final()
+      call visc_h%field_final()
     end if
 
     return

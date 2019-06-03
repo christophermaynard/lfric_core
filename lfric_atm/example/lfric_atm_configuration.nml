@@ -237,6 +237,7 @@
     viscosity    = .false.,
     viscosity_mu = 0.0,
     mix_factor = 0.0,
+    method = 'blending'
 /
 
 &physics
