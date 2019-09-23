@@ -132,7 +132,7 @@ contains
     real(r_def), allocatable :: phi(:)
 
     real(kind=r_def) :: t
-    real(r_def) :: cv
+    real(r_def) :: cv, chi3_av
 
     nlayers=3
     call get_w0_m3x3_q3x3x3_size( ndf_w0, undf_w0, ncells, &
@@ -171,7 +171,9 @@ contains
           chi3(map_w0(1,icell)+k) = real(k)*dz
         end do
         do k = 1,3
-          phi(map_w3(1,icell)+k) = (real(k)-0.5_r_def)*dz
+          chi3_av = 0.5_r_def*( chi3(map_w0(1,icell)+k-1) &
+                              + chi3(map_w0(1,icell)+k) )
+          phi(map_w3(1,icell)+k-1) = gravity*chi3_av
         end do
         icell = icell + 1
       end do
@@ -188,7 +190,6 @@ contains
     exner(:) = 0.8_r_def
     theta(:) = 300.0_r_def
     energy(:) = 0.0_r_def
-    phi(:) = gravity*chi3(:)
 
     cell = 1
     call compute_total_energy_code(                                &
