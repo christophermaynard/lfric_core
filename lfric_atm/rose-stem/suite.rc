@@ -183,6 +183,11 @@
         [[[environment]]]
             DESTINATION = {{publish_destination}}
 
+{%- if 'publish_node' in scheduledTasks %}
+    [[publish_node]]
+        script = true
+{%- endif %}
+
 {%- if 'publish_index' in scheduledTasks %}
     # This task can not be part of the PUBLISH family as a prerequisite of
     # running it is that the PUBLISH family have completed. i.e. A circular

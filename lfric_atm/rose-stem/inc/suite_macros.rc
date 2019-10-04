@@ -39,6 +39,9 @@
          [[[R{{crun}}/P1/{{crun}}]]]
             graph = """
             run_{{appName_res_label}}_{{label}}[-P1] => run_{{appName_res_label}}_{{label}}
+{%-           if publish or plotstr %}
+            publish_node[-P1] => publish_node
+{%-           endif %}
                  """
          [[[R1/P{{crun}}/{{crun}}]]]
             graph = """
@@ -50,8 +53,10 @@
 {%-           if plotstr %}
 {%-             do plot_config.update( {appLabel : plotstr} ) %}
             run_{{appName_res_label}}_{{label}} => plot_{{appName_res_label}}_{{label}}
+            plot_{{appName_res_label}}_{{label}} => publish_node
 {%-             if publish %}
             plot_{{appName_res_label}}_{{label}} => publish_{{appName_res_label}}_{{label}}_plots
+            publish_{{appName_res_label}}_{{label}}_plots => publish_node
 {%-             endif %}
 {%-           endif %}
                  """
@@ -63,6 +68,7 @@
             export_source => compile_mesh_tools_with_{{label}}
 {%-         if publish %}
             compile_{{projectName}}_with_{{label}}:finish => publish_{{label}}_compile
+            publish_{{label}}_compile => publish_node
 {%-         endif %}
 
 {%-         if TARGET_SCIENCE_COMPILER in TARGET_PERFORM_RUN %}
@@ -89,12 +95,15 @@
 
 {%-         if publish %}
             run_{{appName_res_label}}_{{label}}:finish  => publish_{{appName_res_label}}_{{label}}
+            publish_{{appName_res_label}}_{{label}} => publish_node
 {%-         endif %}
 {%-         if plotstr and crun < 2 %}
 {%-           do plot_config.update( {appLabel : plotstr} ) %}
             run_{{appName_res_label}}_{{label}} => plot_{{appName_res_label}}_{{label}}
+             plot_{{appName_res_label}}_{{label}} => publish_node
 {%-           if publish %}
             plot_{{appName_res_label}}_{{label}} => publish_{{appName_res_label}}_{{label}}_plots
+            publish_{{appName_res_label}}_{{label}}_plots => publish_node
 {%-           endif %}
 {%-         endif %}
                  """
@@ -118,8 +127,8 @@
 
 {#- #########################################################################}
 {%- macro publish_commit() %}
-      [[[R1]]]
-            PUBLISH:finish-all => publish_index
+      [[[R1/P1/$]]]
+            publish_node => publish_index
             publish_index      => mirror_results_local
 {%-   if MIRROR_UPLOAD_URL %}
             publish_index      => mirror_results_remote
