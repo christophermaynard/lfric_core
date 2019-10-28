@@ -38,24 +38,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! overload the default structure constructor for function space
-interface columnwise_op_asm_kernel_type
-   module procedure columnwise_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public columnwise_op_asm_kernel_code
 contains
-  
-  type(columnwise_op_asm_kernel_type) function columnwise_constructor() result(self)
-    implicit none
-    return
-  end function columnwise_constructor
 
   !> @brief The subroutine which is called directly from the PSY layer and
   !> assembles the LMA into a CMA

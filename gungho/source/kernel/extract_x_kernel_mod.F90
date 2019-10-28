@@ -41,23 +41,9 @@ module extract_x_kernel_mod
     procedure, nopass :: extract_x_code
   end type
 
-  !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface extract_x_kernel_type
-    module procedure extract_x_kernel_constructor
-  end interface
-
   public extract_x_code
 
 contains
-
-type(extract_x_kernel_type) function extract_x_kernel_constructor() result(self)
-  implicit none
-  return
-end function extract_x_kernel_constructor
 
 !-------------------------------------------------------------------------------
 ! Contained functions/subroutines

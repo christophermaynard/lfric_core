@@ -55,26 +55,11 @@ module eos_operators_kernel_mod
   end type eos_operators_kernel_type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface eos_operators_kernel
-    module procedure eos_operators_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public eos_operators_code
 
 contains
-
-type(eos_operators_kernel_type) &
-function eos_operators_constructor() result(self)
-  implicit none
-  return
-end function eos_operators_constructor
   
 !> @brief Computes the equation of state operators
 !! @param[in] cell Cell number

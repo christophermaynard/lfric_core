@@ -47,25 +47,11 @@ module flux_rhs_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface flux_rhs_kernel_type
-    module procedure flux_rhs_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public flux_rhs_code
 
 contains
-
-type(flux_rhs_kernel_type) function flux_rhs_kernel_constructor() result(self)
-  implicit none
-  return
-end function flux_rhs_kernel_constructor
 
 !> @brief 
 !! @param[in] nlayers Number of layers

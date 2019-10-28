@@ -55,26 +55,11 @@ module kinetic_energy_gradient_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface kinetic_energy_gradient_kernel_type
-    module procedure kinetic_energy_gradient_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public kinetic_energy_gradient_code
 
 contains
-
-type(kinetic_energy_gradient_kernel_type) &
-function kinetic_energy_gradient_kernel_constructor() result(self)
-  implicit none
-  return
-end function kinetic_energy_gradient_kernel_constructor
 
 !> @brief Computes the kinetic gradient component of the rhs of the momentum equation 
 !! @param[in] nlayers Number of layers

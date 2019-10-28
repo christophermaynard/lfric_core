@@ -39,24 +39,10 @@ contains
 end type columnwise_op_app_kernel_type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! overload the default structure constructor for function space
-interface columnwise_op_app_kernel_type
-   module procedure columnwise_op_app_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public columnwise_op_app_kernel_code
 contains
-
-  type(columnwise_op_app_kernel_type) function columnwise_op_app_kernel_constructor() result(self)
-    implicit none
-    return
-  end function columnwise_op_app_kernel_constructor
 
   !> @brief The subroutine which is called directly from the PSY layer and
   !> applies the operator as lhs += A.x

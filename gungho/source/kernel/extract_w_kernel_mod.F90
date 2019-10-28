@@ -35,25 +35,11 @@ module extract_w_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor
-  interface extract_w_kernel_type
-    module procedure extract_w_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public extract_w_code
 
 contains
-
-type(extract_w_kernel_type) function extract_w_kernel_constructor() result(self)
-  implicit none
-  return
-end function extract_w_kernel_constructor
 
 !> @brief The subroutine which is called directly by the psy layer
 !! @param[in] nlayers Integer the number of layers

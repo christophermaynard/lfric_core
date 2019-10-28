@@ -50,30 +50,16 @@ module rtheta_supg_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface rtheta_supg_kernel_type
-    module procedure rtheta_supg_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public rtheta_supg_code
 
 contains
 
-type(rtheta_supg_kernel_type) function rtheta_supg_kernel_constructor() &
-                              result(self)
-  implicit none
-  return
-end function rtheta_supg_kernel_constructor
 !> @details Kernel to  compute the application of streamline upwind
 !>         Petrov-Galerkin (supg) method to the thermodynamic equation. This
 !>         replaces the test function
-!>         \f[ 
+!>         \f[
 !!         \gamma \longrightarrow \gamma^* \equiv \gamma
 !!         + \frac{\alpha}{\Delta}\frac{\mathbf{F}}{\left|\mathbf{F}\right|}
 !!         .\nabla\gamma
@@ -149,7 +135,7 @@ subroutine rtheta_supg_code(nlayers,                                          &
   real(kind=r_def), dimension(nqp_v), intent(in)      ::  wqp_v
 
   ! Internal variables
-  integer               :: df, k 
+  integer               :: df, k
   integer               :: qp1, qp2
 
   real(kind=r_def), dimension(ndf_w0)          :: rtheta_e, theta_e, &
@@ -159,9 +145,9 @@ subroutine rtheta_supg_code(nlayers,                                          &
   real(kind=r_def), dimension(ndf_w3)          :: rho_e
   real(kind=r_def), dimension(nqp_h,nqp_v)     :: dj
   real(kind=r_def), dimension(3,3,nqp_h,nqp_v) :: jac
-  real(kind=r_def) :: f_at_quad(3), grad_theta_at_quad(3) 
+  real(kind=r_def) :: f_at_quad(3), grad_theta_at_quad(3)
   real(kind=r_def) :: rho_at_quad, abs_f, gamma, dthetadt, supg
-  real(kind=r_def) :: advective_term     
+  real(kind=r_def) :: advective_term
 
   supg = 5.0_r_def
 

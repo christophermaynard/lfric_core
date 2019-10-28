@@ -54,26 +54,11 @@ module lhs_exner_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface lhs_exner_kernel_type
-    module procedure lhs_exner_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public lhs_exner_code
 
 contains
-
-type(lhs_exner_kernel_type) &
-function lhs_exner_kernel_constructor() result(self)
-  implicit none
-  return
-end function lhs_exner_kernel_constructor
 
 !> @brief Computes lhs of the equation of state for the nonlinear equations 
 !! @param[in] nlayers Number of layers

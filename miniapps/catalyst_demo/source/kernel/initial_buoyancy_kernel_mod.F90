@@ -43,24 +43,10 @@ module initial_buoyancy_kernel_mod
     end type
 
     !-------------------------------------------------------------------------------
-    ! Constructors
-    !-------------------------------------------------------------------------------
-
-    ! Overload the default structure constructor for function space
-    interface initial_buoyancy_kernel_type
-        module procedure initial_buoyancy_kernel_constructor
-    end interface
-
-    !-------------------------------------------------------------------------------
     ! Contained functions/subroutines
     !-------------------------------------------------------------------------------
     public initial_buoyancy_code
 contains
-
-    type(initial_buoyancy_kernel_type) function initial_buoyancy_kernel_constructor() result(self)
-        implicit none
-        return
-    end function initial_buoyancy_kernel_constructor
 
       !> @brief The subroutine which is called directly by the Psy layer
       !! @param[in] nlayers Integer the number of layers

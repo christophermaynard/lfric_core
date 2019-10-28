@@ -52,26 +52,11 @@ module held_suarez_fv_wind_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor
-  interface held_suarez_fv_wind_kernel_type
-    module procedure held_suarez_fv_wind_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public held_suarez_fv_wind_code
 
 contains
-
-type(held_suarez_fv_wind_kernel_type) &
-function held_suarez_fv_wind_kernel_constructor() result(self)
-  implicit none
-  return
-end function held_suarez_fv_wind_kernel_constructor
 
 !> @brief The subroutine which is called directly by the psy layer
 !! @param[in] nlayers Integer the number of layers

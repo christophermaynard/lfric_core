@@ -71,19 +71,8 @@ module initial_jules_kernel_mod
       procedure, nopass :: initial_jules_code
   end type
 
-  ! overload the default structure constructor for function space
-  interface initial_jules_kernel_type
-      module procedure initial_jules_kernel_constructor
-  end interface
-
   public initial_jules_code
 contains
-
-  function initial_jules_kernel_constructor() result(self)
-    implicit none
-    type(initial_jules_kernel_type) :: self
-    return
-  end function initial_jules_kernel_constructor
 
   !> @param[in]  nlayers            The number of layers
   !> @param[out] tile_fraction      Surface tile fractions

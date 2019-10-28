@@ -45,25 +45,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! overload the default structure constructor for function space
-interface sample_eos_rho_kernel_type
-   module procedure sample_eos_rho_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public sample_eos_rho_code
 contains
-
-type(sample_eos_rho_kernel_type) &
-   function sample_eos_rho_kernel_constructor() result(self)
-  implicit none
-  return
-end function sample_eos_rho_kernel_constructor
 
 !> @brief Computes density from equation of state
 !! @param[in] nlayers Number of layers

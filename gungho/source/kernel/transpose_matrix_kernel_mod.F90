@@ -36,24 +36,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! overload the default structure constructor
-interface transpose_matrix_kernel_type
-   module procedure transpose_matrix_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public transpose_matrix_code
 contains
-
-  type(transpose_matrix_kernel_type) function transpose_matrix_kernel_constructor() result(self)
-  implicit none
-  return
-end function transpose_matrix_kernel_constructor
 
 !> @brief Computes the transpose of a matrix
 !> @param[in]  cell Horizontal cell index

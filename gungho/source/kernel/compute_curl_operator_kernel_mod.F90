@@ -40,26 +40,11 @@ module compute_curl_operator_kernel_mod
   end type
 
   !--------------------------------------------------------------------------
-  ! Constructors
-  !--------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface compute_curl_operator_kernel_type
-    module procedure compute_curl_operator_constructor
-  end interface
-
-  !--------------------------------------------------------------------------
   ! Contained functions/subroutines
   !--------------------------------------------------------------------------
   public compute_curl_operator_code
 
 contains
-
-type(compute_curl_operator_kernel_type) &
-function compute_curl_operator_constructor() result(self)
-  implicit none
-  return
-end function compute_curl_operator_constructor
 
 !> @brief Computes the curl operator 
 !! @param[in] cell Cell number

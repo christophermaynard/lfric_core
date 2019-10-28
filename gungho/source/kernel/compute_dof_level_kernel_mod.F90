@@ -33,24 +33,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface compute_dof_level_kernel_type
-   module procedure compute_dof_level_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public compute_dof_level_code
 contains
-
-type(compute_dof_level_kernel_type) function compute_dof_level_kernel_constructor() result(self)
-  implicit none
-  return
-end function compute_dof_level_kernel_constructor
 
 !> @param[in] nlayers Number of layers
 !> @param[in] ndf Number of degrees of freedom per cell for the output field

@@ -33,20 +33,9 @@ module single_to_multi_kernel_mod
       procedure, nopass :: single_to_multi_code
   end type
 
-  ! Overload the default structure constructor for function space
-  interface single_to_multi_kernel_type
-      module procedure single_to_multi_kernel_constructor
-  end interface
-
   public single_to_multi_code
 
 contains
-
-  type (single_to_multi_kernel_type) function &
-  single_to_multi_kernel_constructor() result(self)
-    implicit none
-    return
-  end function single_to_multi_kernel_constructor
 
   !> @param[in]     nlayers       The number of layers
   !> @param[in,out] multi_field   Multi-dimensional field to update

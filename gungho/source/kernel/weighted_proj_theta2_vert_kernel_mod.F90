@@ -47,25 +47,11 @@ module weighted_proj_theta2_vert_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface weighted_proj_theta2_vert_kernel_type
-    module procedure weighted_proj_theta2_vert_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public weighted_proj_theta2_vert_code
 
 contains
-
-type(weighted_proj_theta2_vert_kernel_type) function weighted_proj_theta2_vert_kernel_constructor() result(self)
-  implicit none
-  return
-end function weighted_proj_theta2_vert_kernel_constructor
 
 !> @brief Compute the weighted projection operator that maps from W2 to Wtheta
 !! @param[in] cell Current cell index

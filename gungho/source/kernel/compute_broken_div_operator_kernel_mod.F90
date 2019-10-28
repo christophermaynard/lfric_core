@@ -44,26 +44,11 @@ module compute_broken_div_operator_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface compute_broken_div_operator_kernel_type
-    module procedure compute_broken_div_operator_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public compute_broken_div_operator_code
 
 contains
-
-  type(compute_broken_div_operator_kernel_type) function compute_broken_div_operator_constructor() &
-     result(self)
-    implicit none
-    return
-  end function compute_broken_div_operator_constructor
 
   !> @brief Computes the broken (cell-local) divergence operator 
   !! @param[in] cell     Cell number

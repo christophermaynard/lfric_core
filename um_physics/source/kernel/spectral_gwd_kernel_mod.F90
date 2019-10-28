@@ -45,26 +45,12 @@ module spectral_gwd_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-  ! Default Constructor
-
-  interface spectral_gwd_kernel_type
-    module procedure spectral_gwd_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public spectral_gwd_code
 
 contains
 
-type(spectral_gwd_kernel_type) &
-function spectral_gwd_kernel_constructor() result(self)
-  implicit none
-  return
-end function spectral_gwd_kernel_constructor
 !> @brief Call the UM spectral gravity wave drag scheme
 !> @details This code calls the UM USSP spectral gravity wave drag scheme, which
 !>          calculates the zonal and meridional winds and temperature increments

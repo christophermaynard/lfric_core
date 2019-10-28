@@ -39,24 +39,10 @@ module w2_to_w1_projection_kernel_mod
     procedure, public, nopass :: w2_to_w1_projection_code
   end type
 
-  !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface w2_to_w1_projection_kernel_type
-    module procedure w2_to_w1_projection_kernel_constructor
-  end interface
-
 !-----------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-----------------------------------------------------------------------------
 contains
-
-type(w2_to_w1_projection_kernel_type) function w2_to_w1_projection_kernel_constructor() result(self)
-  implicit none
-  return
-end function w2_to_w1_projection_kernel_constructor
 
 !> @brief     Subroutine to compute right hand side of a galerkin projection of
 !>            a field from W2 into W1

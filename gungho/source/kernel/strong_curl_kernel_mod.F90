@@ -46,25 +46,11 @@ module strong_curl_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface strong_curl_kernel_type
-    module procedure strong_curl_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public strong_curl_code
 
 contains
-
-type(strong_curl_kernel_type) function strong_curl_kernel_constructor() result(self)
-  implicit none
-  return
-end function strong_curl_kernel_constructor
 
 !> @brief Kernel to compute the strong curl: xi = curl(u)
 !! @param[in] nlayers Number of layers

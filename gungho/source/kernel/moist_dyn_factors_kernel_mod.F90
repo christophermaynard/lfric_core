@@ -31,24 +31,10 @@ module moist_dyn_factors_kernel_mod
     end type
 
     !-------------------------------------------------------------------------------
-    ! Constructors
-    !-------------------------------------------------------------------------------
-
-    interface moist_dyn_factors_kernel_type
-        module procedure moist_dyn_factors_kernel_constructor
-    end interface
-
-    !-------------------------------------------------------------------------------
     ! Contained functions/subroutines
     !-------------------------------------------------------------------------------
     public moist_dyn_factors_code
 contains
-
-    type(moist_dyn_factors_kernel_type) function moist_dyn_factors_kernel_constructor() &
-                                        result(self)
-        implicit none
-        return
-    end function moist_dyn_factors_kernel_constructor
 
     !> @brief The subroutine which is called directly by the Psy layer
     !! @param[in] nlayers Integer the number of layers

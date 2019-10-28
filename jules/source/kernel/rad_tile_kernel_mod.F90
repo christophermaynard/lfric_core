@@ -60,24 +60,9 @@ contains
 end type
 
 !------------------------------------------------------------------------------
-! Constructors
-!------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface rad_tile_kernel_type
-  module procedure rad_tile_kernel_constructor
-end interface
-
-!------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !------------------------------------------------------------------------------
 contains
-
-function rad_tile_kernel_constructor() result(self)
-  implicit none
-  type(rad_tile_kernel_type) :: self
-  return
-end function rad_tile_kernel_constructor
 
 ! @param[in]  nlayers                Number of layers
 ! @param[out] tile_sw_direct_albedo  SW direct tile albedos

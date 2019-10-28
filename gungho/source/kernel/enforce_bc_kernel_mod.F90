@@ -38,21 +38,11 @@ end type
 ! Constenforce_bcctors
 !-------------------------------------------------------------------------------
 
-! overload the default stenforce_bccture constenforce_bcctor for function space
-interface enforce_bc_kernel_type
-   module procedure enforce_bc_kernel_constructor
-end interface
-
 !-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public enforce_bc_code
 contains
-
-type(enforce_bc_kernel_type) function enforce_bc_kernel_constructor() result(self)
-  implicit none
-  return
-end function enforce_bc_kernel_constructor
 
 !> @brief Applies boundary conditions to a field
 !! @param[in] nlayers Number of layers

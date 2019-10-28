@@ -43,15 +43,6 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! overload the default structure constructor for function space
-interface compute_q_operator_type
-   module procedure compute_q_operator_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public compute_q_operator_init
@@ -59,12 +50,6 @@ public compute_q_operator_code
 public compute_q_operator_final
 
 contains
-
-type(compute_q_operator_type) &
-                       function compute_q_operator_constructor() result(self)
-  implicit none
-  return
-end function compute_q_operator_constructor
 
 !> @brief Computes the q operator which is the projection of the vertical
 !!        bouyancy term

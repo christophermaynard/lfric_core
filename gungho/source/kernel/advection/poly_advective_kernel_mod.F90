@@ -42,24 +42,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface poly_advective_kernel_type
-   module procedure poly_advective_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public poly_advective_code
 contains
-
-type(poly_advective_kernel_type) function poly_advective_kernel_constructor() result(self)
-  implicit none
-  return
-end function poly_advective_kernel_constructor
 
 !> @brief Computes the horizontal advective update for a tracer
 !! @param[in]  nlayers Number of layers

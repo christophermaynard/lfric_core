@@ -51,25 +51,11 @@ module calc_departure_wind_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface calc_departure_wind_kernel_type
-    module procedure calc_departure_wind_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public calc_departure_wind_code
 
 contains
-
-type(calc_departure_wind_kernel_type) function calc_departure_wind_kernel_constructor() result(self)
-  implicit none
-  return
-end function calc_departure_wind_kernel_constructor
 
 !> @param[in] nlayers Number of layers
 !> @param[inout] u_departure_wind Output field containing the departure wind used to calculate departure points

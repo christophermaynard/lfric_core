@@ -56,26 +56,11 @@ module geopotential_gradient_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface geopotential_gradient_kernel_type
-    module procedure geopotential_gradient_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public geopotential_gradient_code
 
 contains
-
-type(geopotential_gradient_kernel_type) &
-function geopotential_gradient_kernel_constructor() result(self)
-  implicit none
-  return
-end function geopotential_gradient_kernel_constructor
 
 !> @brief Kernel which computes rhs of the momentum equation for the nonlinear equations,
 !>         written in the vector invariant form

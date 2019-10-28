@@ -43,26 +43,11 @@ module compute_mass_matrix_kernel_w3_mod
   end type compute_mass_matrix_kernel_w3_type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface compute_mass_matrix_kernel_w3
-    module procedure compute_mass_matrix_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public compute_mass_matrix_w3_code
 
 contains
-
-type(compute_mass_matrix_kernel_w3_type) &
-function compute_mass_matrix_constructor() result(self)
-  implicit none
-  return
-end function compute_mass_matrix_constructor
 
 !> @brief This subroutine computes the mass matrix for the w3 space
 !! @param[in] cell Cell number

@@ -41,25 +41,11 @@ module weighted_m3_kernel_mod
   end type weighted_m3_kernel_type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface weighted_m3_kernel
-    module procedure weighted_m3_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public weighted_m3_code
 
 contains
-
-type(weighted_m3_kernel_type) function weighted_m3_constructor() result(self)
-  implicit none
-  return
-end function weighted_m3_constructor
   
 !> @brief Computes the mass matrix for the w3 space weighted by the reference
 !!        density

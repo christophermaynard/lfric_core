@@ -41,19 +41,9 @@ module cld_kernel_mod
     procedure, nopass ::cld_code
   end type
 
-  ! overload the default structure constructor for function space
-  interface cld_kernel_type
-    module procedure cld_kernel_constructor
-  end interface
-
   public cld_code
 
 contains
-
-type(cld_kernel_type) function cld_kernel_constructor() result(self)
-  implicit none
-  return
-end function cld_kernel_constructor
 
 !> @brief Interface to the cloud scheme
 !! @param[in]    nlayers       Number of layers

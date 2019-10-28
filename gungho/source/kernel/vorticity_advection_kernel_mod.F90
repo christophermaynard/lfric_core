@@ -57,24 +57,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface vorticity_advection_kernel_type
-   module procedure vorticity_advection_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public vorticity_advection_code
 contains
-
-type(vorticity_advection_kernel_type) function vorticity_advection_kernel_constructor() result(self)
-  implicit none
-  return
-end function vorticity_advection_kernel_constructor
 
 !> @brief Compute the advection of the wind field by the vorticity
 !! @param[in] nlayers Number of layers

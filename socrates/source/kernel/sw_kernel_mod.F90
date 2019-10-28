@@ -72,24 +72,9 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface sw_kernel_type
-  module procedure sw_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 contains
-
-function sw_kernel_constructor() result(self)
-  implicit none
-  type(sw_kernel_type) :: self
-  return
-end function sw_kernel_constructor
 
 ! @param[in]    nlayers                 Number of layers
 ! @param[out]   sw_heating_rate         SW heating rate

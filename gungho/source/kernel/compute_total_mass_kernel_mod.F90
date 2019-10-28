@@ -43,25 +43,11 @@ module compute_total_mass_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface compute_total_mass_kernel_type
-    module procedure compute_total_mass_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public compute_total_mass_code
 
 contains
-
-type(compute_total_mass_kernel_type) function compute_total_mass_kernel_constructor() result(self)
-  implicit none
-  return
-end function compute_total_mass_kernel_constructor
 
 !> @brief Computes the cell integrated mass for a single model column
 !! @param[in] nlayers Number of layers

@@ -38,24 +38,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! overload the default structure constructor for function space
-interface compound_operator_kernel_type
-   module procedure compound_operator_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public compound_operator_kernel_code
 contains
-
-type(compound_operator_kernel_type) function compound_operator_kernel_constructor() result(self)
-  implicit none
-  return
-end function compound_operator_kernel_constructor
 
 !> @brief This subroutine computes the div operator 
 !! @param[in] cell Cell number

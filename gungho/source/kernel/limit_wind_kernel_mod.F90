@@ -37,26 +37,11 @@ module limit_wind_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor
-  interface limit_wind_kernel_type
-    module procedure limit_wind_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public limit_wind_code
 
 contains
-
-type(limit_wind_kernel_type) &
-function limit_wind_kernel_constructor() result(self)
-  implicit none
-  return
-end function limit_wind_kernel_constructor
 
 !> @brief Limits the wind dofs by some measure of CFL limit
 !! @param[in] nlayers Number of layers

@@ -44,25 +44,11 @@ module set_exner_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface set_exner_kernel_type
-    module procedure set_exner_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public set_exner_code
 
 contains
-
-type(set_exner_kernel_type) function set_exner_kernel_constructor() result(self)
-  implicit none
-  return
-end function set_exner_kernel_constructor
 
 !> @brief Computes LHS of Galerkin projection and solves equation in W3 space
 !! @param[in] nlayers Number of layers

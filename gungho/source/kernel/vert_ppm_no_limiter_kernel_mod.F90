@@ -47,23 +47,9 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface vert_ppm_no_limiter_kernel_type
-   module procedure vert_ppm_no_limiter_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 contains
-
-type(vert_ppm_no_limiter_kernel_type) function vert_ppm_no_limiter_kernel_constructor() result(self)
-  implicit none
-  return
-end function vert_ppm_no_limiter_kernel_constructor
 
 !> @brief Compute the subgrid reconstruction coeffiecients for a density field
 !! @param[in]  nlayers Number of layers

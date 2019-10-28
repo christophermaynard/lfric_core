@@ -46,25 +46,11 @@ module momentum_smagorinsky_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface momentum_smagorinsky_kernel_type
-    module procedure momentum_smagorinsky_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public momentum_smagorinsky_code
 
 contains
-
-type(momentum_smagorinsky_kernel_type) function momentum_smagorinsky_kernel_constructor() result(self)
-  implicit none
-  return
-end function momentum_smagorinsky_kernel_constructor
 
 !> @brief Calculates diffusion increment for wind field using horizontal Smagorinsky diffusion
 !! @param[in] nlayers Number of layers in the mesh

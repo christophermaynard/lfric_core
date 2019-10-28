@@ -41,26 +41,11 @@ module compute_grad_operator_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface compute_grad_operator_kernel_type
-    module procedure compute_grad_operator_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public compute_grad_operator_code
 
 contains
-
-type(compute_grad_operator_kernel_type) &
-function compute_grad_operator_constructor() result(self)
-  implicit none
-  return
-end function compute_grad_operator_constructor
 
 !> @brief Computes the grad operator 
 !! @param[in] cell Cell number

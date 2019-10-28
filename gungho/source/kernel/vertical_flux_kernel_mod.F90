@@ -45,24 +45,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface vertical_flux_kernel_type
-   module procedure vertical_flux_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public vertical_flux_code
 contains
-
-type(vertical_flux_kernel_type) function vertical_flux_kernel_constructor() result(self)
-  implicit none
-  return
-end function vertical_flux_kernel_constructor
 
 
 !> @brief Kernel which computes the mass flux for Cosmic in the z direction.

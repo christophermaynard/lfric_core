@@ -33,25 +33,11 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface transpose_matrix_vector_kernel_type
-   module procedure transpose_matrix_vector_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public transpose_matrix_vector_code
 
 contains
-
-type(transpose_matrix_vector_kernel_type) function transpose_matrix_vector_kernel_constructor() result(self)
-  implicit none
-  return
-end function transpose_matrix_vector_kernel_constructor
 
 !> @brief Computes lhs = matrix^T*x where matrix^T is the transpose of the matrix
 !! @param[in] cell Horizontal cell index

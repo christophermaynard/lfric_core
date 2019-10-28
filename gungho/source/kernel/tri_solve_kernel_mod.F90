@@ -38,25 +38,11 @@ module tri_solve_kernel_mod
   end type tri_solve_kernel_type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface tri_solve_kernel
-    module procedure tri_solve_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public tri_solve_code
 
 contains
-
-type(tri_solve_kernel_type) function tri_solve_constructor() result(self)
-  implicit none
-  return
-end function tri_solve_constructor
 
 !> @brief Tridiagonal solver using Thomas algorithm 
 !> @param[in]  nlayers Number of levels to solve over

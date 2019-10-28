@@ -47,26 +47,11 @@ module weighted_proj_3theta_kernel_mod
   end type weighted_proj_3theta_kernel_type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface weighted_proj_3theta_kernel
-    module procedure weighted_proj_3theta_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public weighted_proj_3theta_code
 
 contains
-
-type(weighted_proj_3theta_kernel_type) &
-function weighted_proj_3theta_constructor() result(self)
-  implicit none
-  return
-end function weighted_proj_3theta_constructor
   
 !> @brief Compute the weighted projection operator from Wtheta to W3
 !! @param[in] cell Cell number

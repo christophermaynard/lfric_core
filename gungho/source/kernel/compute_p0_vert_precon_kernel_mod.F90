@@ -40,26 +40,11 @@ module compute_p0_vert_precon_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface compute_p0_vert_precon_kernel_type
-    module procedure compute_p0_vert_precon_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public compute_p0_vert_precon_code
 
 contains
-
-  type(compute_p0_vert_precon_kernel_type) &
-       function compute_p0_vert_precon_kernel_constructor() result(self)
-    implicit none
-    return
-  end function compute_p0_vert_precon_kernel_constructor
 
 
   !> @brief Compute the terms of the helmholz operator restricted to a single

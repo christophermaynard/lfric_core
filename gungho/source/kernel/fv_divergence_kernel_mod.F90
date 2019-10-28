@@ -44,25 +44,11 @@ module fv_divergence_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface fv_divergence_kernel_type
-    module procedure fv_divergence_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public fv_divergence_code
 
 contains
-
-type(fv_divergence_kernel_type) function fv_divergence_kernel_constructor() result(self)
-  implicit none
-  return
-end function fv_divergence_kernel_constructor
 
 !> @brief Computes the finite-volume divergence in either the x or y direction.
 !! @param[in]  nlayers             The number of layers

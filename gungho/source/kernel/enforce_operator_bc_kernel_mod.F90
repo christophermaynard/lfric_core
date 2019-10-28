@@ -36,22 +36,12 @@ end type
 ! Constenforce_operator_bcctors
 !-------------------------------------------------------------------------------
 
-! Overload the default structure constructor for function space
-interface enforce_operator_bc_kernel_type
-  module procedure enforce_operator_bc_kernel_constructor
-end interface
-
 !-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public enforce_operator_bc_code
 
 contains
-
-type(enforce_operator_bc_kernel_type) function enforce_operator_bc_kernel_constructor() result(self)
-  implicit none
-  return
-end function enforce_operator_bc_kernel_constructor
 
 !> @brief Applies boundary conditions to an operator
 !! @param[in] cell Horizontal cell index

@@ -39,23 +39,9 @@ module conv_kernel_mod
     procedure, nopass ::conv_code
   end type conv_kernel_type
 
-  !-----------------------------------------------------------------------------
-  ! Constructors
-  !-----------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface conv_kernel_type
-    module procedure conv_kernel_constructor
-  end interface
-
   public conv_code
 
 contains
-
-  type(conv_kernel_type) function conv_kernel_constructor() result(self)
-    implicit none
-    return
-  end function conv_kernel_constructor
 
   !> @brief Interface to the Lambert-Lewis convection scheme
   !> @details The Lambert-Lewis convection scheme is a simple

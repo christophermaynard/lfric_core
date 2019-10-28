@@ -46,26 +46,11 @@ module sample_flux_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface sample_flux_kernel_type
-    module procedure sample_flux_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public sample_flux_code
 
 contains
-
-type(sample_flux_kernel_type) &
-function sample_flux_kernel_constructor() result(self)
-  implicit none
-  return
-end function sample_flux_kernel_constructor
 
 !> @brief Kernel to sample a flux at nodal points: F = u*q
 !! @param[in] nlayers Number of layers

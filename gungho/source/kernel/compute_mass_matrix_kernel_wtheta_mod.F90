@@ -42,26 +42,11 @@ module compute_mass_matrix_kernel_wtheta_mod
   end type compute_mass_matrix_kernel_wtheta_type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface compute_mass_matrix_kernel_wtheta
-    module procedure compute_mass_matrix_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public compute_mass_matrix_wtheta_code
 
 contains
-
-type(compute_mass_matrix_kernel_wtheta_type) &
-function compute_mass_matrix_constructor() result(self)
-  implicit none
-  return
-end function compute_mass_matrix_constructor
 
 !> @brief This subroutine computes the mass matrix for the wtheta space
 !! @param[in] cell Cell number

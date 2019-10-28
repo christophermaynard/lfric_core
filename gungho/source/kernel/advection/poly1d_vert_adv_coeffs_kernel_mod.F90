@@ -54,24 +54,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface poly1d_vert_adv_coeffs_kernel_type
-   module procedure poly1d_vert_adv_coeffs_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public poly1d_vert_adv_coeffs_code
 contains
-
-type(poly1d_vert_adv_coeffs_kernel_type) function poly1d_vert_adv_coeffs_kernel_constructor() result(self)
-  implicit none
-  return
-end function poly1d_vert_adv_coeffs_kernel_constructor
 
 !>@brief Compute the coefficients needed for a 1D vertical reconstruction
 !>       of a tracer field on vertical faces

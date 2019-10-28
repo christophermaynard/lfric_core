@@ -43,25 +43,11 @@ module rrho_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface rrho_kernel_type
-    module procedure rrho_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public rrho_code
 
 contains
-
-type(rrho_kernel_type) function rrho_kernel_constructor() result(self)
-  implicit none
-  return
-end function rrho_kernel_constructor
 
 !> @brief Compute the right hand side of the continuity equation
 !! @param[in] nlayers Number of layers

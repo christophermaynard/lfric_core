@@ -57,25 +57,11 @@ module w2_vorticity_advection_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface w2_vorticity_advection_kernel_type
-    module procedure w2_vorticity_advection_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public w2_vorticity_advection_code
 
 contains
-
-type(w2_vorticity_advection_kernel_type) function w2_vorticity_advection_kernel_constructor() result(self)
-  implicit none
-  return
-end function w2_vorticity_advection_kernel_constructor
 
 !> @brief Compute the advection of the wind field by the vorticity
 !! @param[in] nlayers Number of layers

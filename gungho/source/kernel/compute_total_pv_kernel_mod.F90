@@ -47,25 +47,11 @@ module compute_total_pv_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface compute_total_pv_kernel_type
-    module procedure compute_total_pv_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public compute_total_pv_code
 
 contains
-
-type(compute_total_pv_kernel_type) function compute_total_pv_kernel_constructor() result(self)
-  implicit none
-  return
-end function compute_total_pv_kernel_constructor
 
 !> @brief The kernel computes the cell integrated potential vorticity
 !! @param[in] nlayers Number of layers

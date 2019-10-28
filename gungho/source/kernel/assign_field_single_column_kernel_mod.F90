@@ -43,24 +43,10 @@ end type
 logical :: set_already = .false.
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! overload the default structure constructor
-interface assign_field_single_column_kernel_type
-   module procedure assign_field_single_column_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public assign_field_single_column_code
 contains
-
-  type(assign_field_single_column_kernel_type) function assign_field_single_column_kernel_constructor() result(self)
-  implicit none
-  return
-end function assign_field_single_column_kernel_constructor
 
 !> @brief Sets all field entries to 0, except for the values in the first encountered 
 !>        column.

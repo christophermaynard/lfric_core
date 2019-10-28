@@ -45,18 +45,8 @@ module initial_cloud_kernel_mod
         procedure, nopass :: initial_cloud_code
     end type
 
-    ! overload the default structure constructor for function space
-    interface initial_cloud_kernel_type
-        module procedure initial_cloud_kernel_constructor
-    end interface
-
     public initial_cloud_code
 contains
-
-    type(initial_cloud_kernel_type) function initial_cloud_kernel_constructor() result(self)
-        implicit none
-        return
-    end function initial_cloud_kernel_constructor
 
     !> @brief Implements the cloud field initialisation kernel 
     !! @param[in]     nlayers       The number of layers

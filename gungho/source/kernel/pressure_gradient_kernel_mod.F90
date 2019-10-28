@@ -60,26 +60,11 @@ module pressure_gradient_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface pressure_gradient_kernel_type
-    module procedure pressure_gradient_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public pressure_gradient_code
 
 contains
-
-type(pressure_gradient_kernel_type) &
-function pressure_gradient_kernel_constructor() result(self)
-  implicit none
-  return
-end function pressure_gradient_kernel_constructor
 
 !> @brief Compute the pressure gradient component of the momentum equation
 !! @param[in] nlayers Number of layers

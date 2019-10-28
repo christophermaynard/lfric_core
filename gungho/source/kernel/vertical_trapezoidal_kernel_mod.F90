@@ -47,24 +47,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface vertical_trapezoidal_kernel_type
-   module procedure vertical_trapezoidal_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public vertical_trapezoidal_code
 contains
-
-type(vertical_trapezoidal_kernel_type) function vertical_trapezoidal_kernel_constructor() result(self)
-  implicit none
-  return
-end function vertical_trapezoidal_kernel_constructor
 
 !> @brief Kernel which computes the departure distances for cell faces in the
 !>        vertical direction.

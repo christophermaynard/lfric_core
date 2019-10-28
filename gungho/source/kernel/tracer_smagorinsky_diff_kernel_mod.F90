@@ -40,25 +40,11 @@ module tracer_smagorinsky_diff_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface tracer_smagorinsky_diff_kernel_type
-    module procedure tracer_smagorinsky_diff_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public tracer_smagorinsky_diff_code
 
 contains
-
-type(tracer_smagorinsky_diff_kernel_type) function tracer_smagorinsky_diff_kernel_constructor() result(self)
-  implicit none
-  return
-end function tracer_smagorinsky_diff_kernel_constructor
 
 !> @brief Calculates horizontal Smagorinsky diffusion for a tracer variable
 !! @param[in] nlayers Number of layers in the mesh

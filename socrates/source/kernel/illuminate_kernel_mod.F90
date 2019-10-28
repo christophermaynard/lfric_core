@@ -43,24 +43,9 @@ contains
 end type
 
 !------------------------------------------------------------------------------
-! Constructors
-!------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface illuminate_kernel_type
-  module procedure illuminate_kernel_constructor
-end interface
-
-!------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !------------------------------------------------------------------------------
 contains
-
-function illuminate_kernel_constructor() result(self)
-  implicit none
-  type(illuminate_kernel_type) :: self
-  return
-end function illuminate_kernel_constructor
 
 ! @param[in]     nlayers                     Number of layers
 ! @param[out]    cos_zenith_angle            Cosine of the stellar zenith angle

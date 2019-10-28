@@ -48,25 +48,11 @@ module project_pressure_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface project_pressure_kernel_type
-    module procedure project_pressure_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public project_pressure_code
 
 contains
-
-type(project_pressure_kernel_type) function project_pressure_kernel_constructor() result(self)
-  implicit none
-  return
-end function project_pressure_kernel_constructor
 
 !> @brief Compute the pressure gradient component of the momentum equation
 !! @param[in] cell Horizontal cell index

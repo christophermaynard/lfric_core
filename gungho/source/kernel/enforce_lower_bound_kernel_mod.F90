@@ -37,26 +37,11 @@ module enforce_lower_bound_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor
-  interface enforce_lower_bound_kernel_type
-    module procedure enforce_lower_bound_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public enforce_lower_bound_code
 
 contains
-
-type(enforce_lower_bound_kernel_type) &
-function enforce_lower_bound_kernel_constructor() result(self)
-implicit none
-return
-end function enforce_lower_bound_kernel_constructor
 
 !> @brief Limits the field dofs by some measure of CFL limit
 !! @param[in] nlayers Number of layers

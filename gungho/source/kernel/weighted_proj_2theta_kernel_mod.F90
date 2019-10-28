@@ -51,26 +51,11 @@ module weighted_proj_2theta_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface weighted_proj_2theta_kernel_type
-    module procedure weighted_proj_2theta_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public weighted_proj_2theta_code
 
 contains
-
-type(weighted_proj_2theta_kernel_type) &
-function weighted_proj_2theta_constructor() result(self)
-  implicit none
-  return
-end function weighted_proj_2theta_constructor
 
 !> @brief Compute the weigthed projection from Wtheta to W2
 !! @param[in] cell Cell number

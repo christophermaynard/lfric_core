@@ -60,25 +60,10 @@ module pressure_gradient_bd_kernel_mod
   end type
 
   !-------------------------------------------------------------------------------
-  ! Constructors
-  !-------------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface pressure_gradient_bd_kernel_type
-    module procedure pressure_gradient_bd_kernel_constructor
-  end interface
-
-  !-------------------------------------------------------------------------------
   ! Contained functions/subroutines
   !-------------------------------------------------------------------------------
   public pressure_gradient_bd_code
 contains
-
-  type(pressure_gradient_bd_kernel_type) &
-  function pressure_gradient_bd_kernel_constructor() result(self)
-    implicit none
-    return
-  end function pressure_gradient_bd_kernel_constructor
 
   !> @brief Compute the boundary integral terms in the pressure gradient
   !! @param[in] nlayers Number of layers

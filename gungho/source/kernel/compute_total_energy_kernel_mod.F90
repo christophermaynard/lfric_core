@@ -52,24 +52,10 @@ contains
 end type
 
 !---------------------------------------------------------------------------
-! Constructors
-!---------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface compute_total_energy_kernel_type
-   module procedure compute_total_energy_kernel_constructor
-end interface
-
-!---------------------------------------------------------------------------
 ! Contained functions/subroutines
 !---------------------------------------------------------------------------
 public compute_total_energy_code
 contains
-
-type(compute_total_energy_kernel_type) function compute_total_energy_kernel_constructor() result(self)
-  implicit none
-  return
-end function compute_total_energy_kernel_constructor
 
 !> @brief Compute the cell integrated total energy
 !! @param[in] nlayers The number of layers

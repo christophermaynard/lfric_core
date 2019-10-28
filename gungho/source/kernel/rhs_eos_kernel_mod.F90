@@ -51,25 +51,11 @@ module rhs_eos_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface rhs_eos_kernel_type
-    module procedure rhs_eos_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public rhs_eos_code
 
 contains
-
-type(rhs_eos_kernel_type) function rhs_eos_kernel_constructor() result(self)
-  implicit none
-  return
-end function rhs_eos_kernel_constructor
 
 !> @brief Computes lhs of the equation of state for the nonlinear equations 
 !! @param[in] nlayers Number of layers

@@ -35,25 +35,11 @@ module wetrho_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface wetrho_kernel_type
-    module procedure wetrho_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public wetrho_code
 
 contains
-
-type(wetrho_kernel_type) function wetrho_kernel_constructor() result(self)
-  implicit none
-  return
-end function wetrho_kernel_constructor
 
 !> @brief Adds the effect of water vapour to the exner pressure
 !! @param[in] nlayers  Number of layers

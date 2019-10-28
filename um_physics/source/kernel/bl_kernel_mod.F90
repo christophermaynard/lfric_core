@@ -164,23 +164,9 @@ module bl_kernel_mod
     procedure, nopass ::bl_code
   end type
 
-  !-----------------------------------------------------------------------------
-  ! Constructors
-  !-----------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface bl_kernel_type
-    module procedure bl_kernel_constructor
-  end interface
-
   public bl_code
 
 contains
-
-  type(bl_kernel_type) function bl_kernel_constructor() result(self)
-    implicit none
-    return
-  end function bl_kernel_constructor
 
   !> @brief Interface to the UM BL scheme
   !> @details The UM Boundary Layer scheme does:

@@ -54,15 +54,6 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface held_suarez_kernel_type
-   module procedure held_suarez_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Local parameters
 !-------------------------------------------------------------------------------
 ! Held-Suarez parameters 
@@ -83,11 +74,6 @@ real(kind=r_def), parameter :: STATIC_STABILITY = 10.0_r_def  ! Static Stability
 public held_suarez_code
 
 contains
-
-type(held_suarez_kernel_type) function held_suarez_kernel_constructor() result(self)
-  implicit none
-  return
-end function held_suarez_kernel_constructor
 
 !> @brief Adds a Held-Suarez forcing
 !! @param[in] nlayers Number of layers

@@ -47,24 +47,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface monotonic_update_kernel_type
-   module procedure monotonic_update_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public monotonic_update_code
 contains
-
-type(monotonic_update_kernel_type) function monotonic_update_kernel_constructor() result(self)
-  implicit none
-  return
-end function monotonic_update_kernel_constructor
 
 !> @brief Computes the horizontal fluxes for a tracer density
 !! @param[in]  nlayers Number of layers

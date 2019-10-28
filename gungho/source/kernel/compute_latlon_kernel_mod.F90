@@ -41,24 +41,11 @@ module compute_latlon_kernel_mod
 
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  interface compute_latlon_kernel_type
-    module procedure compute_latlon_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public compute_latlon_code
 
 contains
-
-type(compute_latlon_kernel_type) function compute_latlon_kernel_constructor() result(self)
-  implicit none
-  return
-end function compute_latlon_kernel_constructor
 
 !> @brief Calculates the latitude and longitude fields from the x, y and z components
 !> @details Will only work at lowest order for now

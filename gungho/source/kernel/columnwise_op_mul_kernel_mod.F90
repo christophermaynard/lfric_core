@@ -39,25 +39,11 @@ contains
 end type columnwise_op_mul_kernel_type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface columnwise_op_mul_kernel_type
-   module procedure columnwise_op_mul_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public columnwise_op_mul_kernel_code
 
 contains
-  
-  type(columnwise_op_mul_kernel_type) function columnwise_op_mul_kernel_constructor() result(self)
-    implicit none
-    return
-  end function columnwise_op_mul_kernel_constructor
 
   !> @brief The subroutine which is called directly from the PSY layer and
   !> calculates op_C = op_C + op_A * op_B 

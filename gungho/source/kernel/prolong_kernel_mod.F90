@@ -31,18 +31,9 @@ contains
   procedure, nopass :: prolong_kernel_code
 end type prolong_kernel_type
 
-interface prolong_kernel_type
-   module procedure prolong_kernel_constructor
-end interface
-
 public :: prolong_kernel_code
 
 contains
-
-  type(prolong_kernel_type) function prolong_kernel_constructor() result(self)
-    implicit none
-    return
-  end function prolong_kernel_constructor
 
   !> @brief Subroutine to perform the prolongation operation
   !> @param[in] nlayers Number of layers in a model column

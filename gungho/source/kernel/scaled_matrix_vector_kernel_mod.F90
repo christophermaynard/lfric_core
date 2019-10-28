@@ -48,37 +48,12 @@ module scaled_matrix_vector_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface scaled_matrix_vector_kernel_type
-    module procedure scaled_matrix_vector_kernel_constructor
-  end interface
-
-  interface opt_scaled_matrix_vector_kernel_type
-    module procedure opt_scaled_matrix_vector_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public scaled_matrix_vector_code
   public opt_scaled_matrix_vector_code
 
 contains
-
-  type(scaled_matrix_vector_kernel_type) &
-  function scaled_matrix_vector_kernel_constructor() result(self)
-    implicit none
-    return
-  end function scaled_matrix_vector_kernel_constructor
-
-  type(opt_scaled_matrix_vector_kernel_type) &
-  function opt_scaled_matrix_vector_kernel_constructor() result(self)
-    implicit none
-    return
-  end function opt_scaled_matrix_vector_kernel_constructor
 
 !> @brief Computes lhs = y*matrix*x where matrix maps from x space to lhs space
 !>        and y is a field in the same space as lhs

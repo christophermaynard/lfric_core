@@ -34,24 +34,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! overload the default structure constructor for function space
-interface assign_field_random_kernel_type
-   module procedure assign_field_random_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public assign_field_random_code
 contains
-
-  type(assign_field_random_kernel_type) function assign_field_random_kernel_constructor() result(self)
-  implicit none
-  return
-end function assign_field_random_kernel_constructor
 
 !> @brief Sets all field entries to random values
 !> @param[in] nlayers Number of layers

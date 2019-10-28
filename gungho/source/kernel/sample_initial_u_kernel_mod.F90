@@ -38,25 +38,10 @@ module sample_initial_u_kernel_mod
     procedure, public, nopass :: sample_initial_u_code
   end type
 
-  !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface sample_initial_u_kernel_type
-    module procedure sample_initial_u_kernel_constructor
-  end interface
-
 !-----------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-----------------------------------------------------------------------------
 contains
-
-type(sample_initial_u_kernel_type) &
-function sample_initial_u_kernel_constructor() result(self)
-  implicit none
-  return
-end function sample_initial_u_kernel_constructor
 
 !> @brief Compute the right hand side to initialise the wind field.
 !! @param[in] nlayers Number of layers

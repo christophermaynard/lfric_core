@@ -57,37 +57,12 @@ module apply_variable_hx_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface apply_variable_hx_kernel_type
-    module procedure apply_variable_hx_kernel_constructor
-  end interface
-
-  interface opt_apply_variable_hx_kernel_type
-    module procedure opt_apply_variable_hx_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public apply_variable_hx_code
   public opt_apply_variable_hx_code
 
 contains
-
-  type(apply_variable_hx_kernel_type) &
-  function apply_variable_hx_kernel_constructor() result(self)
-    implicit none
-    return
-  end function apply_variable_hx_kernel_constructor
-
-  type(opt_apply_variable_hx_kernel_type) &
-  function opt_apply_variable_hx_kernel_constructor() result(self)
-    implicit none
-    return
-  end function opt_apply_variable_hx_kernel_constructor
 
 !> @brief Applies the component of the helmholtz operator that maps from velocity space 
 !>        to the pressure space as well as the constant in space part

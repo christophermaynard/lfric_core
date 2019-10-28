@@ -55,22 +55,8 @@ contains
   procedure, nopass :: mphys_code
 end type
 
-!-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface mphys_kernel_type
-   module procedure mphys_kernel_constructor
-end interface
-
 public mphys_code
 contains
-
-type(mphys_kernel_type) function mphys_kernel_constructor() result(self)
-  implicit none
-  return
-end function mphys_kernel_constructor
 
 !> @brief Interface to the microphysics scheme
 !! @param[in] mv_wth vapour mass mixing ratio

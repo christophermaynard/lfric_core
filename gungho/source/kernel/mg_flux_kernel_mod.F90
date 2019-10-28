@@ -45,26 +45,11 @@ module mg_flux_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface mg_flux_kernel_type
-    module procedure mg_flux_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public mg_flux_code
 
 contains
-
-  type(mg_flux_kernel_type) &
-       function mg_flux_kernel_constructor() result(self)
-    implicit none
-    return
-  end function mg_flux_kernel_constructor
 
 !> @brief Kernel to mg a flux at nodal points: F = u*q
 !! @param[in] nlayers Number of layers

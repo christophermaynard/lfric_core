@@ -32,18 +32,9 @@ contains
   procedure, nopass :: restrict_kernel_code
 end type restrict_kernel_type
 
-interface restrict_kernel_type
-   module procedure restrict_kernel_constructor
-end interface
-
 public :: restrict_kernel_code
 
 contains
-
-  type(restrict_kernel_type) function restrict_kernel_constructor() result(self)
-    implicit none
-    return
-  end function restrict_kernel_constructor
 
   !> @brief Subroutine to perform the restriction operation 
   !> @param[in] nlayers Number of layers in a model column

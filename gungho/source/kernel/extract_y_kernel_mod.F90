@@ -41,23 +41,9 @@ module extract_y_kernel_mod
     procedure, nopass :: extract_y_code
   end type
 
-  !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface extract_y_kernel_type
-    module procedure extract_y_kernel_constructor
-  end interface
-
   public extract_y_code
 
 contains
-
-type(extract_y_kernel_type) function extract_y_kernel_constructor() result(self)
-  implicit none
-  return
-end function extract_y_kernel_constructor
 
 !-------------------------------------------------------------------------------
 ! Contained functions/subroutines

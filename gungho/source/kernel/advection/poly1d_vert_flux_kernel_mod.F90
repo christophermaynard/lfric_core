@@ -55,24 +55,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface poly1d_vert_flux_kernel_type
-   module procedure poly1d_vert_flux_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public poly1d_vert_flux_code
 contains
-
-type(poly1d_vert_flux_kernel_type) function poly1d_vert_flux_kernel_constructor() result(self)
-  implicit none
-  return
-end function poly1d_vert_flux_kernel_constructor
 
 !> @brief Computes the vertical fluxes for a tracer density
 !! @param[in]  nlayers Number of layers

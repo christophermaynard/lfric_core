@@ -46,25 +46,11 @@ module vorticity_rhs_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface vorticity_rhs_kernel_type
-    module procedure vorticity_rhs_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public vorticity_rhs_code
 
 contains
-
-type(vorticity_rhs_kernel_type) function vorticity_rhs_kernel_constructor() result(self)
-  implicit none
-  return
-end function vorticity_rhs_kernel_constructor
 
 !> @brief Compute the projection of curl(u) into the vorticity function space
 !! @param[in] nlayers Number of layers

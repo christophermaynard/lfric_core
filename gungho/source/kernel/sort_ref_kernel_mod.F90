@@ -34,25 +34,11 @@ module sort_ref_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor
-  interface sort_ref_kernel_type
-    module procedure sort_ref_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public sort_ref_code
 
 contains
-
-type(sort_ref_kernel_type) function sort_ref_kernel_constructor() result(self)
-  implicit none
-  return
-end function sort_ref_kernel_constructor
 
 !> @brief The subroutine which is called directly by the psy layer
 !! @param[in] nlayers Integer the number of layers

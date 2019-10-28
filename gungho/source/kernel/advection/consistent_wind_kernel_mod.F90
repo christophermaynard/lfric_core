@@ -49,24 +49,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface consistent_wind_kernel_type
-   module procedure consistent_wind_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public consistent_wind_code
 contains
-
-type(consistent_wind_kernel_type) function consistent_wind_kernel_constructor() result(self)
-  implicit none
-  return
-end function consistent_wind_kernel_constructor
 
 !>@brief Modify the vertical wind to include consistent computation of grid
 !>       metric

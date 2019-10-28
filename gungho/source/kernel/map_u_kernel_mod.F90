@@ -50,24 +50,10 @@ module map_u_kernel_mod
     procedure, public, nopass :: map_u_code
   end type
 
-  !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface map_u_kernel_type
-    module procedure map_u_kernel_constructor
-  end interface
-
 !-----------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-----------------------------------------------------------------------------
 contains
-
-type(map_u_kernel_type) function map_u_kernel_constructor() result(self)
-  implicit none
-  return
-end function map_u_kernel_constructor
 
 !> @brief Compute the right hand side to mapise the wind field.
 !! @param[in] nlayers Number of layers

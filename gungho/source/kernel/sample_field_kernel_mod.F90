@@ -40,24 +40,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface sample_field_kernel_type
-   module procedure sample_field_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public sample_field_code
 contains
-
-type(sample_field_kernel_type) function sample_field_kernel_constructor() result(self)
-  implicit none
-  return
-end function sample_field_kernel_constructor
 
 !> @brief Sample a field at nodal points of another field
 !! @param[in] nlayers Number of layers

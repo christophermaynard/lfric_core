@@ -46,24 +46,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! overload the default structure constructor
-interface mm_diagonal_assembled_kernel_type
-  module procedure mm_diagonal_assembled_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public mm_diagonal_assembled_kernel_code
 contains
-
-  type(mm_diagonal_assembled_kernel_type) function mm_diagonal_assembled_kernel_constructor() result(self)
-  implicit none
-  return
-end function mm_diagonal_assembled_kernel_constructor
 
 !> @brief Given a field, stores the assembled diagonal of a mass matrix in a LMA
 !> @param[in]  cell Horizontal cell index

@@ -46,25 +46,11 @@ module get_height_kernel_mod
 
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface get_height_kernel_type
-    module procedure get_height_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public get_height_code
 
 contains
-
-type(get_height_kernel_type) function get_height_kernel_constructor() result(self)
-  implicit none
-  return
-end function get_height_kernel_constructor
 
 !> @brief Returns a height field (r or z) from the chi array
 !>        Will only work at lowest order for now

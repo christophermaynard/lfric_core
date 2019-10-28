@@ -50,24 +50,10 @@ module gp_vector_rhs_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface gp_vector_rhs_kernel_type
-    module procedure gp_vector_rhs_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
 
 contains
-
-type(gp_vector_rhs_kernel_type) function gp_vector_rhs_kernel_constructor() result(self)
-  implicit none
-  return
-end function gp_vector_rhs_kernel_constructor
 
 !> @brief Computes the right-hand-side of the Galerkin projection for a vector
 !> field into a scalar space by decomposing the vector into orthogonal

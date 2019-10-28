@@ -56,24 +56,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface poly2d_flux_kernel_type
-   module procedure poly2d_flux_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public poly2d_flux_code
 contains
-
-type(poly2d_flux_kernel_type) function poly2d_flux_kernel_constructor() result(self)
-  implicit none
-  return
-end function poly2d_flux_kernel_constructor
 
 !> @brief Computes the horizontal fluxes for a tracer density
 !! @param[in]  nlayers Number of layers

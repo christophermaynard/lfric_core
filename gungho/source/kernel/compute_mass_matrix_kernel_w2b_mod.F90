@@ -42,26 +42,11 @@ module compute_mass_matrix_kernel_w2b_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface compute_mass_matrix_kernel_w2b_type
-    module procedure compute_mass_matrix_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public compute_mass_matrix_w2b_code
 
 contains
-
-  type(compute_mass_matrix_kernel_w2b_type) function compute_mass_matrix_constructor() &
-     result(self)
-    implicit none
-    return
-  end function compute_mass_matrix_constructor
 
   !> @brief Computes the mass matrix for the w2b space.
   !!

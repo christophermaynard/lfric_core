@@ -38,25 +38,11 @@ module cosmic_halo_correct_y_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! Overload the default structure constructor for function space
-  interface cosmic_halo_correct_y_kernel_type
-    module procedure cosmic_halo_correct_y_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public cosmic_halo_correct_y_code
 
 contains
-
-type(cosmic_halo_correct_y_kernel_type) function cosmic_halo_correct_y_kernel_constructor() result(self)
-  implicit none
-  return
-end function cosmic_halo_correct_y_kernel_constructor
 
 !! @param[in] nlayers           The number of layers
 !! @param[in] rho_out           Density field after halo exchange

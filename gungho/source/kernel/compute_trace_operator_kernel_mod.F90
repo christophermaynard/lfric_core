@@ -65,27 +65,12 @@ module compute_trace_operator_kernel_mod
    end type compute_trace_operator_type
 
    !-------------------------------------------------------------------------------
-   ! Constructors
-   !-------------------------------------------------------------------------------
-
-   ! overload the default structure constructor for function space
-   interface compute_trace_operator_type
-      module procedure compute_trace_operator_constructor
-   end interface
-
-   !-------------------------------------------------------------------------------
    ! Contained functions/subroutines
    !-------------------------------------------------------------------------------
 
    public compute_trace_operator_code
 
 contains
-
-  type(compute_trace_operator_type) function compute_trace_operator_constructor() &
-     result(self)
-    implicit none
-    return
-  end function compute_trace_operator_constructor
 
   !> @brief Compute the boundary integral terms in the hybridized formulation of
   !!        the momentum and transmission equations (terms with Lagrange multipliers).

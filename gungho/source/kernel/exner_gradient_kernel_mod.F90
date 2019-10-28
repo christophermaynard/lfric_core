@@ -48,26 +48,11 @@ module exner_gradient_kernel_mod
   end type
 
   !---------------------------------------------------------------------------
-  ! Constructors
-  !---------------------------------------------------------------------------
-
-  ! overload the default structure constructor for function space
-  interface exner_gradient_kernel_type
-    module procedure exner_gradient_kernel_constructor
-  end interface
-
-  !---------------------------------------------------------------------------
   ! Contained functions/subroutines
   !---------------------------------------------------------------------------
   public exner_gradient_code
 
 contains
-
-type(exner_gradient_kernel_type) &
-function exner_gradient_kernel_constructor() result(self)
-  implicit none
-  return
-end function exner_gradient_kernel_constructor
 
 !> @brief Computes the pressure gradient for rhs of the momentum equation
 !! @param[in] nlayers Number of layers

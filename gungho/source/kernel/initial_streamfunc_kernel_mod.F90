@@ -42,27 +42,10 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface initial_streamfunc_kernel_type
-   module procedure initial_streamfunc_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public initial_streamfunc_code
 contains
-
-!> @todo fparser faile to parse this declaration if the type name has function
-!>in it, i.e. initial_streamfunction_kernel_type, when fparser is fixed (issue
-!> #198) the kernel names can be changed back
-type(initial_streamfunc_kernel_type) function initial_streamfunc_kernel_constructor() result(self)
-  implicit none
-  return
-end function initial_streamfunc_kernel_constructor
 
 !> @brief Computes the righthand side of the galerkin projection of a 
 !>        stream function given by an analytical expression

@@ -47,25 +47,11 @@ contains
 end type
 
 !-------------------------------------------------------------------------------
-! Constructors
-!-------------------------------------------------------------------------------
-
-! Overload the default structure constructor for function space
-interface rtheta_kernel_type
-   module procedure rtheta_kernel_constructor
-end interface
-
-!-------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !-------------------------------------------------------------------------------
 public rtheta_code
 
 contains
-
-type(rtheta_kernel_type) function rtheta_kernel_constructor() result(self)
-  implicit none
-  return
-end function rtheta_kernel_constructor
 
 !> @brief Compute right hand side of the thermodynamic equation
 !! @param[in] nlayers Number of layers
