@@ -40,11 +40,13 @@ module gungho_driver_mod
   use initial_cloud_alg_mod,      only : initial_cloud_alg
   use init_jules_alg_mod,         only : init_jules_alg
   use init_physics_incs_alg_mod,  only : init_physics_incs_alg
+  use init_orography_fields_alg_mod, &
+                                  only : init_orography_fields_alg
   use init_physics_prognostics_alg_mod, &
                                   only : init_physics_prognostics_alg
   use update_tstar_alg_mod,       only : update_tstar_alg
   use runtime_constants_mod,      only : create_runtime_constants
-  use gungho_model_mod,           only : initialise_model, & 
+  use gungho_model_mod,           only : initialise_model, &
                                          finalise_model
   use io_mod,                     only : write_checkpoint, &
                                          read_checkpoint
@@ -57,13 +59,13 @@ module gungho_driver_mod
                                          subroutine_timers,    &
                                          subroutine_counters
   use initialization_config_mod,  only : init_option,                &
-                                         init_option_analytic,       & 
+                                         init_option_analytic,       &
                                          init_option_fd_start_dump,  &
                                          init_option_checkpoint_dump,&
                                          init_option_fe_start_dump,  &
                                          ancil_option,               &
                                          ancil_option_none,          &
-                                         ancil_option_analytic,      & 
+                                         ancil_option_analytic,      &
                                          ancil_option_aquaplanet
   use create_fd_prognostics_mod,  only : create_fd_prognostics
   use init_fd_prognostics_mod,    only : init_fd_prognostics_dump
@@ -96,7 +98,7 @@ module gungho_driver_mod
   character(len=*), parameter :: xios_id   = "lfric_client"
   character(len=*), parameter :: xios_ctx  = "gungho_atm"
 
-  
+
   ! Model run working data set
   type (model_data_type) :: model_data
 
@@ -114,7 +116,7 @@ contains
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !>@brief Sets up required state in preparation for run.
-  !>@param[in] filename Name of the file containing the desired configuration 
+  !>@param[in] filename Name of the file containing the desired configuration
   subroutine initialise( filename )
 
     implicit none
@@ -180,7 +182,7 @@ contains
     end if
 
     ! Create gungho prognostics and auxilliary (diagnostic) fields
-    call create_gungho_prognostics( mesh_id,                        & 
+    call create_gungho_prognostics( mesh_id,                        &
                                     model_data%depository,          &
                                     model_data%prognostic_fields,   &
                                     model_data%diagnostic_fields,   &
@@ -197,6 +199,7 @@ contains
                                        model_data%twod_fields,       &
                                        model_data%radstep_fields,    &
                                        model_data%physics_incs,      &
+                                       model_data%orography_fields,  &
                                        model_data%jules_ancils,      &
                                        model_data%jules_prognostics )
     end if
@@ -217,20 +220,21 @@ contains
 
         call init_gungho_prognostics_alg( model_data%prognostic_fields, &
                                           model_data%diagnostic_fields, &
-                                          model_data%mr,                & 
+                                          model_data%mr,                &
                                           model_data%moist_dyn )
 
         if (use_physics) then
-          call init_physics_prognostics_alg( model_data%derived_fields, &
-                                             model_data%cloud_fields,   &
-                                             model_data%twod_fields,    &
-                                             model_data%physics_incs,   &
-                                             model_data%jules_ancils,   &
+          call init_physics_prognostics_alg( model_data%derived_fields,   &
+                                             model_data%cloud_fields,     &
+                                             model_data%twod_fields,      &
+                                             model_data%physics_incs,     &
+                                             model_data%orography_fields, &
+                                             model_data%jules_ancils,     &
                                              model_data%jules_prognostics )
         end if
 
       case ( init_option_checkpoint_dump )
- 
+
         ! Initialize prognostics using a checkpoint file
         ! from a previous run
 
@@ -241,7 +245,7 @@ contains
 
         if (use_physics) then
           ! if no cloud scheme, reset cloud variables
-          if ( cloud == cloud_none ) then  
+          if ( cloud == cloud_none ) then
             call initial_cloud_alg( model_data%cloud_fields )
           end if
           ! re-initialise jules fields
@@ -254,13 +258,16 @@ contains
 
         if (use_physics) then
 
-          ! Initialise FD prognostic fields from a UM2LFRic dump     
+          ! Initialise FD prognostic fields from a UM2LFRic dump
 
           ! Read in from a UM2LFRic dump file
           call init_fd_prognostics_dump( model_data%fd_fields )
 
           ! Initialise jules fields
           call init_jules_alg( model_data%jules_ancils, model_data%jules_prognostics )
+
+          ! Initialise orography fields
+          call init_orography_fields_alg(model_data%orography_fields)
 
           ! Set physics increments to 0
           call init_physics_incs_alg( model_data%physics_incs )
@@ -278,7 +285,7 @@ contains
           call log_event("Gungho: Prognostic initialisation from an FD dump not valid "// &
                           "if use_physics is .false., stopping program! ",LOG_LEVEL_ERROR)
 
-        end if   
+        end if
 
       case ( init_option_fe_start_dump )
         ! Initialise FE prognostic fields from an FE dump
@@ -291,7 +298,7 @@ contains
                           "stopping program! ",LOG_LEVEL_ERROR)
 
     end select
-    
+
     ! Assuming this is only relevant for physics runs at the moment
     if (use_physics) then
 
@@ -386,6 +393,7 @@ contains
                  model_data%twod_fields,       &
                  model_data%radstep_fields,    &
                  model_data%physics_incs,      &
+                 model_data%orography_fields,  &
                  model_data%jules_ancils,      &
                  model_data%jules_prognostics, &
                  timestep )

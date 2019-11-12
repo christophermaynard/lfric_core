@@ -1,0 +1,330 @@
+!-----------------------------------------------------------------------------
+! (c) Crown copyright 2019 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+!> @brief Interface to the UM orographic gravity wave and blocking drag scheme
+!>
+!>
+module orographic_drag_kernel_mod
+
+  use argument_mod,               only: arg_type,                   &
+                                        GH_FIELD, GH_READ, GH_READ, &
+                                        GH_WRITE, CELLS,            &
+                                        ANY_SPACE_1
+
+  use constants_mod,              only: r_def, r_um, i_def, i_um, pi
+  use fs_continuity_mod,          only: W3, Wtheta
+  use kernel_mod,                 only: kernel_type
+  use orographic_drag_config_mod, only: cd_flow_blocking,            &
+                                        gwd_scaling,                 &
+                                        fr_crit_gwd,                 &
+                                        fr_sat_gwd,                  &
+                                        mountain_height_scaling,     &
+                                        orographic_gwd_heating,      &
+                                        orographic_blocking_heating, &
+                                        vertical_smoothing
+
+  implicit none
+
+  !---------------------------------------------------------------------------
+  ! Public types
+  !---------------------------------------------------------------------------
+  !> Metadata describing the kernel to PSyclone
+  !>
+  type, public, extends(kernel_type) :: orographic_drag_kernel_type
+    private
+    type(arg_type) :: meta_args(16) = (/             &
+        arg_type(GH_FIELD,   GH_WRITE, W3),          & ! du_blk, u wind increment blocking
+        arg_type(GH_FIELD,   GH_WRITE, W3),          & ! dv_blk, v wind increment blocking
+        arg_type(GH_FIELD,   GH_WRITE, W3),          & ! du_orog_gwd, u wind increment gwd
+        arg_type(GH_FIELD,   GH_WRITE, W3),          & ! dv_orog_gwd, v wind increment gwd
+        arg_type(GH_FIELD,   GH_WRITE, Wtheta),      & ! dtemp_blk, temperature increment blocking
+        arg_type(GH_FIELD,   GH_WRITE, Wtheta),      & ! dtemp_orog_gwd, temperature increment gwd
+        arg_type(GH_FIELD,   GH_READ,  W3),          & ! u1_in_w3, zonal wind
+        arg_type(GH_FIELD,   GH_READ,  W3),          & ! u2_in_w3, meridional wind
+        arg_type(GH_FIELD,   GH_READ,  W3),          & ! wetrho_in_w3, wet density in w3
+        arg_type(GH_FIELD,   GH_READ,  Wtheta),      & ! theta, theta in wtheta
+        ! These are currently in ANY_SPACE_1 but need to change to
+        ! DISCONTINOUS_SPACE_1 once LFRic ticket #1968 is on trunk
+        arg_type(GH_FIELD,   GH_READ,  ANY_SPACE_1), & ! sd_orog
+        arg_type(GH_FIELD,   GH_READ,  ANY_SPACE_1), & ! grad_xx_orog
+        arg_type(GH_FIELD,   GH_READ,  ANY_SPACE_1), & ! grad_xy_orog
+        arg_type(GH_FIELD,   GH_READ,  ANY_SPACE_1), & ! grad_yy_orog
+        arg_type(GH_FIELD,   GH_READ,  W3),          & ! height_w3
+        arg_type(GH_FIELD,   GH_READ,  Wtheta)       & ! height_wtheta
+        /)
+    integer :: iterates_over = CELLS
+    contains
+    procedure, nopass :: orographic_drag_kernel_code
+  end type
+
+  !---------------------------------------------------------------------------
+  ! Contained functions/subroutines
+  !---------------------------------------------------------------------------
+  public orographic_drag_kernel_code
+
+contains
+
+  !> @brief   Call the UM orographic gravity wave and blocking drag scheme
+  !> @details This code calls the UM orographic gravity wave and blocking
+  !>          drag scheme, which calculates the zonal and meridional winds and
+  !>          temperature increments from parametrized orographic drag.
+  !! @param[in]  nlayers        Integer the number of layers
+  !! @param[out] du_blk         u increment from blocking
+  !! @param[out] dv_blk         v increment from blocking
+  !! @param[out] du_orog_gwd    u increment from gravity wave drag
+  !! @param[out] dv_orog_gwd    v increment from gravity wave drag
+  !! @param[out] dtemp_blk      T increment from blocking
+  !! @param[out] dtemp_orog_gwd T increment from gravity wave drag
+  !! @param[in]  u1_in_w3       Zonal wind
+  !! @param[in]  u2_in_w3       Meridional wind
+  !! @param[in]  wetrho_in_w3   Moist density
+  !! @param[in]  theta_in_wth   Potential temperature
+  !! @param[in]  sd_orog        Standard deviation of sub-grid orog
+  !! @param[in]  grad_xx_orog   (dh/dx)**2
+  !! @param[in]  grad_xy_orog   (dh/dx)*(dh/dy)
+  !! @param[in]  grad_yy_orog   (dh/dy)**2
+  !! @param[in]  height_w3      height at rho levels
+  !! @param[in]  height_wth     height at theta levels
+  !! @param[in]  ndf_w3         Number of degrees of freedom per cell for wth
+  !! @param[in]  undf_w3        Number of unique degrees of freedom for wth
+  !! @param[in]  map_w3         dofmap for the cell at w3
+  !! @param[in]  ndf_wth        Number of degrees of freedom per cell for wth
+  !! @param[in]  undf_wth       Number of unique degrees of freedom for wth
+  !! @param[in]  map_wth        dofmap for the cell at wth
+  !! @param[in]  ndf_2d         Number of degrees of freedom per cell for 2d
+  !! @param[in]  undf_2d        Number of unique degrees of freedom for 2d
+  !! @param[in]  map_2d         dofmap for the 2d cell
+  !>
+  subroutine orographic_drag_kernel_code(                                  &
+                        nlayers, du_blk, dv_blk, du_orog_gwd, dv_orog_gwd, &
+                        dtemp_blk, dtemp_orog_gwd, u1_in_w3, u2_in_w3,     &
+                        wetrho_in_w3, theta_in_wth, sd_orog, grad_xx_orog, &
+                        grad_xy_orog, grad_yy_orog, height_w3, height_wth, &
+                        ndf_w3, undf_w3, map_w3, ndf_wth, undf_wth,        &
+                        map_wth, ndf_2d, undf_2d, map_2d)
+
+    !---------------------------------------
+    ! UM modules
+    !---------------------------------------
+    use timestep_mod, only: timestep
+    use gw_block_mod, only: gw_block
+    use gw_setup_mod, only: gw_setup
+    use gw_wave_mod,  only: gw_wave
+
+    implicit none
+
+    !----------------------------------------------------------------------
+    ! Arguments
+    !----------------------------------------------------------------------
+    integer(i_def), intent(in) :: nlayers
+    integer(i_def), intent(in) :: ndf_w3, ndf_wth, ndf_2d
+    integer(i_def), intent(in) :: undf_w3, undf_wth, undf_2d
+    integer(i_def), intent(in), dimension(ndf_w3)  :: map_w3
+    integer(i_def), intent(in), dimension(ndf_wth) :: map_wth
+    integer(i_def), intent(in), dimension(ndf_2d)  :: map_2d
+
+    real(r_def), intent(out), dimension(undf_w3)  :: du_blk, du_orog_gwd, &
+                                                     dv_blk, dv_orog_gwd
+    real(r_def), intent(out), dimension(undf_wth) :: dtemp_blk, dtemp_orog_gwd
+    real(r_def), intent(in), dimension(undf_w3)   :: u1_in_w3, u2_in_w3, &
+                                                     wetrho_in_w3
+    real(r_def), intent(in), dimension(undf_wth)  :: theta_in_wth
+    real(r_def), intent(in), dimension(undf_2d)   :: sd_orog,      &
+                                                     grad_xx_orog, &
+                                                     grad_xy_orog, &
+                                                     grad_yy_orog
+    real(r_def), intent(in), dimension(undf_w3)   :: height_w3
+    real(r_def), intent(in), dimension(undf_wth)  :: height_wth
+    !----------------------------------------------------------------------
+    ! Local variables for input to the kernel
+    !----------------------------------------------------------------------
+    integer(i_um), parameter :: seg_len = 1
+
+    real(r_um), dimension(seg_len, nlayers) :: &
+                    u_on_p, v_on_p,            & ! u and v at p points
+                    theta,                     & ! potential temperature
+                    dtemp_dt_blk,              & ! Temperature tendency from blocking
+                    dtemp_dt_orog_gwd,         & ! Temperature tendency from gwd
+                    wetrho,                    & ! wetrho
+                    du_dt_blk, du_dt_orog_gwd, & ! zonal wind tendencies
+                    dv_dt_blk, dv_dt_orog_gwd, & ! meridional wind tendencies
+                    z_rho_levels,              & ! height above the surface
+                    z_theta_levels               ! height above the surface
+
+    ! The following variables are used in the nonhydrostatic option of the scheme
+    ! which is hardcoded to .false. in the UM code.
+    ! We set them here just so that they can be passed in to the subroutines.
+    real(r_um), parameter :: delta_lambda=1.0_r_um, delta_phi=1.0_r_um
+    real(r_um), dimension(seg_len), parameter :: latitude=1.0_r_um
+    logical, parameter :: nonhydro=.false., dynbeta=.false.
+
+    ! Output from gw_setup
+    real(r_um), dimension(seg_len, nlayers) :: nsq ! Brunt-Vaisala frequency
+    real(r_um), dimension(seg_len) :: & ! Low-level averaged ...
+                ulow, vlow,           & ! ... Zonal and meridional wind
+                rholow,               & ! ... Density
+                nlow,                 & ! ... Brunt-Vaisala frequency
+                psilow,               & ! ... Angle between wind and major axis of topography
+                psi1,                 & ! ... Wind angle relative to x-axis
+                modu                    ! ... Wind speed
+
+    ! Input subgrid orographic characteristics
+    real(r_um), dimension(seg_len) :: sd, grad_xx, grad_xy, grad_yy
+
+    ! Computed subgrid orographic characteristics
+    real(r_um), dimension(seg_len) :: mt_high, slope, anis, banis,  &
+                                      canis, mtdir
+
+    ! Computed orographic variables
+    real(r_um), dimension(seg_len) :: zb
+
+    ! local namelist inputs
+    real(r_um) :: fbcd, gsharp, gwd_frc, gwd_fsat, nsigma
+    logical :: l_fb_heating, l_gw_heating, l_smooth
+
+    integer(i_um) :: k
+
+    integer(i_um), dimension(seg_len) :: ktop
+
+    ! Flags for diagnostics (not used in LFRic)
+    logical, parameter ::                                                     &
+               u_s_d_on = .false.,  v_s_d_on= .false., nsq_s_d_on = .false.,  &
+               du_dt_diag_on = .false., dv_dt_diag_on = .false.,              &
+               stress_u_on = .false., stress_v_on = .false.,                  &
+               fr_d_on = .false., bld_d_on= .false., tausx_d_on = .false.,    &
+               tausy_d_on = .false., bldt_d_on= .false.
+
+    ! Flag for determining if scheme needs to be computed
+    logical, dimension(seg_len) :: drag
+
+    ! Diagnostics
+    real(r_um), dimension(seg_len) :: &
+               u_s_d, v_s_d, nsq_s_d, &
+               fr_d, bld_d, bldt_d,   &
+               tausx_d, tausy_d
+    ! Diagnostics
+    real(r_um), dimension(seg_len, nlayers) :: &
+                       du_dt_diag, dv_dt_diag, &
+                       stress_u, stress_v
+
+    !-----------------------------------------------------------------------
+    ! Initialise arrays and call UM code
+    !-----------------------------------------------------------------------
+    drag(1) = .true.
+
+    ! Increments need to be intialised to zero because they are added onto
+    ! previous increments in UM code (not overwritten).
+    du_dt_orog_gwd(:,:) = 0.0_r_um
+    dv_dt_orog_gwd(:,:) = 0.0_r_um
+
+    du_dt_blk(:,:) = 0.0_r_um
+    dv_dt_blk(:,:) = 0.0_r_um
+
+    dtemp_dt_blk(:,:) = 0.0_r_um
+    dtemp_dt_orog_gwd(:,:) = 0.0_r_um
+
+    ! Recasting fields to UM precision
+    do k = 1, nlayers
+      u_on_p(1,k) = real(u1_in_w3(map_w3(1) + k-1), r_um)
+      v_on_p(1,k) = real(u2_in_w3(map_w3(1) + k-1), r_um)
+
+      wetrho(1,k) = real(wetrho_in_w3(map_w3(1) + k-1), r_um)
+
+      theta(1,k)  = real(theta_in_wth(map_wth(1) + k), r_um)
+
+      z_rho_levels(1,k)   = real(height_w3(map_w3(1) + k-1) - height_wth(map_wth(1) + 0), r_um)
+      z_theta_levels(1,k) = real(height_wth(map_wth(1) + k) - height_wth(map_wth(1) + 0), r_um)
+    end do   ! k
+
+    sd(1)      = real(sd_orog(map_2d(1)), r_um)
+    grad_xx(1) = real(grad_xx_orog(map_2d(1)), r_um)
+    grad_xy(1) = real(grad_xy_orog(map_2d(1)), r_um)
+    grad_yy(1) = real(grad_yy_orog(map_2d(1)), r_um)
+
+    ! Recasting of LFRic to UM namelist inputs
+    fbcd         = real(cd_flow_blocking, r_um)
+    gsharp       = real(gwd_scaling, r_um)
+    gwd_frc      = real(fr_crit_gwd, r_um)
+    gwd_fsat     = real(fr_sat_gwd, r_um)
+    nsigma       = real(mountain_height_scaling, r_um)
+    l_fb_heating = orographic_blocking_heating
+    l_gw_heating = orographic_gwd_heating
+    l_smooth     = vertical_smoothing
+
+    ! Call routine to setup orographic drag fields
+    call gw_setup(nlayers, seg_len,                                  &
+                  ! Inputs
+                  u_on_p, v_on_p,  wetrho, theta,                    &
+                  ! Outputs
+                  nsq, ulow, vlow, rholow, nlow, psilow, psi1, modu, &
+                  ! Time-independent input
+                  z_rho_levels, z_theta_levels, sd,                  &
+                  grad_xx, grad_xy, grad_yy,                         &
+                  ! Time-independent output
+                  mt_high, slope, anis, banis, canis, mtdir, ktop,   &
+                  drag, nsigma,                                      &
+                  ! diagnostics
+                  u_s_d, u_s_d_on, seg_len,                          &
+                  v_s_d, v_s_d_on, seg_len,                          &
+                  nsq_s_d, nsq_s_d_on, seg_len)
+
+    ! Call routine to compute orographic blocking depth and drag
+    call gw_block(nlayers,seg_len,timestep,u_on_p,v_on_p,wetrho, &
+                  nsq,ulow, vlow,rholow, psilow,modu,            &
+                  z_rho_levels,z_theta_levels,mt_high,           &
+                  sd,slope,anis,mtdir,zb,banis,canis,            &
+                  du_dt_blk,dv_dt_blk,                           &
+                  dtemp_dt_blk,fbcd,gwd_frc,drag,                &
+                  l_fb_heating,                                  &
+                  ! diagnostics (not used)
+                  du_dt_diag, seg_len,du_dt_diag_on,             &
+                  dv_dt_diag, seg_len,dv_dt_diag_on,             &
+                  stress_u, stress_u_on,seg_len,stress_u_on,     &
+                  stress_v, stress_v_on,seg_len,                 &
+                  stress_u, seg_len, stress_u_on,                &
+                  stress_v, seg_len, stress_v_on,                &
+                  fr_d,fr_d_on, seg_len,                         &
+                  bld_d,bld_d_on, seg_len,                       &
+                  bldt_d,bldt_d_on, seg_len,                     &
+                  tausx_d,tausx_d_on, seg_len,                   &
+                  tausy_d,tausy_d_on, seg_len)
+
+    ! Call routine to compute orographic gravity wave drag
+    call gw_wave(nlayers,seg_len,u_on_p,v_on_p,wetrho,               &
+                 nsq,ulow,vlow,rholow,psi1,psilow,nlow,modu,ktop,    &
+                 z_rho_levels,z_theta_levels,delta_lambda,delta_phi, &
+                 latitude,mt_high,sd,slope,zb,banis,canis,           &
+                 du_dt_orog_gwd,dv_dt_orog_gwd,dtemp_dt_orog_gwd,    &
+                 timestep,dynbeta,nonhydro,l_smooth,                 &
+                 gwd_fsat,gsharp,drag,l_gw_heating,                  &
+                 ! diagnostics (not used)
+                 du_dt_diag,seg_len,du_dt_diag_on,du_dt_diag_on,     &
+                 dv_dt_diag, seg_len,dv_dt_diag_on,                  &
+                 stress_u, seg_len, stress_u_on, stress_u_on,        &
+                 stress_v, seg_len, stress_v_on,                     &
+                 stress_u, seg_len, stress_u_on,                     &
+                 stress_v, seg_len, stress_v_on,                     &
+                 tausx_d, tausx_d_on, seg_len,                       &
+                 tausy_d, tausy_d_on, seg_len)
+
+    ! Map variables back
+    do k = 1, nlayers
+      du_blk(map_w3(1) + k-1) = real(du_dt_blk(1,k)*timestep, r_def)
+      dv_blk(map_w3(1) + k-1) = real(dv_dt_blk(1,k)*timestep, r_def)
+
+      du_orog_gwd(map_w3(1) + k-1) = real(du_dt_orog_gwd(1,k)*timestep, r_def)
+      dv_orog_gwd(map_w3(1) + k-1) = real(dv_dt_orog_gwd(1,k)*timestep, r_def)
+
+      dtemp_blk(map_wth(1) + k)      = real(dtemp_dt_blk(1,k)*timestep, r_def)
+      dtemp_orog_gwd(map_wth(1) + k) = real(dtemp_dt_orog_gwd(1,k)*timestep, r_def)
+    end do ! k
+
+    ! 0th theta level values are set to 1st level values
+    dtemp_blk(map_wth(1) + 0)      = real(dtemp_dt_blk(1,1)*timestep, r_def)
+    dtemp_orog_gwd(map_wth(1) + 0) = real(dtemp_dt_orog_gwd(1,1)*timestep, r_def)
+
+  end subroutine orographic_drag_kernel_code
+
+end module orographic_drag_kernel_mod

@@ -160,6 +160,17 @@
   wavelstar = 4300.00
 /
 
+&orographic_drag
+  cd_flow_blocking=4.0
+  gwd_scaling=0.5
+  orographic_gwd_heating=.true.
+  orographic_blocking_heating=.true.
+  fr_crit_gwd=4.0
+  fr_sat_gwd=0.25
+  mountain_height_scaling=2.5
+  vertical_smoothing=.true.
+/
+
 &well_mixed_gases
     co2_mix_ratio = 6.002e-04,
     n2o_mix_ratio = 4.945e-07,
@@ -263,6 +274,7 @@
     radiation_placement='slow',
     microphysics_placement='slow',
     spectral_gwd_placement='slow',
+    orographic_drag_placement='slow',
     heldsuarez_thermo_placement=0,
     heldsuarez_wind_placement=0,
     hs_random=.false.,
@@ -341,4 +353,5 @@
     cloud='none'
     spectral_gwd='none'
     surface='jules'
+    orographic_drag='none'
 /

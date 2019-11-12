@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<simulation> 
+<simulation>
 
   <!-- In this version we have ONE context  -->
-  
-  
+
+
   <context id = "gungho_atm">
-  
+
    <calendar type = "Gregorian" start_date = "2016-01-01 15:00:00" time_origin = "2016-01-01 15:00:00" />
 
    <axis_definition>
     <axis id="vert_axis_half_levels" name="half_levels"/>
-    <axis id="vert_axis_full_levels" name="full_levels"/>   
+    <axis id="vert_axis_full_levels" name="full_levels"/>
    </axis_definition>
 
    <domain_definition>
@@ -71,6 +71,12 @@
        <field id="checkpoint_z0msea" name="z0msea" long_name="z0msea"  unit="m" domain_ref="checkpoint_W3_2D" />
        <field id="checkpoint_conv_rain" name="conv_rain" long_name="conv_rain"  unit="kg m-2 s-1" domain_ref="checkpoint_W3_2D" />
        <field id="checkpoint_conv_snow" name="conv_snow" long_name="conv_snow"  unit="kg m-2 s-1" domain_ref="checkpoint_W3_2D" />
+       <field id="checkpoint_sd_orog" name="sd_orog" long_name="sd_orog"  unit="m" domain_ref="checkpoint_W3_2D" />
+       <field id="checkpoint_grad_xx_orog" name="grad_xx_orog" long_name="grad_xx_orog"  unit="1" domain_ref="checkpoint_W3_2D" />
+       <field id="checkpoint_grad_xy_orog" name="grad_xy_orog" long_name="grad_xy_orog"  unit="1" domain_ref="checkpoint_W3_2D" />
+       <field id="checkpoint_grad_yy_orog" name="grad_yy_orog" long_name="grad_yy_orog"  unit="1" domain_ref="checkpoint_W3_2D" />
+       <field id="checkpoint_peak_to_trough_orog" name="peak_to_trough_orog" long_name="peak_to_trough_orog"  unit="m" domain_ref="checkpoint_W3_2D" />
+       <field id="checkpoint_silhouette_area_orog" name="silhouette_area_orog" long_name="silhouette_area_orog"  unit="m" domain_ref="checkpoint_W3_2D" />
        <field id="checkpoint_lw_down_surf_rts" name="lw_down_surf_rts" long_name="Surface downward longwave flux" unit="W m-2" domain_ref="checkpoint_W3_2D" />
        <field id="checkpoint_sw_down_surf_rts" name="sw_down_surf_rts" long_name="Surface downward shortwave flux" unit="W m-2" domain_ref="checkpoint_W3_2D" />
        <field id="checkpoint_sw_direct_surf_rts" name="sw_direct_surf_rts" long_name="Surface direct shortwave flux" unit="W m-2" domain_ref="checkpoint_W3_2D" />
@@ -126,10 +132,10 @@
      <!-- Main diagnostic group -->
      <field_group id="diagnostic_fields" freq_op="1ts" operation="instant" enabled=".TRUE." >
        <field id="theta" name="theta" long_name="air_potential_temperature" standard_name="air_potential_temperature" unit="K" grid_ref="full_level_face_grid" />
-       <field id="dt_bl" name="dt_bl" long_name="BL temperature increment" unit="K" grid_ref="full_level_face_grid" />  
-       <field id="dmv_bl" name="dmv_bl" long_name="BL vapour increment" unit="kg/kg" grid_ref="full_level_face_grid" />  
-       <field id="dt_conv" name="dt_conv" long_name="Convection temperature increment" unit="K" grid_ref="full_level_face_grid" />  
-       <field id="dmv_conv" name="dmv_conv" long_name="Convection vapour increment" unit="kg/kg" grid_ref="full_level_face_grid" />  
+       <field id="dt_bl" name="dt_bl" long_name="BL temperature increment" unit="K" grid_ref="full_level_face_grid" />
+       <field id="dmv_bl" name="dmv_bl" long_name="BL vapour increment" unit="kg/kg" grid_ref="full_level_face_grid" />
+       <field id="dt_conv" name="dt_conv" long_name="Convection temperature increment" unit="K" grid_ref="full_level_face_grid" />
+       <field id="dmv_conv" name="dmv_conv" long_name="Convection vapour increment" unit="kg/kg" grid_ref="full_level_face_grid" />
        <field id="du_conv" name="du_conv" long_name="u_increment_from_convection" unit="m s-2" grid_ref="half_level_face_grid" />
        <field id="dv_conv" name="dv_conv" long_name="v_increment_from_convection" unit="m s-2" grid_ref="half_level_face_grid" />
        <field id="m_v" name="m_v" long_name="m_v" unit="kg/kg" grid_ref="full_level_face_grid" />
@@ -158,6 +164,16 @@
        <field id="du_spectral_gwd" name="du_spectral_gwd" long_name="Spectral gravity wave drag U wind increment" unit="m s-1" grid_ref="half_level_face_grid" />
        <field id="dv_spectral_gwd" name="dv_spectral_gwd" long_name="Spectral gravity wave drag V wind increment" unit="m s-1" grid_ref="half_level_face_grid" />
        <field id="dtemp_spectral_gwd" name="dtemp_spectral_gwd" long_name="Spectral gravity wave drag T increment" unit="K" grid_ref="full_level_face_grid" />
+       <field id="du_orographic_drag" name="du_orog" long_name="Orographic drag U wind increment" unit="m s-1" grid_ref="half_level_face_grid" />
+       <field id="dv_orographic_drag" name="dv_orog" long_name="Orographic drag V wind increment" unit="m s-1" grid_ref="half_level_face_grid" />
+       <field id="du_orog_blk" name="du_orog_blk" long_name="Orographic blocking drag U wind increment" unit="m s-1" grid_ref="half_level_face_grid" />
+       <field id="dv_orog_blk" name="dv_orog_blk" long_name="Orographic blocking drag V wind increment" unit="m s-1" grid_ref="half_level_face_grid" />
+       <field id="du_orog_gwd" name="du_orog_gwd" long_name="Orographic gravity wave drag U wind increment" unit="m s-1" grid_ref="half_level_face_grid" />
+       <field id="dv_orog_gwd" name="dv_orog_gwd" long_name="Orographic gravity wave drag V wind increment" unit="m s-1" grid_ref="half_level_face_grid" />
+       <field id="dtheta_orographic_drag" name="dtheta_orog" long_name="Orographic drag theta increment" unit="K" grid_ref="full_level_face_grid" />
+       <field id="dtemp_orographic_drag" name="dtemp_orog" long_name="Orographic drag temp increment" unit="K" grid_ref="full_level_face_grid" />
+       <field id="dtemp_orog_blk" name="dtemp_orog_blk" long_name="Orographic blocking drag T increment" unit="K" grid_ref="full_level_face_grid" />
+       <field id="dtemp_orog_gwd" name="dtemp_orog_gwd" long_name="Orographic gravity wave drag T increment" unit="K" grid_ref="full_level_face_grid" />
        <field id="tstar" name="tstar" long_name="Surface temperature" unit="K" domain_ref="face_half_levels" />
        <field id="tstar_brd_leaf" name="tstar_brd_leaf" long_name="Broad leaf tree Surface temperature" unit="K" domain_ref="face_half_levels" />
        <field id="tstar_ndl_leaf" name="tstar_ndl_leaf" long_name="Needle leaf tree Surface temperature" unit="K" domain_ref="face_half_levels" />
@@ -290,9 +306,9 @@
        <field id="dry_rho_in_w3" name="dry_rho_in_w3" long_name="air_density" unit="1" grid_ref="half_level_face_grid" />
        <field id="mv_in_wtheta" name="mv_in_wtheta" long_name="humidity_mixing_ratio"  unit="1" grid_ref="full_level_face_grid" />
        <field id="mcl_in_wtheta" name="mcl_in_wtheta" long_name="cloud_liquid_water_mixing_ratio"  unit="1" grid_ref="full_level_face_grid" />
-       <field id="mcf_in_wtheta" name="mcf_in_wtheta" long_name="cloud_ice_mixing_ratio"  unit="1" grid_ref="full_level_face_grid" /> 
+       <field id="mcf_in_wtheta" name="mcf_in_wtheta" long_name="cloud_ice_mixing_ratio"  unit="1" grid_ref="full_level_face_grid" />
      </field_group>
-     
+
    </field_definition>
 
    <file_definition
@@ -326,6 +342,12 @@
         <field field_ref="checkpoint_z0msea"/>
         <field field_ref="checkpoint_conv_rain"/>
         <field field_ref="checkpoint_conv_snow"/>
+        <field field_ref="checkpoint_sd_orog"/>
+        <field field_ref="checkpoint_grad_xx_orog"/>
+        <field field_ref="checkpoint_grad_xy_orog"/>
+        <field field_ref="checkpoint_grad_yy_orog"/>
+        <field field_ref="checkpoint_peak_to_trough_orog"/>
+        <field field_ref="checkpoint_silhouette_area_orog"/>
         <field field_ref="checkpoint_lw_down_surf_rts"/>
         <field field_ref="checkpoint_sw_down_surf_rts"/>
         <field field_ref="checkpoint_sw_direct_surf_rts"/>
@@ -338,8 +360,8 @@
         <field field_ref="checkpoint_stellar_irradiance_rts"/>
         <field field_ref="checkpoint_sin_stellar_declination_rts"/>
         <field field_ref="checkpoint_stellar_eqn_of_time_rts"/>
-      </file> 
-      
+      </file>
+
        <!-- file definition for checkpoint read -->
       <file id="lfric_checkpoint_read" name="lfric_checkpoint_read" mode="read" output_freq="1ts" cyclic="true" enabled=".FALSE.">
        <field id="restart_theta" name="theta" long_name="air_potential_temperature" standard_name="air_potential_temperature" unit="K" operation="instant" domain_ref="checkpoint_Wtheta" />
@@ -364,6 +386,12 @@
        <field id="restart_z0msea" name="z0msea" long_name="z0msea" unit="m" operation="instant" domain_ref="checkpoint_W3_2D" />
        <field id="restart_conv_rain" name="conv_rain" long_name="conv_rain" unit="kg m-2 s-1" operation="instant" domain_ref="checkpoint_W3_2D" />
        <field id="restart_conv_snow" name="conv_snow" long_name="conv_snow" unit="kg m-2 s-1" operation="instant" domain_ref="checkpoint_W3_2D" />
+       <field id="restart_sd_orog" name="sd_orog" long_name="sd_orog"  unit="m" operation="instant" domain_ref="checkpoint_W3_2D" />
+       <field id="restart_grad_xx_orog" name="grad_xx_orog" long_name="grad_xx_orog"  unit="1" operation="instant" domain_ref="checkpoint_W3_2D" />
+       <field id="restart_grad_xy_orog" name="grad_xy_orog" long_name="grad_xy_orog"  unit="1" operation="instant" domain_ref="checkpoint_W3_2D" />
+       <field id="restart_grad_yy_orog" name="grad_yy_orog" long_name="grad_yy_orog"  unit="1" operation="instant" domain_ref="checkpoint_W3_2D" />
+       <field id="restart_peak_to_trough_orog" name="peak_to_trough_orog" long_name="peak_to_trough_orog"  unit="m" operation="instant" domain_ref="checkpoint_W3_2D" />
+       <field id="restart_silhouette_area_orog" name="silhouette_area_orog" long_name="silhouette_area_orog"  unit="m" operation="instant" domain_ref="checkpoint_W3_2D" />
        <field id="restart_lw_down_surf_rts" name="lw_down_surf_rts" long_name="Surface downward longwave flux" unit="W m-2" operation="instant" domain_ref="checkpoint_W3_2D" />
        <field id="restart_sw_down_surf_rts" name="sw_down_surf_rts" long_name="Surface downward shortwave flux" unit="W m-2" operation="instant" domain_ref="checkpoint_W3_2D" />
        <field id="restart_sw_direct_surf_rts" name="sw_direct_surf_rts" long_name="Surface direct shortwave flux" unit="W m-2" operation="instant" domain_ref="checkpoint_W3_2D" />
@@ -413,6 +441,14 @@
         <field field_ref="du_spectral_gwd"/>
         <field field_ref="dv_spectral_gwd"/>
         <field field_ref="dtemp_spectral_gwd"/>
+        <field field_ref="du_orographic_drag"/>
+        <field field_ref="dv_orographic_drag"/>
+        <field field_ref="du_orog_blk"/>
+        <field field_ref="dv_orog_blk"/>
+        <field field_ref="du_orog_gwd"/>
+        <field field_ref="dv_orog_gwd"/>
+        <field field_ref="dtemp_orographic_drag"/>
+        <field field_ref="dtheta_orographic_drag"/>
         <field field_ref="tstar_brd_leaf"/>
         <field field_ref="tstar_ndl_leaf"/>
         <field field_ref="tstar_c3_grass"/>
@@ -567,7 +603,7 @@
        <field id="read_dry_rho_in_w3" name="dry_rho_in_w3" long_name="air_density" unit="1" grid_ref="half_level_face_grid" operation="instant" />
        <field id="read_mv_in_wtheta" name="mv_in_wtheta" long_name="humidity_mixing_ratio"  unit="1" grid_ref="full_level_face_grid" operation="instant" />
        <field id="read_mcl_in_wtheta" name="mcl_in_wtheta" long_name="cloud_liquid_water_mixing_ratio"  unit="1" grid_ref="full_level_face_grid" operation="instant" />
-       <field id="read_mcf_in_wtheta" name="mcf_in_wtheta" long_name="cloud_ice_mixing_ratio"  unit="1" grid_ref="full_level_face_grid" operation="instant" /> 
+       <field id="read_mcf_in_wtheta" name="mcf_in_wtheta" long_name="cloud_ice_mixing_ratio"  unit="1" grid_ref="full_level_face_grid" operation="instant" />
        <field id="read_tstar" name="tstar" long_name="surface_temperature" standard_name="surface_temperature" unit="K" domain_ref="face_half_levels" operation="instant" />
       </file>
 

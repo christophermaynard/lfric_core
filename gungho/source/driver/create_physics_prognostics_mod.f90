@@ -40,14 +40,15 @@ contains
   !> @param[out]   twod_fields Collection of two dimensional fields
   !> @param[out]   radstep_fields Collection of radiation timestep fields
   !> @param[out]   physics_incs Collection of physics increments
+  !> @param[out]   orography_fields Collection of orography fields
   !> @param[out]   jules_ancils Ancillary fields for Jules
   !> @param[out]   jules_prognostics Prognostic fields for Jules
-  subroutine create_physics_prognostics( mesh_id, twod_mesh_id, &
-                                         depository, &
-                                         prognostic_fields, &
-                                         derived_fields, cloud_fields, &
-                                         twod_fields, radstep_fields, &
-                                         physics_incs, &
+  subroutine create_physics_prognostics( mesh_id, twod_mesh_id,          &
+                                         depository,                     &
+                                         prognostic_fields,              &
+                                         derived_fields, cloud_fields,   &
+                                         twod_fields, radstep_fields,    &
+                                         physics_incs, orography_fields, &
                                          jules_ancils, jules_prognostics )
 
     implicit none
@@ -63,6 +64,7 @@ contains
     type(field_collection_type), intent(out) :: derived_fields
     type(field_collection_type), intent(out) :: radstep_fields
     type(field_collection_type), intent(out) :: physics_incs
+    type(field_collection_type), intent(out) :: orography_fields
     type(field_collection_type), intent(out) :: jules_ancils
     type(field_collection_type), intent(out) :: jules_prognostics
 
@@ -70,7 +72,7 @@ contains
     type(function_space_type), pointer :: vector_space => null()
 
     type( field_type ), pointer :: theta => null()
- 
+
     ! Each column of a higher-order discontinuous field will be used to
     ! represent multi-dimensional quantities like tiles, plant functional
     ! types and sea ice categories. Set parameters for the orders required:
@@ -261,7 +263,7 @@ contains
     call add_physics_field(radstep_fields, depository, prognostic_fields, &
       'lw_heating_rate_rts', vector_space, checkpoint_restart_flag)
 
-    vector_space=> function_space_collection%get_fs(twod_mesh_id, 0, W3) 
+    vector_space=> function_space_collection%get_fs(twod_mesh_id, 0, W3)
     call add_physics_field(radstep_fields, depository, prognostic_fields, &
       'lw_down_surf_rts', vector_space, checkpoint_restart_flag, twod=.true.)
     call add_physics_field(radstep_fields, depository, prognostic_fields, &
@@ -357,7 +359,7 @@ contains
     call add_physics_field(physics_incs, depository, prognostic_fields, &
       'rdz_tq_bl',     vector_space, checkpoint_restart_flag)
 
-    vector_space=> function_space_collection%get_fs(twod_mesh_id, 0, W3) 
+    vector_space=> function_space_collection%get_fs(twod_mesh_id, 0, W3)
     call add_physics_field(physics_incs, depository, prognostic_fields, &
       'lw_down_surf', vector_space, checkpoint_restart_flag, twod=.true.)
     call add_physics_field(physics_incs, depository, prognostic_fields, &
@@ -369,6 +371,25 @@ contains
     call add_physics_field(physics_incs, depository, prognostic_fields, &
       'sw_direct_blue_surf', vector_space, checkpoint_restart_flag, twod=.true.)
 
+    !========================================================================
+    ! Here we create some 2D orography fields
+    !========================================================================
+    orography_fields = field_collection_type(name='orography_fields')
+    vector_space=> function_space_collection%get_fs(twod_mesh_id, 0, W3)
+    checkpoint_restart_flag = .true.
+
+    call add_physics_field(orography_fields, depository, prognostic_fields, &
+      'sd_orog', vector_space, checkpoint_restart_flag, twod=.true.)
+    call add_physics_field(orography_fields, depository, prognostic_fields, &
+      'grad_xx_orog', vector_space, checkpoint_restart_flag, twod=.true.)
+    call add_physics_field(orography_fields, depository, prognostic_fields, &
+      'grad_xy_orog', vector_space, checkpoint_restart_flag, twod=.true.)
+    call add_physics_field(orography_fields, depository, prognostic_fields, &
+      'grad_yy_orog', vector_space, checkpoint_restart_flag, twod=.true.)
+    call add_physics_field(orography_fields, depository, prognostic_fields, &
+      'peak_to_trough_orog', vector_space, checkpoint_restart_flag, twod=.true.)
+    call add_physics_field(orography_fields, depository, prognostic_fields, &
+      'silhouette_area_orog', vector_space, checkpoint_restart_flag, twod=.true.)
 
     !========================================================================
     ! Surface fields (a temporary treatment for multi-dimensional fields
@@ -390,12 +411,6 @@ contains
       'canopy_height', vector_space, checkpoint_restart_flag, twod=.true.)
 
     vector_space => function_space_collection%get_fs(twod_mesh_id, 0, W3)
-    call add_physics_field(jules_ancils, depository, prognostic_fields, &
-      'sd_orog', vector_space, checkpoint_restart_flag, twod=.true.)
-    call add_physics_field(jules_ancils, depository, prognostic_fields, &
-      'peak_to_trough_orog', vector_space, checkpoint_restart_flag, twod=.true.)
-    call add_physics_field(jules_ancils, depository, prognostic_fields, &
-      'silhouette_area_orog', vector_space, checkpoint_restart_flag, twod=.true.)
     call add_physics_field(jules_ancils, depository, prognostic_fields, &
       'soil_albedo', vector_space, checkpoint_restart_flag, twod=.true.)
     call add_physics_field(jules_ancils, depository, prognostic_fields, &
@@ -512,7 +527,7 @@ contains
 
   end subroutine create_physics_prognostics
 
-  !>@brief Add field to field collection and set its write,
+  !>@brief Add field to field collection and set its write,
   !>       checkpoint and restart behaviour
   !> @param[in,out] field_collection Field collection that 'name' will be added to
   !> @param[in]     name             Name of field to be added to collection

@@ -47,11 +47,12 @@ contains
   !>@param[in,out] visc_h_blend      Blended BL-Smag diffusion coefficient for scalars
   !>@param[in,out] jules_ancils      Ancillary fields for Jules
   !>@param[in,out] jules_prognostics Prognostic fields for Jules
+  !> @param[in]    orography_fields  Group of orography fields
   subroutine bl_exp_alg_step(theta, rho, mr_n, exner, shear, delta,           &
-                             max_diff_smag, height_w3, height_wth,            & 
+                             max_diff_smag, height_w3, height_wth,            &
                              derived_fields, cloud_fields, twod_fields,       &
                              physics_incs, visc_m_blend, visc_h_blend,        &
-                             jules_ancils, jules_prognostics)
+                             jules_ancils, jules_prognostics, orography_fields)
 
     use bl_exp_kernel_mod, only: bl_exp_kernel_type
 
@@ -70,6 +71,7 @@ contains
     ! Surface fields
     type( field_collection_type ), intent(inout) :: jules_ancils
     type( field_collection_type ), intent(inout) :: jules_prognostics
+    type( field_collection_type ), intent(in)    :: orography_fields
 
     ! Temporary fields unpacked fields from collections
     type( field_type ), pointer :: exner_in_wth  => null()
@@ -122,29 +124,29 @@ contains
     type( field_type ), pointer :: rdz_tq_bl => null()
     type( field_type ), pointer :: rdz_uv_bl => null()
 
-    type( field_type ), pointer :: tile_fraction      => null()
-    type( field_type ), pointer :: leaf_area_index    => null()
-    type( field_type ), pointer :: canopy_height      => null()
-    type( field_type ), pointer :: sd_orog            => null()
-    type( field_type ), pointer :: peak_to_trough_orog => null()
+    type( field_type ), pointer :: tile_fraction        => null()
+    type( field_type ), pointer :: leaf_area_index      => null()
+    type( field_type ), pointer :: canopy_height        => null()
+    type( field_type ), pointer :: sd_orog              => null()
+    type( field_type ), pointer :: peak_to_trough_orog  => null()
     type( field_type ), pointer :: silhouette_area_orog => null()
-    type( field_type ), pointer :: soil_albedo        => null()
-    type( field_type ), pointer :: soil_roughness     => null()
-    type( field_type ), pointer :: soil_moist_wilt    => null()
-    type( field_type ), pointer :: soil_moist_crit    => null()
-    type( field_type ), pointer :: soil_moist_sat     => null()
-    type( field_type ), pointer :: soil_thermal_cond  => null()
-    type( field_type ), pointer :: soil_suction_sat   => null()
-    type( field_type ), pointer :: clapp_horn_b       => null()
-    type( field_type ), pointer :: soil_carbon_content => null()
+    type( field_type ), pointer :: soil_albedo          => null()
+    type( field_type ), pointer :: soil_roughness       => null()
+    type( field_type ), pointer :: soil_moist_wilt      => null()
+    type( field_type ), pointer :: soil_moist_crit      => null()
+    type( field_type ), pointer :: soil_moist_sat       => null()
+    type( field_type ), pointer :: soil_thermal_cond    => null()
+    type( field_type ), pointer :: soil_suction_sat     => null()
+    type( field_type ), pointer :: clapp_horn_b         => null()
+    type( field_type ), pointer :: soil_carbon_content  => null()
 
     type( field_type ), pointer :: tile_temperature   => null()
     type( field_type ), pointer :: tile_snow_mass     => null()
     type( field_type ), pointer :: n_snow_layers      => null()
     type( field_type ), pointer :: snow_depth         => null()
     type( field_type ), pointer :: surface_conductance => null()
-    type( field_type ), pointer :: canopy_water       => null() 
-    type( field_type ), pointer :: sw_up_tile         => null() 
+    type( field_type ), pointer :: canopy_water       => null()
+    type( field_type ), pointer :: sw_up_tile         => null()
     type( field_type ), pointer :: soil_temperature   => null()
     type( field_type ), pointer :: soil_moisture      => null()
     type( field_type ), pointer :: unfrozen_soil_moisture => null()
@@ -203,7 +205,7 @@ contains
     ! Unpack cloud fields
     cf_bulk => cloud_fields%get_field('bulk_fraction')
     rh_crit_wth => cloud_fields%get_field('rh_crit_wth')
-    
+
     ! Unpack the physics increments
     dtl_mphys => physics_incs%get_field('dtl_mphys')
     dmt_mphys => physics_incs%get_field('dmt_mphys')
@@ -225,21 +227,21 @@ contains
     rdz_uv_bl => physics_incs%get_field('rdz_uv_bl')
 
     ! Surface fields
-    tile_fraction   => jules_ancils%get_field('tile_fraction')
-    leaf_area_index => jules_ancils%get_field('leaf_area_index')
-    canopy_height   => jules_ancils%get_field('canopy_height')
-    sd_orog         => jules_ancils%get_field('sd_orog')
-    peak_to_trough_orog => jules_ancils%get_field('peak_to_trough_orog')
-    silhouette_area_orog => jules_ancils%get_field('silhouette_area_orog')
-    soil_albedo     => jules_ancils%get_field('soil_albedo')
-    soil_roughness  => jules_ancils%get_field('soil_roughness')
-    soil_moist_wilt => jules_ancils%get_field('soil_moist_wilt')
-    soil_moist_crit => jules_ancils%get_field('soil_moist_crit')
-    soil_moist_sat  => jules_ancils%get_field('soil_moist_sat')
-    soil_thermal_cond => jules_ancils%get_field('soil_thermal_cond')
-    soil_suction_sat => jules_ancils%get_field('soil_suction_sat')
-    clapp_horn_b    => jules_ancils%get_field('clapp_horn_b')
-    soil_carbon_content => jules_ancils%get_field('soil_carbon_content')
+    sd_orog              => orography_fields%get_field('sd_orog')
+    peak_to_trough_orog  => orography_fields%get_field('peak_to_trough_orog')
+    silhouette_area_orog => orography_fields%get_field('silhouette_area_orog')
+    tile_fraction        => jules_ancils%get_field('tile_fraction')
+    leaf_area_index      => jules_ancils%get_field('leaf_area_index')
+    canopy_height        => jules_ancils%get_field('canopy_height')
+    soil_albedo          => jules_ancils%get_field('soil_albedo')
+    soil_roughness       => jules_ancils%get_field('soil_roughness')
+    soil_moist_wilt      => jules_ancils%get_field('soil_moist_wilt')
+    soil_moist_crit      => jules_ancils%get_field('soil_moist_crit')
+    soil_moist_sat       => jules_ancils%get_field('soil_moist_sat')
+    soil_thermal_cond    => jules_ancils%get_field('soil_thermal_cond')
+    soil_suction_sat     => jules_ancils%get_field('soil_suction_sat')
+    clapp_horn_b         => jules_ancils%get_field('clapp_horn_b')
+    soil_carbon_content  => jules_ancils%get_field('soil_carbon_content')
 
     tile_temperature   => jules_prognostics%get_field('tile_temperature')
     tile_snow_mass     => jules_prognostics%get_field('tile_snow_mass')

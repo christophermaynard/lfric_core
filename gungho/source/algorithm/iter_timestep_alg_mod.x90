@@ -4,7 +4,7 @@
 ! should have received as part of this distribution.
 !-----------------------------------------------------------------------------
 
-!>@brief A two time-level iterative time-discretisation of the nonlinear 
+!>@brief A two time-level iterative time-discretisation of the nonlinear
 !>       3D equations
 module iter_timestep_alg_mod
 
@@ -48,13 +48,13 @@ module iter_timestep_alg_mod
   use psykal_lite_mod,           only: invoke_tracer_viscosity, &
                                        invoke_momentum_viscosity
 
-  use field_bundle_mod,          only: clone_bundle,      & 
-                                       bundle_axpy,       & 
+  use field_bundle_mod,          only: clone_bundle,      &
+                                       bundle_axpy,       &
                                        bundle_axpby,      &
                                        add_bundle,        &
                                        copy_bundle,       &
                                        set_bundle_scalar, &
-                                       bundle_ax 
+                                       bundle_ax
   ! PsyKAl PSYClone kernels
   use project_pressure_kernel_mod,        only: project_pressure_kernel_type
   use sort_ref_kernel_mod,                only: sort_ref_kernel_type
@@ -89,7 +89,7 @@ module iter_timestep_alg_mod
   use semi_implicit_solver_alg_mod, only: semi_implicit_solver_alg_init, &
                                           semi_implicit_solver_alg_step, &
                                           semi_implicit_solver_alg_final
-  use field_vector_mod,             only: field_vector_type 
+  use field_vector_mod,             only: field_vector_type
 
   ! Field mappings
   use map_physics_fields_alg_mod, only: map_physics_fields_alg
@@ -122,7 +122,7 @@ module iter_timestep_alg_mod
 
   private
 
-  ! 'State' items private to the algorithm that need to be 
+  ! 'State' items private to the algorithm that need to be
   !  created once but used every step
 
   ! latest estimate of the prognostic fields through the iterative solver
@@ -130,7 +130,7 @@ module iter_timestep_alg_mod
   ! prognostic fields at time level n, i.e. start of timestep
   type( field_type ), allocatable :: state_n(:)
   ! prognostic fields after slow physics, i.e. state_n + slow incs
-  type( field_type ), allocatable :: state_after_slow(:) 
+  type( field_type ), allocatable :: state_after_slow(:)
   type( field_type ), allocatable :: reference_state(:)
   type( field_type ), allocatable :: mr_n(:), mr_inc(:), mr_after_slow(:)
   type( field_type ), allocatable :: rhs_n(:), rhs_np1(:), rhs_adv(:)
@@ -138,9 +138,9 @@ module iter_timestep_alg_mod
   type( field_type ) :: dtheta ! increment to theta
   type( field_type ) :: dtheta_cld ! increment to theta from cloud
   type( field_type ) :: du ! increment to u
-       
+
   type( field_vector_type ) :: vector_state, vector_rhs
- 
+
   type( field_type ) :: shear ! shear term
   type( field_type ) :: visc_m ! Smagorinsky diffusion coefficient for momentum
   type( field_type ) :: visc_h ! Smagorinsky diffusion coefficient for scalars
@@ -192,7 +192,7 @@ contains
     ! even if moisture is not used. The intention is that in future
     ! there will be no use_moisture logical and moisture fields
     ! will be set to zero for dry runs.
-    allocate(mr_n(nummr)) 
+    allocate(mr_n(nummr))
     allocate(mr_after_slow(nummr))
 
     if (use_moisture)then
@@ -260,9 +260,9 @@ contains
                  setval_X(state(igh_p), exner) )
     call advection_alg_init(mesh_id)
 
-    ! Set initial reference state 
+    ! Set initial reference state
     call copy_bundle(state, reference_state, bundle_size)
-    if (dry_static_adjust)call invoke( sort_ref_kernel_type(reference_state(igh_t) ) )  
+    if (dry_static_adjust)call invoke( sort_ref_kernel_type(reference_state(igh_t) ) )
 
 #ifdef UM_PHYSICS
     if ( use_physics ) then
@@ -299,7 +299,7 @@ contains
   !>          New time level forcings computed in an inner loop.
   !>          If matching ENDGame, 2 outer and 2 inner loops are used per timestep
   !>          by default. This means that there is one evaluation of old time
-  !>          level terms, 2 evaluation of advective terms and 4 evaluations 
+  !>          level terms, 2 evaluation of advective terms and 4 evaluations
   !>          of new time level terms and increment updates per timestep
   !> @param[in,out] u                 3D wind field
   !> @param[in,out] rho               Density
@@ -312,13 +312,14 @@ contains
   !> @param[in,out] twod_fields       2D fields for UM physics
   !> @param[in,out] radstep_fields    Group of radiation timestep fields
   !> @param[in,out] physics_incs      Group of physics increments
+  !> @param[in]     orography_fields  Group of orography fields
   !> @param[in,out] jules_ancils      Ancillary fields for Jules
   !> @param[in,out] jules_prognostics Prognostic fields for Jules
   !> @param[in]     timestep          Model timestep number
   !> @param[in]     twod_mesh_id      Identifier given to the current 2d mesh
   subroutine iter_alg_step(u, rho, theta, exner, mr, moist_dyn,           &
                            derived_fields, cloud_fields, twod_fields,     &
-                           radstep_fields, physics_incs,                  &
+                           radstep_fields, physics_incs, orography_fields,&
                            jules_ancils, jules_prognostics,               &
                            timestep, twod_mesh_id)
 
@@ -337,8 +338,10 @@ contains
     type( field_collection_type ), intent( inout ) :: twod_fields
     type( field_collection_type ), intent( inout ) :: radstep_fields
     type( field_collection_type ), intent( inout ) :: physics_incs
+    type( field_collection_type ), intent( in )    :: orography_fields
+
     ! Timestep value
-    integer, intent(in) :: timestep  
+    integer, intent(in) :: timestep
     integer, intent(in) :: twod_mesh_id
 
     ! Quadrature object
@@ -391,13 +394,13 @@ contains
     dA => get_da_at_w2()
     delta => get_delta_at_wtheta()
     max_diff_smag => get_max_diff()
-    mm_wt => get_mass_matrix(theta_space_id) 
+    mm_wt => get_mass_matrix(theta_space_id)
     ! Using modified velocity mass matrix if using damping layer
     if(dlayer_on) then
       mm_vel => get_mass_matrix(dl_id)
     else
       mm_vel => get_mass_matrix(w2_id)
-    end if 
+    end if
     !--------------------------------------------------------------------
     ! Pass updated fields into state
     !--------------------------------------------------------------------
@@ -453,7 +456,7 @@ contains
                                                    u_physics,  1, &
                                                    height_wth, 1, &
                                                    height_w3,  1, &
-                                                   chi ) )      
+                                                   chi ) )
       end if
 
       !--------------------------------------------------------------------
@@ -465,7 +468,7 @@ contains
       call slow_physics(du, dtheta, state_n(igh_t), state_n(igh_d),     &
                         state_n(igh_p), mr_n, mr_after_slow,            &
                         derived_fields, cloud_fields, twod_fields,      &
-                        radstep_fields, physics_incs,                   &
+                        radstep_fields, physics_incs, orography_fields, &
                         jules_ancils, jules_prognostics,                &
                         height_w3, height_wth, chi, timestep,           &
                         shear, delta, max_diff_smag,                    &
@@ -477,10 +480,9 @@ contains
       end if
 
       ! update state prognostics including map back of winds
-      call invoke(name="update_from_slow_physics",                      &
-                  inc_X_plus_Y(state_after_slow(igh_t), dtheta),        &
-                  inc_X_times_Y(du,dA),                                 &
-                  inc_X_plus_Y(state_after_slow(igh_u), du)             &
+      call invoke(name="update_from_slow_physics",               &
+                  inc_X_plus_Y(state_after_slow(igh_t), dtheta), &
+                  inc_X_plus_Y(state_after_slow(igh_u), du)      &
                   )
       call log_event( "slow physics: completed slow physics.", LOG_LEVEL_INFO )
     end if !use_physics
@@ -505,7 +507,7 @@ contains
         call log_event("Advecting prognostic fields...", LOG_LEVEL_INFO)
         call advection_alg(rhs_adv, state_after_slow, state_n(igh_u), state(igh_u), advected_u )
         if ( use_moisture )then
-          ! Advect mr_after_slow values with latest advecting velocity 
+          ! Advect mr_after_slow values with latest advecting velocity
           call advection_mr_alg(mr_inc, mr_after_slow, state_n(igh_u), state(igh_u))
           ! Update latest value for mr
           call add_bundle(mr_inc, mr_after_slow, mr, nummr)
@@ -514,7 +516,7 @@ contains
           end do
           call invoke(moist_dyn_factors_kernel_type(moist_dyn, mr))
         end if
-        call bundle_ax(dt, rhs_adv, rhs_adv, bundle_size) 
+        call bundle_ax(dt, rhs_adv, rhs_adv, bundle_size)
         call log_event("Finished advecting prognostic fields...", LOG_LEVEL_INFO)
       else
         if ( use_moisture ) call copy_bundle(mr_after_slow, mr, nummr)
@@ -526,14 +528,14 @@ contains
         u_star  => derived_fields%get_field('u_star')
         call invoke( setval_c(dtheta, 0.0_r_def), &
                      setval_c(du, 0.0_r_def) )
-        
+
         if (use_wavedynamics) then
           ! theta_star can be directly guessed from advection terms
           call invoke( X_plus_Y(inc(igh_t), rhs_adv(igh_t), rhs_n(igh_t)) )
           call mass_matrix_solver_alg(theta_star, inc(igh_t))
 
           ! Compute u_star = u_np1 + M^-1(-rhs_np1 + rhs_n + rhs_a)
-          call rhs_alg(rhs_np1, -varalpha*dt, state, state, moist_dyn, .false., dlayer_on)      
+          call rhs_alg(rhs_np1, -varalpha*dt, state, state, moist_dyn, .false., dlayer_on)
           call invoke( inc_aX_plus_Y(-1.0_r_def, rhs_np1(igh_u), rhs_n(igh_u)), &
                        inc_X_plus_Y(rhs_np1(igh_u), rhs_adv(igh_u)) )
           call mass_matrix_solver_alg(inc(igh_u), rhs_np1(igh_u) )
@@ -562,7 +564,7 @@ contains
                           state_n(igh_d), state_n(igh_p), mr_n,              &
                           delta, derived_fields, cloud_fields, twod_fields,  &
                           physics_incs, height_w3, height_wth,               &
-                          jules_ancils, jules_prognostics)
+                          jules_ancils, jules_prognostics, orography_fields)
 
         if (use_moisture) then
           do i_mr = 1, nummr
@@ -607,8 +609,8 @@ contains
           ! Reset reference state using latest guess
           iter = inner + (outer-1)*inner_iterations
           if ( mod(iter-1_i_def,reference_reset_freq) == 0_i_def ) then
-            call copy_bundle(state, reference_state, bundle_size) 
-            if (dry_static_adjust)call invoke( sort_ref_kernel_type(reference_state(igh_t) ) )  
+            call copy_bundle(state, reference_state, bundle_size)
+            if (dry_static_adjust)call invoke( sort_ref_kernel_type(reference_state(igh_t) ) )
             call compute_si_operators(reference_state)
           end if
 
@@ -764,12 +766,12 @@ contains
                                                             smag_stencil_depth, &
                                                             visc_h,             &
                                                             chi  ),             &
-                       tracer_smagorinsky_diff_kernel_type( mr_inc(imr_cl),     & 
+                       tracer_smagorinsky_diff_kernel_type( mr_inc(imr_cl),     &
                                                             mr(imr_cl),         &
                                                             smag_stencil_depth, &
                                                             visc_h,             &
                                                             chi  ) )
-        end if    
+        end if
         ! Momentum:
         call invoke( a_times_X( visc_m, mix_factor, delta ),                    &
                      inc_X_powint_n( visc_m, 2 ),                               &
@@ -791,12 +793,12 @@ contains
       if (use_moisture) then
         call invoke( inc_X_plus_bY( mr(imr_v), dt, mr_inc(imr_v) ),    &
                      inc_X_plus_bY( mr(imr_cl), dt, mr_inc(imr_cl) ) )
-      end if    
-    end if    
-    
+      end if
+    end if
+
     ! ----------------------------------------------------------------------
-    ! Call cloud scheme to generate cloud and latent heating after pressure 
-    ! changes are applied from the solver. First obtain current exner mapped 
+    ! Call cloud scheme to generate cloud and latent heating after pressure
+    ! changes are applied from the solver. First obtain current exner mapped
     ! on theta levels
     ! ----------------------------------------------------------------------
 
@@ -808,14 +810,14 @@ contains
       if (use_moisture) then
 
         call log_event( 'iter timestep: Running Cloud Scheme', LOG_LEVEL_INFO )
-  
+
         call dtheta_cld%initialise( vector_space = theta%get_function_space() )
         call invoke( setval_c(dtheta_cld, 0.0_r_def) )
         exner_theta => derived_fields%get_field('exner_in_wth')
         call map_physics_scalars(exner_theta, state(igh_p))
-  
+
         call cld_alg_step(  state(igh_p), exner_theta, state(igh_t),   &
-                   mr, cloud_fields, twod_fields, dtheta_cld)    
+                   mr, cloud_fields, twod_fields, dtheta_cld)
 
         call invoke(inc_X_plus_Y(state(igh_t), dtheta_cld))
 
@@ -835,13 +837,13 @@ contains
     ! Apply viscosity
     !--------------------------------------------------------------------
     if ( viscosity ) then
-      call log_event( 'Applying Viscosity', LOG_LEVEL_INFO ) 
+      call log_event( 'Applying Viscosity', LOG_LEVEL_INFO )
       call invoke_tracer_viscosity(   inc(igh_t), state(igh_t), 1, chi)
       call invoke_momentum_viscosity( inc(igh_u), state(igh_u), 1, chi)
       call invoke( inc_X_plus_bY( state(igh_t), dt, inc(igh_t) ), &
                    inc_X_plus_bY( state(igh_u), dt, inc(igh_u) ) )
-    end if    
-    
+    end if
+
     if (.not. (spinup_winds .and. timestep*dt <= spinup_period)) then
 
       !--------------------------------------------------------------------
@@ -873,7 +875,7 @@ contains
 
     call semi_implicit_solver_alg_final()
     call advection_alg_final()
- 
+
     call final_si_operators()
 
     if (allocated(state))            deallocate(state)

@@ -25,7 +25,7 @@ module initial_cloud_kernel_mod_test
     real(kind=r_def), allocatable :: answer_cfarea(:), answer_cfice(:),   &
                                      answer_cfliq(:),  answer_cfbulk(:),  &
                                      answer_rh_crit_wth(:), answer_cca(:),&
-                                     answer_ccw(:), cfarea(:),            & 
+                                     answer_ccw(:), cfarea(:),            &
                                      cfliq(:), cfice(:), cfbulk(:),       &
                                      rh_crit_wth(:), cca(:), ccw(:)
   contains
@@ -52,7 +52,8 @@ contains
                                          surface_none,        &
                                          microphysics_none,   &
                                          radiation_none,      &
-                                         spectral_gwd_none
+                                         spectral_gwd_none,   &
+                                         orographic_drag_none
 
     implicit none
 
@@ -79,7 +80,8 @@ contains
              microphysics = microphysics_none,     &
              spectral_gwd = spectral_gwd_none,     &
              surface = surface_none,               &
-             radiation = radiation_none )
+             radiation = radiation_none,           &
+             orographic_drag = orographic_drag_none )
 
     call feign_extrusion_config( method=method_uniform,   &
                                  domain_top=1000.0_r_def, &
@@ -182,7 +184,7 @@ contains
                              this%rh_crit_wth(:), &
                              this%cca(:),         &
                              this%ccw(:),         &
-                             ndf_wth,             & 
+                             ndf_wth,             &
                              undf_wth,            &
                              map_wth)
 

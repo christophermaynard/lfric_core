@@ -47,10 +47,12 @@ contains
   !>@param[in,out] physics_incs      Group of physics increments
   !>@param[in,out] jules_ancils      Ancillary fields for Jules
   !>@param[in,out] jules_prognostics Prognostic fields for Jules
+  !> @param[in]    orography_fields  Group of orography fields
   subroutine bl_imp_alg_step(dtheta_bl, du_bl, mr, outer, theta,              &
-                             mr_n, exner, height_w3, height_wth,              & 
+                             mr_n, exner, height_w3, height_wth,              &
                              derived_fields, cloud_fields, twod_fields,       &
-                             physics_incs, jules_ancils, jules_prognostics)
+                             physics_incs, jules_ancils, jules_prognostics,   &
+                             orography_fields)
 
     use interp_bl_kernel_mod, only: interp_bl_kernel_type
     use bl_imp_kernel_mod, only: bl_imp_kernel_type
@@ -72,6 +74,7 @@ contains
     ! Surface fields
     type( field_collection_type ), intent(inout) :: jules_ancils
     type( field_collection_type ), intent(inout) :: jules_prognostics
+    type( field_collection_type ), intent(in)    :: orography_fields
 
     ! Temporary fields unpacked fields from collections
     type( field_type ), pointer :: exner_in_wth  => null()
@@ -115,19 +118,19 @@ contains
     type( field_type ), pointer :: rdz_tq_bl => null()
     type( field_type ), pointer :: rdz_uv_bl => null()
 
-    type( field_type ), pointer :: tile_fraction      => null()
-    type( field_type ), pointer :: leaf_area_index    => null()
-    type( field_type ), pointer :: canopy_height      => null()
-    type( field_type ), pointer :: peak_to_trough_orog => null()
+    type( field_type ), pointer :: tile_fraction        => null()
+    type( field_type ), pointer :: leaf_area_index      => null()
+    type( field_type ), pointer :: canopy_height        => null()
+    type( field_type ), pointer :: peak_to_trough_orog  => null()
     type( field_type ), pointer :: silhouette_area_orog => null()
-    type( field_type ), pointer :: soil_carbon_content => null()
+    type( field_type ), pointer :: soil_carbon_content  => null()
 
     type( field_type ), pointer :: tile_temperature   => null()
     type( field_type ), pointer :: tile_snow_mass     => null()
     type( field_type ), pointer :: n_snow_layers      => null()
     type( field_type ), pointer :: snow_depth         => null()
-    type( field_type ), pointer :: canopy_water       => null() 
-    type( field_type ), pointer :: sw_up_tile         => null() 
+    type( field_type ), pointer :: canopy_water       => null()
+    type( field_type ), pointer :: sw_up_tile         => null()
     type( field_type ), pointer :: soil_temperature   => null()
     type( field_type ), pointer :: tile_heat_flux => null()
     type( field_type ), pointer :: tile_moisture_flux => null()
@@ -187,7 +190,7 @@ contains
     cf_liq => cloud_fields%get_field('liquid_fraction')
     cf_bulk => cloud_fields%get_field('bulk_fraction')
     rh_crit_wth => cloud_fields%get_field('rh_crit_wth')
-    
+
     ! Unpack the physics increments
     dt_bl => physics_incs%get_field('dt_bl')
     dmv_bl => physics_incs%get_field('dmv_bl')
@@ -209,11 +212,11 @@ contains
     rdz_uv_bl => physics_incs%get_field('rdz_uv_bl')
 
     ! Surface fields
+    peak_to_trough_orog  => orography_fields%get_field('peak_to_trough_orog')
+    silhouette_area_orog => orography_fields%get_field('silhouette_area_orog')
     tile_fraction   => jules_ancils%get_field('tile_fraction')
     leaf_area_index => jules_ancils%get_field('leaf_area_index')
     canopy_height   => jules_ancils%get_field('canopy_height')
-    peak_to_trough_orog => jules_ancils%get_field('peak_to_trough_orog')
-    silhouette_area_orog => jules_ancils%get_field('silhouette_area_orog')
     soil_carbon_content => jules_ancils%get_field('soil_carbon_content')
 
     tile_temperature   => jules_prognostics%get_field('tile_temperature')

@@ -51,6 +51,7 @@ module gungho_step_mod
   !> @param[inout] twod_fields 2D field collection for physics
   !> @param[inout] radstep_fields Collection of radiation timestep fields
   !> @param[inout] physics_incs Collection of physics increments
+  !> @param[in]    orography_fields Collection of orography fields
   !> @param[inout] jules_ancils Collection of Jules ancillaries
   !> @param[inout] jules_prognostics Collection of Jules prognostics
   !> @param[in] timestep number of current timestep
@@ -65,6 +66,7 @@ module gungho_step_mod
                   twod_fields,       &
                   radstep_fields,    &
                   physics_incs,      &
+                  orography_fields,  &
                   jules_ancils,      &
                   jules_prognostics, &
                   timestep)
@@ -82,6 +84,7 @@ module gungho_step_mod
     type( field_collection_type ), intent(inout) :: twod_fields
     type( field_collection_type ), intent(inout) :: radstep_fields
     type( field_collection_type ), intent(inout) :: physics_incs
+    type( field_collection_type ), intent(in)    :: orography_fields
     type( field_collection_type ), intent(inout) :: jules_ancils
     type( field_collection_type ), intent(inout) :: jules_prognostics
     integer(i_def),                intent(in)    :: timestep
@@ -109,10 +112,10 @@ module gungho_step_mod
     else  ! Not transport_only
       select case( method )
         case( method_semi_implicit )  ! Semi-Implicit
-          call iter_alg_step(u, rho, theta, exner, mr, moist_dyn,           &
-                             derived_fields, cloud_fields, twod_fields,     &
-                             radstep_fields, physics_incs,                  &
-                             jules_ancils, jules_prognostics,               &
+          call iter_alg_step(u, rho, theta, exner, mr, moist_dyn,            &
+                             derived_fields, cloud_fields, twod_fields,      &
+                             radstep_fields, physics_incs, orography_fields, &
+                             jules_ancils, jules_prognostics,                &
                              timestep, twod_mesh_id)
         case( method_rk )             ! RK
           call rk_alg_step(u, rho, theta, moist_dyn, exner)

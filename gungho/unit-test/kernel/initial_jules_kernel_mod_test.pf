@@ -25,7 +25,6 @@ module initial_jules_kernel_mod_test
       tile_fraction(:),      answer_tile_fraction(:),      &
       leaf_area_index(:),    answer_leaf_area_index(:),    &
       canopy_height(:),      answer_canopy_height(:),      &
-      sd_orog(:),            answer_sd_orog(:),            &
       soil_albedo(:),        answer_soil_albedo(:),        &
       soil_roughness(:),     answer_soil_roughness(:),     &
       albedo_obs_sw(:),      answer_albedo_obs_sw(:),      &
@@ -39,8 +38,6 @@ module initial_jules_kernel_mod_test
       sea_ice_thickness(:),  answer_sea_ice_thickness(:),  &
       sea_ice_pond_frac(:),  answer_sea_ice_pond_frac(:),  &
       sea_ice_pond_depth(:), answer_sea_ice_pond_depth(:), &
-      peak_to_trough_orog(:),answer_peak_to_trough_orog(:),&
-      silhouette_area_orog(:), answer_silhouette_area_orog(:), &
       soil_moist_wilt(:),    answer_soil_moist_wilt(:),    &
       soil_moist_crit(:),    answer_soil_moist_crit(:),    &
       soil_moist_sat(:),     answer_soil_moist_sat(:),     &
@@ -102,7 +99,6 @@ contains
     allocate( this%tile_fraction(undf_tile)      )
     allocate( this%leaf_area_index(undf_pft)     )
     allocate( this%canopy_height(undf_pft)       )
-    allocate( this%sd_orog(undf_2d)              )
     allocate( this%soil_albedo(undf_2d)          )
     allocate( this%soil_roughness(undf_2d)       )
     allocate( this%albedo_obs_sw(undf_2d)        )
@@ -116,8 +112,6 @@ contains
     allocate( this%sea_ice_thickness(undf_sice)  )
     allocate( this%sea_ice_pond_frac(undf_sice)  )
     allocate( this%sea_ice_pond_depth(undf_sice) )
-    allocate( this%peak_to_trough_orog(undf_2d)  )
-    allocate( this%silhouette_area_orog(undf_2d)  )
     allocate( this%soil_moist_wilt(undf_soil) )
     allocate( this%soil_moist_crit(undf_soil) )
     allocate( this%soil_moist_sat(undf_soil) )
@@ -140,7 +134,6 @@ contains
     allocate( this%answer_tile_fraction(undf_tile)      )
     allocate( this%answer_leaf_area_index(undf_pft)     )
     allocate( this%answer_canopy_height(undf_pft)       )
-    allocate( this%answer_sd_orog(undf_2d)              )
     allocate( this%answer_soil_albedo(undf_2d)          )
     allocate( this%answer_soil_roughness(undf_2d)       )
     allocate( this%answer_albedo_obs_sw(undf_2d)        )
@@ -154,8 +147,6 @@ contains
     allocate( this%answer_sea_ice_thickness(undf_sice)  )
     allocate( this%answer_sea_ice_pond_frac(undf_sice)  )
     allocate( this%answer_sea_ice_pond_depth(undf_sice) )
-    allocate( this%answer_peak_to_trough_orog(undf_2d)  )
-    allocate( this%answer_silhouette_area_orog(undf_2d)  )
     allocate( this%answer_soil_moist_wilt(undf_soil) )
     allocate( this%answer_soil_moist_crit(undf_soil) )
     allocate( this%answer_soil_moist_sat(undf_soil) )
@@ -189,7 +180,6 @@ contains
     deallocate( this%answer_tile_fraction,      this%tile_fraction,     &
                 this%answer_leaf_area_index,    this%leaf_area_index,   &
                 this%answer_canopy_height,      this%canopy_height,     &
-                this%answer_sd_orog,            this%sd_orog,           &
                 this%answer_soil_albedo,        this%soil_albedo,       &
                 this%answer_soil_roughness,     this%soil_roughness,    &
                 this%answer_albedo_obs_sw,      this%albedo_obs_sw,     &
@@ -203,8 +193,6 @@ contains
                 this%answer_sea_ice_thickness,  this%sea_ice_thickness, &
                 this%answer_sea_ice_pond_frac,  this%sea_ice_pond_frac, &
                 this%answer_sea_ice_pond_depth, this%sea_ice_pond_depth,&
-                this%answer_peak_to_trough_orog,this%peak_to_trough_orog,&
-                this%answer_silhouette_area_orog,this%silhouette_area_orog,&
                 this%answer_soil_moist_wilt,    this%soil_moist_wilt,   &
                 this%answer_soil_moist_crit,    this%soil_moist_crit,   &
                 this%answer_soil_moist_sat,     this%soil_moist_sat,    &
@@ -317,9 +305,7 @@ contains
     this%answer_canopy_height(map_pft(4)) =  1.26_r_def
     this%answer_canopy_height(map_pft(5)) =  1.59_r_def
 
-    this%answer_sd_orog(:)            = 0.0_r_def
-    this%answer_peak_to_trough_orog(:)= 0.0_r_def
-    this%answer_silhouette_area_orog(:)=0.0_r_def
+
     this%answer_soil_albedo(:)        = 0.1065_r_def
     this%answer_soil_roughness(:)     = 0.0_r_def
     this%answer_albedo_obs_sw(:)      = 0.0_r_def
@@ -372,9 +358,6 @@ contains
     this%tile_fraction(:)      = -9.0_r_def
     this%leaf_area_index(:)    = -9.0_r_def
     this%canopy_height(:)      = -9.0_r_def
-    this%sd_orog(:)            = -9.0_r_def
-    this%peak_to_trough_orog(:)= -9.0_r_def
-    this%silhouette_area_orog(:)= -9.0_r_def
     this%soil_albedo(:)        = -9.0_r_def
     this%soil_roughness(:)     = -9.0_r_def
     this%albedo_obs_sw(:)      = -9.0_r_def
@@ -411,9 +394,6 @@ contains
                             this%tile_fraction(:),         &
                             this%leaf_area_index(:),       &
                             this%canopy_height(:),         &
-                            this%sd_orog(:),               &
-                            this%peak_to_trough_orog(:),   &
-                            this%silhouette_area_orog(:),  &
                             this%soil_albedo(:),           &
                             this%soil_roughness(:),        &
                             this%albedo_obs_sw(:),         &
@@ -457,7 +437,6 @@ contains
     @assertEqual( this%answer_tile_fraction(:),      this%tile_fraction(:),      tol )
     @assertEqual( this%answer_leaf_area_index(:),    this%leaf_area_index(:),    tol )
     @assertEqual( this%answer_canopy_height(:),      this%canopy_height(:),      tol )
-    @assertEqual( this%answer_sd_orog(:),            this%sd_orog(:),            tol )
     @assertEqual( this%answer_soil_albedo(:),        this%soil_albedo(:),        tol )
     @assertEqual( this%answer_soil_roughness(:),     this%soil_roughness(:),     tol )
     @assertEqual( this%answer_albedo_obs_sw(:),      this%albedo_obs_sw(:),      tol )
@@ -471,8 +450,6 @@ contains
     @assertEqual( this%answer_sea_ice_thickness(:),  this%sea_ice_thickness(:),  tol )
     @assertEqual( this%answer_sea_ice_pond_frac(:),  this%sea_ice_pond_frac(:),  tol )
     @assertEqual( this%answer_sea_ice_pond_depth(:), this%sea_ice_pond_depth(:), tol )
-    @assertEqual( this%answer_peak_to_trough_orog(:), this%peak_to_trough_orog(:), tol )
-    @assertEqual( this%answer_silhouette_area_orog(:), this%silhouette_area_orog(:), tol )
     @assertEqual( this%answer_soil_moist_wilt(:), this%soil_moist_wilt(:), tol )
     @assertEqual( this%answer_soil_moist_crit(:), this%soil_moist_crit(:), tol )
     @assertEqual( this%answer_soil_moist_sat(:), this%soil_moist_sat(:), tol )

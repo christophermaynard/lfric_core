@@ -29,8 +29,8 @@ contains
 
   !> @brief Prepares the Jules fields, currently hard-wired but will be
   !>        read from ancils or dumps here
-  !> @param[out] jules_ancils      Ancillary fields for Jules
-  !> @param[out] jules_prognostics Prognostic fields for Jules
+  !> @param[inout] jules_ancils      Ancillary fields for Jules
+  !> @param[inout] jules_prognostics Prognostic fields for Jules
   subroutine init_jules_alg(jules_ancils, jules_prognostics)
 
     use initial_jules_kernel_mod, only: initial_jules_kernel_type
@@ -44,9 +44,6 @@ contains
     type( field_type ), pointer :: tile_fraction      => null()
     type( field_type ), pointer :: leaf_area_index    => null()
     type( field_type ), pointer :: canopy_height      => null()
-    type( field_type ), pointer :: sd_orog            => null()
-    type( field_type ), pointer :: peak_to_trough_orog => null()
-    type( field_type ), pointer :: silhouette_area_orog => null()
     type( field_type ), pointer :: soil_albedo        => null()
     type( field_type ), pointer :: soil_roughness     => null()
     type( field_type ), pointer :: albedo_obs_sw      => null()
@@ -69,8 +66,8 @@ contains
     type( field_type ), pointer :: snow_depth         => null()
     type( field_type ), pointer :: snow_soot          => null()
     type( field_type ), pointer :: surface_conductance => null()
-    type( field_type ), pointer :: canopy_water       => null() 
-    type( field_type ), pointer :: sw_up_tile         => null() 
+    type( field_type ), pointer :: canopy_water       => null()
+    type( field_type ), pointer :: sw_up_tile         => null()
     type( field_type ), pointer :: soil_temperature   => null()
     type( field_type ), pointer :: soil_moisture      => null()
     type( field_type ), pointer :: unfrozen_soil_moisture => null()
@@ -84,9 +81,6 @@ contains
     tile_fraction   => jules_ancils%get_field('tile_fraction')
     leaf_area_index => jules_ancils%get_field('leaf_area_index')
     canopy_height   => jules_ancils%get_field('canopy_height')
-    sd_orog         => jules_ancils%get_field('sd_orog')
-    peak_to_trough_orog => jules_ancils%get_field('peak_to_trough_orog')
-    silhouette_area_orog => jules_ancils%get_field('silhouette_area_orog')
     soil_albedo     => jules_ancils%get_field('soil_albedo')
     soil_roughness  => jules_ancils%get_field('soil_roughness')
     albedo_obs_sw   => jules_ancils%get_field('albedo_obs_sw')
@@ -141,7 +135,6 @@ contains
     ! Kernel to set fields to idealised, globally constant values
     call invoke(initial_jules_kernel_type(                                    &
       tile_fraction, leaf_area_index, canopy_height,                          &
-      sd_orog, peak_to_trough_orog, silhouette_area_orog,                     &
       soil_albedo, soil_roughness,                                            &
       albedo_obs_sw, albedo_obs_vis, albedo_obs_nir,                          &
       soil_moist_wilt, soil_moist_crit, soil_moist_sat, soil_cond_sat,        &

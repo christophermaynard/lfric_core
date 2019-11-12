@@ -13,6 +13,8 @@ module slow_physics_alg_mod
                                        radiation_socrates, &
                                        spectral_gwd,       &
                                        spectral_gwd_um,    &
+                                       orographic_drag,    &
+                                       orographic_drag_um, &
                                        boundary_layer,     &
                                        boundary_layer_um
 
@@ -26,9 +28,11 @@ module slow_physics_alg_mod
                                 microphysics_placement,      &
                                 radiation_placement,         &
                                 spectral_gwd_placement,      &
+                                orographic_drag_placement,   &
                                 microphysics_placement_slow, &
                                 radiation_placement_slow,    &
-                                spectral_gwd_placement_slow
+                                spectral_gwd_placement_slow, &
+                                orographic_drag_placement_slow
 
   ! PsyKAl PSYClone kernels
   use held_suarez_fv_kernel_mod,      only: held_suarez_fv_kernel_type
@@ -45,7 +49,8 @@ module slow_physics_alg_mod
 
   use fs_continuity_mod,         only: W2, W3
 
-  use runtime_constants_mod,     only: get_rmultiplicity
+  use runtime_constants_mod,     only: get_rmultiplicity, &
+                                       get_da_at_w2
 
   use field_bundle_mod,          only: clone_bundle, set_bundle_scalar,  &
                                        add_bundle
@@ -63,6 +68,7 @@ module slow_physics_alg_mod
   use radiation_alg_mod,         only: radiation_alg_step
   use radiation_config_mod,      only: l_planet_grey_surface
   use spectral_gwd_alg_mod,      only: spectral_gwd_alg_step
+  use orographic_drag_alg_mod,   only: orographic_drag_alg_step
   use bl_exp_alg_mod,            only: bl_exp_alg_step
 #endif
 
@@ -84,6 +90,7 @@ contains
   !> @param[in,out] twod_fields       Group of 2D fields
   !> @param[in,out] radstep_fields    Group of radiation timestep fields
   !> @param[in,out] physics_incs      Group of physics increments
+  !> @param[in]     orography_fields  Group of 2D orography fields
   !> @param[in,out] jules_ancils      Ancillary fields for Jules
   !> @param[in,out] jules_prognostics Prognostic fields for Jules
   !> @param[in]     height_w3         Height in w3
@@ -98,7 +105,7 @@ contains
   !> @param[in]     twod_mesh_id      Identifier given to the current 2d mesh
   subroutine slow_physics(du, dtheta, theta, rho, exner, mr_n, mr,       &
                           derived_fields, cloud_fields, twod_fields,     &
-                          radstep_fields, physics_incs,                  &
+                          radstep_fields, physics_incs, orography_fields,&
                           jules_ancils, jules_prognostics,               &
                           height_w3, height_wth, chi, timestep,          &
                           shear, delta, max_diff_smag,                   &
@@ -124,6 +131,7 @@ contains
     type( field_collection_type ), intent(inout) :: twod_fields
     type( field_collection_type ), intent(inout) :: radstep_fields
     type( field_collection_type ), intent(inout) :: physics_incs
+    type( field_collection_type ), intent(in)    :: orography_fields
 
     ! Surface fields
     type( field_collection_type ), intent(inout) :: jules_ancils
@@ -144,11 +152,13 @@ contains
     type( field_type ) :: dmr_mphys(nummr)
     type( field_type ) :: dtheta_mphys
     type( field_type ) :: du_tot_spectral_gwd, dtheta_spectral_gwd
+    type( field_type ) :: du_tot_orographic_drag, dtheta_orographic_drag
     type( field_type ) :: tile_lw_albedo
     type( field_type ) :: tile_sw_diffuse_albedo
     type( field_type ) :: tile_sw_direct_albedo
 
-    type(field_type),   pointer  :: w2_rmultiplicity => null() ! 1/multiplicity of w2
+    type( field_type ), pointer :: w2_rmultiplicity => null() ! 1/multiplicity of w2
+    type( field_type ), pointer :: dA => null() ! Areas of faces
 
     ! pointers to vector spaces
     type(function_space_type), pointer :: vector_space => null()
@@ -169,16 +179,19 @@ contains
     logical :: microphysics_done ! Flag to indicate that microphysics has been calculated
     logical :: radiation_done ! Flag to indicate that radiation has been calculated
     logical :: spectral_gwd_done ! Flag to indicate that spectral gravity wave drag has been calculated
+    logical :: orographic_drag_done ! Flag to indicate that orographic drag has been calculated
 
     if ( subroutine_timers ) call timer("slow_physics")
 
     w2_rmultiplicity => get_rmultiplicity( W2 ) ! 1/multiplicity of w2
+    dA => get_da_at_w2() ! area of faces at w2
 
     held_suarez_thermo_done=.false.
     held_suarez_wind_done=.false.
     microphysics_done=.false.
     radiation_done=.false.
     spectral_gwd_done=.false.
+    orographic_drag_done=.false.
 
     ! Some unpacking
     u_physics => derived_fields%get_field('u_physics')
@@ -253,7 +266,8 @@ contains
       call tile_lw_albedo%initialise(vector_space)
       if (.not.l_planet_grey_surface) then
         call rad_tile_alg_step(tile_sw_direct_albedo, tile_sw_diffuse_albedo,  &
-                               tile_lw_albedo, jules_ancils, jules_prognostics,&
+                               tile_lw_albedo, orography_fields,               &
+                               jules_ancils, jules_prognostics,                &
                                derived_fields, twod_fields, height_w3)
       end if
 
@@ -276,9 +290,30 @@ contains
       ! copy field properties
       call du%copy_field_properties(du_tot_spectral_gwd)
       call dtheta%copy_field_properties(dtheta_spectral_gwd)
-      call spectral_gwd_alg_step(du_tot_spectral_gwd, dtheta_spectral_gwd, derived_fields, twod_fields,      &
-                             theta, height_w3, height_wth)
+      call spectral_gwd_alg_step(du_tot_spectral_gwd, &
+                                 dtheta_spectral_gwd, &
+                                 derived_fields,      &
+                                 twod_fields,         &
+                                 theta,               &
+                                 height_w3,           &
+                                 height_wth)
       spectral_gwd_done=.true.
+    end if
+
+    ! Algorithm which calls the UM orographic gravity wave and blocking drag scheme
+    if (orographic_drag == orographic_drag_um .and. &
+        orographic_drag_placement == orographic_drag_placement_slow) then
+      call log_event( 'slow_physics: Running Orographic drag', LOG_LEVEL_INFO )
+      call du%copy_field_properties(du_tot_orographic_drag)
+      call dtheta%copy_field_properties(dtheta_orographic_drag)
+      call orographic_drag_alg_step(du_tot_orographic_drag, &
+                                    dtheta_orographic_drag, &
+                                    derived_fields,         &
+                                    orography_fields,       &
+                                    theta,                  &
+                                    height_w3,              &
+                                    height_wth)
+      orographic_drag_done=.true.
     end if
 
     if (boundary_layer == boundary_layer_um ) then
@@ -288,7 +323,7 @@ contains
                            max_diff_smag, height_w3, height_wth,              &
                            derived_fields, cloud_fields, twod_fields,         &
                            physics_incs, visc_m_blend, visc_h_blend,          &
-                           jules_ancils, jules_prognostics)
+                           jules_ancils, jules_prognostics, orography_fields)
     end if
 #endif
 
@@ -300,7 +335,8 @@ contains
     end if
 
     if (held_suarez_wind_done)then
-      call invoke(inc_X_plus_Y(du, du_hs))
+      call invoke(inc_X_times_Y(du_hs, dA), &
+                  inc_X_plus_Y(du, du_hs))
     end if
 
     if (microphysics_done) then
@@ -313,7 +349,13 @@ contains
     end if
 
     if (spectral_gwd_done) then
-      call invoke(inc_X_plus_Y(dtheta, dtheta_spectral_gwd))
+      call invoke(inc_X_plus_Y(dtheta, dtheta_spectral_gwd), &
+                  inc_X_plus_Y(du, du_tot_spectral_gwd))
+    end if
+
+    if (orographic_drag_done) then
+      call invoke(inc_X_plus_Y(dtheta, dtheta_orographic_drag), &
+                  inc_X_plus_Y(du, du_tot_orographic_drag))
     end if
 
     call dtheta%log_minmax(LOG_LEVEL_INFO, 'slow physics: dtheta' )

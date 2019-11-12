@@ -20,16 +20,13 @@ module initial_jules_kernel_mod
 
   private
 
-  !> Kernel metadata for Psyclone 
+  !> Kernel metadata for Psyclone
   type, public, extends(kernel_type) :: initial_jules_kernel_type
       private
-      type(arg_type) :: meta_args(40) = (/              &
+      type(arg_type) :: meta_args(37) = (/              &
           arg_type(GH_FIELD,   GH_WRITE,  ANY_SPACE_1), & ! tile_fraction
           arg_type(GH_FIELD,   GH_WRITE,  ANY_SPACE_2), & ! leaf_area_index
           arg_type(GH_FIELD,   GH_WRITE,  ANY_SPACE_2), & ! canopy_height
-          arg_type(GH_FIELD,   GH_WRITE,  ANY_SPACE_3), & ! sd_orog
-          arg_type(GH_FIELD,   GH_WRITE,  ANY_SPACE_3), & ! peak_to_trough_orog
-          arg_type(GH_FIELD,   GH_WRITE,  ANY_SPACE_3), & ! silhouette_area_orog
           arg_type(GH_FIELD,   GH_WRITE,  ANY_SPACE_3), & ! soil_albedo
           arg_type(GH_FIELD,   GH_WRITE,  ANY_SPACE_3), & ! soil_roughness
           arg_type(GH_FIELD,   GH_WRITE,  ANY_SPACE_3), & ! albedo_obs_sw
@@ -78,9 +75,6 @@ contains
   !> @param[out] tile_fraction      Surface tile fractions
   !> @param[out] leaf_area_index    Leaf Area Index
   !> @param[out] canopy_height      Canopy height
-  !> @param[out] sd_orog            Standard deviation of orography
-  !> @param[out] peak_to_trough_orog  Half of peak-to-trough height over root(2) of orography
-  !> @param[out] silhouette_area_orog Silhouette area of orography
   !> @param[out] soil_albedo        Snow-free soil albedo
   !> @param[out] soil_roughness     Bare soil surface roughness length
   !> @param[out] albedo_obs_sw      Observed snow-free shortwave albedo
@@ -134,9 +128,6 @@ contains
                                 tile_fraction,                 &
                                 leaf_area_index,               &
                                 canopy_height,                 &
-                                sd_orog,                       &
-                                peak_to_trough_orog,           &
-                                silhouette_area_orog,          &
                                 soil_albedo,                   &
                                 soil_roughness,                &
                                 albedo_obs_sw,                 &
@@ -204,10 +195,6 @@ contains
 
       real(kind=r_def), intent(out) :: leaf_area_index(undf_pft)
       real(kind=r_def), intent(out) :: canopy_height(undf_pft)
-
-      real(kind=r_def), intent(out) :: sd_orog(undf_2d)
-      real(kind=r_def), intent(out) :: peak_to_trough_orog(undf_2d)
-      real(kind=r_def), intent(out) :: silhouette_area_orog(undf_2d)
       real(kind=r_def), intent(out) :: soil_albedo(undf_2d)
       real(kind=r_def), intent(out) :: soil_roughness(undf_2d)
       real(kind=r_def), intent(out) :: albedo_obs_sw(undf_2d)
@@ -258,21 +245,12 @@ contains
       canopy_height(map_pft(4)) =  1.26_r_def
       canopy_height(map_pft(5)) =  1.59_r_def
 
-      ! Standard deviation of orography
-      sd_orog(map_2d(1)) = 0.0_r_def
-
-      ! Half of peak-to-trough height over root(2) of orography (ho2r2_orog_gb)
-      peak_to_trough_orog(map_2d(1)) = 0.0_r_def
-
-      ! Silhouette area of orography (sil_orog_land_gb)
-      silhouette_area_orog(map_2d(1)) = 0.0_r_def
-      
       ! Snow-free soil albedo (Cardington UKV value: albsoil_soilt)
       soil_albedo(map_2d(1)) = 0.1065_r_def
 
       ! Bare soil surface roughness length
       soil_roughness(map_2d(1)) = 0.0_r_def
-      
+
       ! Observed snow-free shortwave albedo
       albedo_obs_sw(map_2d(1)) = 0.0_r_def
 
@@ -348,7 +326,7 @@ contains
       ! Snow depth on tiles (snowdepth_surft)
       do i = 1, n_surf_tile
         snow_depth(map_tile(i)) = 0.0_r_def
-      end do      
+      end do
 
       ! Snow soot content (kg/kg)
       snow_soot(map_2d(1)) = 0.0_r_def

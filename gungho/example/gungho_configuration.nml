@@ -109,6 +109,7 @@
   microphysics_placement = 'slow'
   radiation_placement = 'slow'
   spectral_gwd_placement = 'slow'
+  orographic_drag_placement = 'slow'
 /
 
 &planet
@@ -287,4 +288,5 @@ convection='none'
 microphysics='none'
 cloud='none'
 spectral_gwd='none'
+orographic_drag='none'
 /

@@ -48,6 +48,8 @@ module gungho_model_data_mod
     type( field_collection_type ), public :: radstep_fields
     !> Increment fields used by the physics time-stepping schemes
     type( field_collection_type ), public :: physics_incs
+    !> Orography fields
+    type( field_collection_type ), public :: orography_fields
     !> Array of fields containing the moisture mixing ratios (auxiliary prognostic)
     type( field_type ), public :: mr(nummr)
     !> Array of fields containing the moist dynamics (auxiliary prognostic)
@@ -66,7 +68,7 @@ contains
   !>@brief Routine to destroy all the field collections in the working data set
   !> @param[inout] model_data The working data set for a model run
   subroutine finalise_model_data( model_data )
- 
+
     implicit none
 
       type(model_data_type), intent(inout) :: model_data
@@ -82,6 +84,7 @@ contains
       call model_data%twod_fields%clear()
       call model_data%radstep_fields%clear()
       call model_data%physics_incs%clear()
+      call model_data%orography_fields%clear()
       call model_data%fd_fields%clear()
 
       call log_event( 'finalise_model_data: all fields have been cleared', LOG_LEVEL_INFO )
