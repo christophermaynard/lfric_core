@@ -32,7 +32,6 @@ module dense_operator_alg_mod
   use mm_diagonal_kernel_mod,        only : mm_diagonal_kernel_type
   use operator_mod,                  only : operator_type
   use quadrature_xyoz_mod,           only : quadrature_xyoz_type
-  use runtime_constants_mod,         only : get_coordinates
   use vector_mod,                    only : abstract_vector_type
 
   implicit none
@@ -69,19 +68,21 @@ contains
   !> Construct a <code>dense_operator</code> object.
   !>
   !> @param [in] fv a field_vector of size 2
+  !> @param [in] chi the coordinate field
   !> @param [in] qr the quadrature object
   !> @return self the constructed dense operator
-  function dense_operator_constructor( fv, qr) result(self)
+  function dense_operator_constructor( fv, qr, chi) result(self)
     implicit none
-    class(abstract_vector_type), intent(in)    :: fv
-    type(quadrature_xyoz_type), intent(in) :: qr
+    class(abstract_vector_type),      intent(in) :: fv
+    type( field_type ), dimension(3), intent(in) :: chi
+    type(quadrature_xyoz_type),       intent(in) :: qr
+
     type(dense_operator_type) :: self
 
     type(function_space_type), pointer :: fs_wa => null()
     type(function_space_type), pointer :: fs_wb => null()
     integer(kind=i_def) :: mesh_id
     integer(kind=i_def) :: elem, fs_label
-    type(field_type), pointer :: chi(:) => null()
 
     select type (fv)
     type is (field_vector_type)
@@ -102,7 +103,6 @@ contains
        self%mass_w0 = operator_type(fs_wa, fs_wa)
        self%mass_w3 = operator_type(fs_wb, fs_wb)
 
-       chi => get_coordinates()
        call invoke(compute_mass_matrix_kernel_w0_type(self%mass_w0, chi, qr), &
             compute_mass_matrix_kernel_w3_type(self%mass_w3, chi, qr) )
 

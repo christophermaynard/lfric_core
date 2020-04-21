@@ -22,7 +22,6 @@ module init_solver_miniapp_mod
                                              LOG_LEVEL_INFO, &
                                              LOG_LEVEL_ERROR, &
                                              log_scratch_space
-  use runtime_constants_mod,          only : create_runtime_constants
   use init_solver_fields_alg_mod,     only : init_solver_fields_alg
   implicit none
 
@@ -33,10 +32,9 @@ contains
   !> @param[in] twod_mesh_id The id of the twod mesh
   !> @param[inout] chi An size 3 array of fields holding the coordinates of the mesh
   !> @param[inout] The field vector which is to be initialised.
-  subroutine init_solver_miniapp(mesh_id, twod_mesh_id, chi, fv )
+  subroutine init_solver_miniapp(mesh_id, chi, fv )
     implicit none
     integer(i_def), intent(in)             :: mesh_id
-    integer(i_def), intent(in)             :: twod_mesh_id
     type( field_type ), intent(inout)      :: chi(:)
     ! prognostic fields
     type( field_vector_type ), intent(inout) :: fv
@@ -64,9 +62,6 @@ contains
 
     write(log_scratch_space,'(A,E16.8)') "W0, W3 Fvector initiialised to 0.5/1.0 norm=",fv%norm()
     call log_event( log_scratch_space, LOG_LEVEL_INFO )
-
-
-    call create_runtime_constants(mesh_id, twod_mesh_id, chi)
 
     call log_event( 'solver miniapp initialised', LOG_LEVEL_INFO )
 

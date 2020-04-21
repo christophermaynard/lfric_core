@@ -37,12 +37,15 @@ contains
     character(*), intent(in) :: filename
 
     character(*), parameter :: &
-                            required_configuration(6) = ['finite_element      ', &
+                            required_configuration(9) = ['finite_element      ', &
                                                          'base_mesh           ', &
                                                          'multigrid           ', &
                                                          'planet              ', &
                                                          'extrusion           ', &
-                                                         'solver              ']
+                                                         'solver              ', &
+                                                         'partitioning        ', &
+                                                         'extrusion           ', &
+                                                         'logging             ']
 
     logical              :: okay
     logical, allocatable :: success_map(:)

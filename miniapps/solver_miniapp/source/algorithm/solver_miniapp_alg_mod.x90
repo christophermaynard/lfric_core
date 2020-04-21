@@ -13,13 +13,14 @@ module solver_miniapp_alg_mod
                                              log_scratch_space
   use field_mod,                      only : field_type
   use field_vector_mod,               only : field_vector_type
-  use finite_element_config_mod,      only : element_order
+  use finite_element_config_mod,      only : element_order, &
+                                             nqp_exact
   use fs_continuity_mod,              only : W2
   use function_space_collection_mod,  only : function_space_collection
   use operator_mod,                   only : operator_type
   use matrix_vector_kernel_mod,       only : matrix_vector_kernel_type
-  use runtime_constants_mod,          only : get_coordinates, get_qr
   use quadrature_xyoz_mod,            only : quadrature_xyoz_type
+  use quadrature_rule_gaussian_mod,   only : quadrature_rule_gaussian_type
   use linear_operator_mod,            only : abstract_linear_operator_type
   use dense_operator_alg_mod,         only : dense_operator_type
   use preconditioner_mod,             only : abstract_preconditioner_type
@@ -49,21 +50,26 @@ contains
   !> @param[inout] op the linear operator object
   !> @param[inout] solver the solver object
   !> @param[inout] fv_1  A prognostic field vector object
-  subroutine init_solver( prec, op, solver, fv_1 )
+  !> @param [in] chi the coordinate field
+  subroutine init_solver( prec, op, solver, fv_1, chi )
     implicit none
     class( abstract_preconditioner_type ),  allocatable, intent(inout) :: prec
     class( abstract_linear_operator_type ), allocatable, intent(inout) :: op
     class( abstract_iterative_solver_type), allocatable, intent(inout) :: solver
+    type( field_type ),                    dimension(3), intent( in )  :: chi
     type( field_vector_type ), intent(inout) :: fv_1
 
     ! locals
     ! quadrature object
-    type(quadrature_xyoz_type)       :: qr
+    type(quadrature_xyoz_type)            :: qr
+    type( quadrature_rule_gaussian_type ) :: quadrature_rule
     ! Coordinate fields
     type( field_vector_type)    :: diag
 
     write(log_scratch_space,'(A)') "solver_miniapp_alg:Initialising solver ..."
     call log_event( log_scratch_space, LOG_LEVEL_INFO )
+
+    qr = quadrature_xyoz_type(nqp_exact, quadrature_rule)
 
     select case ( preconditioner )
     case ( preconditioner_diagonal )
@@ -72,11 +78,10 @@ contains
 
        call log_event("preconditioner set to diagonal, computing the dense operator", LOG_LEVEL_INFO)
        ! make the operator first, there is only one ...
-       qr = get_qr()
        ! need to select type because the compiler doesn't know we have just assigned its type.
        select type( op )
        type is ( dense_operator_type)
-          op = dense_operator_type( fv_1, qr )
+          op = dense_operator_type( fv_1, qr, chi )
           ! don't forget to call the (copy) constructor on diag
           diag=fv_1
           call op%extract_diagonal(diag)
@@ -155,12 +160,13 @@ contains
 
   !> @details An algorithm for developing miniapps
   !> @param[inout] fv_1  A prognostic field vector object
-  subroutine solver_miniapp_alg(fv_1)
+  subroutine solver_miniapp_alg(fv_1, chi)
 
     implicit none
 
     ! Prognostic fields
-    type( field_vector_type ), intent( inout ) :: fv_1
+    type( field_vector_type ),        intent( inout ) :: fv_1
+    type( field_type ), dimension(3), intent( in )    :: chi
 
     type( field_vector_type )   :: rhs, ans
 
@@ -169,7 +175,7 @@ contains
     class( abstract_iterative_solver_type), allocatable :: solver
 
     call log_event( "solver miniapp: running algorithm", LOG_LEVEL_INFO )
-    call init_solver( prec, op, solver, fv_1 )
+    call init_solver( prec, op, solver, fv_1, chi )
 
     ! !choose a RHS use the copy constructor
     rhs = fv_1
