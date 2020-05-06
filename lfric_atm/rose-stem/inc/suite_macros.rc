@@ -136,8 +136,8 @@
 {%-           endif %}
 
 {%-           if publish %}
-            run_{{appName_res_label}}_{{label}}:finish  => publish_{{appName_res_label}}_{{label}}
-            publish_{{appName_res_label}}_{{label}}:finish => publish_node
+            run_{{appName_res_label}}_{{label}}:finish  => publish_{{appName_res_label}}_{{label}}_run
+            publish_{{appName_res_label}}_{{label}}_run:finish => publish_node
 {%-           endif %}
                     """
 {%-         endfor %}   {# i #}

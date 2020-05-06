@@ -225,7 +225,10 @@
         [[[environment]]]
             DESTINATION = {{publish_destination}}
 
-
+{%- if 'publish_node' in scheduledTasks %}
+    [[publish_node]]
+        script = true
+{%- endif %}
 
 {%- if 'publish_index' in scheduledTasks %}
     [[publish_index]]

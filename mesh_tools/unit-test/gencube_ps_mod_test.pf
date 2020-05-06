@@ -183,17 +183,18 @@ contains
 
 
     ! Node coordinates have expected values at specified points
-    @assertTrue(abs(coords(1,1) - 315.0_r_def) < eps, "Incorrect x-coord, node 1.")
-    @assertTrue(abs(coords(1,8) - 225.0_r_def) < eps, "Incorrect x-coord, node 8.")
-    @assertTrue(abs(coords(2,1) - 35.264389682755_r_def) < eps, "Incorrect y-coord, node 1.")
-    @assertTrue(abs(coords(2,8) + 35.264389682755_r_def) < eps, "Incorrect y-coord, node 8.")
+    @assertTrue(abs(coords(1,1) + 45.0_r_def) < eps,            "Incorrect longitude, node 1.")
+    @assertTrue(abs(coords(2,1) - 35.264389682755_r_def) < eps, "Incorrect latitude, node 1.")
 
-    ! Check face co-ordinates for cells 1 and 20
-    @assertTrue(abs(face_coords(1,1) - 360.0_r_def) < eps, "Incorrect x-coord, face 1.")
-    @assertTrue(abs(face_coords(1,6) - 135.0_r_def) < eps, "Incorrect x-coord, face 8.")
+    @assertTrue(abs(coords(1,8) + 135.0_r_def) < eps,           "Incorrect longitude, node 8.")
+    @assertTrue(abs(coords(2,8) + 35.264389682755_r_def) < eps, "Incorrect latitude, node 8.")
 
-    @assertTrue(abs(face_coords(2,1) -  0.0_r_def) < eps, "Incorrect y-coord, face 1.")
-    @assertTrue(abs(face_coords(2,6) + 90.0_r_def) < eps, "Incorrect y-coord, face 8.")
+    ! Check face co-ordinates for cells 1 and 6
+    @assertTrue(abs(face_coords(1,1)) < eps, "Incorrect longitude, face 1.")
+    @assertTrue(abs(face_coords(2,1)) < eps, "Incorrect latitude,  face 1.")
+
+    @assertTrue(abs(face_coords(1,6)) < eps, "Incorrect longitude, face 6.")
+    @assertTrue(abs(face_coords(2,6) +  90.0_r_def) < eps, "Incorrect latitude, face 6.")
 
     call csgen%clear()
 
@@ -347,13 +348,13 @@ contains
                                 test_coord_units_y )
 
     ! Node coordinates have expected values at specified points
-    @assertTrue(abs(coords(1,1) - 315.0_r_def) < eps, "Incorrect longitude, node 1.")
-    @assertTrue(abs(coords(1,8) -  90.0_r_def) < eps, "Incorrect latitude,  node 8.")
-    @assertTrue(abs(coords(2,1) -  35.264389682755_r_def) < eps, "Incorrect latitude, node 1.")
-    @assertTrue(abs(coords(2,8) + 0.0_r_def)   < eps, "Incorrect latitude, node 8.")
+    @assertTrue(abs(coords(1,1) + 45.0_r_def) < eps, "Incorrect longitude, node 1.")
+    @assertTrue(abs(coords(1,8) - 90.0_r_def) < eps, "Incorrect latitude,  node 8.")
+    @assertTrue(abs(coords(2,1) - 35.264389682755_r_def) < eps, "Incorrect latitude, node 1.")
+    @assertTrue(abs(coords(2,8) + 0.0_r_def)  < eps, "Incorrect latitude, node 8.")
 
     ! Check face co-ordinates for cells 1 and 6
-    @assertTrue(abs(face_coords(1,1) - 336.763262421756_r_def) < eps, "Incorrect longitude, cell 1.")
+    @assertTrue(abs(face_coords(1,1) + 23.236737578_r_def )    < eps, "Incorrect longitude, cell 1.")
     @assertTrue(abs(face_coords(1,6) - 113.236737578244_r_def) < eps, "Incorrect longitude, cell 6.")
 
     @assertTrue(abs(face_coords(2,1) - 21.5307797199715_r_def) < eps, "Incorrect latitude, cell 1.")
@@ -390,9 +391,9 @@ contains
     integer(i_def), parameter :: nmaps = 1
 
     ! Initial locations for points used:
-    ! (1,1)  = 315,  (2,1)  = acos(1/sqrt(2/3)
-    ! (1,10) =  45,  (2,10) = acos(1/sqrt(2/3)
-    ! (1,53) = 135,  (2,53) = acos(1/sqrt(2/3)
+    ! (1,1)  = 315,  (2,1)  = acos(1/sqrt(2/3)  ! -45
+    ! (1,10) =  45,  (2,10) = acos(1/sqrt(2/3)  !  45
+    ! (1,53) = 135,  (2,53) = acos(1/sqrt(2/3)  ! 135
 
     character(str_def), parameter :: target_mesh_names(nmaps) = ['unit_test_target']
     integer(i_def),     parameter :: target_edge_cells(nmaps) = [6]
@@ -425,14 +426,14 @@ contains
                                    test_coord_units_y)
 
     ! Mesh coordinates have expected values at specified points
-    ! (1,1) should go from  lon =315             -> 360 - acos(sqrt(2/3))
-    ! (2,1) should go from  lat =acos(sqrt(2/3)) -> 0
-    ! (1,10) should go from lon =45              -> acos(sqrt(2/3))
-    ! (2,10) should go from lat =acos(sqrt(2/3)  -> 0
-    ! (1,53) should go from lon =135             -> 180 - acos(sqrt(2/3))
-    ! (2,53) should go from lat =acos(sqrt(2/3)  -> 0
+    ! (1,1) should go from  lon = -45              -> 0 - acos(sqrt(2/3))
+    ! (2,1) should go from  lat =  acos(sqrt(2/3)) -> 0
+    ! (1,10) should go from lon =  45              -> acos(sqrt(2/3))
+    ! (2,10) should go from lat =  acos(sqrt(2/3)  -> 0
+    ! (1,53) should go from lon =  135             -> 180 - acos(sqrt(2/3))
+    ! (2,53) should go from lat =  acos(sqrt(2/3)  -> 0
 
-    @assertTrue(abs(coords_rot(1,1)  - 324.7356103172453_r_def) < eps, "Incorrect rotated mesh coordinates.")
+    @assertTrue(abs(coords_rot(1,1)  + 35.264389683_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(2,1)  - 0_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(1,10) - 35.2643896827546_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(2,10) - 0_r_def) < eps, "Incorrect rotated mesh coordinates.")
@@ -463,20 +464,18 @@ contains
                                    test_coord_units_y)
 
     ! Mesh coordinates have expected values at specified points
-    ! (1,1) should go from  lon =315             -> 0
+    ! (1,1) should go from  lon =-45             -> 0
     ! (2,1) should go from  lat =acos(sqrt(2/3)) -> acos(sqrt(2/3))
     ! (1,10) should go from lon =45              -> 90
     ! (2,10) should go from lat =acos(sqrt(2/3)) -> acos(sqrt(2/3))
     ! (1,53) should go from lon =135             -> 180
     ! (2,53) should go from lat =acos(sqrt(2/3)) -> -acos(sqrt(2/3))
 
-
-
-    @assertTrue(abs(coords_rot(1,1) -  360_r_def) < eps, "Incorrect rotated mesh coordinates.")
+    @assertTrue(abs(coords_rot(1,1) -  0.0_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(2,1) -  35.2643896827546_r_def) < eps, "Incorrect rotated mesh coordinates.")
-    @assertTrue(abs(coords_rot(1,10) - 90_r_def) < eps, "Incorrect rotated mesh coordinates.")
+    @assertTrue(abs(coords_rot(1,10) - 90.0_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(2,10) - 35.2643896827546_r_def) < eps, "Incorrect rotated mesh coordinates.")
-    @assertTrue(abs(coords_rot(1,53) - 180_r_def) < eps, "Incorrect rotated mesh coordinates.")
+    @assertTrue(abs(coords_rot(1,53) - 180.0_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(2,53) + 35.2643896827546_r_def) < eps, "Incorrect rotated mesh coordinates.")
 
 
@@ -504,16 +503,16 @@ contains
                                    test_coord_units_y)
 
     ! Mesh coordinates have expected values at specified points
-    ! (1,1) should go from  lon =315             -> 315
+    ! (1,1) should go from  lon =-45             -> -45
     ! (2,1) should go from  lat =acos(sqrt(2/3)) -> acos(sqrt(2/3))
-    ! (1,10) should go from lon =45              -> 315
+    ! (1,10) should go from lon =45              -> -45
     ! (2,10) should go from lat =acos(sqrt(2/3)) -> -acos(sqrt(2/3))
     ! (1,53) should go from lon =135             -> 135
     ! (2,53) should go from lat =acos(sqrt(2/3)) -> -acos(sqrt(2/3))
 
-    @assertTrue(abs(coords_rot(1,1)  - 315_r_def) < eps, "Incorrect rotated mesh coordinates.")
+    @assertTrue(abs(coords_rot(1,1)  + 45.0_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(2,1)  - 35.2643896827546_r_def) < eps, "Incorrect rotated mesh coordinates.")
-    @assertTrue(abs(coords_rot(1,10) - 315_r_def) < eps, "Incorrect rotated mesh coordinates.")
+    @assertTrue(abs(coords_rot(1,10) + 45.0_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(2,10) + 35.2643896827546_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(1,53) - 135_r_def) < eps, "Incorrect rotated mesh coordinates.")
     @assertTrue(abs(coords_rot(2,53) + 35.2643896827546_r_def) < eps, "Incorrect rotated mesh coordinates.")

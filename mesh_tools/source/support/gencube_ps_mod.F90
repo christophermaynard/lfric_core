@@ -879,6 +879,7 @@ subroutine calc_coords(self, vert_coords, coord_units_x, coord_units_y)
       zs = xs*t2
 
       call xyz2ll(xs, ys, zs, long, lat)
+
       vert_coords(1, vert) = long
       vert_coords(2, vert) = -lat
 
@@ -1048,7 +1049,7 @@ subroutine calc_coords(self, vert_coords, coord_units_x, coord_units_y)
   vert_coords(1, vert0) = long
   vert_coords(2, vert0) = -lat
 
-  ! Convert units from radians to degrees
+  ! Output units from xyz2ll are in radians
   coord_units_x = 'radians'
   coord_units_y = 'radians'
 
@@ -1281,6 +1282,7 @@ subroutine generate(self)
 
   if (self%nmaps > 0_i_def) call calc_global_mesh_maps(self)
 
+  ! Co-ord output from calc_coords in radians
   call calc_coords(self, self%vert_coords,   &
                          self%coord_units_x, &
                          self%coord_units_y)
@@ -1792,6 +1794,13 @@ subroutine get_metadata( self,               &
     if (present(maps_edge_cells_x)) maps_edge_cells_x  = self%target_edge_cells
     if (present(maps_edge_cells_x)) maps_edge_cells_y  = self%target_edge_cells
   end if
+
+  ! Periodicity is meaningless for the cubedsphere, though
+  ! the for the interface to be consistent we must included them.
+  ! This should change if we make a global mesh object which the
+  ! cubdedsphere and planar mesh are extensions of.
+  if (present(periodic_x)) periodic_x = .false.
+  if (present(periodic_y)) periodic_y = .false.
 
   return
 end subroutine get_metadata

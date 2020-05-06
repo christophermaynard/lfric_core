@@ -54,8 +54,6 @@ program summarise_ugrid
 
   integer(i_def) :: comm, total_ranks, local_rank
 
-  character(str_def) :: lchar_px, lchar_py
-
   ! Start up
   call initialise_comm(comm)
   call store_comm(comm)
