@@ -32,7 +32,8 @@
 #       as is with any other repository.
 #-----------------------------------------------------------------------------
 
-default_project_names=( gungho          \
+default_project_names=( infrastructure  \
+                        gungho          \
                         lfric_atm       \
                         mesh_tools      \
                         skeleton        \
@@ -42,7 +43,8 @@ default_project_names=( gungho          \
                         solver_miniapp  \
                         transport )
 
-default_app_names=( gungho:gungho                  \
+default_app_names=( infrastructure:none            \
+                    gungho:gungho                  \
                     gungho:mesh                    \
                     lfric_atm:lfric_atm            \
                     mesh_tools:mesh                \
@@ -51,7 +53,8 @@ default_app_names=( gungho:gungho                  \
                     gravity_wave:gravity_wave      \
                     io_dev:io_dev                  \
                     solver_miniapp:solver_miniapp  \
-                    transport:transport )
+                    transport:transport            \
+                    transport:mesh )
 
 while getopts "?" OPTION; do
   case $OPTION in
@@ -83,11 +86,12 @@ if [ $error_code != 0 ] ; then
 fi
 
 project_folder_location=(                  \
+  [infrastructure]=infrastructure          \
   [gungho]=gungho                          \
   [lfric_atm]=lfric_atm                    \
   [mesh_tools]=mesh_tools                  \
   [skeleton]=miniapps/skeleton             \
-  [diagnostics]=miniapps/diagnostics \
+  [diagnostics]=miniapps/diagnostics       \
   [gravity_wave]=miniapps/gravity_wave     \
   [io_dev]=miniapps/io_dev                 \
   [solver_miniapp]=miniapps/solver_miniapp \
@@ -96,11 +100,12 @@ project_folder_location=(                  \
 
 declare -A project_primary_app
 project_primary_app=(             \
+  [infrastructure]=none           \
   [gungho]=gungho                 \
   [lfric_atm]=lfric_atm           \
   [mesh_tools]=mesh               \
   [skeleton]=skeleton             \
-  [diagnostics]=diagnostics \
+  [diagnostics]=diagnostics       \
   [gravity_wave]=gravity_wave     \
   [io_dev]=io_dev                 \
   [solver_miniapp]=solver_miniapp \
@@ -109,8 +114,10 @@ project_primary_app=(             \
 ##########################################################################
 # Process the inputs, checking for duplicates.
 if [ "$#" == 0 ] ; then
-  projects_to_check=( ${default_project_names[@]} )
-  apps_to_check=${default_app_names[@]}
+
+  projects_to_check=( `echo ${default_project_names[@]} | tr ' ' '\012' | sort | uniq` )
+  apps_to_check=( `echo ${default_app_names[@]} | tr ' ' '\012' | sort | uniq` )
+
 else
   projects_to_check="$@"
   new_list=''
@@ -143,13 +150,24 @@ else
   new_list=''
   i=0
   for app in "$@" ; do
+
     IFS=: read a b <<< ${app}
-    if [ "$b" == '' ] ; then
-      new_list[$i]=${a}':'${project_primary_app[${a}]}
+
+    if [ "${b}" == "none" ] ; then
+        continue
+    fi
+
+    if [ "${b}" == '' ] ; then
+      if [ ${project_primary_app[${a}]} == "none" ] ; then
+        continue
+      else
+        new_list[$i]=${a}':'${project_primary_app[${a}]}
+      fi
     else
       new_list[$i]=${a}':'${b}
     fi
     i=`expr $i + 1`
+
   done
   apps_to_check=( `echo ${new_list[@]} | tr ' ' '\012' | sort | uniq` )
 
@@ -164,6 +182,22 @@ else
     fi
   done
 fi
+
+# Strip out any apps marked as "none"
+#===========================================
+unset new_list
+i=0
+for app_to_check in ${apps_to_check[@]} ; do
+
+  IFS=: read project app <<< ${app_to_check}
+  if [ ${app} == "none" ] ; then
+    continue
+  else
+  new_list[$i]=${project}':'${app}
+  fi
+  i=`expr $i + 1`
+done
+apps_to_check=( `echo ${new_list[@]} | tr ' ' '\012' | sort | uniq` )
 
 declare -A project_app_validation_results
 declare -A project_check_metadata_results
@@ -202,7 +236,7 @@ for project in ${projects_to_check[@]} ; do
   done
 done
 
-
+if [ ${#apps_to_check[@]} != 0 ] ; then
 # Validate the requested apps
 #===========================================
 echo ''
@@ -211,6 +245,11 @@ echo '==================================='
 for app_to_check in ${apps_to_check[@]} ; do
 
   IFS=: read project app <<< ${app_to_check}
+
+  if [ "${app}" == "none" ] ; then
+    echo -n
+    continue
+  fi
 
   echo -n [INFO] ${app_to_check} ...
 
@@ -230,6 +269,8 @@ for app_to_check in ${apps_to_check[@]} ; do
   project_app_location[${app_to_check}]=${project_folder_location[${project}]}/rose-stem/app/${app}
 
 done
+
+fi
 
 
 # Clean up tmp txt files
@@ -262,21 +303,35 @@ for project in ${projects_to_check[@]} ; do
   done
 done
 echo ''
-
+if [ ${#apps_to_check[@]} != 0 ] ; then
 echo ' Rose App validation'
 echo --------------------------
-for app in ${apps_to_check[@]} ; do
-  echo ${project_app_validation_results[$app]}
+for app_to_check in ${apps_to_check[@]} ; do
+  IFS=: read project app <<< ${app_to_check}
+
+  if [ "${app}" == "none" ] ; then
+    continue
+  fi
+
+  echo ${project_app_validation_results[$app_to_check]}
 done
 echo =============================================================
-echo ' NOTE: CHECK YOUR APPS IN THE ROSE EDITOR'
-echo '       (from working copy rootdir)'
+echo " NOTE: CHECK YOUR APPLICATION'S BASE ROSE CONFIGURATION"
+echo "       IN THE ROSE EDITOR (from working copy rootdir)."
 echo
 for app_to_check in ${apps_to_check[@]} ; do
+
+  IFS=: read project app <<< ${app_to_check}
+
+  if [ "${app}" == "none" ] ; then
+    continue
+  fi
+
   echo '  'rose edit -M ./ -C ${project_app_location[$app_to_check]}
 
 done
 echo
+fi
 echo =============================================================
 
 # Return to original location script was called from

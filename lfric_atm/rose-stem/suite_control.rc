@@ -8,6 +8,8 @@
 {%- set miniappFlag = False %}
 {%- set fix_enums   = False %}
 
+{%- set projectApps = ['lfric_atm'] %}
+
 {# Default setting to enable xios for all tasks in this suite. Is overrided if #}
 {# 'use_xios' ["True"|"False"] is specified in the specific task directives    #}
 {%- set default_use_xios = "True" %}
@@ -69,7 +71,7 @@
 
 {%- set groups = {
   'developer': [
-    'validate_rose_meta_graph("lfric_atm")',
+    'validate_rose_meta_graph("lfric_atm",appName="lfric_atm")',
     'check_style_graph()',
     'run_application("lfric_atm", "scm_dry_bl",
                      resolutions=[("BiP4x4-10000x10000",600.0)],

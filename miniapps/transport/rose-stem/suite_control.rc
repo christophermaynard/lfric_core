@@ -8,6 +8,8 @@
 {%- set miniappFlag = True %}
 {%- set fix_enums   = False %}
 
+{%- set projectApps = ['transport','mesh'] %}
+
 {# Default setting to enable xios for all tasks in this suite. Is overrided if #}
 {# 'use_xios' ["True"|"False"] is specified in the specific task directives    #}
 {%- set default_use_xios = "False" %}
@@ -44,7 +46,8 @@
 
 {%- set groups = {
 'developer': [
-    'validate_rose_meta_graph("transport")',
+    'validate_rose_meta_graph("transport",appName="transport")',
+    'validate_rose_meta_graph("transport",appName="mesh")',
     'check_style_graph()',
     'api_documentation_graph(publish=True)',
     'run_application("transport", "cosine_hill_45deg",

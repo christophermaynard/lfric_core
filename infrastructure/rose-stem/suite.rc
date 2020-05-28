@@ -249,8 +249,13 @@
 #############################################################################
 # TECHNICAL
 
-{{ validate_rose_meta_task(projectName, 'TECHNICAL',
-                           get_target_property(SECONDARY_TARGET, 'setup')) }}
+{%- for app in projectApps %}
+{{ validate_rose_meta_task( projectName, 'TECHNICAL',
+                            get_target_property(SECONDARY_TARGET,'setup'),
+                            appName=app ) }}
+{%- endfor %}
+
+
 {{ check_style_task('TECHNICAL',
                     get_target_property(SECONDARY_TARGET, 'setup')) }}
 

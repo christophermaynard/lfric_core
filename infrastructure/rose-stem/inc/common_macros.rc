@@ -46,18 +46,35 @@
 
 {# VALIDATE ROSE METADATA MACROS #}
 {#---------------------------------------------------------------------------#}
-{%- macro validate_rose_meta_graph( projectName ) %}
+{%- macro validate_rose_meta_graph( projectName, appName=None ) %}
+
+{%-   if appName %}
+{%-     set taskName=appName %}
+{%-   else %}
+{%-     set taskName=projectName %}
+{%-   endif %}
+
 {%-   if 'validate_metadata' in RUN_TECHNICAL %}
     [[[R1]]]
-    export_source => validate_{{projectName}}_rose-meta
+    export_source => validate_{{taskName}}_rose-meta
 {%-   endif %}
 {%- endmacro %}
 
-{%- macro validate_rose_meta_task( projectName, family, setup ) %}
-{%-   if 'validate_' + projectName + '_rose-meta' in scheduledTasks %}
-  [[validate_{{projectName}}_rose-meta]]
+{%- macro validate_rose_meta_task( projectName, family, setup,
+                                   appName=None ) %}
+
+{%-   if appName %}
+{%-     set taskName=appName %}
+{%-     set taskInput=projectName+':'+appName %}
+{%-   else %}
+{%-     set taskName=projectName %}
+{%-     set taskInput=projectName+':none' %}
+{%-   endif %}
+
+{%-   if 'validate_' + taskName + '_rose-meta' in scheduledTasks %}
+  [[validate_{{taskName}}_rose-meta]]
     inherit = {{family}}
-    script = $SOURCE_ROOT/bin/validate_rose_meta {{projectName}}
+    script = $SOURCE_ROOT/bin/validate_rose_meta {{taskInput}}
 {%-   endif %}
 {%- endmacro %}
 

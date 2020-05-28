@@ -5,11 +5,13 @@
 {%- set rdef_default  = "64" %}
 {%- set MAXRUNAHEAD     = 1 %}
 
+{%- set projectApps = ['mesh'] %}
+
 {# Set the  compiler debug profile for runs in this suite #}
 {# Options are ['fast-debug'|'full-debug'|'production'], omission defaults to 'fast-debug' #}
 {%- set run_application_profile = '' %}
 
-{%- set groups = {'developer': ['validate_rose_meta_graph("mesh_tools")',
+{%- set groups = {'developer': ['validate_rose_meta_graph("mesh_tools",appName="mesh")',
                                 'check_style_graph()',
                                 'check_compilers("fast-debug", publish=True)'],
                   'nightly'  : ['check_compilers("full-debug", publish=True)',

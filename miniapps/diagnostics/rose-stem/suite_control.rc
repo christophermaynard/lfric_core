@@ -3,6 +3,8 @@
 {%- set miniappFlag = True %}
 {%- set fix_enums   = False %}
 
+{%- set projectApps = ['diagnostics'] %}
+
 {# Set the  compiler debug profile for runs in this suite #}
 {# Options are ['fast-debug'|'full-debug'|'production'], omission defaults to 'fast-debug' #}
 {%- set run_application_profile = '' %}
@@ -85,7 +87,7 @@
 
 {%- set groups = {
 'developer': [
-    'validate_rose_meta_graph("diagnostics")',
+    'validate_rose_meta_graph("diagnostics",appName="diagnostics")',
     'check_style_graph()',
     'run_application("diagnostics", "default", resolutions=[("C3",)],
                      env={"nrun":5})',
