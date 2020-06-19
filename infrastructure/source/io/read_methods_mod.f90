@@ -8,7 +8,7 @@
 !>  @details Holds all routines for reading LFRic fields
 module read_methods_mod
 
-  use constants_mod,                 only: i_def, dp_xios
+  use constants_mod,                 only: i_def, dp_xios, str_def
   use field_mod,                     only: field_type, field_proxy_type
   use field_collection_mod,          only: field_collection_type, &
                                            field_collection_iterator_type
@@ -223,13 +223,18 @@ end subroutine read_field_single_face
 !> @details Iterate over a field collection and read each field
 !>          into a collection, if it is enabled for read
 !>@param[in,out] state -  the collection of fields to populate
-subroutine read_state(state)
+!>@param[in,optional] prefix A prefix to be added to the field name to create the XIOS field ID
+!>@param[in,optional] suffix A suffix to be added to the field name to create the XIOS field ID
+subroutine read_state(state, prefix, suffix)
 
   implicit none
 
   type( field_collection_type ), intent(inout) :: state
+  character( len=* ), optional,  intent(in)    :: prefix
+  character( len=* ), optional,  intent(in)    :: suffix
 
   type( field_collection_iterator_type) :: iter
+  character( str_def )                  :: xios_field_id
 
   class( field_parent_type ), pointer :: fld => null()
 
@@ -243,7 +248,13 @@ subroutine read_state(state)
           call log_event( &
             'Reading '//trim(adjustl(fld%get_name())), &
             LOG_LEVEL_INFO)
-          call fld%read_field(trim(adjustl(fld%get_name())))
+
+          ! Construct the XIOS field ID from the LFRic field name and optional arguments
+          xios_field_id = trim(adjustl(fld%get_name()))
+          if ( present(prefix) ) xios_field_id = trim(adjustl(prefix)) // trim(adjustl(xios_field_id))
+          if ( present(suffix) ) xios_field_id = trim(adjustl(xios_field_id)) // trim(adjustl(suffix))
+
+          call fld%read_field(xios_field_id)
         else
           call log_event( 'Read method for  '// trim(adjustl(fld%get_name())) // &
                           ' not set up', LOG_LEVEL_INFO )
@@ -253,7 +264,13 @@ subroutine read_state(state)
           call log_event( &
             'Reading '//trim(adjustl(fld%get_name())), &
             LOG_LEVEL_INFO)
-          call fld%read_field(trim(adjustl(fld%get_name())))
+
+          ! Construct the XIOS field ID from the LFRic field name and optional arguments
+          xios_field_id = trim(adjustl(fld%get_name()))
+          if ( present(prefix) ) xios_field_id = trim(adjustl(prefix)) // trim(adjustl(xios_field_id))
+          if ( present(suffix) ) xios_field_id = trim(adjustl(xios_field_id)) // trim(adjustl(suffix))
+
+          call fld%read_field(xios_field_id)
         else
           call log_event( 'Read method for  '// trim(adjustl(fld%get_name())) // &
                           ' not set up', LOG_LEVEL_INFO )

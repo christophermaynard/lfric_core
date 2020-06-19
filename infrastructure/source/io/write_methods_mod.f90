@@ -9,7 +9,7 @@
 module write_methods_mod
 
   use clock_mod,            only: clock_type
-  use constants_mod,        only: i_def, dp_xios, &
+  use constants_mod,        only: i_def, dp_xios, str_def, &
                                   str_max_filename, xios_max_int
   use field_mod,            only: field_type, field_proxy_type
   use field_parent_mod,     only: field_parent_proxy_type
@@ -432,13 +432,18 @@ end subroutine write_field_edge
 !> @details Iterate over a field collection and write each field
 !>          if it is enabled for write
 !>@param[in] state - a collection of fields
-subroutine write_state(state)
+!>@param[in,optional] prefix A prefix to be added to the field name to create the XIOS field ID
+!>@param[in,optional] suffix A suffix to be added to the field name to create the XIOS field ID
+subroutine write_state(state, prefix, suffix)
 
   implicit none
 
   type(field_collection_type), intent(inout) :: state
+  character(len=*), optional,  intent(in)    :: prefix
+  character(len=*), optional,  intent(in)    :: suffix
 
   type(field_collection_iterator_type) :: iter
+  character(str_def)                   :: xios_field_id
 
   class(field_parent_type), pointer :: fld => null()
 
@@ -452,7 +457,13 @@ subroutine write_state(state)
           write(log_scratch_space,'(3A,I6)') &
               "Writing ", trim(adjustl(fld%get_name()))
           call log_event(log_scratch_space,LOG_LEVEL_INFO)
-          call fld%write_field(trim(adjustl(fld%get_name())))
+
+          ! Construct the XIOS field ID from the LFRic field name and optional arguments
+          xios_field_id = trim(adjustl(fld%get_name()))
+          if ( present(prefix) ) xios_field_id = trim(adjustl(prefix)) // trim(adjustl(xios_field_id))
+          if ( present(suffix) ) xios_field_id = trim(adjustl(xios_field_id)) // trim(adjustl(suffix))
+
+          call fld%write_field(xios_field_id)
         else
 
           call log_event( 'Write method for '// trim(adjustl(fld%get_name())) // &
@@ -464,7 +475,13 @@ subroutine write_state(state)
           write(log_scratch_space,'(3A,I6)') &
               "Writing ", trim(adjustl(fld%get_name()))
           call log_event(log_scratch_space,LOG_LEVEL_INFO)
-          call fld%write_field(trim(adjustl(fld%get_name())))
+
+          ! Construct the XIOS field ID from the LFRic field name and optional arguments
+          xios_field_id = trim(adjustl(fld%get_name()))
+          if ( present(prefix) ) xios_field_id = trim(adjustl(prefix)) // trim(adjustl(xios_field_id))
+          if ( present(suffix) ) xios_field_id = trim(adjustl(xios_field_id)) // trim(adjustl(suffix))
+
+          call fld%write_field(xios_field_id)
         else
 
           call log_event( 'Write method for '// trim(adjustl(fld%get_name())) // &
