@@ -215,14 +215,14 @@ module gungho_model_mod
     !-------------------------------------------------------------------------
     if ( subroutine_timers ) then
       call init_timer()
-      call timer('gungho')
+      call timer(program_name)
     end if
 
     call log_event( 'Initialising '//program_name//' ...', LOG_LEVEL_ALWAYS )
 
     if ( subroutine_counters ) then
       allocate(halo_calls, source=count_type('halo_calls'))
-      call halo_calls%counter('gungho')
+      call halo_calls%counter(program_name)
     end if
 
     !-------------------------------------------------------------------------
@@ -427,12 +427,12 @@ module gungho_model_mod
     !-------------------------------------------------------------------------
 
     if ( subroutine_timers ) then
-      call timer('gungho')
+      call timer(program_name)
       call output_timer()
     end if
 
     if ( subroutine_counters ) then
-      call halo_calls%counter('gungho')
+      call halo_calls%counter(program_name)
       call halo_calls%output_counters()
     end if
 
