@@ -81,7 +81,10 @@
                                                     'sbr-si', 'sbr-cosmic', 'sbr_80km', 'sbr_85km',
                                                     'straka_x', 'straka_y', 'straka_y_ugrid', 'straka_x-cosmic',
                                                     'straka_200m', 'straka_100m', 'straka_50m', 'straka_25m',
-                                                    'hs', 'hs_short', 'gh_profile',
+                                                    'hs', 'hs_short',
+                                                    'gh_profile_omp1_6nodes', 'gh_profile_omp6_6nodes','gh_profile_omp9_6nodes',
+                                                    'gh_profile_omp1_12nodes','gh_profile_omp6_12nodes','gh_profile_omp9_12nodes',
+                                                    'gh_profile_omp1_24nodes','gh_profile_omp6_24nodes','gh_profile_omp9_24nodes',
                                                     'northpole_cosine_hill', 'equator_cosine_hill', 'corner_cosine_hill',
                                                     'baroclinic', 'baroclinic-si','baroclinic-stretch', 'static_isentropic_x', 'static_isentropic_y',
                                                     'static_isothermal_x', 'static_isothermal_y', 'static_isothermal_x_long',
@@ -243,9 +246,6 @@
                                                    "threads":1,
                                                    "wallclock":"00:06:00"}}},
                      plotstr="plot_zonal.py $NODAL_DATA_DIR/lfric_averages.nc $PLOT_DIR")',
-    'run_application("gungho", "gh_profile", resolutions=[("C32",900.0)],
-                                             env={"crun":1, "nrun":10,
-                                                  "directives":{"default":{"mpi_parts":1,"threads":1,"wallclock":"00:12:00"} } })',
     'check_compilers("gungho", "semi-implicit", "fast-debug",
                       resolution=("C12",10.0), publish=True )',
     'canned_test("gungho")'
@@ -463,7 +463,95 @@
                                                            "use_xios":"False",
                                                            "wallclock":"02:00:00"} } },
                              plotstr="cartesian_mountain_plot.py ' + appDiagStemName + ' $NODAL_DATA_DIR u 3 T000900 159 99 bell zoom_2 lines $PLOT_DIR")',
-            'publish_commit']
+            'publish_commit'],
+
+'performance' : ['run_application("gungho",
+                                  "gh_profile_omp1_6nodes",
+                                  resolutions=[("C192",1200.0)],
+                                  support_meshes=["C96","C48","C24"],
+                                  checkkgo=False,
+                                  env={"crun":1, "nrun":96,
+                                       "directives":{"default":{"mpi_parts":216,"threads":1,"use_xios":"False","wallclock":"00:40:00"} } 
+                                      }
+                                 )',
+                 'run_application("gungho",
+                                  "gh_profile_omp6_6nodes",
+                                  resolutions=[("C192",1200.0)],
+                                  support_meshes=["C96","C48","C24"],
+                                  checkkgo=False,
+                                  env={"crun":1, "nrun":96,
+                                       "directives":{"default":{"mpi_parts":36,"threads":6,"use_xios":"False","wallclock":"00:40:00"} } 
+                                      }
+                                 )',
+                 'run_application("gungho",
+                                  "gh_profile_omp9_6nodes",
+                                  resolutions=[("C192",1200.0)],
+                                  support_meshes=["C96","C48","C24"],
+                                  checkkgo=False,
+                                  env={"crun":1, "nrun":96,
+                                       "directives":{"default":{"mpi_parts":24,"threads":9,"use_xios":"False","wallclock":"00:45:00"} } 
+                                      }
+                                 )',
+                 'run_application("gungho",
+                                  "gh_profile_omp1_12nodes",
+                                  resolutions=[("C192",1200.0)],
+                                  support_meshes=["C96","C48","C24"],
+                                  checkkgo=False,
+                                  env={"crun":1, "nrun":96,
+                                       "directives":{"default":{"mpi_parts":432,
+                                                                "panel_decomp":' + custom + ',
+                                                                "xproc":12,"yproc":6,
+                                                                "threads":1,
+                                                                "use_xios":"False",
+                                                                "wallclock":"00:20:00"} }
+                                      }
+                                 )',
+                 'run_application("gungho",
+                                  "gh_profile_omp6_12nodes",
+                                  resolutions=[("C192",1200.0)],
+                                  support_meshes=["C96","C48","C24"],
+                                  checkkgo=False,
+                                  env={"crun":1, "nrun":96,
+                                       "directives":{"default":{"mpi_parts":72,"threads":6,"use_xios":"False","wallclock":"00:25:00"} } 
+                                      }
+                                 )',
+                 'run_application("gungho",
+                                  "gh_profile_omp9_12nodes",
+                                  resolutions=[("C192",1200.0)],
+                                  support_meshes=["C96","C48","C24"],
+                                  checkkgo=False,
+                                  env={"crun":1, "nrun":96,
+                                       "directives":{"default":{"mpi_parts":48,"threads":9,"use_xios":"False","wallclock":"00:25:00"} } 
+                                      }
+                                 )',
+                 'run_application("gungho",
+                                  "gh_profile_omp1_24nodes",
+                                  resolutions=[("C192",1200.0)],
+                                  support_meshes=["C96","C48","C24"],
+                                  checkkgo=False,
+                                  env={"crun":1, "nrun":96,
+                                       "directives":{"default":{"mpi_parts":864,"threads":1,"use_xios":"False","wallclock":"00:20:00"} } 
+                                      }
+                                 )',
+                 'run_application("gungho",
+                                  "gh_profile_omp6_24nodes",
+                                  resolutions=[("C192",1200.0)],
+                                  support_meshes=["C96","C48","C24"],
+                                  checkkgo=False,
+                                  env={"crun":1, "nrun":96,
+                                       "directives":{"default":{"mpi_parts":144,"threads":6,"use_xios":"False","wallclock":"00:20:00"} } 
+                                      }
+                                 )',
+                 'run_application("gungho",
+                                  "gh_profile_omp9_24nodes",
+                                  resolutions=[("C192",1200.0)],
+                                  support_meshes=["C96","C48","C24"],
+                                  checkkgo=False,
+                                  env={"crun":1, "nrun":96,
+                                       "directives":{"default":{"mpi_parts":96,"threads":9,"use_xios":"False","wallclock":"00:20:00"} } 
+                                      }
+                                 )',
+              ],
                  }
 %}
 
