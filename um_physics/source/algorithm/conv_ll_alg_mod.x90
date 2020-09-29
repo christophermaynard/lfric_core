@@ -3,8 +3,7 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
-!> @brief Interface to the UM convection scheme
+!> @brief Interface to the UM Lambert-Lewis convection scheme
 
 module conv_ll_alg_mod
 
@@ -16,13 +15,13 @@ module conv_ll_alg_mod
   use io_config_mod,        only: subroutine_timers
   use timer_mod,            only: timer
   ! xios output
-  use io_config_mod,      only: write_diag, use_xios_io
+  use io_config_mod,        only: write_diag, use_xios_io
+  use log_mod,              only: log_event, LOG_LEVEL_INFO
 
   implicit none
 
   private
-
-  public conv_ll_alg_step
+  public conv_ll_alg
 
 contains
 
@@ -35,8 +34,8 @@ contains
   !> @param[in]     derived_fields Group of derived fields
   !> @param[in,out] convection_fields Fields for convection scheme
   !> @param[in]     outer          Outer loop counter
-  subroutine conv_ll_alg_step(mr, exner, derived_fields, convection_fields,    &
-                              outer)
+  subroutine conv_ll_alg(mr, exner, derived_fields, convection_fields,    &
+                         outer)
 
     use conv_ll_kernel_mod, only: conv_ll_kernel_type
 
@@ -61,7 +60,9 @@ contains
     type( field_type ), pointer :: conv_rain => null()
     type( field_type ), pointer :: conv_snow => null()
 
-    if ( subroutine_timers ) call timer("conv_ll_alg_step")
+    if ( subroutine_timers ) call timer("conv_ll_alg")
+
+    call log_event( 'fast_physics: Running LL convection scheme', LOG_LEVEL_INFO )
 
     ! Unpack fields
     exner_in_wth => derived_fields%get_field('exner_in_wth')
@@ -89,8 +90,8 @@ contains
       call conv_snow%write_field('conv_snow')
     end if
 
-    if ( subroutine_timers ) call timer("conv_ll_alg_step")
+    if ( subroutine_timers ) call timer("conv_ll_alg")
 
-  end subroutine conv_ll_alg_step
+  end subroutine conv_ll_alg
 
 end module conv_ll_alg_mod

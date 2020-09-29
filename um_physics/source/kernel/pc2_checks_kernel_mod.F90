@@ -98,8 +98,6 @@ subroutine pc2_checks_code( nlayers,                   &
 
     use constants_mod, only: r_def, i_def, r_um, i_um
 
-    use log_mod,       only: log_event, LOG_LEVEL_ERROR
-
     !---------------------------------------
     ! UM modules
     !---------------------------------------

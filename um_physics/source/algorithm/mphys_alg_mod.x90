@@ -3,21 +3,21 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the Microphysics scheme
 
 module mphys_alg_mod
 
-   use field_mod,            only: field_type
-   use field_collection_mod, only: field_collection_type
+  use field_mod,            only: field_type
+  use field_collection_mod, only: field_collection_type
   ! xios output
-  use io_config_mod,      only: write_diag, use_xios_io
+  use io_config_mod,        only: write_diag, use_xios_io
+  use field_bundle_mod,     only: clone_bundle, set_bundle_scalar
+  use constants_mod,        only: r_def
 
-   implicit none
+  implicit none
 
-   private
-
-   public mphys_alg_step
+  private
+  public mphys_alg
 
 contains
   !>@brief Run the UM Microphysics scheme
@@ -42,11 +42,11 @@ contains
   !>@param[in,out] dcfl           Increment to liquid cloud fraction
   !>@param[in,out] dcff           Increment to ice cloud fraction
   !>@param[in,out] dbcf           Increment to bulk cloud fraction
-  subroutine mphys_alg_step( mr_n, theta, dry_rho_in_w3,                       &
-                             height_w3, height_wth, derived_fields,            &
-                             microphysics_fields, cloud_fields,                &
-                             aerosol_fields, dmr_mphys, theta_inc,             &
-                             dcfl, dcff, dbcf )
+  subroutine mphys_alg( mr_n, theta, dry_rho_in_w3,                       &
+                        height_w3, height_wth, derived_fields,            &
+                        microphysics_fields, cloud_fields,                &
+                        aerosol_fields, dmr_mphys, theta_inc,             &
+                        dcfl, dcff, dbcf )
 
     use mphys_kernel_mod, only: mphys_kernel_type
     use mr_indices_mod,   only: imr_v, imr_cl, imr_r, imr_ci, imr_g, nummr
@@ -56,6 +56,7 @@ contains
 
     use io_config_mod,             only: subroutine_timers
     use timer_mod,                 only: timer
+    use log_mod,                   only: log_event, LOG_LEVEL_INFO
 
     implicit none
 
@@ -89,7 +90,16 @@ contains
 
     type( field_type ), pointer :: cloud_drop_no_conc  => null()
 
-    if ( subroutine_timers ) call timer("mphys_alg_step")
+    if ( subroutine_timers ) call timer("mphys_alg")
+
+    call log_event( 'slow_physics: Running Microphysics', LOG_LEVEL_INFO )
+
+    call clone_bundle(mr_n, dmr_mphys, nummr)
+    call set_bundle_scalar(0.0_r_def, dmr_mphys, nummr)
+    call theta%copy_field_properties(theta_inc)
+    call theta%copy_field_properties(dcfl)
+    call theta%copy_field_properties(dcff)
+    call theta%copy_field_properties(dbcf)
 
     ! Unpack fields
     exner_in_wth       => derived_fields%get_field('exner_in_wth')
@@ -107,12 +117,7 @@ contains
 
     cloud_drop_no_conc => aerosol_fields%get_field('cloud_drop_no_conc')
 
-    call invoke( setval_c(theta_inc, 0.0_r_def),                               &
-                 setval_c(dcfl, 0.0_r_def),                                    &
-                 setval_c(dcff, 0.0_r_def),                                    &
-                 setval_c(dbcf, 0.0_r_def),                                    &
-                                                                               !
-                 mphys_kernel_type ( mr_n(imr_v), mr_n(imr_cl), mr_n(imr_ci),  &
+    call invoke( mphys_kernel_type ( mr_n(imr_v), mr_n(imr_cl), mr_n(imr_ci),  &
                                      mr_n(imr_r), mr_n(imr_g),                 &
                                      cf_in, cfl_in, cff_in,                    &
                                      u1_in_w3, u2_in_w3, w_physics,            &
@@ -147,8 +152,8 @@ contains
 
     end if
 
-    if ( subroutine_timers ) call timer("mphys_alg_step")
+    if ( subroutine_timers ) call timer("mphys_alg")
 
-  end subroutine mphys_alg_step
+  end subroutine mphys_alg
 
 end module mphys_alg_mod

@@ -3,7 +3,6 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the JULES surf_couple_extra scheme
 
 module jules_extra_alg_mod
@@ -30,8 +29,7 @@ module jules_extra_alg_mod
   implicit none
 
   private
-
-  public jules_extra_alg_step
+  public jules_extra_alg
 
 contains
 
@@ -51,10 +49,10 @@ contains
   !> @param[in]     canopy_evap         Canopy evaporation from land tiles (kg m-2 s-1)
   !> @param[in]     water_extraction    Extraction of water from each soil layer (kg m-2 s-1)
   !> @param[in,out] total_snowmelt      Surface plus canopy snowmelt rate (kg m-2 s-1)
-  subroutine jules_extra_alg_step(microphysics_fields, convection_fields,      &
-                                  surface_fields, soil_fields, snow_fields,    &
-                                  snow_sublimation, surf_heat_flux,            &
-                                  canopy_evap, water_extraction, total_snowmelt)
+  subroutine jules_extra_alg(microphysics_fields, convection_fields,      &
+                             surface_fields, soil_fields, snow_fields,    &
+                             snow_sublimation, surf_heat_flux,            &
+                             canopy_evap, water_extraction, total_snowmelt)
 
     use jules_extra_kernel_mod, only: jules_extra_kernel_type
 
@@ -126,7 +124,7 @@ contains
     type(function_space_type), pointer  :: tmp_space => null()
     procedure(write_interface), pointer :: write_diag_behaviour => null()
 
-    if ( subroutine_timers ) call timer('jules_extra_alg_step')
+    if ( subroutine_timers ) call timer('jules_extra_alg')
 
     ! Unpack precipitation fields
     ls_rain                => microphysics_fields%get_field('ls_rain')
@@ -276,8 +274,8 @@ contains
 
     end if
 
-    if ( subroutine_timers ) call timer('jules_extra_alg_step')
+    if ( subroutine_timers ) call timer('jules_extra_alg')
 
-  end subroutine jules_extra_alg_step
+  end subroutine jules_extra_alg
 
 end module jules_extra_alg_mod

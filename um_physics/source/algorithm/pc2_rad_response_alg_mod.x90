@@ -3,7 +3,6 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the PC2 cloud scheme
 
 module pc2_rad_response_alg_mod
@@ -14,8 +13,7 @@ module pc2_rad_response_alg_mod
    implicit none
 
    private
-
-   public pc2_rad_response_alg_step
+   public pc2_rad_response_alg
 
 contains
   !>@brief Run pc2_rad_response process
@@ -36,16 +34,16 @@ contains
   !>@param[out]    dcfl_pc2_inc   Liquid cloud fraction response in wth space
   !>@param[out]    dbcf_pc2_inc   Bulk cloud fraction   response in wth space
 
-  subroutine pc2_rad_response_alg_step( mr_n,           &
-                                        theta,          &
-                                        derived_fields, &
-                                        cloud_fields,   &
-                                        dtheta_forcing, &
-                                        dtheta_pc2_inc, &
-                                        dqv_pc2_inc,    &
-                                        dqcl_pc2_inc,   &
-                                        dcfl_pc2_inc,   &
-                                        dbcf_pc2_inc    )
+  subroutine pc2_rad_response_alg( mr_n,           &
+                                   theta,          &
+                                   derived_fields, &
+                                   cloud_fields,   &
+                                   dtheta_forcing, &
+                                   dtheta_pc2_inc, &
+                                   dqv_pc2_inc,    &
+                                   dqcl_pc2_inc,   &
+                                   dcfl_pc2_inc,   &
+                                   dbcf_pc2_inc    )
 
     use pc2_homogeneous_kernel_mod, only: pc2_homogeneous_kernel_type
     use mr_indices_mod,             only: imr_v, imr_cl, imr_ci, nummr
@@ -79,7 +77,7 @@ contains
     type( field_type ), pointer :: ice_fraction         => null()
     type( field_type ), pointer :: bulk_fraction        => null()
 
-    if ( subroutine_timers ) call timer("pc2_rad_response_alg_step")
+    if ( subroutine_timers ) call timer("pc2_rad_response_alg")
 
     ! Unpack fields
     liquid_fraction => cloud_fields%get_field('liquid_fraction')
@@ -122,8 +120,8 @@ contains
     ! N.B. We are not updating the variables that came in, just
     !      providing increments that need to be added on later.
 
-    if ( subroutine_timers ) call timer("pc2_rad_response_alg_step")
+    if ( subroutine_timers ) call timer("pc2_rad_response_alg")
 
-  end subroutine pc2_rad_response_alg_step
+  end subroutine pc2_rad_response_alg
 
 end module pc2_rad_response_alg_mod

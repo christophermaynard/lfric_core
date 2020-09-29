@@ -3,7 +3,6 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the UM diagnostic and prognostic cloud schemes
 
 module cld_alg_mod
@@ -18,14 +17,16 @@ module cld_alg_mod
   use cloud_config_mod,              only: scheme,                        &
                                            scheme_smith,                  &
                                            scheme_pc2
-  use pc2_initiation_alg_mod,        only: pc2_initiation_alg_step
-  use pc2_pressure_forcing_alg_mod,  only: pc2_pressure_forcing_alg_step
+  use pc2_initiation_alg_mod,        only: pc2_initiation_alg
+  use pc2_pressure_forcing_alg_mod,  only: pc2_pressure_forcing_alg
   use physics_mappings_alg_mod,      only: map_physics_scalars
   use moisture_conservation_alg_mod, only: moisture_conservation_alg
+  use log_mod,                       only: log_event, LOG_LEVEL_INFO
 
   implicit none
 
-  public cld_alg_step
+  private
+  public cld_alg
 
 contains
 
@@ -47,10 +48,10 @@ contains
   !>@param[in]     exner_n           (in)     exner at start of timestep
   !>@param[in]     mr_n              (in)     mixing ratios at start of timestep
   !>@param[in]     step              (in)     Timestep
-  subroutine cld_alg_step(theta_inc, mr, theta, exner, rho,         &
-                          derived_fields, turbulence_fields,        &
-                          cloud_fields,                             &
-                          theta_n, exner_n, mr_n, step)
+  subroutine cld_alg(theta_inc, mr, theta, exner, rho,         &
+                     derived_fields, turbulence_fields,        &
+                     cloud_fields,                             &
+                     theta_n, exner_n, mr_n, step)
 
     use cld_kernel_mod, only: cld_kernel_type
 
@@ -76,6 +77,8 @@ contains
 
     ! Variable below is for remapping from w3 to wth.
     type( field_type ) :: exner_wth                         ! Current value
+    type( field_type ) :: dtheta_pc2_inc_pres
+    type( field_type ) :: theta_updated
 
     type( field_type ), pointer :: cf_area  => null()
     type( field_type ), pointer :: cf_ice  => null()
@@ -84,13 +87,12 @@ contains
     type( field_type ), pointer :: ntml => null()
     type( field_type ), pointer :: cumulus => null()
     type( field_type ), pointer :: rh_crit => null()
-    type( field_type ), pointer :: exner_after_slow_wth => null()
 
-    type( field_type ) :: dtheta_pc2_inc_pres
-    type( field_type ) :: theta_updated
+    if ( subroutine_timers ) call timer('cld_alg')
 
-    if ( subroutine_timers ) call timer('cld_alg_step')
+    call log_event( 'End-of-timestep cloud update', LOG_LEVEL_INFO )
 
+    ! Map updated pressure into wtheta space
     call theta%copy_field_properties(exner_wth)
     call map_physics_scalars(exner_wth, exner)
 
@@ -112,18 +114,12 @@ contains
 
     else if (scheme == scheme_pc2) then
 
-      exner_after_slow_wth => cloud_fields%get_field('departure_exner_wth')
-
-      call theta%copy_field_properties(dtheta_pc2_inc_pres)
-      call invoke( setval_c(dtheta_pc2_inc_pres,   0.0_r_def) )
-
       ! Do PC2 Pressure forcing
-      call pc2_pressure_forcing_alg_step( mr,                      & ! IN
-                                          theta,                   & ! IN
-                                          exner_wth,               & ! IN wth
-                                          exner_after_slow_wth,    & ! IN
-                                          cloud_fields,            & ! INOUT
-                                          dtheta_pc2_inc_pres )      ! OUT
+      call pc2_pressure_forcing_alg( mr,                      & ! IN
+                                     theta,                   & ! IN
+                                     exner_wth,               & ! IN wth
+                                     cloud_fields,            & ! INOUT
+                                     dtheta_pc2_inc_pres )      ! OUT
 
       ! Temporary value of theta to be updated with increment from
       ! pressure forcing for use as input for initiation.
@@ -131,24 +127,26 @@ contains
       call invoke( inc_X_plus_Y(theta_updated, dtheta_pc2_inc_pres) )
 
       ! Now do PC2 initiation (and checks)
-      call pc2_initiation_alg_step( mr,                  & ! INOUT Current
-                                    theta_updated,       & ! IN    Updated
-                                    exner,               & ! IN    Current exner w3
-                                    exner_wth,           & ! IN    Current exner wth
-                                    mr_n,                & ! IN    Start of timestep
-                                    theta_n,             & ! IN    Start of timestep
-                                    derived_fields,      & ! IN
-                                    turbulence_fields,   &
-                                    cloud_fields,        & ! INOUT
-                                    theta_inc )            ! OUT
+      call pc2_initiation_alg( mr,                  & ! INOUT Current
+                               theta_updated,       & ! IN    Updated
+                               exner,               & ! IN    Current exner w3
+                               exner_wth,           & ! IN    Current exner wth
+                               mr_n,                & ! IN    Start of timestep
+                               theta_n,             & ! IN    Start of timestep
+                               derived_fields,      & ! IN
+                               turbulence_fields,   &
+                               cloud_fields,        & ! INOUT
+                               theta_inc )            ! OUT
 
       call invoke( inc_X_plus_Y(theta_inc,    dtheta_pc2_inc_pres) )
 
     end if
+
     if (write_conservation_diag) &
       call moisture_conservation_alg( step, rho, mr, 'After cloud' )
-    if ( subroutine_timers ) call timer('cld_alg_step')
 
-  end subroutine cld_alg_step
+    if ( subroutine_timers ) call timer('cld_alg')
+
+  end subroutine cld_alg
 
 end module cld_alg_mod

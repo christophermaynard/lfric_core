@@ -3,7 +3,6 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the PC2 cloud scheme
 
 module pc2_pressure_forcing_alg_mod
@@ -14,8 +13,7 @@ module pc2_pressure_forcing_alg_mod
    implicit none
 
    private
-
-   public pc2_pressure_forcing_alg_step
+   public pc2_pressure_forcing_alg
 
 contains
   !>@brief Run pc2_pressure_forcing process
@@ -27,16 +25,14 @@ contains
   !>@param[in,out] mr                   (in,out) Current mixing ratios
   !>@param[in]     theta                (in)     Current potential temperature
   !>@param[in]     exner_wth            (in)     Current exner function in wth
-  !>@param[in]     exner_after_slow_wth (in)     Exner at departure point
   !>@param[in]     cloud_fields         (in,out) Group of cloud fields
   !>@param[in,out] dtheta_pc2_inc       (in,out) Potential temperature response
 
-  subroutine pc2_pressure_forcing_alg_step( mr,                   &
-                                            theta,                &
-                                            exner_wth,            &
-                                            exner_after_slow_wth, &
-                                            cloud_fields,         &
-                                            dtheta_pc2_inc )
+  subroutine pc2_pressure_forcing_alg( mr,                   &
+                                       theta,                &
+                                       exner_wth,            &
+                                       cloud_fields,         &
+                                       dtheta_pc2_inc )
 
     use pc2_homogeneous_kernel_mod, only: pc2_homogeneous_kernel_type
     use mr_indices_mod,             only: imr_v, imr_cl, imr_ci, nummr
@@ -48,7 +44,6 @@ contains
     type( field_type ), intent( in )    :: theta
     type( field_type ), intent( inout ) :: mr ( nummr )
     type( field_type ), intent( in )    :: exner_wth
-    type( field_type ), intent( in )    :: exner_after_slow_wth
 
     type( field_collection_type ), intent(in) :: cloud_fields
 
@@ -67,18 +62,21 @@ contains
     type( field_type ), pointer :: liquid_fraction      => null()
     type( field_type ), pointer :: ice_fraction         => null()
     type( field_type ), pointer :: bulk_fraction        => null()
+    type( field_type ), pointer :: exner_after_slow_wth => null()
 
-    if ( subroutine_timers ) call timer("pc2_pressure_forcing_alg_step")
+    if ( subroutine_timers ) call timer("pc2_pressure_forcing_alg")
 
     ! Unpack fields
     liquid_fraction => cloud_fields%get_field('liquid_fraction')
     ice_fraction    => cloud_fields%get_field('ice_fraction')
     bulk_fraction   => cloud_fields%get_field('bulk_fraction')
+    exner_after_slow_wth => cloud_fields%get_field('departure_exner_wth')
 
     call theta%copy_field_properties(dtheta_forcing)
     call theta%copy_field_properties(dqv_forcing)
     call theta%copy_field_properties(dqcl_forcing)
 
+    call theta%copy_field_properties(dtheta_pc2_inc)
     call theta%copy_field_properties(dqv_pc2_inc)
     call theta%copy_field_properties(dqcl_pc2_inc)
     call theta%copy_field_properties(dcfl_pc2_inc)
@@ -121,8 +119,8 @@ contains
                         inc_X_plus_Y(liquid_fraction, dcfl_pc2_inc), &
                         inc_X_plus_Y(bulk_fraction,   dbcf_pc2_inc)  )
 
-    if ( subroutine_timers ) call timer("pc2_pressure_forcing_alg_step")
+    if ( subroutine_timers ) call timer("pc2_pressure_forcing_alg")
 
-  end subroutine pc2_pressure_forcing_alg_step
+  end subroutine pc2_pressure_forcing_alg
 
 end module pc2_pressure_forcing_alg_mod

@@ -3,7 +3,6 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the PC2 cloud scheme
 
 module pc2_conv_coupling_alg_mod
@@ -15,8 +14,7 @@ module pc2_conv_coupling_alg_mod
    implicit none
 
    private
-
-   public pc2_conv_coupling_alg_step
+   public pc2_conv_coupling_alg
 
 contains
   !>@brief Run pc2_conv_coupling
@@ -32,8 +30,8 @@ contains
   !>@param[in,out] convection_fields Fields for convection scheme
   !>@param[in,out] cloud_fields      Fields for cloud scheme
 
-  subroutine pc2_conv_coupling_alg_step( mr, derived_fields,                  &
-                                         convection_fields, cloud_fields )
+  subroutine pc2_conv_coupling_alg( mr, derived_fields,                  &
+                                    convection_fields, cloud_fields )
 
     use io_config_mod,                only: subroutine_timers
     use timer_mod,                    only: timer
@@ -63,7 +61,7 @@ contains
     type( field_type ), pointer :: dcff_conv       => null()
     type( field_type ), pointer :: dbcf_conv       => null()
 
-    if ( subroutine_timers ) call timer ("pc2_conv_coupling_alg_step")
+    if ( subroutine_timers ) call timer ("pc2_conv_coupling_alg")
 
     exner_wth       => derived_fields%get_field('exner_in_wth')
     theta_star      => derived_fields%get_field('theta_star')
@@ -106,8 +104,8 @@ contains
                   inc_X_plus_Y(ice_fraction,    dcff_conv),        &
                   inc_X_plus_Y(bulk_fraction,   dbcf_conv)         )
 
-    if ( subroutine_timers ) call timer ("pc2_conv_coupling_alg_step")
+    if ( subroutine_timers ) call timer ("pc2_conv_coupling_alg")
 
-  end subroutine pc2_conv_coupling_alg_step
+  end subroutine pc2_conv_coupling_alg
 
 end module pc2_conv_coupling_alg_mod

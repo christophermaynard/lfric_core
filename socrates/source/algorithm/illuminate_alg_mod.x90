@@ -18,14 +18,14 @@ private
 !------------------------------------------------------------------------------
 ! Contained functions/subroutines
 !------------------------------------------------------------------------------
-public :: illuminate_alg_step
+public :: illuminate_alg
 
 contains
 
 ! @param[in,out] radiation_fields Fields for radiation scheme
 ! @param[in]     timestep         Model timestep number
 
-subroutine illuminate_alg_step(radiation_fields, timestep)
+subroutine illuminate_alg(radiation_fields, timestep)
 
   implicit none
 
@@ -64,6 +64,6 @@ subroutine illuminate_alg_step(radiation_fields, timestep)
                  stellar_eqn_of_time_rts, &
                  latitude, longitude, timestep ) )
 
-end subroutine illuminate_alg_step
+end subroutine illuminate_alg
 
 end module illuminate_alg_mod

@@ -3,7 +3,6 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the PC2 cloud scheme
 
 module pc2_checks_alg_mod
@@ -14,8 +13,7 @@ module pc2_checks_alg_mod
    implicit none
 
    private
-
-   public pc2_checks_alg_step
+   public pc2_checks_alg
 
 contains
   !>@brief Run pc2_checks
@@ -40,17 +38,17 @@ contains
   !>@param[out]    dcff_pc2_inc     Ice cloud fraction    response in wth space
   !>@param[out]    dbcf_pc2_inc     Bulk cloud fraction   response in wth space
 
-  subroutine pc2_checks_alg_step( mr,             &
-                                  theta,          &
-                                  derived_fields, &
-                                  cloud_fields,   &
-                                  dtheta_pc2_inc, &
-                                  dqv_pc2_inc,    &
-                                  dqcl_pc2_inc,   &
-                                  dqcf_pc2_inc,   &
-                                  dcfl_pc2_inc,   &
-                                  dcff_pc2_inc,   &
-                                  dbcf_pc2_inc    )
+  subroutine pc2_checks_alg( mr,             &
+                             theta,          &
+                             derived_fields, &
+                             cloud_fields,   &
+                             dtheta_pc2_inc, &
+                             dqv_pc2_inc,    &
+                             dqcl_pc2_inc,   &
+                             dqcf_pc2_inc,   &
+                             dcfl_pc2_inc,   &
+                             dcff_pc2_inc,   &
+                             dbcf_pc2_inc    )
 
     use pc2_checks_kernel_mod, only: pc2_checks_kernel_type
     use mr_indices_mod,        only: imr_v, imr_cl, imr_ci, nummr
@@ -80,7 +78,7 @@ contains
     type( field_type ), pointer :: ice_fraction    => null()
     type( field_type ), pointer :: bulk_fraction   => null()
 
-    if ( subroutine_timers ) call timer("pc2_checks_alg_step")
+    if ( subroutine_timers ) call timer("pc2_checks_alg")
 
     ! Unpack fields
     exner_in_wth    => derived_fields%get_field('exner_in_wth')
@@ -114,8 +112,8 @@ contains
                                            dcff_pc2_inc,        &
                                            dbcf_pc2_inc ) )
 
-    if ( subroutine_timers ) call timer("pc2_checks_alg_step")
+    if ( subroutine_timers ) call timer("pc2_checks_alg")
 
-  end subroutine pc2_checks_alg_step
+  end subroutine pc2_checks_alg
 
 end module pc2_checks_alg_mod

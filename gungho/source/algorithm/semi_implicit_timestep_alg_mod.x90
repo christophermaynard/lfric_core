@@ -92,10 +92,9 @@ module semi_implicit_timestep_alg_mod
   ! Mixing settings
   use mixing_config_mod,          only: smagorinsky
 
-  ! Physics settings
-
+  ! Physics routines called
 #ifdef UM_PHYSICS
-  use cld_alg_mod,                only: cld_alg_step
+  use cld_alg_mod,                only: cld_alg
 #endif
 
   use timer_mod,                  only: timer
@@ -465,7 +464,6 @@ contains
                     )
         end if
 
-        call log_event( "semi_implicit_timestep: completed fast physics.", LOG_LEVEL_INFO )
       end if !use_physics
 
       if (use_wavedynamics) then
@@ -554,17 +552,14 @@ contains
     ! Call cloud scheme to generate cloud and latent heating after pressure
     ! changes are applied from the solver.
     ! ----------------------------------------------------------------------
-
 #ifdef UM_PHYSICS
     if (use_physics .and. cloud == cloud_um  ) then
-      call log_event( 'iter timestep: End-of-timestep cloud update', LOG_LEVEL_INFO )
-      call invoke( setval_c(dtheta, 0.0_r_def) )
-      call cld_alg_step( dtheta, mr,                                     &
-                         state(igh_t), state(igh_p), state(igh_d),       &
-                         derived_fields, turbulence_fields,              &
-                         cloud_fields,                                   &
-                         state_n(igh_t), state_n(igh_p), mr_n,           &
-                         clock%get_step() )
+      call cld_alg( dtheta, mr,                                     &
+                    state(igh_t), state(igh_p), state(igh_d),       &
+                    derived_fields, turbulence_fields,              &
+                    cloud_fields,                                   &
+                    state_n(igh_t), state_n(igh_p), mr_n,           &
+                    clock%get_step() )
       call invoke(inc_X_plus_Y(state(igh_t), dtheta))
     end if
 #endif

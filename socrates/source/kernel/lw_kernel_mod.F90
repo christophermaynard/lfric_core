@@ -262,7 +262,7 @@ subroutine lw_code(nlayers,                          &
     do i_tile = 1, n_surf_tile
       df_rtile = df_rtile + 1
       albedo_diff_tile(1, i_tile, i_band) &
-        = tile_lw_albedo(map_rtile(df_rtile))
+        = tile_lw_albedo(map_rtile(1)+df_rtile-1)
     end do
   end do
 

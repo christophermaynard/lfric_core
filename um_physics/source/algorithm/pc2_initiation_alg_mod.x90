@@ -3,7 +3,6 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the PC2 cloud scheme
 
 module pc2_initiation_alg_mod
@@ -14,8 +13,7 @@ module pc2_initiation_alg_mod
    implicit none
 
    private
-
-   public pc2_initiation_alg_step
+   public pc2_initiation_alg
 
 contains
   !>@brief Run pc2_initiation
@@ -39,16 +37,16 @@ contains
   !>@param[in]     cloud_fields      (in,out) Fields for cloud scheme
   !>@param[in,out] dtheta_pc2_inc    (in,out) Potential temperature response
 
-  subroutine pc2_initiation_alg_step( mr,                &
-                                      theta,             &
-                                      exner_w3,          &
-                                      exner_wth,         &
-                                      mr_n,              &
-                                      theta_n,           &
-                                      derived_fields,    &
-                                      turbulence_fields, &
-                                      cloud_fields,      &
-                                      dtheta_pc2_inc     )
+  subroutine pc2_initiation_alg( mr,                &
+                                 theta,             &
+                                 exner_w3,          &
+                                 exner_wth,         &
+                                 mr_n,              &
+                                 theta_n,           &
+                                 derived_fields,    &
+                                 turbulence_fields, &
+                                 cloud_fields,      &
+                                 dtheta_pc2_inc     )
 
     use pc2_initiation_kernel_mod, only: pc2_initiation_kernel_type
     use mr_indices_mod,            only: imr_v, imr_cl, imr_ci, nummr
@@ -88,7 +86,7 @@ contains
     type( field_type ), pointer :: zlcl_mixed      => null()
     type( field_type ), pointer :: r_cumulus       => null()
 
-    if ( subroutine_timers ) call timer("pc2_initiation_alg_step")
+    if ( subroutine_timers ) call timer("pc2_initiation_alg")
 
     ! Unpack fields
     exner_n_wth     => derived_fields%get_field('exner_in_wth')
@@ -149,8 +147,8 @@ contains
                 ! area_fraction = bulk_fraction
                 setval_X    (area_fraction,   bulk_fraction)     )
 
-    if ( subroutine_timers ) call timer("pc2_initiation_alg_step")
+    if ( subroutine_timers ) call timer("pc2_initiation_alg")
 
-  end subroutine pc2_initiation_alg_step
+  end subroutine pc2_initiation_alg
 
 end module pc2_initiation_alg_mod

@@ -3,7 +3,6 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the UM GLOMAP-mode aerosol climatology scheme
 
 module glomap_aerosol_alg_mod
@@ -19,8 +18,7 @@ module glomap_aerosol_alg_mod
   implicit none
 
   private
-
-  public glomap_aerosol_alg_step
+  public glomap_aerosol_alg
 
 contains
 
@@ -32,9 +30,9 @@ contains
   !>@param[in]     theta_in_wth          Potential temperature (theta) wth space
   !>@param[in]     exner_in_wth          Exner Pressure in theta space
 
-  subroutine glomap_aerosol_alg_step(aerosol_fields,                           &
-                                     theta_in_wth,                             &
-                                     exner_in_wth)
+  subroutine glomap_aerosol_alg(aerosol_fields,                           &
+                                theta_in_wth,                             &
+                                exner_in_wth)
 
     use glomap_aerosol_kernel_mod, only: glomap_aerosol_kernel_type
 
@@ -68,7 +66,7 @@ contains
     type( field_type ), pointer :: ait_ins_oc => null()
     type( field_type ), pointer :: cloud_drop_no_conc => null()
 
-    if ( subroutine_timers ) call timer('glomap_aerosol_alg_step')
+    if ( subroutine_timers ) call timer('glomap_aerosol_alg')
 
     ! Unpack fields
     nd_nuc_sol => aerosol_fields%get_field('nd_nuc_sol')
@@ -142,8 +140,8 @@ contains
       call cloud_drop_no_conc%write_field('cloud_drop_no_conc')
     end if
 
-    if ( subroutine_timers ) call timer('glomap_aerosol_alg_step')
+    if ( subroutine_timers ) call timer('glomap_aerosol_alg')
 
-  end subroutine glomap_aerosol_alg_step
+  end subroutine glomap_aerosol_alg
 
 end module glomap_aerosol_alg_mod

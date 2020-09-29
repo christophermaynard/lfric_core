@@ -89,8 +89,6 @@ contains
 
     use constants_mod, ONLY: r_def, i_def, r_um, i_um
 
-    use log_mod,       only: log_event, LOG_LEVEL_ERROR, LOG_LEVEL_INFO
-
     !---------------------------------------
     ! UM modules
     !---------------------------------------

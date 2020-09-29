@@ -3,7 +3,6 @@
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-------------------------------------------------------------------------------
-
 !> @brief Interface to the spectral gravity wave drag scheme
 
 module spectral_gwd_alg_mod
@@ -12,6 +11,7 @@ module spectral_gwd_alg_mod
    use field_collection_mod, only: field_collection_type
    use io_config_mod,        only: subroutine_timers
    use timer_mod,            only: timer
+   use log_mod,              only: log_event, LOG_LEVEL_INFO
 
   ! XIOS output
   use io_config_mod, only: write_diag, &
@@ -22,8 +22,7 @@ module spectral_gwd_alg_mod
   implicit none
 
   private
-
-  public :: spectral_gwd_alg_step
+  public :: spectral_gwd_alg
 
 contains
 
@@ -36,10 +35,10 @@ contains
   !> @param[in]     theta                Potential temperature in wtheta
   !> @param[in]     height_w3            Height on w3
   !> @param[in]     height_wth           Height on wtheta
-   subroutine spectral_gwd_alg_step(du_tot_spectral_gwd, dtheta_spectral_gwd, &
-                                    derived_fields, microphysics_fields,      &
-                                    convection_fields, theta,                 &
-                                    height_w3, height_wth)
+   subroutine spectral_gwd_alg(du_tot_spectral_gwd, dtheta_spectral_gwd, &
+                               derived_fields, microphysics_fields,      &
+                               convection_fields, theta,                 &
+                               height_w3, height_wth)
 
     ! spectral_gwd kernels
     use spectral_gwd_kernel_mod, only: spectral_gwd_kernel_type
@@ -80,7 +79,9 @@ contains
 
     type( field_type ), pointer :: latitude_w3 => null()
 
-    if ( subroutine_timers ) call timer("spectral_gwd_alg_step")
+    if ( subroutine_timers ) call timer("spectral_gwd_alg")
+
+    call log_event( 'slow_physics: Running spectral gravity wave drag', LOG_LEVEL_INFO )
 
     ! Unpack fields
     u1_in_w3 => derived_fields%get_field('u1_in_w3')
@@ -132,8 +133,8 @@ contains
       call dtemp_spectral_gwd%write_field('dtemp_spectral_gwd')
    end if
 
-   if ( subroutine_timers ) call timer("spectral_gwd_alg_step")
+   if ( subroutine_timers ) call timer("spectral_gwd_alg")
 
-  end subroutine spectral_gwd_alg_step
+  end subroutine spectral_gwd_alg
 
 end module spectral_gwd_alg_mod
