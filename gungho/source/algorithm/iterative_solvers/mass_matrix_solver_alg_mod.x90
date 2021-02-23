@@ -76,7 +76,7 @@ contains
                                            preconditioner_diagonal,            &
                                            preconditioner_none,                &
                                            diagnostic_norm
-    use runtime_constants_mod,       only: get_mass_matrix,                    &
+    use fem_constants_mod,           only: get_mass_matrix,                    &
                                            get_mass_matrix_diagonal,           &
                                            w0_id, w1_id, w2_id,                &
                                            w2v_id, w2h_id, w2_shift_id,        &

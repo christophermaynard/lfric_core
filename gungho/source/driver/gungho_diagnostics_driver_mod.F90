@@ -33,7 +33,7 @@ module gungho_diagnostics_driver_mod
   use section_choice_config_mod, only : cloud, cloud_um
   use log_mod,                   only : log_event, &
                                         LOG_LEVEL_INFO
-  use runtime_constants_mod, only: get_panel_id
+  use geometric_constants_mod,   only : get_panel_id
 
   implicit none
 

@@ -19,7 +19,7 @@ module cusph_cosmic_transport_alg_mod
                                                log_scratch_space, &
                                                LOG_LEVEL_INFO,    &
                                                LOG_LEVEL_TRACE
-  use runtime_constants_mod,             only: get_coordinates_xyz, &
+  use geometric_constants_mod,           only: get_coordinates_xyz, &
                                                get_coordinates, &
                                                get_panel_id, &
                                                get_cell_orientation

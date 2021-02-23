@@ -18,10 +18,10 @@ module gravity_wave_alg_mod
   ! Configuration options
   use finite_element_config_mod,      only: element_order
   use timestepping_config_mod,        only: dt, alpha
-  use runtime_constants_mod,          only: get_div,         &
+  use fem_constants_mod,              only: get_div,         &
                                             get_mass_matrix, &
-                                            w3inv_id,        &
-                                            get_mask
+                                            w3inv_id
+  use limited_area_constants_mod,     only: get_mask
   use initial_temperature_config_mod, only: bvf_square
   use gravity_wave_constants_config_mod, only: cs_square,     &
                                                b_space,       &

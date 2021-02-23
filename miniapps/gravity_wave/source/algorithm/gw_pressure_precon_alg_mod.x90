@@ -94,15 +94,15 @@ contains
   !> @brief Build the vertical Helmholtz matrix \f$H_z\f$ in CMA representation
   subroutine build_Hz(self)
 
-    use runtime_constants_mod,       only : get_div_v,                 &
-                                            get_div_h,                 &
-                                            get_mass_matrix,           &
-                                            w3_id,                     &
-                                            w3inv_id,                  &
-                                            w2h_id,                    &
-                                            w2v_id
-    use transpose_matrix_kernel_mod, only : transpose_matrix_kernel_type
-    use psykal_lite_mod,             only : invoke_enforce_operator_bc_kernel_type
+    use fem_constants_mod,            only : get_div_v,                 &
+                                             get_div_h,                 &
+                                             get_mass_matrix,           &
+                                             w3_id,                     &
+                                             w3inv_id,                  &
+                                             w2h_id,                    &
+                                             w2v_id
+    use transpose_matrix_kernel_mod,  only : transpose_matrix_kernel_type
+    use psykal_lite_mod,              only : invoke_enforce_operator_bc_kernel_type
 
     use columnwise_op_asm_kernel_mod,           only : columnwise_op_asm_kernel_type
     use columnwise_op_asm_diag_hmht_kernel_mod, only : columnwise_op_asm_diag_hmht_kernel_type

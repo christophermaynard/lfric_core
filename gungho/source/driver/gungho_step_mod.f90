@@ -16,11 +16,12 @@ module gungho_step_mod
   use constants_mod,                  only : i_def
   use diagnostics_calc_mod,           only : write_density_diagnostic
   use field_collection_mod,           only : field_collection_type
-  use gungho_model_data_mod,          only : model_data_type
   use field_mod,                      only : field_type
   use formulation_config_mod,         only : transport_only, &
                                              use_moisture, &
                                              use_physics
+  use geometric_constants_mod,        only : get_da_at_w2
+  use gungho_model_data_mod,          only : model_data_type
   use io_config_mod,                  only : write_conservation_diag, &
                                              write_minmax_tseries
   use log_mod,                        only : LOG_LEVEL_INFO
@@ -36,7 +37,6 @@ module gungho_step_mod
   use moisture_fluxes_alg_mod,        only : moisture_fluxes_alg
   use rk_alg_timestep_mod,            only : rk_alg_step
   use rk_transport_mod,               only : rk_transport_step
-  use runtime_constants_mod,          only : get_da_at_w2
   use timestepping_config_mod,        only : method, &
                                              method_semi_implicit, &
                                              method_rk

@@ -110,11 +110,11 @@ module mixed_schur_preconditioner_alg_mod
                                              get_rho_at_u, &
                                              get_helm_diag, &
                                              get_Hb_lumped_inv
-  use runtime_constants_mod,           only: get_mass_matrix, &
+  use fem_constants_mod,               only: get_mass_matrix, &
                                              get_div, &
                                              get_normalisation, &
-                                             w2_id, w3inv_id, wt_id, &
-                                             get_mask
+                                             w2_id, w3inv_id, wt_id
+  use limited_area_constants_mod,      only: get_mask
   use fs_continuity_mod,               only: W2, W3, Wtheta
   use boundaries_config_mod,           only: limited_area
 

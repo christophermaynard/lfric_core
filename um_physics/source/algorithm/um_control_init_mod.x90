@@ -9,14 +9,14 @@
 module um_control_init_mod
 
   ! LFRic namelists which have bee read
-  use extrusion_config_mod,    only : number_of_layers
-  use timestepping_config_mod, only : dt, outer_iterations
+  use extrusion_config_mod,        only : number_of_layers
+  use timestepping_config_mod,     only : dt, outer_iterations
 
   ! Other modules used
-  use constants_mod,           only : i_um, r_um, rmdi, i_def, r_def
-  use runtime_constants_mod,   only : get_delta_at_wtheta
-  use field_mod,               only : field_type
-  use planet_config_mod,       only : radius
+  use constants_mod,               only : i_um, r_um, rmdi, i_def, r_def
+  use physical_op_constants_mod,   only : get_delta_at_wtheta
+  use field_mod,                   only : field_type
+  use planet_config_mod,           only : radius
 
   implicit none
 
@@ -138,7 +138,7 @@ contains
     allocate(cos_theta_latitude(row_length,rows), source=1.0_r_um)
 
     ! This is a temporary method of calculating
-    ! the global mean of a field - once psyclone#489 is live, 
+    ! the global mean of a field - once psyclone#489 is live,
     ! it should be changed to use the built-in function
     delta => get_delta_at_wtheta()
     call delta%copy_field_properties(ones)

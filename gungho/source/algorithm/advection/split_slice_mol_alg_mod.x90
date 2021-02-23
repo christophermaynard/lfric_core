@@ -18,10 +18,10 @@ module split_slice_mol_alg_mod
   use function_space_collection_mod,      only: function_space_collection
   use finite_element_config_mod,          only: element_order
   use fs_continuity_mod,                  only: W2, W3
-  use runtime_constants_mod,              only: get_coordinates,               &
+  use geometric_constants_mod,            only: get_coordinates,               &
                                                 get_cell_orientation,          &
-                                                get_panel_id,                  &
-                                                get_detj_at_w2
+                                                get_panel_id
+  use fem_constants_mod,                  only: get_detj_at_w2
   use flux_direction_mod,                 only: z_direction
   use vert_conservative_cosmic_alg_mod,   only: vert_conservative_cosmic_alg
   use cosmic_divergence_alg_mod,          only: cosmic_divergence_alg
@@ -177,7 +177,7 @@ contains
   !=========================================================================================
 
   subroutine vertical_slice_transport( vert_wind, rho, dts, vert_scheme, order)
-    use runtime_constants_mod,               only: get_mass_matrix,  &
+    use fem_constants_mod,                   only: get_mass_matrix,  &
                                                    w3_id,            &
                                                    w3inv_id
     use operator_mod,                        only: operator_type

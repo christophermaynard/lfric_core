@@ -71,9 +71,9 @@ module transport_driver_mod
   use cosmic_threed_alg_mod,          only: cosmic_threed_transport_step
   use calc_dep_pts_alg_mod,           only: calc_dep_pts
   use density_inc_update_alg_mod,     only: density_inc_update_alg
-  use runtime_constants_mod,          only: get_detj_at_w2,                   &
-                                            get_detj_at_w2_shifted,           &
-                                            get_cell_orientation,             &
+  use fem_constants_mod,              only: get_detj_at_w2,                   &
+                                            get_detj_at_w2_shifted
+  use geometric_constants_mod,        only: get_cell_orientation,             &
                                             get_cell_orientation_shifted
   use yaxt,                           only: xt_initialize, xt_finalize
   use xios,                           only: xios_context_finalize, &

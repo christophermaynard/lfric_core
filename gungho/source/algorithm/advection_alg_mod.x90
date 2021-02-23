@@ -13,25 +13,25 @@ module advection_alg_mod
                                             LOG_LEVEL_ERROR,   &
                                             LOG_LEVEL_INFO
   use enforce_bc_kernel_mod,          only: enforce_bc_kernel_type
-  use runtime_constants_mod,          only: get_coordinates,                &
+  use geometric_constants_mod,        only: get_coordinates,                &
                                             get_panel_id,                   &
                                             get_coordinates_shifted,        &
-                                            get_div,                        &
+                                            get_cell_orientation,           &
+                                            get_cell_orientation_shifted,   &
+                                            get_shifted_mesh_id,            &
+                                            get_dA_at_w2,                   &
+                                            get_dA_at_w2_shifted,           &
+                                            get_dA_at_w2_double_layer
+  use fem_constants_mod,              only: get_div,                        &
                                             get_div_shifted,                &
                                             get_mass_matrix,                &
                                             get_mass_matrix_diagonal,       &
                                             get_inverse_lumped_mass_matrix, &
-                                            w3inv_id, wt_id,                &
-                                            w3inv_shift_id, w3_shift_id,    &
                                             get_detj_at_w2,                 &
                                             get_detj_at_w2_shifted,         &
-                                            get_cell_orientation,           &
-                                            get_cell_orientation_shifted,   &
-                                            get_shifted_mesh_id,            &
-                                            get_mr_to_sh_mass_integrals,    &
-                                            get_dA_at_w2,                   &
-                                            get_dA_at_w2_shifted,           &
-                                            get_dA_at_w2_double_layer
+                                            w3inv_id, wt_id,                &
+                                            w3inv_shift_id, w3_shift_id
+  use intermesh_constants_mod,        only: get_mr_to_sh_mass_integrals
   use field_mod,                      only: field_type
   use function_space_collection_mod,  only: function_space_collection
   use function_space_mod,             only: function_space_type
@@ -757,7 +757,7 @@ contains
     use quadrature_rule_gaussian_mod,   only: quadrature_rule_gaussian_type
     use quadrature_xyoz_mod,            only: quadrature_xyoz_type
     use enforce_bc_kernel_mod,          only: enforce_bc_kernel_type
-    use runtime_constants_mod,          only: get_rmultiplicity
+
     implicit none
 
     type(field_type), intent(inout)     :: rhs

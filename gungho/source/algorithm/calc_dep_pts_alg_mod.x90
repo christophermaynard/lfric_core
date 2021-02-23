@@ -29,7 +29,7 @@ module calc_dep_pts_alg_mod
                                                invoke_extract_xy,              &
                                                invoke_cosmic_departure_wind,   &
                                                invoke_correct_cosmic_wind
-  use runtime_constants_mod,             only: get_cell_orientation, &
+  use geometric_constants_mod,           only: get_cell_orientation, &
                                                get_coordinates,      &
                                                get_panel_id
   use log_mod,                           only: log_event,                      &

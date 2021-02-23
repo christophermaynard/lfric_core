@@ -288,13 +288,13 @@ contains
     use finite_element_config_mod,       only: element_order, &
                                                nqp_exact
     use function_space_mod,              only: function_space_type
-    use runtime_constants_mod,           only: get_coordinates, &
-                                               get_panel_id, &
+    use geometric_constants_mod,         only: get_coordinates, &
+                                               get_panel_id
+    use fem_constants_mod,               only: get_normalisation, &
+                                               get_rmultiplicity, &
                                                get_div, &
                                                get_mass_matrix, &
-                                               w2_id, w3inv_id, wt_id, dl_id, &
-                                               get_rmultiplicity, &
-                                               get_normalisation
+                                               w2_id, w3inv_id, wt_id, dl_id
     use derived_config_mod,              only: bundle_size
     use invert_local_operator_kernel_mod,only: invert_local_operator_kernel_type
     use field_indices_mod,               only: igh_u, igh_t, igh_d, igh_p

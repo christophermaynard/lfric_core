@@ -17,14 +17,14 @@ module lam_rhs_alg_mod
   use derived_config_mod,          only: bundle_size
   use si_operators_alg_mod,        only: get_ptheta2,       &
                                          get_rho_at_u
-  use runtime_constants_mod,       only: get_div,           &
+  use fem_constants_mod,           only: get_div,           &
                                          get_mass_matrix,   &
                                          w2_id, w3inv_id,   &
                                          wt_id,             &
                                          dl_id,             &
                                          w2_si_id,          &
-                                         get_normalisation, &
-                                         get_mask
+                                         get_normalisation
+  use limited_area_constants_mod,  only: get_mask
   use fs_continuity_mod,           only: W2, W3, Wtheta
   use field_mod,                   only: field_type
   use field_collection_mod,        only: field_collection_type

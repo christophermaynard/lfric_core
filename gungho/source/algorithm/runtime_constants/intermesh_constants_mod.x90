@@ -1,0 +1,180 @@
+!-------------------------------------------------------------------------------
+! (C) Crown copyright 2021 Met Office. All rights reserved.
+! For further details please refer to the file COPYRIGHT.txt
+! which you should have received as part of this distribution.
+!-------------------------------------------------------------------------------
+!
+!> @brief Provides constants used for mapping fields between meshes.
+!>
+!> @details This module controls the set-up of various objects that are
+!>          used for mapping fields between meshes, that do not change
+!>          during a run. These objects are accessed from this module
+!>          through appropriate 'get' functions.
+!-------------------------------------------------------------------------------
+
+module intermesh_constants_mod
+
+  ! Infrastructure
+  use constants_mod,                     only: i_def, r_def
+  use field_mod,                         only: field_type
+  use function_space_mod,                only: function_space_type
+  use function_space_collection_mod,     only: function_space_collection
+  use fs_continuity_mod,                 only: W2, W3, Wtheta
+  use io_config_mod,                     only: subroutine_timers
+  use log_mod,                           only: log_event, LOG_LEVEL_INFO
+  use mesh_mod,                          only: mesh_type
+  use quadrature_xyoz_mod,               only: quadrature_xyoz_type
+  use timer_mod,                         only: timer
+
+  ! Configuration
+  use finite_element_config_mod,         only: element_order, nqp_exact
+
+  ! Other algorithms
+  use fem_constants_mod,                 only: get_qr
+
+  ! Kernels
+  use mr_to_sh_mass_ints_kernel_mod,     only: mr_to_sh_mass_ints_kernel_type
+  use w3_to_sh_w3_ints_kernel_mod,       only: w3_to_sh_w3_ints_kernel_type
+
+  implicit none
+
+  private
+
+  ! Variables private to this module that can only be accessed by public
+  ! functions returning pointers to them
+
+  ! Double level mesh features
+  type(field_type), target, dimension(:), allocatable :: mr_to_sh_mass_integrals
+  type(field_type), target, dimension(:), allocatable :: w3_to_sh_w3_integrals
+
+  ! Public functions to create and access the module contents
+
+  public :: create_intermesh_constants
+  public :: final_intermesh_constants
+  public :: get_mr_to_sh_mass_integrals
+  public :: get_w3_to_sh_w3_integrals
+
+
+contains
+  !>@brief Subroutine to create the intermesh mapping constants
+  !> @param[in] mesh_id              Mesh_id
+  !> @param[in] chi_sph              spherically-based chi field
+  !> @param[in] panel_id             panel id
+  !> @param[in] shifted_mesh_id      Mesh_id for vertically shifted field
+  !> @param[in] shifted_chi          chi field for vertically shifted field
+  !> @param[in] double_level_mesh_id Mesh_id for double level field
+  !> @param[in] double_level_chi     chi field for double level field
+  subroutine create_intermesh_constants(mesh_id,               &
+                                        chi_sph,               &
+                                        panel_id,              &
+                                        shifted_mesh_id,       &
+                                        shifted_chi_sph,       &
+                                        double_level_mesh_id,  &
+                                        double_level_chi_sph)
+    implicit none
+
+    ! Arguments
+    integer(i_def),    intent(in) :: mesh_id
+    type(field_type),  intent(in) :: chi_sph(:)
+    type(field_type),  intent(in) :: panel_id
+    integer(i_def),    intent(in) :: shifted_mesh_id
+    type(field_type),  intent(in) :: shifted_chi_sph(:)
+    integer(i_def),    intent(in) :: double_level_mesh_id
+    type(field_type),  intent(in) :: double_level_chi_sph(:)
+
+    ! Internal variables
+    type(function_space_type),  pointer :: w3_fs       => null()
+    type(function_space_type),  pointer :: wtheta_fs   => null()
+    type(function_space_type),  pointer :: w3_shift_fs => null()
+    type(quadrature_xyoz_type), pointer :: qr
+    type(field_type)                    :: dummy_theta
+    type(field_type)                    :: dummy_w3_shifted
+
+    integer(i_def) :: i
+
+    if ( subroutine_timers ) call timer('intermesh_constants_alg')
+    call log_event( "Gungho: creating intermesh_constants", LOG_LEVEL_INFO )
+
+    qr => get_qr()
+
+    !=========== Create function spaces required for setup ===================!
+
+    w3_fs     => function_space_collection%get_fs( mesh_id, element_order, W3 )
+    wtheta_fs => function_space_collection%get_fs( mesh_id, element_order, Wtheta )
+    w3_shift_fs => function_space_collection%get_fs( shifted_mesh_id, element_order, W3 )
+
+    !======== Create transform matrix stuff for wtheta to shifted W3 ========!
+
+    allocate(mr_to_sh_mass_integrals(4))
+    do i = 1, 4
+      call mr_to_sh_mass_integrals(i)%initialise( vector_space = w3_fs )
+      call invoke( setval_c(mr_to_sh_mass_integrals(i), 0.0_r_def) )
+    end do
+
+    call dummy_theta%initialise( vector_space = wtheta_fs )
+    call invoke( mr_to_sh_mass_ints_kernel_type( mr_to_sh_mass_integrals, &
+                                                 double_level_chi_sph,    &
+                                                 panel_id,                &
+                                                 dummy_theta,             &
+                                                 qr                       &
+                                                    ) )
+    !========== Create transform matrix stuff for W3 to shifted W3 ==========!
+
+    allocate(w3_to_sh_w3_integrals(2))
+    do i = 1, 2
+      call w3_to_sh_w3_integrals(i)%initialise( vector_space = w3_fs )
+      call invoke( setval_c(w3_to_sh_w3_integrals(i), 0.0_r_def) )
+    end do
+
+    call dummy_w3_shifted%initialise( vector_space = w3_shift_fs )
+    call invoke( w3_to_sh_w3_ints_kernel_type( w3_to_sh_w3_integrals,     &
+                                               dummy_w3_shifted,          &
+                                               double_level_chi_sph,      &
+                                               panel_id,                  &
+                                               qr                         &
+                                              ) )
+
+    nullify( w3_fs  )
+    nullify( wtheta_fs )
+    nullify( w3_shift_fs )
+    nullify( qr )
+
+    call log_event( "Gungho: created intermesh_constants", LOG_LEVEL_INFO )
+    if ( subroutine_timers ) call timer('intermesh_constants_alg')
+
+  end subroutine create_intermesh_constants
+
+
+  !> @brief Returns a pointer to the Wtheta to shifted W3 ints
+  !> @return The integrals for transforming a mixing ratio in Wtheta
+  !> to a density in shifted W3
+  function get_mr_to_sh_mass_integrals() result(ptr)
+    implicit none
+    type(field_type), pointer :: ptr(:)
+    ptr => mr_to_sh_mass_integrals
+
+  end function get_mr_to_sh_mass_integrals
+
+  !> @brief Returns a pointer to the W3 to shifted W3 ints
+  !> @return The integrals for transforming from W3 to shifted W3
+  function get_w3_to_sh_w3_integrals() result(ptr)
+    implicit none
+    type(field_type), pointer :: ptr(:)
+    ptr => w3_to_sh_w3_integrals
+
+  end function get_w3_to_sh_w3_integrals
+
+
+  !> @brief Explicitly reclaim memory from module scope variables
+  !
+  subroutine final_intermesh_constants()
+
+    implicit none
+
+    if (allocated(mr_to_sh_mass_integrals)) deallocate(mr_to_sh_mass_integrals)
+    if (allocated(w3_to_sh_w3_integrals)) deallocate(w3_to_sh_w3_integrals)
+
+
+  end subroutine final_intermesh_constants
+
+end module intermesh_constants_mod

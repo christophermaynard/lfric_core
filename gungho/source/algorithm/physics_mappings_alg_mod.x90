@@ -14,13 +14,13 @@ module physics_mappings_alg_mod
   use function_space_mod,                    only: function_space_type
   use function_space_collection_mod,         only: function_space_collection
   use galerkin_projection_algorithm_mod,     only: galerkin_projection_algorithm
+  use geometric_constants_mod,               only: get_height
   use log_mod,                               only: LOG_LEVEL_ERROR, log_event, &
                                                    LOG_LEVEL_INFO
   use quadrature_xyoz_mod,                   only: quadrature_xyoz_type
   use quadrature_rule_gaussian_mod,          only: quadrature_rule_gaussian_type
   use physics_config_mod,                    only: sample_physics_scalars, &
                                                    sample_physics_winds
-  use runtime_constants_mod,                 only: get_height
   use sample_w3_to_wtheta_kernel_mod,        only: sample_w3_to_wtheta_kernel_type
   use sample_wtheta_to_w3_kernel_mod,        only: sample_wtheta_to_w3_kernel_type
 
@@ -108,7 +108,7 @@ contains
     use convert_hdiv_field_kernel_mod, only: convert_hdiv_field_kernel_type
     use nodal_coordinates_kernel_mod,  only: nodal_coordinates_kernel_type
     use psykal_builtin_light_mod,      only: invoke_convert_cart2sphere_vector
-    use runtime_constants_mod,         only: get_coordinates, get_coordinates_xyz, get_panel_id
+    use geometric_constants_mod,       only: get_coordinates, get_coordinates_xyz, get_panel_id
 
     implicit none
 

@@ -14,7 +14,7 @@ module oned_density_update_alg_mod
                                                LOG_LEVEL_TRACE
   use subgrid_config_mod,                only: dep_pt_stencil_extent,          &
                                                rho_approximation_stencil_extent
-  use runtime_constants_mod,             only: get_mass_matrix, w3_id
+  use fem_constants_mod,                 only: get_mass_matrix, w3_id
 
   use psykal_lite_mod,                   only: invoke_subgrid_coeffs,      &
                                                invoke_fv_mass_fluxes

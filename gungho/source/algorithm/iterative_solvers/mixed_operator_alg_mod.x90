@@ -83,13 +83,13 @@ contains
                                                   get_m3_exner_star, &
                                                   get_p3theta,       &
                                                   get_rho_at_u
-    use runtime_constants_mod,              only: get_div,           &
+    use fem_constants_mod,                  only: get_div,           &
                                                   get_mass_matrix,   &
                                                   w2_id, w3inv_id,   &
                                                   wt_id,             &
                                                   w2_si_id,          &
-                                                  get_normalisation, &
-                                                  get_mask
+                                                  get_normalisation
+    use limited_area_constants_mod,         only: get_mask
     use enforce_bc_kernel_mod,              only: enforce_bc_kernel_type
     use function_space_mod,                 only: function_space_type
     use fs_continuity_mod,                  only: W2, W2h, W2v, W3, Wtheta

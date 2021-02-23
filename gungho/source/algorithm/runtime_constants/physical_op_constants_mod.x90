@@ -1,0 +1,216 @@
+!-------------------------------------------------------------------------------
+! (C) Crown copyright 2021 Met Office. All rights reserved.
+! For further details please refer to the file COPYRIGHT.txt
+! which you should have received as part of this distribution.
+!-------------------------------------------------------------------------------
+!
+!> @brief Provides physical operators that are constants throughout a run.
+!>
+!> @details This module controls the set-up of various physical operators
+!>          and fields, that do not change during a run. These objects are
+!>          accessed from this module through appropriate 'get' functions.
+!-------------------------------------------------------------------------------
+
+module physical_op_constants_mod
+
+  ! Infrastructure
+  use constants_mod,                      only: i_def, r_def
+  use field_mod,                          only: field_type
+  use function_space_mod,                 only: function_space_type
+  use function_space_collection_mod,      only: function_space_collection
+  use fs_continuity_mod,                  only: W2, W3, Wtheta
+  use io_config_mod,                      only: subroutine_timers
+  use log_mod,                            only: log_event, LOG_LEVEL_INFO, &
+                                                LOG_LEVEL_ERROR
+  use mesh_mod,                           only: mesh_type
+  use operator_mod,                       only: operator_type
+  use quadrature_xyoz_mod,                only: quadrature_xyoz_type
+  use timer_mod,                          only: timer
+
+  ! Configuration
+  use finite_element_config_mod,          only: element_order,    &
+                                                nqp_exact,        &
+                                                rehabilitate
+  use formulation_config_mod,             only: rotating
+  use mixing_config_mod,                  only: smagorinsky
+  use timestepping_config_mod,            only: dt
+
+  ! Other algorithms
+  use geometric_constants_mod,            only: get_dA_at_w2
+  use fem_constants_mod,                  only: get_detj_at_w2, get_qr
+
+  ! PsyKAl PSYClone kernels
+  use calc_delta_at_wtheta_kernel_mod,    only: calc_delta_at_wtheta_kernel_type
+  use compute_coriolis_matrix_kernel_mod, only: compute_coriolis_matrix_kernel_type
+  use compute_geopotential_kernel_mod,    only: compute_geopotential_kernel_type
+
+  implicit none
+
+  private
+
+  ! Variables private to this module that can only be accessed by public
+  ! functions returning pointers to them
+
+  type(operator_type), target :: coriolis
+  type(field_type), target    :: geopotential
+  type(field_type), target    :: delta_at_wtheta
+  type(field_type), target    :: max_diff_wtheta
+
+  ! Public functions to create and access the module contents
+
+  public :: create_physical_op_constants
+  public :: final_physical_op_constants
+  public :: get_coriolis
+  public :: get_geopotential
+  public :: get_delta_at_wtheta
+  public :: get_max_diff
+
+contains
+  !>@brief Subroutine to create the physical operator constants
+  !> @param[in] mesh_id         Mesh_id
+  !> @param[in] chi_sph         spherically-based chi field
+  !> @param[in] panel_id        panel id
+  subroutine create_physical_op_constants(mesh_id, chi_sph, panel_id)
+    implicit none
+
+    ! Arguments
+    integer(i_def),   intent(in) :: mesh_id
+    type(field_type), intent(in) :: chi_sph(:)
+    type(field_type), intent(in) :: panel_id
+
+    ! Internal variables
+    type(function_space_type),  pointer :: w2_fs     => null()
+    type(function_space_type),  pointer :: w3_fs     => null()
+    type(function_space_type),  pointer :: wtheta_fs => null()
+    type(quadrature_xyoz_type), pointer :: qr
+    type(field_type),           pointer :: dA_at_w2 => null()
+    type(field_type),           pointer :: detj_at_w2 => null()
+    type(field_type)                    :: dx_at_w2
+
+    ! Auxiliary parameters for PSyclone builtins
+    integer(i_def), parameter :: i_minus_one = -1_i_def
+    integer(i_def) :: iconst
+    real(r_def) :: const
+
+
+    if ( subroutine_timers ) call timer('physical_op_constants_alg')
+    call log_event( "Gungho: creating physical_op_constants", LOG_LEVEL_INFO )
+
+    qr => get_qr()
+
+    !=========== Create function spaces required for setup ===================!
+
+    w2_fs     => function_space_collection%get_fs( mesh_id, element_order, W2 )
+    w3_fs     => function_space_collection%get_fs( mesh_id, element_order, W3 )
+    wtheta_fs => function_space_collection%get_fs( mesh_id, element_order, Wtheta )
+
+    !=================== Create geopotential field ============================!
+
+    call geopotential%initialise( vector_space = w3_fs )
+    if ( rehabilitate ) then
+      call invoke( compute_geopotential_kernel_type( geopotential, chi_sph ) )
+    else
+      call log_event( "Geopotential computation needs modifying for standard &
+                       W3 mapping", LOG_LEVEL_ERROR )
+    end if
+
+    !=================== Compute Coriolis operator ============================!
+
+    if ( rotating ) then
+      coriolis = operator_type( w2_fs, w2_fs )
+      call invoke( compute_coriolis_matrix_kernel_type(coriolis, chi_sph, panel_id, qr) )
+    end if
+
+    !========================== Diffusion objects =============================!
+
+    ! Need to define field properties outside IF test as the fields are passed
+    ! to the BL scheme, even if Smagorinsky is false
+    call dx_at_w2%initialise( vector_space = w2_fs )
+    call delta_at_wtheta%initialise( vector_space = wtheta_fs )
+    call max_diff_wtheta%initialise( vector_space = wtheta_fs )
+
+    detj_at_w2 => get_detj_at_w2()
+    dA_at_w2 => get_dA_at_w2()
+
+    call invoke( X_divideby_Y(dx_at_w2, detj_at_w2, dA_at_w2),&
+                 calc_delta_at_wtheta_kernel_type(delta_at_wtheta, dx_at_w2)  )
+
+    if (smagorinsky) then
+      ! calculate maximum diffusion coefficient allowed in this run for stability
+      ! based on UMDP 28 equation 32: max_diff = dx^2/(8*dt)
+      const = 0.125_r_def/dt
+      iconst = 2_i_def
+      call delta_at_wtheta%copy_field(max_diff_wtheta)
+      call invoke( inc_X_powint_n( max_diff_wtheta, iconst ),  &
+                   inc_a_times_X( const, max_diff_wtheta )     &
+                 )
+
+    end if
+
+    nullify( w2_fs  )
+    nullify( w3_fs  )
+    nullify( wtheta_fs )
+    nullify( detj_at_w2 )
+    nullify( dA_at_w2 )
+    nullify( qr )
+
+    call log_event( "Gungho: created physical_op_constants", LOG_LEVEL_INFO )
+    if ( subroutine_timers ) call timer('physical_op_constants_alg')
+
+  end subroutine create_physical_op_constants
+
+
+  !> @brief Returns the Coriolis operator
+  !> @return The Coriolis operator
+  function get_coriolis() result(coriolis_op)
+    implicit none
+    type(operator_type), pointer :: coriolis_op
+    if ( rotating ) then
+      coriolis_op => coriolis
+    else
+      call log_event( "Coriolis operator not computed for nonrotating flow", &
+                      LOG_LEVEL_ERROR)
+    end if
+  end function get_coriolis
+
+  !> @brief Returns a pointer to the geopotential field
+  !> @return The geopotential field
+  function get_geopotential() result(phi)
+    implicit none
+    type(field_type), pointer :: phi
+    phi => geopotential
+
+  end function get_geopotential
+
+  !> @brief Returns the delta_at_wtheta values at Wtheta dof locations
+  !> @return The delta_at_wtheta field
+  function get_delta_at_wtheta() result(delta)
+    implicit none
+    type(field_type), pointer :: delta
+    delta => delta_at_wtheta
+
+  end function get_delta_at_wtheta
+
+  !> @brief Returns the max Smagorinsky diffusion allowed in this run at wtheta
+  !> @return The max_diff_wtheta field
+  function get_max_diff() result(max_diff_smag)
+    implicit none
+    type(field_type), pointer :: max_diff_smag
+    max_diff_smag => max_diff_wtheta
+
+  end function get_max_diff
+
+  !> @brief Explicitly reclaim memory from module scope variables
+  !
+  subroutine final_physical_op_constants()
+
+    implicit none
+
+    call geopotential%field_final()
+    call coriolis%operator_final()
+    call delta_at_wtheta%field_final()
+    call max_diff_wtheta%field_final()
+
+  end subroutine final_physical_op_constants
+
+end module physical_op_constants_mod

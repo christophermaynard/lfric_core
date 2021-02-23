@@ -43,7 +43,7 @@ contains
     ! spectral_gwd kernels
     use spectral_gwd_kernel_mod, only: spectral_gwd_kernel_type
 
-    use runtime_constants_mod, only: get_latitude
+    use geometric_constants_mod, only: get_latitude
 
    implicit none
 

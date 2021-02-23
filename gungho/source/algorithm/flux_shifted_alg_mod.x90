@@ -9,9 +9,9 @@ module flux_shifted_alg_mod
 
   use constants_mod,                  only: r_def, i_def
   use enforce_bc_kernel_mod,          only: enforce_bc_kernel_type
-  use runtime_constants_mod,          only: get_coordinates_shifted,  &
-                                            get_panel_id,             &
-                                            get_mass_matrix,          &
+  use geometric_constants_mod,        only: get_coordinates_shifted,  &
+                                            get_panel_id
+  use fem_constants_mod,              only: get_mass_matrix,          &
                                             get_mass_matrix_diagonal, &
                                             w2_shift_id, w3_shift_id
   use field_mod,                      only: field_type

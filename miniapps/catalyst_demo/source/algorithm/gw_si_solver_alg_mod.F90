@@ -80,7 +80,7 @@ contains
             gravity_wave_constants_b_space_w3,   &
             gravity_wave_constants_b_space_wtheta
     use mm_diagonal_kernel_mod,     only: mm_diagonal_kernel_type
-    use runtime_constants_mod,      only: get_mass_matrix, &
+    use fem_constants_mod,          only: get_mass_matrix, &
                                           get_mass_matrix_diagonal, &
                                           w0_id, w2_id, w3_id, wt_id
     use gw_pressure_solver_alg_mod, only: gw_pressure_solver_init

@@ -31,9 +31,10 @@ contains
     use operator_mod,                   only: operator_type
     use mass_matrix_solver_alg_mod,     only: mass_matrix_solver_alg
     use enforce_bc_kernel_mod,          only: enforce_bc_kernel_type
-    use runtime_constants_mod,          only: get_inverse_lumped_mass_matrix,  &
+    use fem_constants_mod,              only: get_inverse_lumped_mass_matrix,  &
                                               w1_id,                           &
-                                              get_curl
+                                              get_curl,                        &
+                                              get_qr
     use transpose_matrix_vector_kernel_mod, &
                                         only: transpose_matrix_vector_kernel_type
     use finite_element_config_mod,      only: vorticity_in_w1, &
@@ -42,7 +43,6 @@ contains
     use function_space_collection_mod,  only: function_space_collection
     use w2_to_w1_projection_kernel_mod, only: w2_to_w1_projection_kernel_type
     use function_space_mod,             only: function_space_type
-    use runtime_constants_mod,          only: get_qr
     use quadrature_xyoz_mod,            only: quadrature_xyoz_type
     use strong_curl_kernel_mod,         only: strong_curl_kernel_type
 

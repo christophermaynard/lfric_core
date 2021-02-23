@@ -15,7 +15,6 @@ module minmax_tseries_mod
   use mesh_mod,                          only: mesh_type
   use mesh_collection_mod,               only: mesh_collection
   use mpi_mod,                           only: get_comm_rank
-  use runtime_constants_mod,             only: get_coordinates
   use fs_continuity_mod,                 only: W1, W2
 
   implicit none
@@ -72,7 +71,6 @@ contains
    integer(i_def),      intent(in)    :: mesh_id
 
    ! Internal variables
-   type(field_type), pointer          :: chi(:) => null()
    type(mesh_type ), pointer          :: mesh => null()
    type(field_type)                   :: nodal_output(3)
    type(field_type)                   :: nodal_coordinates(3)
@@ -87,7 +85,6 @@ contains
    character(len=str_max_filename)    :: fname
 
    mesh => mesh_collection%get_mesh( mesh_id )
-   chi  => get_coordinates()
 
    fname = trim(diag_stem_name) // "_" // &
            trim("nodal_minmax_") // trim(field_name) // trim(".m")

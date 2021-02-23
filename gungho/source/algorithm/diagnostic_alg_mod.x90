@@ -6,40 +6,40 @@
 !> @brief Algorithms to do field processing to produce generic and specific
 !>        diagnostics for different I/O methods
 module diagnostic_alg_mod
-   use constants_mod,                 only: i_def, r_def, str_max_filename
-   use finite_element_config_mod,     only: element_order
-   use base_mesh_config_mod,          only: geometry, &
-                                            geometry_spherical
-   use mesh_mod,                      only: mesh_type
-   use mesh_collection_mod,           only: mesh_collection
-   use function_space_collection_mod, only: function_space_collection
-   use fs_continuity_mod,             only: W1, W2, W3, Wtheta, W2H
-   use field_mod,                     only: field_type
-   use operator_mod,                  only: operator_type
-   use nodal_coordinates_kernel_mod,  only: nodal_coordinates_kernel_type
-   use psykal_lite_mod,               only: invoke_compute_dof_level_kernel
-   use psykal_builtin_light_mod,      only: invoke_convert_cart2sphere_vector, &
-                                            invoke_pointwise_convert_xyz2llr
-   use runtime_constants_mod,         only: get_rmultiplicity,   &
-                                            get_coordinates_xyz, &
-                                            get_coordinates,     &
-                                            get_panel_id
-   use project_output_mod,            only: project_output
-   use log_mod,                       only: log_event,         &
-                                            log_scratch_space, &
-                                            LOG_LEVEL_INFO
-   implicit none
+  use constants_mod,                 only: i_def, r_def, str_max_filename
+  use finite_element_config_mod,     only: element_order
+  use base_mesh_config_mod,          only: geometry, &
+                                           geometry_spherical
+  use mesh_mod,                      only: mesh_type
+  use mesh_collection_mod,           only: mesh_collection
+  use function_space_collection_mod, only: function_space_collection
+  use fs_continuity_mod,             only: W1, W2, W3, Wtheta, W2H
+  use field_mod,                     only: field_type
+  use operator_mod,                  only: operator_type
+  use nodal_coordinates_kernel_mod,  only: nodal_coordinates_kernel_type
+  use psykal_lite_mod,               only: invoke_compute_dof_level_kernel
+  use psykal_builtin_light_mod,      only: invoke_convert_cart2sphere_vector, &
+                                           invoke_pointwise_convert_xyz2llr
+  use fem_constants_mod,             only: get_rmultiplicity
+  use geometric_constants_mod,       only: get_coordinates_xyz, &
+                                           get_coordinates,     &
+                                           get_panel_id
+  use project_output_mod,            only: project_output
+  use log_mod,                       only: log_event,         &
+                                           log_scratch_space, &
+                                           LOG_LEVEL_INFO
+  implicit none
 
-   private
-   public :: divergence_diagnostic_alg
-   public :: density_diagnostic_alg
-   public :: hydbal_diagnostic_alg
-   public :: split_wind_diagnostic_alg
-   public :: scalar_nodal_diagnostic_alg
-   public :: vector_nodal_diagnostic_alg
-   public :: scalar_ugrid_diagnostic_alg
-   public :: vorticity_diagnostic_alg
-   public :: l2norm_diff_2fields
+  private
+  public :: divergence_diagnostic_alg
+  public :: density_diagnostic_alg
+  public :: hydbal_diagnostic_alg
+  public :: split_wind_diagnostic_alg
+  public :: scalar_nodal_diagnostic_alg
+  public :: vector_nodal_diagnostic_alg
+  public :: scalar_ugrid_diagnostic_alg
+  public :: vorticity_diagnostic_alg
+  public :: l2norm_diff_2fields
 
 contains
 
@@ -49,12 +49,12 @@ contains
   !> @param[in] u              3D wind field
   !> @param[in] mesh_id        Mesh_id
   subroutine divergence_diagnostic_alg(divergence, l2, u, mesh_id)
-    use dg_matrix_vector_kernel_mod, only: dg_matrix_vector_kernel_type
-    use runtime_constants_mod,       only: get_mass_matrix, &
-                                           get_div, &
-                                           w3inv_id
-    use planet_config_mod,           only: scaled_radius
-    use constants_mod,               only: pi
+    use dg_matrix_vector_kernel_mod,  only: dg_matrix_vector_kernel_type
+    use fem_constants_mod,            only: get_mass_matrix, &
+                                            get_div, &
+                                            w3inv_id
+    use planet_config_mod,            only: scaled_radius
+    use constants_mod,                only: pi
 
     implicit none
     type(field_type), intent(inout) :: divergence
@@ -100,7 +100,7 @@ contains
   !> @param[in] rho_num  Density
   !> @param[in] timestep Timestep
   subroutine density_diagnostic_alg(l2, rho_num, timestep)
-    use runtime_constants_mod,        only: get_mass_matrix, &
+    use fem_constants_mod,            only: get_mass_matrix, &
                                             w3_id
     use operator_mod,                 only: operator_type
     use field_mod,                    only: field_type
@@ -171,10 +171,10 @@ contains
     use moist_dyn_mod,               only: num_moist_factors
 
     ! PsyKAl PSYClone kernels
-    use enforce_bc_kernel_mod,               only: enforce_bc_kernel_type
-    use hydrostatic_kernel_mod,              only: hydrostatic_kernel_type
-    use runtime_constants_mod,               only: get_geopotential,         &
-                                                   get_qr
+    use enforce_bc_kernel_mod,       only: enforce_bc_kernel_type
+    use hydrostatic_kernel_mod,      only: hydrostatic_kernel_type
+    use physical_op_constants_mod,   only: get_geopotential
+    use fem_constants_mod,           only: get_qr
 
 
     implicit none

@@ -80,7 +80,7 @@ contains
                                                  b_space_w0, &
                                                  b_space_w3, &
                                                  b_space_wtheta
-    use runtime_constants_mod,             only: get_mass_matrix_diagonal, &
+    use fem_constants_mod,                 only: get_mass_matrix_diagonal, &
                                                  w0_id, w2_id, w3_id, wt_id
 
 

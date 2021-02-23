@@ -16,7 +16,7 @@ module skeleton_alg_mod
   use function_space_collection_mod,  only: function_space_collection
   use operator_mod,                   only: operator_type
   use matrix_vector_kernel_mod,       only: matrix_vector_kernel_type
-  use runtime_constants_mod,          only: get_div
+  use fem_constants_mod,              only: get_div
 
   implicit none
 

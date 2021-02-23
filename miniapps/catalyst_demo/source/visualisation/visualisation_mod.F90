@@ -19,7 +19,7 @@ module visualisation_mod
   use function_space_collection_mod, only: function_space_collection
   use project_output_mod,            only: project_output
   use diagnostic_alg_mod,            only: scalar_nodal_diagnostic_alg
-  use runtime_constants_mod,         only: get_coordinates
+  use geometric_constants_mod,       only: get_coordinates
   use log_mod,                       only: log_event,       &
                                            LOG_LEVEL_ERROR, &
                                            LOG_LEVEL_INFO

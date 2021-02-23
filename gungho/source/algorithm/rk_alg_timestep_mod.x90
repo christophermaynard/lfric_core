@@ -10,73 +10,74 @@
 !>         equations using a multistage explicit Runge-Kutta algorithm.
 module rk_alg_timestep_mod
 
-  use constants_mod,                     only: i_def,r_def
-  use log_mod,                           only: log_event,         &
-                                               log_scratch_space, &
-                                               LOG_LEVEL_INFO,    &
-                                               LOG_LEVEL_TRACE
+  use constants_mod,                      only: i_def,r_def
+  use log_mod,                            only: log_event,         &
+                                                log_scratch_space, &
+                                                LOG_LEVEL_INFO,    &
+                                                LOG_LEVEL_TRACE
 
   ! Configuration options
-  use finite_element_config_mod, only: element_order, &
-                                       vorticity_in_w1
-  use formulation_config_mod,    only: rotating
-  use runge_kutta_init_mod,      only: num_rk_stage, ak
-  use timestepping_config_mod,   only: dt, &
-                                       outer_iterations, inner_iterations
-  use derived_config_mod,        only: bundle_size
-  use runtime_constants_mod,     only: get_geopotential,         &
-                                       get_mass_matrix,          &
-                                       get_mass_matrix_diagonal, &
-                                       get_qr, &
-                                       get_inverse_lumped_mass_matrix, &
-                                       theta_space_id, &
-                                       w3inv_id, &
-                                       get_coordinates_xyz, &
-                                       get_coordinates, &
-                                       get_panel_id, &
-                                       get_coriolis
-  use transport_config_mod,      only: operators, &
-                                       operators_fv
-  use mixing_config_mod,         only: viscosity
+  use finite_element_config_mod,          only: element_order, &
+                                                vorticity_in_w1
+  use formulation_config_mod,             only: rotating
+  use runge_kutta_init_mod,               only: num_rk_stage, ak
+  use timestepping_config_mod,            only: dt, &
+                                                outer_iterations, &
+                                                inner_iterations
+  use derived_config_mod,                 only: bundle_size
+  use fem_constants_mod,                  only: get_mass_matrix,          &
+                                                get_mass_matrix_diagonal, &
+                                                get_qr, &
+                                                get_inverse_lumped_mass_matrix, &
+                                                theta_space_id, &
+                                                w3inv_id
+  use geometric_constants_mod,            only: get_coordinates_xyz, &
+                                                get_coordinates, &
+                                                get_panel_id
+  use transport_config_mod,               only: operators, &
+                                                operators_fv
+  use mixing_config_mod,                  only: viscosity
 
-  use field_bundle_mod,                  only: clone_bundle, &
-                                               bundle_axpy,  &
-                                               bundle_axpby, &
-                                               add_bundle,   &
-                                               copy_bundle,  &
-                                               set_bundle_scalar
+  use field_bundle_mod,                   only: clone_bundle, &
+                                                bundle_axpy,  &
+                                                bundle_axpby, &
+                                                add_bundle,   &
+                                                copy_bundle,  &
+                                                set_bundle_scalar
+  use physical_op_constants_mod,          only: get_geopotential,  &
+                                                get_coriolis
 
   ! PsyKAl PSYClone kernels
-  use enforce_bc_kernel_mod,               only: enforce_bc_kernel_type
-  use pressure_gradient_bd_kernel_mod,     only: pressure_gradient_bd_kernel_type
-  use hydrostatic_kernel_mod,              only: hydrostatic_kernel_type
-  use kinetic_energy_gradient_kernel_mod,  only: kinetic_energy_gradient_kernel_type
-  use project_pressure_kernel_mod,         only: project_pressure_kernel_type
-  use matrix_vector_kernel_mod,            only: matrix_vector_kernel_type
-  use vorticity_advection_kernel_mod,      only: vorticity_advection_kernel_type
-  use w2_vorticity_advection_kernel_mod,   only: w2_vorticity_advection_kernel_type
-  use tracer_viscosity_kernel_mod,         only: tracer_viscosity_kernel_type
-  use momentum_viscosity_kernel_mod,       only: momentum_viscosity_kernel_type
+  use enforce_bc_kernel_mod,              only: enforce_bc_kernel_type
+  use pressure_gradient_bd_kernel_mod,    only: pressure_gradient_bd_kernel_type
+  use hydrostatic_kernel_mod,             only: hydrostatic_kernel_type
+  use kinetic_energy_gradient_kernel_mod, only: kinetic_energy_gradient_kernel_type
+  use project_pressure_kernel_mod,        only: project_pressure_kernel_type
+  use matrix_vector_kernel_mod,           only: matrix_vector_kernel_type
+  use vorticity_advection_kernel_mod,     only: vorticity_advection_kernel_type
+  use w2_vorticity_advection_kernel_mod,  only: w2_vorticity_advection_kernel_type
+  use tracer_viscosity_kernel_mod,        only: tracer_viscosity_kernel_type
+  use momentum_viscosity_kernel_mod,      only: momentum_viscosity_kernel_type
 
   ! Derived Types
-  use field_mod,                         only: field_type
-  use quadrature_xyoz_mod,               only: quadrature_xyoz_type
-  use quadrature_face_mod,               only: quadrature_face_type
-  use quadrature_rule_gaussian_mod,      only: quadrature_rule_gaussian_type
-  use operator_mod,                      only: operator_type
-  use reference_element_mod,             only: reference_element_type
-  use mesh_mod,                          only: mesh_type
-  ! Algorithms
-  use mass_matrix_solver_alg_mod,        only: mass_matrix_solver_alg
-  use advection_alg_mod,                 only: advection_alg, advection_alg_init
-  use compute_vorticity_alg_mod,         only: compute_vorticity_alg
+  use field_mod,                          only: field_type
+  use quadrature_xyoz_mod,                only: quadrature_xyoz_type
+  use quadrature_face_mod,                only: quadrature_face_type
+  use quadrature_rule_gaussian_mod,       only: quadrature_rule_gaussian_type
+  use operator_mod,                       only: operator_type
+  use reference_element_mod,              only: reference_element_type
+  use mesh_mod,                           only: mesh_type
+  ! Algorithm
+  use mass_matrix_solver_alg_mod,         only: mass_matrix_solver_alg
+  use advection_alg_mod,                  only: advection_alg, advection_alg_init
+  use compute_vorticity_alg_mod,          only: compute_vorticity_alg
 
   ! Field indices
-  use field_indices_mod,                 only: igh_u, igh_t, igh_d, igh_p
-  use moist_dyn_mod,                     only: num_moist_factors, gas_law
+  use field_indices_mod,                  only: igh_u, igh_t, igh_d, igh_p
+  use moist_dyn_mod,                      only: num_moist_factors, gas_law
 
-  use io_config_mod,                     only: subroutine_timers
-  use timer_mod,                         only: timer
+  use io_config_mod,                      only: subroutine_timers
+  use timer_mod,                          only: timer
 
   implicit none
 

@@ -13,7 +13,7 @@ module split_transport_theta_mod
   use constants_mod,                     only: r_def, i_def, tiny_eps
   use log_mod,                           only: log_event, LOG_LEVEL_ERROR
   use timestepping_config_mod,           only: dt
-  use runtime_constants_mod,             only: get_detj_at_w2
+  use fem_constants_mod,                 only: get_detj_at_w2
   use transport_config_mod,              only: theta_splitting_vh,             &
                                                theta_splitting_hv,             &
                                                theta_splitting_strang,         &

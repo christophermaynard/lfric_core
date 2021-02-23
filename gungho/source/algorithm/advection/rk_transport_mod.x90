@@ -40,9 +40,9 @@ module rk_transport_mod
   use operator_mod,                      only: operator_type
   use quadrature_xyoz_mod,               only: quadrature_xyoz_type
   use quadrature_rule_gaussian_mod,      only: quadrature_rule_gaussian_type
-  use runtime_constants_mod,             only: get_coordinates, &
-                                               get_panel_id,    &
-                                               get_qr
+  use geometric_constants_mod,           only: get_coordinates, &
+                                               get_panel_id
+  use fem_constants_mod,                 only: get_qr
   use strong_curl_kernel_mod,            only: strong_curl_kernel_type
   use timer_mod,                         only: timer
   use timestepping_config_mod,           only: dt
@@ -211,10 +211,10 @@ contains
   !> @param[in] mr Bundle of moisture mixing ratio fields. Optional.
   subroutine rk_transport_final( rho, theta, mr )
 
-    use matrix_vector_kernel_mod, only: matrix_vector_kernel_type
-    use runtime_constants_mod,    only: get_mass_matrix, &
-                                        w3_id,           &
-                                        wt_id
+    use matrix_vector_kernel_mod,     only: matrix_vector_kernel_type
+    use fem_constants_mod,            only: get_mass_matrix, &
+                                            w3_id,           &
+                                            wt_id
 
     implicit none
 

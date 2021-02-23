@@ -33,11 +33,11 @@ module semi_implicit_timestep_alg_mod
                                        spinup_period, spinup_alpha, spinup_winds
   use derived_config_mod,        only: bundle_size
   use boundaries_config_mod,     only: limited_area
-  use runtime_constants_mod,     only: get_qr, get_coordinates, get_height, &
-                                       get_mass_matrix, get_da_at_w2,       &
-                                       get_delta_at_wtheta,                 &
-                                       get_max_diff, get_coordinates_xyz,   &
-                                       theta_space_id, w2_id, dl_id, w2_id
+  use geometric_constants_mod,   only: get_coordinates, get_height, &
+                                       get_da_at_w2, get_coordinates_xyz
+  use fem_constants_mod,         only: get_mass_matrix, theta_space_id, &
+                                       w2_id, dl_id, w2_id, get_qr
+  use physical_op_constants_mod, only : get_delta_at_wtheta, get_max_diff
   use fs_continuity_mod,         only: W3, Wtheta
 
   use field_bundle_mod,          only: clone_bundle,      &

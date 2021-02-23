@@ -1,0 +1,264 @@
+!-------------------------------------------------------------------------------
+! (C) Crown copyright 2021 Met Office. All rights reserved.
+! For further details please refer to the file COPYRIGHT.txt
+! which you should have received as part of this distribution.
+!-------------------------------------------------------------------------------
+!
+!> @brief Provides constants used for limited area models.
+!>
+!> @details This module controls the set-up of various limited area model
+!>          objects that do not change during a run. These objects are
+!>          accessed from this module through appropriate 'get' functions.
+!-------------------------------------------------------------------------------
+
+module limited_area_constants_mod
+
+  ! Infrastructure
+  use constants_mod,                     only: i_def, r_def
+  use field_mod,                         only: field_type
+  use function_space_mod,                only: function_space_type
+  use function_space_collection_mod,     only: function_space_collection
+  use fs_continuity_mod,                 only: W2, W3, Wtheta
+  use io_config_mod,                     only: subroutine_timers
+  use log_mod,                           only: log_event, LOG_LEVEL_INFO, &
+                                               LOG_LEVEL_ERROR
+  use mesh_mod,                          only: mesh_type
+  use timer_mod,                         only: timer
+
+  ! Configuration
+  use boundaries_config_mod,             only: normal_only
+  use finite_element_config_mod,         only: element_order
+
+  ! Limited-area mask methods
+  use limited_area_masks_alg_mod,        only: create_limited_area_mask,      &
+                                               create_parallel_boundary_mask, &
+                                               create_boundary_mask,          &
+                                               create_blend_mask,             &
+                                               create_lbc_mask,               &
+                                               check_w2b_mask
+
+  implicit none
+
+  private
+
+  ! Variables private to this module that can only be accessed by public
+  ! functions returning pointers to them
+
+  ! Limited-area masks
+  type(field_type), target :: w2boundary_mask
+  type(field_type), target :: w2_mask
+  type(field_type), target :: w3_mask
+  type(field_type), target :: wtheta_mask
+  type(field_type), target :: w2lbc_mask
+  type(field_type), target :: w3lbc_mask
+  type(field_type), target :: wthetalbc_mask
+  type(field_type), target :: w2blend_mask
+  type(field_type), target :: w3blend_mask
+  type(field_type), target :: wthetablend_mask
+
+
+  ! Public functions to create and access the module contents
+
+  public :: create_limited_area_constants
+  public :: final_limited_area_constants
+  public :: get_mask
+  public :: get_boundary_mask
+  public :: get_lbc_mask
+  public :: get_blend_mask
+
+contains
+  !>@brief Subroutine to create the limited area constants
+  !> @param[in] mesh_id         Mesh_id
+  !> @param[in] chi_xyz         xyz chi field
+  subroutine create_limited_area_constants(mesh_id, chi_xyz)
+    implicit none
+
+    ! Arguments
+    integer(i_def),   intent(in) :: mesh_id
+    type(field_type), intent(in) :: chi_xyz(:)
+
+    ! Internal variables
+    type(function_space_type), pointer :: w2_fs     => null()
+    type(function_space_type), pointer :: w3_fs     => null()
+    type(function_space_type), pointer :: wtheta_fs => null()
+    type(field_type)                   :: w2parallel_mask
+    type(field_type)                   :: w2perp_mask
+    type(field_type)                   :: w2interior_mask
+
+
+    if ( subroutine_timers ) call timer('limited_area_constants_alg')
+    call log_event( "Gungho: creating limited_area_constants", LOG_LEVEL_INFO )
+
+    !=========== Create function spaces required for setup ===================!
+
+    w2_fs     => function_space_collection%get_fs( mesh_id, element_order, W2 )
+    w3_fs     => function_space_collection%get_fs( mesh_id, element_order, W3 )
+    wtheta_fs => function_space_collection%get_fs( mesh_id, element_order, Wtheta )
+
+    call log_event( "Creating limited area masks", LOG_LEVEL_INFO )
+
+    ! Create the W2 masks by combining different masks together
+    call w2perp_mask%initialise( vector_space = w2_fs )
+    call w2parallel_mask%initialise( vector_space = w2_fs )
+    call w2boundary_mask%initialise( vector_space = w2_fs )
+    call w2interior_mask%initialise( vector_space = w2_fs )
+    call w2_mask%initialise( vector_space = w2_fs )
+
+    if (normal_only) then
+      call log_event( "Using w2 dofs on boundary for LBC", &
+           LOG_LEVEL_INFO )
+      call create_boundary_mask( w2boundary_mask, chi_xyz )
+      call create_limited_area_mask( w2_mask, chi_xyz )
+    else
+      call log_event( "Using w2 dofs on boundary and tangential 1 cell in", &
+           LOG_LEVEL_INFO )
+      call create_boundary_mask( w2perp_mask, chi_xyz )
+      call create_parallel_boundary_mask ( w2parallel_mask, chi_xyz )
+      call create_limited_area_mask( w2interior_mask, chi_xyz )
+
+      call invoke( &
+         ! Add the W2parallel and W2perp masks together
+         X_plus_Y ( w2boundary_mask,  w2perp_mask, w2parallel_mask ), &
+         ! Subtract the W2parallel mask from the W2interior_mask
+         X_minus_Y( w2_mask, w2interior_mask, w2parallel_mask ) )
+    end if
+
+    ! Create the W3 and Wtheta masks directly
+    call w3_mask%initialise( vector_space = w3_fs )
+    call wtheta_mask%initialise( vector_space = wtheta_fs )
+    call w2lbc_mask%initialise( vector_space = w2_fs )
+    call w3lbc_mask%initialise( vector_space = w3_fs )
+    call wthetalbc_mask%initialise( vector_space = wtheta_fs )
+    call w2blend_mask%initialise( vector_space = w2_fs )
+    call w3blend_mask%initialise( vector_space = w3_fs )
+    call wthetablend_mask%initialise( vector_space = wtheta_fs )
+
+    call create_limited_area_mask( w3_mask, chi_xyz )
+    call create_limited_area_mask( wtheta_mask, chi_xyz )
+    call create_lbc_mask( w2lbc_mask, chi_xyz )
+    call create_lbc_mask( w3lbc_mask, chi_xyz )
+    call create_lbc_mask( wthetalbc_mask, chi_xyz )
+    call create_blend_mask( w2blend_mask, chi_xyz )
+    call create_blend_mask( w3blend_mask, chi_xyz )
+    call create_blend_mask( wthetablend_mask, chi_xyz )
+
+    ! Check that the W2 boundary mask has the correct number of dofs
+    call check_w2b_mask( w2boundary_mask )
+
+    nullify( w2_fs  )
+    nullify( w3_fs  )
+    nullify( wtheta_fs )
+
+    call log_event( "Gungho: created limited_area_constants", LOG_LEVEL_INFO )
+    if ( subroutine_timers ) call timer('limited_area_constants_alg')
+
+  end subroutine create_limited_area_constants
+
+  !> @brief  Returns pointer to the interior mask
+  !> @param[in] space The function space of the interior mask
+  !> @return The interior mask field
+  function get_mask(space) result(mask_ptr)
+    implicit none
+    integer(i_def), intent(in) :: space
+    type(field_type), pointer  :: mask_ptr
+
+    select case (space)
+      case (W2)
+        mask_ptr => w2_mask
+      case (W3)
+        mask_ptr => w3_mask
+      case (Wtheta)
+        mask_ptr => wtheta_mask
+      case default
+        mask_ptr => null()
+        call log_event( "Mask not available on requested space", &
+          LOG_LEVEL_ERROR)
+    end select
+
+  end function get_mask
+
+  !> @brief  Returns pointer to the boundary mask
+  !> @param[in] space The function space of the boundary mask
+  !> @return The boundary mask field
+  function get_boundary_mask(space) result(mask_ptr)
+    implicit none
+    integer(i_def), intent(in) :: space
+    type(field_type), pointer  :: mask_ptr
+
+    select case (space)
+      case (W2)
+        mask_ptr => w2boundary_mask
+      case default
+        mask_ptr => null()
+        call log_event( "Boundary mask not available on requested space", &
+          LOG_LEVEL_ERROR)
+    end select
+
+  end function get_boundary_mask
+
+  !> @brief  Returns pointer to the LBC mask
+  !> @param[in] space The function space of the LBC mask
+  !> @return The LBC mask field
+  function get_lbc_mask(space) result(mask_ptr)
+    implicit none
+    integer(i_def), intent(in) :: space
+    type(field_type), pointer  :: mask_ptr
+
+    select case (space)
+      case (W2)
+        mask_ptr => w2lbc_mask
+      case (W3)
+        mask_ptr => w3lbc_mask
+      case (Wtheta)
+        mask_ptr => wthetalbc_mask
+      case default
+        mask_ptr => null()
+        call log_event( "Mask not available on requested space", &
+          LOG_LEVEL_ERROR)
+    end select
+
+  end function get_lbc_mask
+
+  !> @brief  Returns pointer to the blend mask
+  !> @param[in] space The function space of the blend mask
+  !> @return The blend mask field
+  function get_blend_mask(space) result(mask_ptr)
+    implicit none
+    integer(i_def), intent(in) :: space
+    type(field_type), pointer  :: mask_ptr
+
+    select case (space)
+    case (W2)
+      mask_ptr => w2blend_mask
+    case (W3)
+      mask_ptr => w3blend_mask
+    case (Wtheta)
+      mask_ptr => wthetablend_mask
+    case default
+      mask_ptr => null()
+      call log_event( "Blend mask not available on requested space", &
+        LOG_LEVEL_ERROR)
+    end select
+
+  end function get_blend_mask
+
+  !> @brief Explicitly reclaim memory from module scope variables
+  !
+  subroutine final_limited_area_constants()
+
+    implicit none
+
+    call w2boundary_mask%field_final()
+    call w2_mask%field_final()
+    call w3_mask%field_final()
+    call wtheta_mask%field_final()
+    call w2lbc_mask%field_final()
+    call w3lbc_mask%field_final()
+    call wthetalbc_mask%field_final()
+    call w2blend_mask%field_final()
+    call w3blend_mask%field_final()
+    call wthetablend_mask%field_final()
+
+  end subroutine final_limited_area_constants
+
+end module limited_area_constants_mod

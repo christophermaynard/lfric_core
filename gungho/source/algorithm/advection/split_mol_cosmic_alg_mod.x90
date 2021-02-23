@@ -17,9 +17,9 @@ module split_mol_cosmic_alg_mod
   use function_space_mod,                only: function_space_type
   use function_space_collection_mod,     only: function_space_collection
   use finite_element_config_mod,         only: element_order
+  use fem_constants_mod,                 only: get_detj_at_w2
   use fs_continuity_mod,                 only: W2, W3
-  use runtime_constants_mod,             only: get_cell_orientation,          &
-                                               get_detj_at_w2
+  use geometric_constants_mod,           only: get_cell_orientation
   use flux_direction_mod,                only: z_direction
   use vert_conservative_cosmic_alg_mod,  only: vert_conservative_cosmic_alg
   use cosmic_divergence_alg_mod,         only: cosmic_divergence_alg
