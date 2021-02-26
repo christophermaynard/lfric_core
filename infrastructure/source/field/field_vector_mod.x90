@@ -11,6 +11,7 @@ module field_vector_mod
 
   use constants_mod,                 only : i_def, r_def
   use field_mod,                     only : field_type
+  use function_space_mod,            only : function_space_type
   use function_space_collection_mod, only : function_space_collection
   use log_mod,                       only : log_event, LOG_LEVEL_ERROR, &
                                             log_scratch_space
@@ -34,6 +35,12 @@ module field_vector_mod
      !> @param[out] field  field_type, the field to copy to
      !> @param[in] pos  the position in the array
      procedure, public  :: export_field
+!   public procedures of the type
+     !> Initialise a field into the vector at the given position in the array
+     !> @param[in] field  field_type, the field to copy
+     !> @param[in] pos  the position in the array
+     !> @param[in] fs function_space to create field on
+     procedure, public  :: initialise_field
 
 !   public procedures of the API overidden in the type
      !> set the vector to a scalar value
@@ -257,6 +264,23 @@ contains
 
     call self%vector(position)%copy_field(field)
   end subroutine export_field
+
+  ! Copy a field into the field vector
+  subroutine initialise_field(self, position, fs)
+    implicit none
+    class(field_vector_type ),       intent(inout) :: self
+    integer(kind=i_def),                intent(in) :: position
+    type(function_space_type), pointer, intent(in) :: fs
+
+    if(position > size(self%vector)) then
+       write(log_scratch_space,'(A,2(":",I2))') &
+            "field_vector_mod:field position bigger than nfields", &
+            size(self%vector),position
+       call log_event(log_scratch_space,LOG_LEVEL_ERROR)
+    end if
+    self%vector_set=.true.
+    call self%vector(position)%initialise( vector_space = fs)
+  end subroutine initialise_field
 
   ! allocates the array of fields to the given size
   function field_vector_constructor(nfields) result(self)

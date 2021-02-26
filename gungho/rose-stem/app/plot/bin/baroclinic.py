@@ -47,6 +47,8 @@ def make_figures(filein, plotpath, fields, vertical_spacing):
 
     if vertical_spacing == 'um':
         # UM L38 set
+        lid = 40.
+        n_full = 39
         zi_f = np.array([
             .0, .0005095,  .0020380,  .0045854,  .0081519,  .0127373,
             .0183417,  .0249651,  .0326074,  .0412688,  .0509491,

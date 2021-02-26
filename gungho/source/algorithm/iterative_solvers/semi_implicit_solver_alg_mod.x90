@@ -149,8 +149,9 @@ contains
                        LOG_LEVEL_ERROR)
     end select
 
-    call log_event( "semi_implicit_solver_alg_inti:Setting up pressure solver", LOG_LEVEL_INFO )
-      pressure_operator = pressure_operator_type(vector_state)
+    call log_event( "semi_implicit_solver_alg_init: Setting up pressure solver", LOG_LEVEL_INFO )
+    pressure_operator &
+      = pressure_operator_type(state(igh_p)%get_function_space(), 1_i_def)
 
       ! Allocate pressure solver of correct type
     select case( helmholtz_method )

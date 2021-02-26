@@ -617,12 +617,12 @@ contains
 
        ! check for convergence
        err = r%norm()/sc_err
-       write( log_scratch_space, '(A,I2,A, E15.8)' ) "bicgstab[", &
+       write( log_scratch_space, '(A,I4,A, E15.8)' ) "bicgstab[", &
             iter, "]: res = ", err
        call log_event(log_scratch_space, LOG_LEVEL_DEBUG)
 
        if (err < self%r_tol) then
-          write( log_scratch_space, '(A, I2, A, E15.8)' ) &
+          write( log_scratch_space, '(A, I4, A, E15.8)' ) &
              "bicgstab:converged in ", iter,              &
              " iters, final=", err
         call log_event( log_scratch_space, LOG_LEVEL_INFO )

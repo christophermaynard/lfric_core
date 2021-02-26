@@ -148,7 +148,7 @@
 /
 
 &mixed_solver
-  si_method                      = 'gcr'
+  si_method                      = 'block_gcr'
   si_preconditioner              = 'pressure'
   si_maximum_iterations          = 10
   gcrk                           = 18
@@ -164,7 +164,7 @@
   diagnostic_norm                =.F
   preconditioner                 = 'multigrid'
   si_pressure_tolerance          = 1.0e-6
-  si_pressure_maximum_iterations = 400
+  si_pressure_maximum_iterations = 100
   normalise                      = .T
 /
 
