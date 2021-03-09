@@ -148,37 +148,37 @@ contains
       case (1)
         lid = 1
         gid = local_mesh%get_gid_from_lid( lid )
-        @assertEqual( 27, gid )
+        @assertEqual( 19, gid )
 
         gid = 30
         lid = local_mesh%get_lid_from_gid( gid )
-        @assertEqual( 4, lid )
+        @assertEqual( 8, lid )
 
       case (4)
         lid = 1
         gid = local_mesh%get_gid_from_lid( lid )
         select case ( this%local_rank )
           case (0)
-            @assertEqual( 50, gid )
+            @assertEqual( 42, gid )
           case (1)
-            @assertEqual( 54, gid )
+            @assertEqual( 46, gid )
           case (2)
-            @assertEqual( 18, gid )
+            @assertEqual( 10, gid )
           case (3)
-            @assertEqual( 22, gid )
+            @assertEqual( 14, gid )
         end select
 
         gid = 30
         lid = local_mesh%get_lid_from_gid( gid )
         select case ( this%local_rank )
           case (0)
-            @assertEqual( 54, lid )
+            @assertEqual( 55, lid )
           case (1)
-            @assertEqual( 54, lid )
+            @assertEqual( 26, lid )
           case (2)
             @assertEqual( 43, lid )
           case (3)
-            @assertEqual( 3, lid )
+            @assertEqual( 14, lid )
         end select
 
     end select

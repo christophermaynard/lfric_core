@@ -738,6 +738,15 @@ contains
           cell = cell_next(S)
           call global_mesh%get_cell_next(cell,cell_next)
         end do
+      else
+        ! To make multigrid mesh partitions line up correctly in the periodic
+        ! case, the SW corners of all mesh domains need to be lined up. The
+        ! mesh generator currently generates meshes with cell no.1 at the NW
+        ! corner, so find the SW corner by moving one cell north from cell 1
+        ! (across the wrap-around)
+        cell = 1
+        call global_mesh%get_cell_next(cell,cell_next)
+        cell = cell_next(N)
       end if
 
       ! Assign cell ID of SW corner of mesh
@@ -749,7 +758,8 @@ contains
 
       ! Starting in the SW corner of the mesh so must walk East on non-periodic
       ! meshes to determine number of cells in the x direction
-      do while (cell_next(E) /= cell .and. cell_next(E) /= -1)
+      call global_mesh%get_cell_next(sw_corner_cells(1),cell_next)
+      do while (cell_next(E) /= sw_corner_cells(1) .and. cell_next(E) /= -1)
         num_cells_x=num_cells_x+1
         call global_mesh%get_cell_next(cell_next(E), cell_next)
       end do
