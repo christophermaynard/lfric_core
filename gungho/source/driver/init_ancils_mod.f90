@@ -6,7 +6,8 @@
 
 module init_ancils_mod
 
-  use constants_mod,                  only : i_def, l_def, dp_xios, str_def, r_def
+  use constants_mod,                  only : i_def, l_def, dp_xios, str_def,   &
+                                             r_def
   use log_mod,                        only : log_event,         &
                                              log_scratch_space, &
                                              LOG_LEVEL_INFO,    &
@@ -98,7 +99,8 @@ contains
       call setup_ancil_field("land_area_fraction", depository, ancil_fields, &
                               mesh_id, twod_mesh_id, twod=.true.)
       call setup_ancil_field("land_tile_fraction", depository, ancil_fields, &
-                              mesh_id, twod_mesh_id, twod=.true., ndata=n_land_tile)
+                              mesh_id, twod_mesh_id, twod=.true.,            &
+                              ndata=n_land_tile)
       call init_time_axis("pft_time", pft_time_axis)
       call setup_ancil_field("canopy_height", depository, ancil_fields, &
                               mesh_id, twod_mesh_id, twod=.true., ndata=npft, &
@@ -111,13 +113,15 @@ contains
 
       call init_time_axis("sea_time", sea_time_axis)
       call setup_ancil_field("chloro_sea", depository, ancil_fields, mesh_id, &
-                              twod_mesh_id, twod=.true., time_axis=sea_time_axis)
+                              twod_mesh_id, twod=.true.,                      &
+                              time_axis=sea_time_axis)
       call sea_time_axis%set_update_behaviour(tmp_update_ptr)
       call ancil_times_list%insert_item(sea_time_axis)
 
       call init_time_axis("sst_time", sst_time_axis)
       call setup_ancil_field("tstar_sea", depository, ancil_fields, mesh_id, &
-                              twod_mesh_id, twod=.true., time_axis=sst_time_axis)
+                              twod_mesh_id, twod=.true.,                     &
+                              time_axis=sst_time_axis)
       call sst_time_axis%set_update_behaviour(tmp_update_ptr)
       call ancil_times_list%insert_item(sst_time_axis)
 
@@ -132,14 +136,16 @@ contains
 
       !=====  RADIATION ANCILS  =====
       call init_time_axis("albedo_vis_time", albedo_vis_time_axis)
-      call setup_ancil_field("albedo_obs_vis", depository, ancil_fields, mesh_id, &
-                        twod_mesh_id, twod=.true., time_axis=albedo_vis_time_axis)
+      call setup_ancil_field("albedo_obs_vis", depository, ancil_fields, &
+                             mesh_id, twod_mesh_id, twod=.true., &
+                             time_axis=albedo_vis_time_axis)
       call albedo_vis_time_axis%set_update_behaviour(tmp_update_ptr)
       call ancil_times_list%insert_item(albedo_vis_time_axis)
 
       call init_time_axis("albedo_nir_time", albedo_nir_time_axis)
-      call setup_ancil_field("albedo_obs_nir", depository, ancil_fields, mesh_id, &
-                        twod_mesh_id, twod=.true., time_axis=albedo_nir_time_axis)
+      call setup_ancil_field("albedo_obs_nir", depository, ancil_fields, &
+                              mesh_id, twod_mesh_id, twod=.true., &
+                              time_axis=albedo_nir_time_axis)
       call albedo_nir_time_axis%set_update_behaviour(tmp_update_ptr)
       call ancil_times_list%insert_item(albedo_nir_time_axis)
 
@@ -176,13 +182,13 @@ contains
       !=====  OROGRAPHY ANCILS  =====
       call setup_ancil_field("sd_orog", depository, ancil_fields, mesh_id, &
                               twod_mesh_id, twod=.true.)
-      call setup_ancil_field("grad_xx_orog", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("grad_xx_orog", depository, ancil_fields, mesh_id,&
                               twod_mesh_id, twod=.true.)
-      call setup_ancil_field("grad_xy_orog", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("grad_xy_orog", depository, ancil_fields, mesh_id,&
                               twod_mesh_id, twod=.true.)
-      call setup_ancil_field("grad_yy_orog", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("grad_yy_orog", depository, ancil_fields, mesh_id,&
                               twod_mesh_id, twod=.true.)
-      call setup_ancil_field("peak_to_trough_orog", depository, ancil_fields, &
+      call setup_ancil_field("peak_to_trough_orog", depository, ancil_fields,  &
                               mesh_id, twod_mesh_id, twod=.true.)
       call setup_ancil_field("silhouette_area_orog", depository, ancil_fields, &
                               mesh_id, twod_mesh_id, twod=.true.)
@@ -196,40 +202,43 @@ contains
 
       !=====  AEROSOL ANCILS  =====
       call init_time_axis("aerosols_time", aerosol_time_axis)
-      call setup_ancil_field("acc_sol_bc", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("acc_sol_bc", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("acc_sol_oc", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("acc_sol_om", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("acc_sol_su", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("acc_sol_su", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("acc_sol_ss", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("acc_sol_ss", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("nd_acc_sol", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("n_acc_sol",  depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("ait_sol_bc", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("ait_sol_bc", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("ait_sol_oc", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("ait_sol_om", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("ait_sol_su", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("ait_sol_su", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("nd_ait_sol", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("n_ait_sol",  depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("ait_ins_bc", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("ait_ins_bc", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("ait_ins_oc", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("ait_ins_om", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("nd_ait_ins", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("n_ait_ins",  depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("cor_sol_bc", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("cor_sol_bc", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("cor_sol_oc", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("cor_sol_om", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("cor_sol_su", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("cor_sol_su", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("cor_sol_ss", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("cor_sol_ss", depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
-      call setup_ancil_field("nd_cor_sol", depository, ancil_fields, mesh_id, &
+      call setup_ancil_field("n_cor_sol",  depository, ancil_fields, mesh_id,  &
                              twod_mesh_id, time_axis=aerosol_time_axis)
+      ! The following fields will need adding when dust is available in the
+      ! ancillary file:
+      !   acc_sol_du, cor_sol_du, n_acc_ins, acc_ins_du, n_cor_ins, cor_ins_du
       call aerosol_time_axis%set_update_behaviour(tmp_update_ptr)
       call ancil_times_list%insert_item(aerosol_time_axis)
     end if
@@ -245,8 +254,10 @@ contains
   !> @param[in, out] depository The depository field collection
   !> @param[in, out] ancil_fields The ancil field collection
   !> @param[in] mesh_id The identifier given to the current 3d mesh
-  !> @param[in, optional] twod_mesh_id The identifier given to the current 2d mesh
-  !> @param[in, optional] ndata Number of non-spatial dimensions for multi-data field
+  !> @param[in, optional] twod_mesh_id The identifier given to the current
+  !>                                   2d mesh
+  !> @param[in, optional] ndata Number of non-spatial dimensions for multi-data
+  !>                            field
   !> @param[in, out, optional] time_axis Time axis associated with ancil field
   subroutine setup_ancil_field( name, depository, ancil_fields, mesh_id, &
                                 twod_mesh_id, twod, ndata, time_axis )

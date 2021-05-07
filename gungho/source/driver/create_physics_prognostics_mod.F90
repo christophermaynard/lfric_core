@@ -28,7 +28,8 @@ module create_physics_prognostics_mod
                                              cloud_representation_split,       &
                                              l_trans_zen_correction
   use aerosol_config_mod,             only : glomap_mode,                      &
-                                             glomap_mode_climatology
+                                             glomap_mode_climatology,          &
+                                             glomap_mode_ukca
   use section_choice_config_mod,      only : cloud, cloud_um,                  &
                                              aerosol, aerosol_um,              &
                                              radiation, radiation_socrates,    &
@@ -785,81 +786,227 @@ contains
 
     ! 3D fields, might need checkpointing
     if ( ( aerosol == aerosol_um ) .and.                                       &
-         ( glomap_mode == glomap_mode_climatology ) ) then
+         ( ( glomap_mode == glomap_mode_climatology ) .or.                     &
+           ( glomap_mode == glomap_mode_ukca ) ) ) then
       checkpoint_flag = .true.
     else
       checkpoint_flag = .false.
     end if
-    ! Nucleation Soluble number density
+    ! Nucleation Soluble number mixing ratio
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'nd_nuc_sol', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Nucleation Soluble sulphate aerosol mmr
+      'n_nuc_sol', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Nucleation Soluble Sulphate aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'nuc_sol_su', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Nucleation Soluble organic carbon aerosol mmr
+    ! Nucleation Soluble Organic Matter aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'nuc_sol_oc', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Aitken Soluble number density
+      'nuc_sol_om', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Aitken Soluble number mixing ratio
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'nd_ait_sol', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Aitken Soluble sulphate aerosol mmr
+      'n_ait_sol', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Aitken Soluble Sulphate aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'ait_sol_su', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Aitken Soluble black carbon aerosol mmr
+    ! Aitken Soluble Black Carbon aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'ait_sol_bc', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Aitken Soluble organic carbon aerosol mmr
+    ! Aitken Soluble Organic Matter aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'ait_sol_oc', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Accumulation Soluble number density
+      'ait_sol_om', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Accumulation Soluble number mixing ratio
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'nd_acc_sol', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Accumulation Soluble sulphate aerosol mmr
+      'n_acc_sol', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Accumulation Soluble Sulphate aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'acc_sol_su', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Accumulation Soluble black carbon aerosol mmr
+    ! Accumulation Soluble Black Carbon aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'acc_sol_bc', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Accumulation Soluble organic carbon aerosol mmr
+    ! Accumulation Soluble Organic Matter aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'acc_sol_oc', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Accumulation Soluble sea salt aerosol mmr
+      'acc_sol_om', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Accumulation Soluble Sea Salt aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'acc_sol_ss', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Coarse Soluble number density
+    ! Accumulation Soluble dust aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'nd_cor_sol', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Coarse Soluble sulphate aerosol mmr
+      'acc_sol_du', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Coarse Soluble number mixing ratio
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'n_cor_sol', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Coarse Soluble Sulphate aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'cor_sol_su', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Coarse Soluble black carbon aerosol mmr
+    ! Coarse Soluble Black Carbon aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'cor_sol_bc', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Coarse Soluble organic carbon aerosol mmr
+    ! Coarse Soluble Organic Matter aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'cor_sol_oc', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Coarse Soluble sea salt aerosol mmr
+      'cor_sol_om', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Coarse Soluble Sea Salt aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'cor_sol_ss', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Aitken Insoluble number density
+    ! Coarse Soluble dust aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'nd_ait_ins', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Aitken Insoluble black carbon aerosol mmr
+      'cor_sol_du', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Aitken Insoluble number mixing ratio
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'n_ait_ins', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Aitken Insoluble Black Carbon aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'ait_ins_bc', wtheta_space, checkpoint_flag=checkpoint_flag )
-    ! Aitken Insoluble organic carbon aerosol mmr
+    ! Aitken Insoluble Organic Matter aerosol mmr
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
-      'ait_ins_oc', wtheta_space, checkpoint_flag=checkpoint_flag )
+      'ait_ins_om', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Accumulation Insoluble number mixing ratio
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'n_acc_ins', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Accumulation Insoluble dust aerosol mmr
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'acc_ins_du', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Coarse Insoluble number mixing ratio
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'n_cor_ins', wtheta_space, checkpoint_flag=checkpoint_flag )
+    ! Coarse Insoluble dust aerosol mmr
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'cor_ins_du', wtheta_space, checkpoint_flag=checkpoint_flag )
 
     !========================================================================
     ! Aerosol fields that do not require checkpoint restart
     !========================================================================
-    ! No checkpoint restart for these fields
+
+    ! Cloud droplet number concentration
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'cloud_drop_no_conc', wtheta_space )
+
     ! Sulphuric Acid aerosol MMR
     call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
       'sulphuric', wtheta_space )
+
+    ! Dry diameter Aitken mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'drydp_ait_sol', wtheta_space )
+    ! Dry diameter Accumulation mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'drydp_acc_sol', wtheta_space )
+    ! Dry diameter Coarse mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'drydp_cor_sol', wtheta_space )
+    ! Dry diameter Aitken mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'drydp_ait_ins', wtheta_space )
+    ! Dry diameter Accumulation mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'drydp_acc_ins', wtheta_space )
+    ! Dry diameter Coarse mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'drydp_cor_ins', wtheta_space )
+    ! Wet diameter Aitken mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'wetdp_ait_sol', wtheta_space )
+    ! Wet diameter Accumulation mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'wetdp_acc_sol', wtheta_space )
+    ! Wet diameter Coarse mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'wetdp_cor_sol', wtheta_space )
+    ! Wet diameter Aitken mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'wetdp_ait_ins', wtheta_space )
+    ! Wet diameter Accumulation mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'wetdp_acc_ins', wtheta_space )
+    ! Wet diameter Coarse mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'wetdp_cor_ins', wtheta_space )
+    ! Particle density Aitken mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'rhopar_ait_sol', wtheta_space )
+    ! Particle density Accumulation mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'rhopar_acc_sol', wtheta_space )
+    ! Particle density Coarse mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'rhopar_cor_sol', wtheta_space )
+    ! Particle density Aitken mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'rhopar_ait_ins', wtheta_space )
+    ! Particle density Accumulation mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'rhopar_acc_ins', wtheta_space )
+    ! Particle density Coarse mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'rhopar_cor_ins', wtheta_space )
+    ! Partial volume of water Aitken mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_wat_ait_sol', wtheta_space )
+    ! Partial volume of water Accumulation mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_wat_acc_sol', wtheta_space )
+    ! Partial volume of water Coarse mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_wat_cor_sol', wtheta_space )
+    ! Partial volume of water Aitken mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_wat_ait_ins', wtheta_space )
+    ! Partial volume of water Accumulation mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_wat_acc_ins', wtheta_space )
+    ! Partial volume of water Coarse mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_wat_cor_ins', wtheta_space )
+    ! Partial volume component Sulphate Aitken mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_su_ait_sol', wtheta_space )
+    ! Partial volume component Black Carbon Aitken mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_bc_ait_sol', wtheta_space )
+    ! Partial volume component Organic Matter Aitken mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_om_ait_sol', wtheta_space )
+    ! Partial volume component Sulphate Accumulation mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_su_acc_sol', wtheta_space )
+    ! Partial volume component Black Carbon Accumulation mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_bc_acc_sol', wtheta_space )
+    ! Partial volume component Organic Matter Accumulation mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_om_acc_sol', wtheta_space )
+    ! Partial volume component Sea Salt Accumulation mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_ss_acc_sol', wtheta_space )
+    ! Partial volume component Dust Accumulation mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_du_acc_sol', wtheta_space )
+    ! Partial volume component Sulphate Coarse mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_su_cor_sol', wtheta_space )
+    ! Partial volume component Black Carbon Coarse mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_bc_cor_sol', wtheta_space )
+    ! Partial volume component Organic Matter Coarse mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_om_cor_sol', wtheta_space )
+    ! Partial volume component Sea Salt Coarse mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_ss_cor_sol', wtheta_space )
+    ! Partial volume component Dust Coarse mode (Solvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_du_cor_sol', wtheta_space )
+    ! Partial volume component Black Carbon Aitken mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_bc_ait_ins', wtheta_space )
+    ! Partial volume component Organic Matter Aitken mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_om_ait_ins', wtheta_space )
+    ! Partial volume component Dust Accumulation mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_du_acc_ins', wtheta_space )
+    ! Partial volume component Dust Coarse mode (Insolvent)
+    call add_physics_field( aerosol_fields, depository, prognostic_fields,     &
+      'pvol_du_cor_ins', wtheta_space )
+
 #endif
 
   end subroutine create_physics_prognostics

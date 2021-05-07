@@ -161,9 +161,9 @@ contains
 ! @param[in]    ndf_mode                No. of DOFs per cell for mode space
 ! @param[in]    undf_mode               No. unique of DOFs for mode space
 ! @param[in]    map_mode                Dofmap for mode space column base cell
-! @param[in]    ndf_rmode               No. of DOFs per cell for rmode space
-! @param[in]    undf_rmode              No. unique of DOFs for rmode space
-! @param[in]    map_rmode               Dofmap for rmode space column base cell
+! @param[in]    ndf_rmode_sw            No. of DOFs per cell for rmode_sw space
+! @param[in]    undf_rmode_sw           No. unique of DOFs for rmode_sw space
+! @param[in]    map_rmode_sw          Dofmap for rmode_sw space column base cell
 subroutine sw_code(nlayers,                          &
                    sw_heating_rate,                  &
                    sw_down_surf,                     &
@@ -217,7 +217,7 @@ subroutine sw_code(nlayers,                          &
                    ndf_w3, undf_w3, map_w3,          &
                    ndf_rtile, undf_rtile, map_rtile, &
                    ndf_mode, undf_mode, map_mode,    &
-                   ndf_rmode, undf_rmode, map_rmode)
+                   ndf_rmode_sw, undf_rmode_sw, map_rmode_sw)
 
   use well_mixed_gases_config_mod, only: &
     co2_mix_ratio, n2o_mix_ratio, ch4_mix_ratio, o2_mix_ratio
@@ -225,12 +225,11 @@ subroutine sw_code(nlayers,                          &
     l_rayleigh_sw, l_trans_zen_correction,    &
     i_cloud_ice_type_sw, i_cloud_liq_type_sw, &
     cloud_vertical_decorr
-  use aerosol_config_mod, only: sulphuric_strat_climatology
+  use aerosol_config_mod, only: l_radaer, sulphuric_strat_climatology
   use set_thermodynamic_mod, only: set_thermodynamic
   use set_cloud_field_mod, only: set_cloud_field
   use jules_control_init_mod, only: n_surf_tile, sw_band_tile
-  use init_aerosol_fields_alg_mod, only: l_radaer, &
-    n_aer_mode, mode_dimen, sw_band_mode
+  use um_physics_init_mod, only: n_aer_mode, mode_dimen, sw_band_mode
   use socrates_runes, only: runes, ip_source_illuminate
   use socrates_bones, only: bones
 
@@ -239,9 +238,9 @@ subroutine sw_code(nlayers,                          &
   ! Arguments
   integer(i_def), intent(in) :: nlayers, timestep
   integer(i_def), intent(in) :: ndf_wth, ndf_w3, ndf_2d
-  integer(i_def), intent(in) :: ndf_tile, ndf_rtile, ndf_mode, ndf_rmode
+  integer(i_def), intent(in) :: ndf_tile, ndf_rtile, ndf_mode, ndf_rmode_sw
   integer(i_def), intent(in) :: undf_wth, undf_w3, undf_2d
-  integer(i_def), intent(in) :: undf_tile, undf_rtile, undf_mode, undf_rmode
+  integer(i_def), intent(in) :: undf_tile, undf_rtile, undf_mode, undf_rmode_sw
 
   integer(i_def), dimension(ndf_wth),   intent(in) :: map_wth
   integer(i_def), dimension(ndf_w3),    intent(in) :: map_w3
@@ -249,7 +248,7 @@ subroutine sw_code(nlayers,                          &
   integer(i_def), dimension(ndf_tile),  intent(in) :: map_tile
   integer(i_def), dimension(ndf_rtile), intent(in) :: map_rtile
   integer(i_def), dimension(ndf_mode),  intent(in) :: map_mode
-  integer(i_def), dimension(ndf_rmode), intent(in) :: map_rmode
+  integer(i_def), dimension(ndf_rmode_sw), intent(in) :: map_rmode_sw
 
   real(r_def), dimension(undf_wth),  intent(inout) :: sw_heating_rate
   real(r_def), dimension(undf_2d),   intent(inout) :: sw_down_surf, &
@@ -277,7 +276,7 @@ subroutine sw_code(nlayers,                          &
     tile_sw_direct_albedo, tile_sw_diffuse_albedo
   real(r_def), dimension(undf_wth),   intent(in) :: sulphuric
   real(r_def), dimension(undf_mode),  intent(in) :: aer_mix_ratio
-  real(r_def), dimension(undf_rmode), intent(in) :: &
+  real(r_def), dimension(undf_rmode_sw), intent(in) :: &
     aer_sw_absorption, aer_sw_scattering, aer_sw_asymmetry
   real(r_def), dimension(undf_2d), intent(in) :: latitude, longitude
 
@@ -288,7 +287,7 @@ subroutine sw_code(nlayers,                          &
   integer(i_def) :: n_cloud_layer
   integer(i_def) :: wth_0, wth_1, wth_nlayers, w3_1, w3_nlayers
   integer(i_def) :: tile_1, tile_last, rtile_1, rtile_last
-  integer(i_def) :: mode_1, mode_last, rmode_1, rmode_last
+  integer(i_def) :: mode_1, mode_last, rmode_sw_1, rmode_sw_last
   real(r_def), dimension(nlayers) :: layer_heat_capacity
     ! Heat capacity for each layer
   real(r_def), dimension(nlayers) :: p_layer, t_layer
@@ -313,10 +312,10 @@ subroutine sw_code(nlayers,                          &
   tile_last = map_tile(1)+n_surf_tile-1
   rtile_1 = map_rtile(1)
   rtile_last = map_rtile(1)+sw_band_tile-1
-  mode_1 = map_mode(1)+1
-  mode_last = map_mode(1)+(nlayers+1)*mode_dimen-1
-  rmode_1 = map_rmode(1)+1
-  rmode_last = map_rmode(1)+(nlayers+1)*sw_band_mode-1
+  mode_1 = map_mode(1) + 1
+  mode_last = map_mode(1) + ( (nlayers+1)*mode_dimen ) - 1
+  rmode_sw_1 = map_rmode_sw(1) + 1
+  rmode_sw_last = map_rmode_sw(1) + ( (nlayers+1)*sw_band_mode ) - 1
 
   if (mod(timestep-1_i_def, n_radstep) == 0) then
     ! Radiation time-step: full calculation of radiative fluxes
@@ -395,9 +394,9 @@ subroutine sw_code(nlayers,                          &
       n_aer_mode             = n_aer_mode,                                     &
       n_aer_layer            = nlayers+1,                                      &
       aer_mix_ratio_1d       = aer_mix_ratio(mode_1:mode_last),                &
-      aer_absorption_1d      = aer_sw_absorption(rmode_1:rmode_last),          &
-      aer_scattering_1d      = aer_sw_scattering(rmode_1:rmode_last),          &
-      aer_asymmetry_1d       = aer_sw_asymmetry(rmode_1:rmode_last),           &
+      aer_absorption_1d      = aer_sw_absorption(rmode_sw_1:rmode_sw_last),    &
+      aer_scattering_1d      = aer_sw_scattering(rmode_sw_1:rmode_sw_last),    &
+      aer_asymmetry_1d       = aer_sw_asymmetry(rmode_sw_1:rmode_sw_last),     &
       l_invert               = .true.,                                         &
       flux_direct_1d         = sw_direct,                                      &
       flux_down_1d           = sw_down,                                        &

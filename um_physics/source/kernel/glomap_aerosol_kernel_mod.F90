@@ -31,26 +31,26 @@ type, public, extends(kernel_type) :: glomap_aerosol_kernel_type
   type(arg_type) :: meta_args(23) = (/       &
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! theta_in_wth
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! exner_in_wth
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! nd_nuc_sol
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! n_nuc_sol
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! nuc_sol_su
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! nuc_sol_oc
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! nd_ait_sol
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! nuc_sol_om
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! n_ait_sol
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! ait_sol_su
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! ait_sol_bc
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! ait_sol_oc
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! nd_acc_sol
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! ait_sol_om
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! n_acc_sol
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! acc_sol_su
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! acc_sol_bc
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! acc_sol_oc
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! acc_sol_om
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! acc_sol_ss
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! nd_cor_sol
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! n_cor_sol
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! cor_sol_su
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! cor_sol_bc
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! cor_sol_oc
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! cor_sol_om
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! cor_sol_ss
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! nd_ait_ins
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! n_ait_ins
        arg_type(GH_FIELD, GH_READ,  WTHETA), & ! ait_ins_bc
-       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! ait_ins_oc
+       arg_type(GH_FIELD, GH_READ,  WTHETA), & ! ait_ins_om
        arg_type(GH_FIELD, GH_WRITE, WTHETA)  & ! cloud_drop_no_conc
        /)
   integer :: iterates_over = CELLS
@@ -62,30 +62,30 @@ public glomap_aerosol_code
 contains
 
 !> @brief Interface to glomap aersol climatology scheme.
-!> @param[in]    nlayers         The number of layers
-!> @param[in]    theta_in_wth    Potential temperature field
-!> @param[in]    exner_in_wth        Exner pressure in potential temperature
-!>                                    space
-!> @param[in]    nd_nuc_sol          Climatology aerosol field
+!> @param[in]    nlayers             The number of layers
+!> @param[in]    theta_in_wth        Potential temperature field
+!> @param[in]    exner_in_wth        Exner pressure
+!>                                    in potential temperature space
+!> @param[in]    n_nuc_sol           Climatology aerosol field
 !> @param[in]    nuc_sol_su          Climatology aerosol field
-!> @param[in]    nuc_sol_oc          Climatology aerosol field
-!> @param[in]    nd_ait_sol          Climatology aerosol field
+!> @param[in]    nuc_sol_om          Climatology aerosol field
+!> @param[in]    n_ait_sol           Climatology aerosol field
 !> @param[in]    ait_sol_su          Climatology aerosol field
 !> @param[in]    ait_sol_bc          Climatology aerosol field
-!> @param[in]    ait_sol_oc          Climatology aerosol field
-!> @param[in]    nd_acc_sol          Climatology aerosol field
+!> @param[in]    ait_sol_om          Climatology aerosol field
+!> @param[in]    n_acc_sol           Climatology aerosol field
 !> @param[in]    acc_sol_su          Climatology aerosol field
 !> @param[in]    acc_sol_bc          Climatology aerosol field
-!> @param[in]    acc_sol_oc          Climatology aerosol field
+!> @param[in]    acc_sol_om          Climatology aerosol field
 !> @param[in]    acc_sol_ss          Climatology aerosol field
-!> @param[in]    nd_cor_sol          Climatology aerosol field
+!> @param[in]    n_cor_sol           Climatology aerosol field
 !> @param[in]    cor_sol_su          Climatology aerosol field
 !> @param[in]    cor_sol_bc          Climatology aerosol field
-!> @param[in]    cor_sol_oc          Climatology aerosol field
+!> @param[in]    cor_sol_om          Climatology aerosol field
 !> @param[in]    cor_sol_ss          Climatology aerosol field
-!> @param[in]    nd_ait_ins          Climatology aerosol field
+!> @param[in]    n_ait_ins           Climatology aerosol field
 !> @param[in]    ait_ins_bc          Climatology aerosol field
-!> @param[in]    ait_ins_oc          Climatology aerosol field
+!> @param[in]    ait_ins_om          Climatology aerosol field
 !> @param[in,out] cloud_drop_no_conc Cloud Droplet Number Concentration
 !>                                    via Jones method doi:10.1038/370450a0
 !> @param[in]    ndf_wth             Number of degrees of freedom per cell for
@@ -98,26 +98,26 @@ contains
 subroutine glomap_aerosol_code( nlayers,                                       &
                                 theta_in_wth,                                  &
                                 exner_in_wth,                                  &
-                                nd_nuc_sol,                                    &
+                                n_nuc_sol,                                     &
                                 nuc_sol_su,                                    &
-                                nuc_sol_oc,                                    &
-                                nd_ait_sol,                                    &
+                                nuc_sol_om,                                    &
+                                n_ait_sol,                                     &
                                 ait_sol_su,                                    &
                                 ait_sol_bc,                                    &
-                                ait_sol_oc,                                    &
-                                nd_acc_sol,                                    &
+                                ait_sol_om,                                    &
+                                n_acc_sol,                                     &
                                 acc_sol_su,                                    &
                                 acc_sol_bc,                                    &
-                                acc_sol_oc,                                    &
+                                acc_sol_om,                                    &
                                 acc_sol_ss,                                    &
-                                nd_cor_sol,                                    &
+                                n_cor_sol,                                     &
                                 cor_sol_su,                                    &
                                 cor_sol_bc,                                    &
-                                cor_sol_oc,                                    &
+                                cor_sol_om,                                    &
                                 cor_sol_ss,                                    &
-                                nd_ait_ins,                                    &
+                                n_ait_ins,                                     &
                                 ait_ins_bc,                                    &
-                                ait_ins_oc,                                    &
+                                ait_ins_om,                                    &
                                 cloud_drop_no_conc,                            &
                                 ndf_wth, undf_wth, map_wth )
 
@@ -149,27 +149,26 @@ subroutine glomap_aerosol_code( nlayers,                                       &
 
   real(kind=r_def), intent(in),  dimension(undf_wth) :: theta_in_wth
   real(kind=r_def), intent(in),  dimension(undf_wth) :: exner_in_wth
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: nd_nuc_sol
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: n_nuc_sol
   real(kind=r_def), intent(in),  dimension(undf_wth) :: nuc_sol_su
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: nuc_sol_oc
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: nd_ait_sol
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: nuc_sol_om
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: n_ait_sol
   real(kind=r_def), intent(in),  dimension(undf_wth) :: ait_sol_su
   real(kind=r_def), intent(in),  dimension(undf_wth) :: ait_sol_bc
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: ait_sol_oc
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: nd_acc_sol
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: ait_sol_om
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: n_acc_sol
   real(kind=r_def), intent(in),  dimension(undf_wth) :: acc_sol_su
   real(kind=r_def), intent(in),  dimension(undf_wth) :: acc_sol_bc
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: acc_sol_oc
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: acc_sol_om
   real(kind=r_def), intent(in),  dimension(undf_wth) :: acc_sol_ss
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: nd_cor_sol
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: n_cor_sol
   real(kind=r_def), intent(in),  dimension(undf_wth) :: cor_sol_su
   real(kind=r_def), intent(in),  dimension(undf_wth) :: cor_sol_bc
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: cor_sol_oc
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: cor_sol_om
   real(kind=r_def), intent(in),  dimension(undf_wth) :: cor_sol_ss
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: nd_ait_ins
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: n_ait_ins
   real(kind=r_def), intent(in),  dimension(undf_wth) :: ait_ins_bc
-  real(kind=r_def), intent(in),  dimension(undf_wth) :: ait_ins_oc
-
+  real(kind=r_def), intent(in),  dimension(undf_wth) :: ait_ins_om
   real(kind=r_def), intent(inout), dimension(undf_wth) :: cloud_drop_no_conc
 
   ! Local variables for the kernel
@@ -184,14 +183,14 @@ subroutine glomap_aerosol_code( nlayers,                                       &
 
   ! note - UM fields may have a redundant zeroth level
   real(r_um), dimension(row_length,rows,tdims%k_start:tdims%k_end) ::          &
-                                  nd_nuc_sol_um, nuc_sol_su_um, nuc_sol_oc_um, &
-                                  nd_ait_sol_um, ait_sol_su_um, ait_sol_bc_um, &
-                                  ait_sol_oc_um,                               &
-                                  nd_acc_sol_um, acc_sol_su_um, acc_sol_bc_um, &
-                                  acc_sol_oc_um, acc_sol_ss_um,                &
-                                  nd_cor_sol_um, cor_sol_su_um, cor_sol_bc_um, &
-                                  cor_sol_oc_um, cor_sol_ss_um,                &
-                                  nd_ait_ins_um, ait_ins_bc_um, ait_ins_oc_um
+                                  n_nuc_sol_um, nuc_sol_su_um, nuc_sol_om_um,  &
+                                  n_ait_sol_um, ait_sol_su_um, ait_sol_bc_um,  &
+                                  ait_sol_om_um,                               &
+                                  n_acc_sol_um, acc_sol_su_um, acc_sol_bc_um,  &
+                                  acc_sol_om_um, acc_sol_ss_um,                &
+                                  n_cor_sol_um, cor_sol_su_um, cor_sol_bc_um,  &
+                                  cor_sol_om_um, cor_sol_ss_um,                &
+                                  n_ait_ins_um, ait_ins_bc_um, ait_ins_om_um
 
   real(r_um), dimension(nlayers,nmodes) :: drydp
   real(r_um), dimension(nlayers,nmodes) :: nd
@@ -223,26 +222,26 @@ subroutine glomap_aerosol_code( nlayers,                                       &
 
   ! note - zeroth level is redundant for these fields in UM
   do k = 1, nlayers
-    nd_nuc_sol_um(1,1,k) = nd_nuc_sol(map_wth(1) + k)
+    n_nuc_sol_um(1,1,k)  = n_nuc_sol( map_wth(1) + k)
     nuc_sol_su_um(1,1,k) = nuc_sol_su(map_wth(1) + k)
-    nuc_sol_oc_um(1,1,k) = nuc_sol_oc(map_wth(1) + k)
-    nd_ait_sol_um(1,1,k) = nd_ait_sol(map_wth(1) + k)
+    nuc_sol_om_um(1,1,k) = nuc_sol_om(map_wth(1) + k)
+    n_ait_sol_um(1,1,k)  = n_ait_sol( map_wth(1) + k)
     ait_sol_su_um(1,1,k) = ait_sol_su(map_wth(1) + k)
     ait_sol_bc_um(1,1,k) = ait_sol_bc(map_wth(1) + k)
-    ait_sol_oc_um(1,1,k) = ait_sol_oc(map_wth(1) + k)
-    nd_acc_sol_um(1,1,k) = nd_acc_sol(map_wth(1) + k)
+    ait_sol_om_um(1,1,k) = ait_sol_om(map_wth(1) + k)
+    n_acc_sol_um(1,1,k)  = n_acc_sol( map_wth(1) + k)
     acc_sol_su_um(1,1,k) = acc_sol_su(map_wth(1) + k)
     acc_sol_bc_um(1,1,k) = acc_sol_bc(map_wth(1) + k)
-    acc_sol_oc_um(1,1,k) = acc_sol_oc(map_wth(1) + k)
+    acc_sol_om_um(1,1,k) = acc_sol_om(map_wth(1) + k)
     acc_sol_ss_um(1,1,k) = acc_sol_ss(map_wth(1) + k)
-    nd_cor_sol_um(1,1,k) = nd_cor_sol(map_wth(1) + k)
+    n_cor_sol_um(1,1,k)  = n_cor_sol( map_wth(1) + k)
     cor_sol_su_um(1,1,k) = cor_sol_su(map_wth(1) + k)
     cor_sol_bc_um(1,1,k) = cor_sol_bc(map_wth(1) + k)
-    cor_sol_oc_um(1,1,k) = cor_sol_oc(map_wth(1) + k)
+    cor_sol_om_um(1,1,k) = cor_sol_om(map_wth(1) + k)
     cor_sol_ss_um(1,1,k) = cor_sol_ss(map_wth(1) + k)
-    nd_ait_ins_um(1,1,k) = nd_ait_ins(map_wth(1) + k)
+    n_ait_ins_um(1,1,k)  = n_ait_ins( map_wth(1) + k)
     ait_ins_bc_um(1,1,k) = ait_ins_bc(map_wth(1) + k)
-    ait_ins_oc_um(1,1,k) = ait_ins_oc(map_wth(1) + k)
+    ait_ins_om_um(1,1,k) = ait_ins_om(map_wth(1) + k)
   end do
 
   !-----------------------------------------------------------------------
@@ -250,14 +249,14 @@ subroutine glomap_aerosol_code( nlayers,                                       &
   !-----------------------------------------------------------------------
 
   ! output fields (drydp & nd) are required to calculate CDNC
-  call glomap_clim_drydp_nd_out( nd_nuc_sol_um, nuc_sol_su_um, nuc_sol_oc_um,  &
-                                 nd_ait_sol_um, ait_sol_su_um, ait_sol_bc_um,  &
-                                 ait_sol_oc_um,                                &
-                                 nd_acc_sol_um, acc_sol_su_um, acc_sol_bc_um,  &
-                                 acc_sol_oc_um, acc_sol_ss_um,                 &
-                                 nd_cor_sol_um, cor_sol_su_um, cor_sol_bc_um,  &
-                                 cor_sol_oc_um, cor_sol_ss_um,                 &
-                                 nd_ait_ins_um, ait_ins_bc_um, ait_ins_oc_um,  &
+  call glomap_clim_drydp_nd_out( n_nuc_sol_um, nuc_sol_su_um, nuc_sol_om_um,   &
+                                 n_ait_sol_um, ait_sol_su_um, ait_sol_bc_um,   &
+                                 ait_sol_om_um,                                &
+                                 n_acc_sol_um, acc_sol_su_um, acc_sol_bc_um,   &
+                                 acc_sol_om_um, acc_sol_ss_um,                 &
+                                 n_cor_sol_um, cor_sol_su_um, cor_sol_bc_um,   &
+                                 cor_sol_om_um, cor_sol_ss_um,                 &
+                                 n_ait_ins_um, ait_ins_bc_um, ait_ins_om_um,   &
                                  nlayers,                                      &
                                  p_theta_levels_1d, t_theta_levels_1d,         &
                                  drydp, nd )

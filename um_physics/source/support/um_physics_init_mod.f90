@@ -9,7 +9,20 @@
 module um_physics_init_mod
 
   ! LFRic namelists which have been read
-  use aerosol_config_mod,        only : glomap_mode, glomap_mode_climatology
+  use aerosol_config_mod,        only : activation_scheme,                     &
+                                        activation_scheme_jones,               &
+                                        glomap_mode,                           &
+                                        glomap_mode_climatology,               &
+                                        glomap_mode_off,                       &
+                                        glomap_mode_ukca,                      &
+                                        aclw_file,                             &
+                                        acsw_file,                             &
+                                        anlw_file,                             &
+                                        answ_file,                             &
+                                        crlw_file,                             &
+                                        crsw_file,                             &
+                                        prec_file,                             &
+                                        l_radaer
 
   use blayer_config_mod,         only : a_ent_shr, cbl_opt,                   &
                                         cbl_opt_conventional,                 &
@@ -83,10 +96,12 @@ module um_physics_init_mod
                                         cloud_um,          &
                                         microphysics,      &
                                         microphysics_um,   &
-                                        spectral_gwd,      &
-                                        spectral_gwd_um,   &
                                         orographic_drag,   &
                                         orographic_drag_um,&
+                                        radiation,         &
+                                        radiation_socrates,&
+                                        spectral_gwd,      &
+                                        spectral_gwd_um,   &
                                         surface,           &
                                         surface_jules
 
@@ -96,15 +111,23 @@ module um_physics_init_mod
                                  add_cgw_in => add_cgw,                       &
                                  cgw_scale_factor_in => cgw_scale_factor
 
+  use socrates_init_mod, only: sw_wavelength_short,                            &
+                               sw_wavelength_long,                             &
+                               lw_wavelength_short,                            &
+                               lw_wavelength_long,                             &
+                               n_sw_band,                                      &
+                               n_lw_band
+
   use orographic_drag_config_mod, only:  include_moisture,       &
                                          include_moisture_moist, &
                                          include_moisture_dry
 
   ! Other LFRic modules used
-  use constants_mod,        only : r_um, rmdi
+  use constants_mod,        only : i_def, r_um, rmdi
   use log_mod,              only : log_event,         &
                                    log_scratch_space, &
-                                   LOG_LEVEL_ERROR
+                                   LOG_LEVEL_ERROR,   &
+                                   LOG_LEVEL_INFO
   use conversions_mod,      only : pi_over_180
 
   ! UM modules used
@@ -113,8 +136,14 @@ module um_physics_init_mod
 
   implicit none
 
+  integer(i_def), protected :: n_aer_mode
+  integer(i_def), protected :: mode_dimen
+  integer(i_def), protected :: sw_band_mode
+  integer(i_def), protected :: lw_band_mode
+
   private
-  public :: um_physics_init
+  public :: um_physics_init,                                                   &
+            n_aer_mode, mode_dimen, sw_band_mode, lw_band_mode
 
 contains
 
@@ -185,14 +214,14 @@ contains
     use electric_inputs_mod, only: electric_method, no_lightning
     use fsd_parameters_mod, only: fsd_eff_lam, fsd_eff_phi, f_cons, f_arr
     use glomap_clim_option_mod, only: i_glomap_clim_setup,                 &
-         i_gc_sussocbc_5mode, l_glomap_clim_aie2
+         i_gc_sussocbc_5mode, i_gc_sussocbcdu_7mode, l_glomap_clim_aie2
     use g_wave_input_mod, only: ussp_launch_factor, wavelstar, l_add_cgw,  &
          cgw_scale_factor, i_moist
     use mphys_bypass_mod, only: mphys_mod_top
     use mphys_inputs_mod, only: ai, ar, bi, c_r_correl, ci_input, cic_input, &
         di_input, dic_input, i_mcr_iter, l_diff_icevt,                       &
         l_mcr_qrain, l_psd, l_rain, l_warm_new, timestep_mp_in, x1r, x2r,    &
-        l_mcr_qcf2, sediment_loc, i_mcr_iter_tstep, all_sed_start,           &
+        sediment_loc, i_mcr_iter_tstep, all_sed_start,                       &
         check_run_precip, graupel_option, no_graupel, a_ratio_exp,           &
         a_ratio_fac, l_droplet_tpr, qclrime, l_shape_rime, ndrop_surf,       &
         z_surf, l_fsd_generator
@@ -213,7 +242,13 @@ contains
          rneutml_sq
     use turb_diff_mod, only: l_subfilter_horiz, l_subfilter_vert,        &
          mix_factor, turb_startlev_vert, turb_endlev_vert
-    use ukca_mode_setup, only: ukca_mode_sussbcoc_5mode
+    use ukca_mode_setup, only: ukca_mode_sussbcoc_5mode,                       &
+                               ukca_mode_sussbcocdu_7mode
+    use ukca_option_mod, only: i_mode_setup
+    use um_read_radaer_lut_mod, only: um_read_radaer_lut
+    use ukca_radaer_read_precalc_mod, only: ukca_radaer_read_precalc
+    use ukca_radaer_lut, only: ip_ukca_lut_accum, ip_ukca_lut_coarse,          &
+         ip_ukca_lut_accnarrow, ip_ukca_lut_sw, ip_ukca_lut_lw
 
     implicit none
 
@@ -222,21 +257,103 @@ contains
     ! ----------------------------------------------------------------
     if ( aerosol == aerosol_um ) then
 
+      if ( l_radaer .and. .not. ( radiation == radiation_socrates ) ) then
+        !  RADAER only calculates required input fields for Socrates.
+        !  There is no other output of RADAER, so this setting
+        !  is not recommended.
+        write(log_scratch_space,'(A)')                                         &
+          "It is not recommended to run RADAER without Socrates."
+        call log_event( log_scratch_space, LOG_LEVEL_ERROR)
+      end if
+
+      if ( ( glomap_mode == glomap_mode_climatology ) .and. ( l_radaer ) ) then
+        ! RADAER and GLOMAP climatology currently incompatible
+        ! GLOMAP Climatology in UM currently hardcoded for 5 mode without dust
+        ! RADAER in LFRic currently only works for 7 mode with dust
+        write(log_scratch_space,'(A)')                                         &
+                                "RADAER and GLOMAP_CLIM currently incompatible"
+        call log_event( log_scratch_space, LOG_LEVEL_ERROR)
+      end if
+
       ! Options which are bespoke to the aerosol scheme chosen
       select case (glomap_mode)
 
-      case (glomap_mode_climatology)
-        ! l_glomap_clim_aie1 is not used in LFRic. The 1st indirect effect is
-        ! controlled through the radiation namelist: droplet_effective_radius
-        l_glomap_clim_aie2 = .true.
-        ! Set up the correct mode and components for GLOMAP-mode:
-        ! 5 mode with SU SS OC BC components
-        i_glomap_clim_setup = i_gc_sussocbc_5mode
-        call ukca_mode_sussbcoc_5mode()
+        case(glomap_mode_climatology)
+          ! l_glomap_clim_aie1 is not used in LFRic. The 1st indirect effect is
+          ! controlled through the radiation namelist: droplet_effective_radius
+          l_glomap_clim_aie2 = .true.
+          ! Set up the correct mode and components for GLOMAP-mode:
+          ! 5 mode with SU SS OM BC components
+          i_mode_setup = i_gc_sussocbc_5mode
+          i_glomap_clim_setup = i_gc_sussocbc_5mode
+          call ukca_mode_sussbcoc_5mode()
+
+        case(glomap_mode_ukca)
+          ! Set up the correct mode and components for GLOMAP-mode:
+          ! 7 mode with SU SS OM BC DU components
+          i_glomap_clim_setup = i_gc_sussocbcdu_7mode
+          i_mode_setup = i_gc_sussocbcdu_7mode
+          call ukca_mode_sussbcocdu_7mode()
+
+        case(glomap_mode_off)
+          ! Do Nothing
+
+        case default
+          write( log_scratch_space, '(A,I0)' )                                 &
+             'Invalid aerosol option, stopping', glomap_mode
+          call log_event( log_scratch_space, LOG_LEVEL_ERROR )
 
       end select
 
-    end if
+      ! Initialisation of RADAER fields
+      if ( l_radaer ) then
+        n_aer_mode = 6_i_def
+      else
+        n_aer_mode = 0_i_def
+      end if
+
+      select case (glomap_mode)
+        case( glomap_mode_climatology , glomap_mode_ukca )
+
+          if ( l_radaer ) then
+
+            call um_read_radaer_lut ( aclw_file, &
+                                      ip_ukca_lut_accum, ip_ukca_lut_lw )
+
+            call um_read_radaer_lut ( acsw_file, &
+                                      ip_ukca_lut_accum, ip_ukca_lut_sw )
+
+            call um_read_radaer_lut ( anlw_file, &
+                                      ip_ukca_lut_accnarrow, ip_ukca_lut_lw )
+
+            call um_read_radaer_lut ( answ_file, &
+                                      ip_ukca_lut_accnarrow, ip_ukca_lut_sw )
+
+            call um_read_radaer_lut ( crlw_file, &
+                                      ip_ukca_lut_coarse, ip_ukca_lut_lw )
+
+            call um_read_radaer_lut ( crsw_file, &
+                                      ip_ukca_lut_coarse, ip_ukca_lut_sw )
+
+            call ukca_radaer_read_precalc( prec_file,                          &
+                                           sw_wavelength_short,                &
+                                           sw_wavelength_long,                 &
+                                           lw_wavelength_short,                &
+                                           lw_wavelength_long,                 &
+                                           n_sw_band,                          &
+                                           n_lw_band )
+          end if
+      end select
+
+    else ! if ( aerosol == aerosol_um ) then
+      ! Initialisation of RADAER fields
+      n_aer_mode = 0_i_def
+    end if ! if ( aerosol == aerosol_um ) then
+
+    ! Initialisation of RADAER fields
+    mode_dimen   = max(  n_aer_mode,             1_i_def )
+    sw_band_mode = max( (n_aer_mode*n_sw_band) , 1_i_def )
+    lw_band_mode = max( (n_aer_mode*n_lw_band) , 1_i_def )
 
     ! ----------------------------------------------------------------
     ! UM boundary layer scheme settings - contained in UM module bl_option_mod

@@ -46,6 +46,7 @@ module slow_physics_alg_mod
   ! Physics schemes called
 #ifdef UM_PHYSICS
   use locate_tropopause_alg_mod, only: locate_tropopause_alg
+  use radaer_alg_mod,            only: radaer_alg
   use glomap_aerosol_alg_mod,    only: glomap_aerosol_alg
   use strat_aerosol_alg_mod,     only: strat_aerosol_alg
   use mphys_alg_mod,             only: mphys_alg
@@ -58,12 +59,14 @@ module slow_physics_alg_mod
   use bl_exp_alg_mod,            only: bl_exp_alg
   use pc2_checks_alg_mod,        only: pc2_checks_alg
   use methox_alg_mod,            only: methox_alg
-  use aerosol_config_mod,        only: glomap_mode, glomap_mode_climatology, &
+  use aerosol_config_mod,        only: activation_scheme,                      &
+                                       activation_scheme_jones,                &
+                                       l_radaer,                               &
                                        sulphuric_strat_climatology
   use ancil_info,                only: rad_nband
   use jules_control_init_mod,    only: n_land_tile
   use fsd_condensate_alg_mod,    only: fsd_condensate_alg
-  use init_aerosol_fields_alg_mod, only: sw_band_mode, lw_band_mode, mode_dimen
+  use um_physics_init_mod,       only: sw_band_mode, lw_band_mode, mode_dimen
 #endif
 
   implicit none
@@ -227,34 +230,25 @@ contains
     !--------------------------------------------------------------------
     ! Tropopause level
     !--------------------------------------------------------------------
-    if ( sulphuric_strat_climatology ) then
+    if ( sulphuric_strat_climatology .or. l_radaer ) then
       call locate_tropopause_alg(trop_level, theta, exner_in_wth, twod_mesh_id)
     end if
 
     !--------------------------------------------------------------------
     ! Aerosol climatologies
     !--------------------------------------------------------------------
-    vector_space=>function_space_collection%get_fs(mesh_id,0,Wtheta,mode_dimen)
-    call aer_mix_ratio%initialise(vector_space)
-    vector_space=>function_space_collection%get_fs(mesh_id,0,Wtheta,sw_band_mode)
-    call aer_sw_absorption%initialise(vector_space)
-    call aer_sw_scattering%initialise(vector_space)
-    call aer_sw_asymmetry%initialise(vector_space)
-    vector_space=>function_space_collection%get_fs(mesh_id,0,Wtheta,lw_band_mode)
-    call aer_lw_absorption%initialise(vector_space)
-    call aer_lw_scattering%initialise(vector_space)
-    call aer_lw_asymmetry%initialise(vector_space)
-    if ( ( aerosol == aerosol_um ) .and.                                  &
-         ( microphysics == microphysics_um .or.                           &
+    if ( ( aerosol == aerosol_um ) .and.                                       &
+         ( microphysics == microphysics_um .or.                                &
            radiation == radiation_socrates ) ) then
-      if ( glomap_mode == glomap_mode_climatology ) then
-        call glomap_aerosol_alg ( aerosol_fields,                         &
-                                  theta,                                  &
-                                  exner_in_wth )
+
+      if ( activation_scheme == activation_scheme_jones ) then
+        call glomap_aerosol_alg ( aerosol_fields, theta, exner_in_wth )
       end if
+
       if ( sulphuric_strat_climatology ) then
         call strat_aerosol_alg ( aerosol_fields, trop_level, exner )
       end if
+
     end if
 
     !--------------------------------------------------------------------
@@ -267,6 +261,32 @@ contains
                       dtheta_mphys, dcfl_pc2_mphys, dcff_pc2_mphys,          &
                       dbcf_pc2_mphys )
       microphysics_done=.true. ! Collect this increment later on
+    end if
+
+    !--------------------------------------------------------------------
+    ! UM radaer scheme
+    !--------------------------------------------------------------------
+    vector_space=>function_space_collection%get_fs(mesh_id,0,Wtheta,mode_dimen)
+    call aer_mix_ratio%initialise(vector_space)
+    vector_space=>function_space_collection%get_fs(mesh_id,0,Wtheta,           &
+                                                   sw_band_mode)
+    call aer_sw_absorption%initialise(vector_space)
+    call aer_sw_scattering%initialise(vector_space)
+    call aer_sw_asymmetry%initialise(vector_space)
+    vector_space=>function_space_collection%get_fs(mesh_id,0,Wtheta,           &
+                                                   lw_band_mode)
+    call aer_lw_absorption%initialise(vector_space)
+    call aer_lw_scattering%initialise(vector_space)
+    call aer_lw_asymmetry%initialise(vector_space)
+
+    if ( l_radaer ) then
+      call radaer_alg( aerosol_fields,                                         &
+                       theta,                                                  &
+                       exner_in_wth,                                           &
+                       trop_level,                                             &
+                       aer_mix_ratio,                                          &
+                       aer_sw_absorption, aer_sw_scattering, aer_sw_asymmetry, &
+                       aer_lw_absorption, aer_lw_scattering, aer_lw_asymmetry )
     end if
 
     !--------------------------------------------------------------------

@@ -70,15 +70,15 @@ coordinate_order=1,
 element_order=0,
 rehabilitate=.true.,
 spherical_coord_order=1,
-spherical_coord_system='xyz'
+spherical_coord_system='xyz',
 vorticity_in_w1=.false.,
 /
 &formulation
-l_multigrid=.false.,
 dlayer_on=.false.,
 dry_static_adjust=.true.,
 exner_from_eos=.true.,
 init_exner_bt=.true.,
+l_multigrid=.false.,
 moisture_conservation=.true.,
 rotating=.true.,
 shallow=.true.,
@@ -167,7 +167,6 @@ smagorinsky=.false.,
 viscosity=.false.,
 viscosity_mu=0.0,
 /
-
 &orography
 orog_init_option='none',
 /
@@ -290,8 +289,8 @@ fv_advective_order=2,
 fv_flux_order=2,
 oned_reconstruction=.true.,
 operators='fv',
-scheme='method_of_lines',
 rho_splitting='none',
+scheme='method_of_lines',
 theta_splitting='none',
 upwind_direction_from_w_at_wtheta=.true.,
 /

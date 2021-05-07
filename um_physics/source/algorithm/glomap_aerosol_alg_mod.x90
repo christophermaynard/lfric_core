@@ -43,100 +43,100 @@ contains
     type( field_type ), intent( in ) :: theta_in_wth
     type( field_type ), intent( in ) :: exner_in_wth
 
-    ! Temporary unpacked fields from collections
-    type( field_type ), pointer :: nd_nuc_sol => null()
+    ! Temporary unpacked fields from collection aerosol_fields
+    type( field_type ), pointer :: n_nuc_sol => null()
     type( field_type ), pointer :: nuc_sol_su => null()
-    type( field_type ), pointer :: nuc_sol_oc => null()
-    type( field_type ), pointer :: nd_ait_sol => null()
+    type( field_type ), pointer :: nuc_sol_om => null()
+    type( field_type ), pointer :: n_ait_sol => null()
     type( field_type ), pointer :: ait_sol_su => null()
     type( field_type ), pointer :: ait_sol_bc => null()
-    type( field_type ), pointer :: ait_sol_oc => null()
-    type( field_type ), pointer :: nd_acc_sol => null()
+    type( field_type ), pointer :: ait_sol_om => null()
+    type( field_type ), pointer :: n_acc_sol => null()
     type( field_type ), pointer :: acc_sol_su => null()
     type( field_type ), pointer :: acc_sol_bc => null()
-    type( field_type ), pointer :: acc_sol_oc => null()
+    type( field_type ), pointer :: acc_sol_om => null()
     type( field_type ), pointer :: acc_sol_ss => null()
-    type( field_type ), pointer :: nd_cor_sol => null()
+    type( field_type ), pointer :: n_cor_sol => null()
     type( field_type ), pointer :: cor_sol_su => null()
     type( field_type ), pointer :: cor_sol_bc => null()
-    type( field_type ), pointer :: cor_sol_oc => null()
+    type( field_type ), pointer :: cor_sol_om => null()
     type( field_type ), pointer :: cor_sol_ss => null()
-    type( field_type ), pointer :: nd_ait_ins => null()
+    type( field_type ), pointer :: n_ait_ins => null()
     type( field_type ), pointer :: ait_ins_bc => null()
-    type( field_type ), pointer :: ait_ins_oc => null()
+    type( field_type ), pointer :: ait_ins_om => null()
     type( field_type ), pointer :: cloud_drop_no_conc => null()
 
     if ( subroutine_timers ) call timer('glomap_aerosol_alg')
 
-    ! Unpack fields
-    nd_nuc_sol => aerosol_fields%get_field('nd_nuc_sol')
+    ! Unpack fields from aerosol_fields
+    n_nuc_sol  => aerosol_fields%get_field('n_nuc_sol')
     nuc_sol_su => aerosol_fields%get_field('nuc_sol_su')
-    nuc_sol_oc => aerosol_fields%get_field('nuc_sol_oc')
-    nd_ait_sol => aerosol_fields%get_field('nd_ait_sol')
+    nuc_sol_om => aerosol_fields%get_field('nuc_sol_om')
+    n_ait_sol  => aerosol_fields%get_field('n_ait_sol')
     ait_sol_su => aerosol_fields%get_field('ait_sol_su')
     ait_sol_bc => aerosol_fields%get_field('ait_sol_bc')
-    ait_sol_oc => aerosol_fields%get_field('ait_sol_oc')
-    nd_acc_sol => aerosol_fields%get_field('nd_acc_sol')
+    ait_sol_om => aerosol_fields%get_field('ait_sol_om')
+    n_acc_sol  => aerosol_fields%get_field('n_acc_sol')
     acc_sol_su => aerosol_fields%get_field('acc_sol_su')
     acc_sol_bc => aerosol_fields%get_field('acc_sol_bc')
-    acc_sol_oc => aerosol_fields%get_field('acc_sol_oc')
+    acc_sol_om => aerosol_fields%get_field('acc_sol_om')
     acc_sol_ss => aerosol_fields%get_field('acc_sol_ss')
-    nd_cor_sol => aerosol_fields%get_field('nd_cor_sol')
+    n_cor_sol  => aerosol_fields%get_field('n_cor_sol')
     cor_sol_su => aerosol_fields%get_field('cor_sol_su')
     cor_sol_bc => aerosol_fields%get_field('cor_sol_bc')
-    cor_sol_oc => aerosol_fields%get_field('cor_sol_oc')
+    cor_sol_om => aerosol_fields%get_field('cor_sol_om')
     cor_sol_ss => aerosol_fields%get_field('cor_sol_ss')
-    nd_ait_ins => aerosol_fields%get_field('nd_ait_ins')
+    n_ait_ins  => aerosol_fields%get_field('n_ait_ins')
     ait_ins_bc => aerosol_fields%get_field('ait_ins_bc')
-    ait_ins_oc => aerosol_fields%get_field('ait_ins_oc')
-    cloud_drop_no_conc  => aerosol_fields%get_field('cloud_drop_no_conc')
+    ait_ins_om => aerosol_fields%get_field('ait_ins_om')
+    cloud_drop_no_conc => aerosol_fields%get_field('cloud_drop_no_conc')
 
     call invoke(glomap_aerosol_kernel_type( theta_in_wth,                      &
                                             exner_in_wth,                      &
-                                            nd_nuc_sol,                        &
+                                            n_nuc_sol,                         &
                                             nuc_sol_su,                        &
-                                            nuc_sol_oc,                        &
-                                            nd_ait_sol,                        &
+                                            nuc_sol_om,                        &
+                                            n_ait_sol,                         &
                                             ait_sol_su,                        &
                                             ait_sol_bc,                        &
-                                            ait_sol_oc,                        &
-                                            nd_acc_sol,                        &
+                                            ait_sol_om,                        &
+                                            n_acc_sol,                         &
                                             acc_sol_su,                        &
                                             acc_sol_bc,                        &
-                                            acc_sol_oc,                        &
+                                            acc_sol_om,                        &
                                             acc_sol_ss,                        &
-                                            nd_cor_sol,                        &
+                                            n_cor_sol,                         &
                                             cor_sol_su,                        &
                                             cor_sol_bc,                        &
-                                            cor_sol_oc,                        &
+                                            cor_sol_om,                        &
                                             cor_sol_ss,                        &
-                                            nd_ait_ins,                        &
+                                            n_ait_ins,                         &
                                             ait_ins_bc,                        &
-                                            ait_ins_oc,                        &
+                                            ait_ins_om,                        &
                                             cloud_drop_no_conc ))
 
     if ( write_diag .and. use_xios_io ) then
       ! Diagnostic output
-      call nd_nuc_sol%write_field('nd_nuc_sol')
+      call n_nuc_sol%write_field('n_nuc_sol')
       call nuc_sol_su%write_field('nuc_sol_su')
-      call nuc_sol_oc%write_field('nuc_sol_oc')
-      call nd_ait_sol%write_field('nd_ait_sol')
+      call nuc_sol_om%write_field('nuc_sol_om')
+      call n_ait_sol%write_field('n_ait_sol')
       call ait_sol_su%write_field('ait_sol_su')
       call ait_sol_bc%write_field('ait_sol_bc')
-      call ait_sol_oc%write_field('ait_sol_oc')
-      call nd_acc_sol%write_field('nd_acc_sol')
+      call ait_sol_om%write_field('ait_sol_om')
+      call n_acc_sol%write_field('n_acc_sol')
       call acc_sol_su%write_field('acc_sol_su')
       call acc_sol_bc%write_field('acc_sol_bc')
-      call acc_sol_oc%write_field('acc_sol_oc')
+      call acc_sol_om%write_field('acc_sol_om')
       call acc_sol_ss%write_field('acc_sol_ss')
-      call nd_cor_sol%write_field('nd_cor_sol')
+      call n_cor_sol%write_field('n_cor_sol')
       call cor_sol_su%write_field('cor_sol_su')
       call cor_sol_bc%write_field('cor_sol_bc')
-      call cor_sol_oc%write_field('cor_sol_oc')
+      call cor_sol_om%write_field('cor_sol_om')
       call cor_sol_ss%write_field('cor_sol_ss')
-      call nd_ait_ins%write_field('nd_ait_ins')
+      call n_ait_ins%write_field('n_ait_ins')
       call ait_ins_bc%write_field('ait_ins_bc')
-      call ait_ins_oc%write_field('ait_ins_oc')
+      call ait_ins_om%write_field('ait_ins_om')
       call cloud_drop_no_conc%write_field('cloud_drop_no_conc')
     end if
 
