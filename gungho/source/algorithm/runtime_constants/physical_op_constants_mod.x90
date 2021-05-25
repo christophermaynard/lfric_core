@@ -18,7 +18,7 @@ module physical_op_constants_mod
   use field_mod,                          only: field_type
   use function_space_mod,                 only: function_space_type
   use function_space_collection_mod,      only: function_space_collection
-  use fs_continuity_mod,                  only: W2, W3, Wtheta
+  use fs_continuity_mod,                  only: W1, W2, W3, Wtheta
   use io_config_mod,                      only: subroutine_timers
   use log_mod,                            only: log_event, LOG_LEVEL_INFO, &
                                                 LOG_LEVEL_ERROR
@@ -31,16 +31,19 @@ module physical_op_constants_mod
   use finite_element_config_mod,          only: element_order,    &
                                                 nqp_exact,        &
                                                 rehabilitate
-  use formulation_config_mod,             only: rotating
+  use formulation_config_mod,             only: rotating, use_physics
   use mixing_config_mod,                  only: smagorinsky
   use timestepping_config_mod,            only: dt
+  use planet_config_mod,                  only: radius
 
   ! Other algorithms
-  use geometric_constants_mod,            only: get_dA_at_w2
+  use geometric_constants_mod,            only: get_dA_at_w2, get_height
   use fem_constants_mod,                  only: get_detj_at_w2, get_qr
 
   ! PsyKAl PSYClone kernels
   use calc_delta_at_wtheta_kernel_mod,    only: calc_delta_at_wtheta_kernel_type
+  use calc_dz_centre_kernel_mod,          only: calc_dz_centre_kernel_type
+  use calc_dz_face_kernel_mod,            only: calc_dz_face_kernel_type
   use compute_coriolis_matrix_kernel_mod, only: compute_coriolis_matrix_kernel_type
   use compute_geopotential_kernel_mod,    only: compute_geopotential_kernel_type
 
@@ -54,6 +57,9 @@ module physical_op_constants_mod
   type(operator_type), target :: coriolis
   type(field_type), target    :: geopotential
   type(field_type), target    :: delta_at_wtheta
+  type(field_type), target    :: dtrdz_fd2
+  type(field_type), target    :: rdz_fd1
+  type(field_type), target    :: dz_at_wtheta
   type(field_type), target    :: max_diff_wtheta
 
   ! Public functions to create and access the module contents
@@ -63,6 +69,9 @@ module physical_op_constants_mod
   public :: get_coriolis
   public :: get_geopotential
   public :: get_delta_at_wtheta
+  public :: get_dtrdz_fd2
+  public :: get_rdz_fd1
+  public :: get_dz_at_wtheta
   public :: get_max_diff
 
 contains
@@ -79,19 +88,29 @@ contains
     type(field_type), intent(in) :: panel_id
 
     ! Internal variables
+    type(function_space_type),  pointer :: w1_k0_fs  => null()
+    type(function_space_type),  pointer :: w2_k0_fs  => null()
     type(function_space_type),  pointer :: w2_fs     => null()
     type(function_space_type),  pointer :: w3_fs     => null()
-    type(function_space_type),  pointer :: wtheta_fs => null()
+    type(function_space_type),  pointer :: wtheta_k0_fs => null()
     type(quadrature_xyoz_type), pointer :: qr
     type(field_type),           pointer :: dA_at_w2 => null()
     type(field_type),           pointer :: detj_at_w2 => null()
+    type( field_type ),         pointer :: height_w1 => null()
+    type( field_type ),         pointer :: height_w2 => null()
+    type( field_type ),         pointer :: height_w3 => null()
+    type( field_type ),         pointer :: height_wth => null()
     type(field_type)                    :: dx_at_w2
+    type(field_type)                    :: r_squared
 
     ! Auxiliary parameters for PSyclone builtins
     integer(i_def), parameter :: i_minus_one = -1_i_def
     integer(i_def) :: iconst
     real(r_def) :: const
 
+    ! Parameters of the cells
+    integer(i_def), parameter :: n_faces = 4_i_def
+    integer(i_def), parameter :: n_centres = 1_i_def
 
     if ( subroutine_timers ) call timer('physical_op_constants_alg')
     call log_event( "Gungho: creating physical_op_constants", LOG_LEVEL_INFO )
@@ -100,9 +119,11 @@ contains
 
     !=========== Create function spaces required for setup ===================!
 
+    w1_k0_fs  => function_space_collection%get_fs( mesh_id, 0, W1 )
+    w2_k0_fs  => function_space_collection%get_fs( mesh_id, 0, W2 )
     w2_fs     => function_space_collection%get_fs( mesh_id, element_order, W2 )
     w3_fs     => function_space_collection%get_fs( mesh_id, element_order, W3 )
-    wtheta_fs => function_space_collection%get_fs( mesh_id, element_order, Wtheta )
+    wtheta_k0_fs => function_space_collection%get_fs( mesh_id, 0, Wtheta )
 
     !=================== Create geopotential field ============================!
 
@@ -121,37 +142,76 @@ contains
       call invoke( compute_coriolis_matrix_kernel_type(coriolis, chi_sph, panel_id, qr) )
     end if
 
-    !========================== Diffusion objects =============================!
+    !========================== Physics objects =============================!
+    if (use_physics) then
 
-    ! Need to define field properties outside IF test as the fields are passed
-    ! to the BL scheme, even if Smagorinsky is false
-    call dx_at_w2%initialise( vector_space = w2_fs )
-    call delta_at_wtheta%initialise( vector_space = wtheta_fs )
-    call max_diff_wtheta%initialise( vector_space = wtheta_fs )
+      ! Quantities needed by all UM physics schemes
+      call dx_at_w2%initialise( vector_space = w2_k0_fs )
+      call r_squared%initialise( vector_space = w2_k0_fs )
+      call dtrdz_fd2%initialise( vector_space = w2_k0_fs )
+      call rdz_fd1%initialise( vector_space = w1_k0_fs )
+      call dz_at_wtheta%initialise( vector_space = wtheta_k0_fs )
+      call delta_at_wtheta%initialise( vector_space = wtheta_k0_fs )
+      call max_diff_wtheta%initialise( vector_space = wtheta_k0_fs )
 
-    detj_at_w2 => get_detj_at_w2()
-    dA_at_w2 => get_dA_at_w2(mesh_id)
+      detj_at_w2 => get_detj_at_w2()
+      dA_at_w2 => get_dA_at_w2(mesh_id)
+      height_w1 => get_height(W1, mesh_id)
+      height_w2 => get_height(W2, mesh_id)
+      height_w3 => get_height(W3, mesh_id)
+      height_wth => get_height(Wtheta, mesh_id)
 
-    call invoke( X_divideby_Y(dx_at_w2, detj_at_w2, dA_at_w2),&
-                 calc_delta_at_wtheta_kernel_type(delta_at_wtheta, dx_at_w2)  )
+      call invoke( X_divideby_Y(dx_at_w2, detj_at_w2, dA_at_w2),               &
+                   ! Calculate dx at wtheta points
+                   calc_delta_at_wtheta_kernel_type(delta_at_wtheta,           &
+                                                    dx_at_w2),                 &
+                   ! Calculate r
+                   a_plus_X(r_squared, radius, height_w2),                     &
+                   ! Calculate r^2
+                   inc_X_powint_n(r_squared, 2_i_def),                         &
+                   ! Calculate dz at location of lowest order w2 dofs
+                   setval_c(dtrdz_fd2, 1.0_r_def),                             &
+                   calc_dz_centre_kernel_type(dtrdz_fd2, height_w1, n_faces),  &
+                   ! Calculate r^2 * dz_at_fd2
+                   inc_X_times_Y(dtrdz_fd2, r_squared),                        &
+                   ! Calculate dt / (r^2 * dz_at_fd2 )
+                   inc_a_divideby_X(dt, dtrdz_fd2),                            &
+                   ! Calculate dz at location of lowest order w1 dofs
+                   setval_c(rdz_fd1, 1.0_r_def),                               &
+                   calc_dz_face_kernel_type(rdz_fd1, height_w2, height_w1,     &
+                                            n_faces),                          &
+                   ! Calculate 1/dz_at_fd1
+                   inc_X_powint_n(rdz_fd1, (-1_i_def)),                        &
+                   ! Calculate dz_at_wtheta
+                   calc_dz_face_kernel_type(dz_at_wtheta, height_w3,           &
+                                            height_wth, n_centres) )
 
-    if (smagorinsky) then
-      ! calculate maximum diffusion coefficient allowed in this run for stability
-      ! based on UMDP 28 equation 32: max_diff = dx^2/(8*dt)
-      const = 0.125_r_def/dt
-      iconst = 2_i_def
-      call delta_at_wtheta%copy_field(max_diff_wtheta)
-      call invoke( inc_X_powint_n( max_diff_wtheta, iconst ),  &
-                   inc_a_times_X( const, max_diff_wtheta )     &
-                 )
+      if (smagorinsky) then
+        ! Calculate maximum diffusion coefficient allowed in this run for
+        ! stability based on UMDP 28 equation 32: max_diff = dx^2/(8*dt)
+        const = 0.125_r_def/dt
+        iconst = 2_i_def
+        call delta_at_wtheta%copy_field(max_diff_wtheta)
+        call invoke( inc_X_powint_n( max_diff_wtheta, iconst ),  &
+                     inc_a_times_X( const, max_diff_wtheta )     &
+                     )
 
-    end if
+      end if
 
+      nullify( detj_at_w2 )
+      nullify( dA_at_w2 )
+      nullify( height_w1 )
+      nullify( height_w2 )
+      nullify( height_w3 )
+      nullify( height_wth )
+
+    end if ! physics
+
+    nullify( w1_k0_fs  )
+    nullify( w2_k0_fs  )
     nullify( w2_fs  )
     nullify( w3_fs  )
-    nullify( wtheta_fs )
-    nullify( detj_at_w2 )
-    nullify( dA_at_w2 )
+    nullify( wtheta_k0_fs )
     nullify( qr )
 
     call log_event( "Gungho: created physical_op_constants", LOG_LEVEL_INFO )
@@ -191,6 +251,33 @@ contains
 
   end function get_delta_at_wtheta
 
+  !> @brief Returns the dt/(r^2 dz) values at lowest-order W2 DoF locations
+  !> @return The dtrdz_fd2 field
+  function get_dtrdz_fd2() result(dtrdz)
+    implicit none
+    type(field_type), pointer :: dtrdz
+    dtrdz => dtrdz_fd2
+
+  end function get_dtrdz_fd2
+
+  !> @brief Returns the 1/dz values at lowest-order W1 DoF locations
+  !> @return The rdz_fd1 field
+  function get_rdz_fd1() result(rdz)
+    implicit none
+    type(field_type), pointer :: rdz
+    rdz => rdz_fd1
+
+  end function get_rdz_fd1
+
+  !> @brief Returns the 1/dz values at lowest-order Wtheta DoF locations
+  !> @return The dz_at_wtheta field
+  function get_dz_at_wtheta() result(dz)
+    implicit none
+    type(field_type), pointer :: dz
+    dz => dz_at_wtheta
+
+  end function get_dz_at_wtheta
+
   !> @brief Returns the max Smagorinsky diffusion allowed in this run at wtheta
   !> @return The max_diff_wtheta field
   function get_max_diff() result(max_diff_smag)
@@ -209,6 +296,9 @@ contains
     call geopotential%field_final()
     call coriolis%operator_final()
     call delta_at_wtheta%field_final()
+    call dtrdz_fd2%field_final()
+    call rdz_fd1%field_final()
+    call dz_at_wtheta%field_final()
     call max_diff_wtheta%field_final()
 
   end subroutine final_physical_op_constants

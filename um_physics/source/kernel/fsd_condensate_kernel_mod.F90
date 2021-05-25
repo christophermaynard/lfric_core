@@ -12,12 +12,11 @@ use argument_mod,         only: arg_type,              &
                                 GH_READ, GH_READWRITE, &
                                 GH_WRITE, CELL_COLUMN, &
                                 ANY_DISCONTINUOUS_SPACE_1
-use fs_continuity_mod,    only: WTHETA, W3
+use fs_continuity_mod,    only: WTHETA
 use kernel_mod,           only: kernel_type
 use cloud_config_mod,     only: use_fsd_eff_res
 use planet_config_mod,    only: radius
 use fsd_parameters_mod,   only: fsd_eff_lam, f_cons
-use extrusion_config_mod, only: domain_top
 
 implicit none
 
@@ -35,7 +34,7 @@ type, public, extends(kernel_type) :: fsd_condensate_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, ANY_DISCONTINUOUS_SPACE_1),& ! f_arr_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                   & ! acf_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                   & ! cca_wth
-       arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                       & ! height_w3
+       arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                   & ! dz_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA)                    & ! delta
        /)
    integer :: operates_on = CELL_COLUMN
@@ -56,14 +55,11 @@ contains
 !> @param[in,out] f_arr_wth  Parameters related to fractional standard deviation of condensate
 !> @param[in]     acf_wth    Area cloud fraction
 !> @param[in]     cca_wth    Convective cloud amount
-!> @param[in]     height_w3  Height of density levels above surface
+!> @param[in]     dz_wth     Delta z at wtheta levels
 !> @param[in]     delta      Edge length on wtheta points
 !> @param[in]     ndf_wth    Number of degrees of freedom per cell for potential temperature space
 !> @param[in]     undf_wth   Number unique of degrees of freedom  for potential temperature space
 !> @param[in]     map_wth    Dofmap for the cell at the base of the column for potential temperature space
-!> @param[in]     ndf_w3     Number of degrees of freedom per cell for density space
-!> @param[in]     undf_w3    Number unique of degrees of freedom for density space
-!> @param[in]     map_w3     Dofmap for the cell at the base of the column for density space
 !> @param[in]     ndf_farr   Number of degrees of freedom per cell for fsd array
 !> @param[in]     undf_farr  Number unique of degrees of freedom for fsd array
 !> @param[in]     map_farr   Dofmap for the cell at the base of the column for fsd array
@@ -75,13 +71,11 @@ subroutine fsd_condensate_code( nlayers,                    &
                                            ! In
                                 acf_wth,                    &
                                 cca_wth,                    &
-                                height_w3,                  &
+                                dz_wth,                     &
                                 delta,                      &
                                            ! DoF and Map info
                                 ndf_wth, undf_wth, map_wth, &
-                                ndf_farr,undf_farr,map_farr,&
-                                ndf_w3,  undf_w3,  map_w3   )
-
+                                ndf_farr, undf_farr, map_farr)
 
     use constants_mod, only: r_def, i_def, r_um, i_um
 
@@ -98,21 +92,18 @@ subroutine fsd_condensate_code( nlayers,                    &
 
     integer(kind=i_def), intent(in) :: nlayers
     integer(kind=i_def), intent(in) :: ndf_wth,  undf_wth
-    integer(kind=i_def), intent(in) :: ndf_w3,   undf_w3
     integer(kind=i_def), intent(in) :: ndf_farr, undf_farr
 
     integer(kind=i_def), intent(in), dimension(ndf_wth)   :: map_wth
-    integer(kind=i_def), intent(in), dimension(ndf_w3)    :: map_w3
     integer(kind=i_def), intent(in), dimension(ndf_farr)  :: map_farr
 
     real(kind=r_def), intent(in),    dimension(undf_wth)  :: acf_wth
     real(kind=r_def), intent(in),    dimension(undf_wth)  :: cca_wth
-    real(kind=r_def), intent(in),    dimension(undf_w3)   :: height_w3
+    real(kind=r_def), intent(in),    dimension(undf_wth)  :: dz_wth
     real(kind=r_def), intent(in),    dimension(undf_wth)  :: delta
     real(kind=r_def), intent(inout), dimension(undf_wth)  :: sigma_qcw_wth
     real(kind=r_def), intent(inout), dimension(undf_farr) :: f_arr_wth
 
-    real(kind=r_def), dimension(  nlayers) :: delta_z ! Layer thickness in vert
     real(kind=r_def), dimension(  nlayers) :: x_in_km ! Grid box size
     real(kind=r_def), dimension(3,nlayers) :: f_arr   ! FSD parameters
     real(kind=r_def)                       :: conv_thick_part ! Convective contrib
@@ -135,22 +126,15 @@ subroutine fsd_condensate_code( nlayers,                    &
       end do
     end if
 
-    ! Calculate layer thickness
-    do k = 1, nlayers - 1
-      delta_z(k) = height_w3(map_w3(1) + k) - height_w3(map_w3(1) + k-1)
-    end do
-    ! Estimate thickness of top-most layer.
-    delta_z(nlayers) = 2 * ( domain_top - height_w3(nlayers-1) )
-
     ! Equations taken from Hill et al (2015, DOI: 10.1002/qj.2506)
     do k = 1, nlayers
 
       if (cca_wth(map_wth(1) + k) > 0.0_r_def) then
-        conv_thick_part = 2.81_r_def * (x_in_km(k)**(-0.12_r_def))              &
-                        * ( delta_z(k) * m_to_km ) ** 0.07_r_def
+        conv_thick_part = 2.81_r_def * (x_in_km(k)**(-0.12_r_def))             &
+                        * ( dz_wth(map_wth(1)+k) * m_to_km ) ** 0.07_r_def
       else
-        conv_thick_part = 1.14_r_def * (x_in_km(k)**0.002_r_def)                &
-                        * ( delta_z(k) * m_to_km ) ** 0.12_r_def
+        conv_thick_part = 1.14_r_def * (x_in_km(k)**0.002_r_def)               &
+                        * ( dz_wth(map_wth(1)+k) * m_to_km ) ** 0.12_r_def
       end if
 
       ! There are 3 parameters in the FSD array, so define all 3
@@ -160,16 +144,16 @@ subroutine fsd_condensate_code( nlayers,                    &
 
       if (acf_wth(map_wth(1)+k) < 1.0_r_def) then
         cloud_scale = acf_wth(map_wth(1)+k) * x_in_km(k)
-        sigma_qcw_wth(map_wth(1)+k) = two_d_fsd_factor *                        &
-                      (f_arr(2,k)-(f_arr(3,k)*acf_wth(map_wth(1)+k)))           &
-                      * (cloud_scale ** one_third)                              &
-                      * ((((f_cons(1) * cloud_scale) ** f_cons(2)) + 1.0_r_def) &
-                      ** (f_cons(3)))
+        sigma_qcw_wth(map_wth(1)+k) = two_d_fsd_factor *                       &
+                     (f_arr(2,k)-(f_arr(3,k)*acf_wth(map_wth(1)+k)))           &
+                     * (cloud_scale ** one_third)                              &
+                     * ((((f_cons(1) * cloud_scale) ** f_cons(2)) + 1.0_r_def) &
+                     ** (f_cons(3)))
       else
-        sigma_qcw_wth(map_wth(1)+k) = two_d_fsd_factor * f_arr(1,k)             &
-                      * (x_in_km(k) ** one_third)                               &
-                      * ((((f_cons(1) * x_in_km(k)) ** f_cons(2)) + 1.0_r_def)  &
-                      ** (f_cons(3)))
+        sigma_qcw_wth(map_wth(1)+k) = two_d_fsd_factor * f_arr(1,k)            &
+                     * (x_in_km(k) ** one_third)                               &
+                     * ((((f_cons(1) * x_in_km(k)) ** f_cons(2)) + 1.0_r_def)  &
+                     ** (f_cons(3)))
       end if
 
     end do ! k

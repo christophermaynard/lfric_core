@@ -36,7 +36,7 @@ public :: rad_tile_code
 ! Contains the metadata needed by the PSy layer.
 type, extends(kernel_type) :: rad_tile_kernel_type
   private
-  type(arg_type) :: meta_args(26) = (/                                   &
+  type(arg_type) :: meta_args(25) = (/                                   &
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, ANY_DISCONTINUOUS_SPACE_1), & ! tile_sw_direct_albedo
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, ANY_DISCONTINUOUS_SPACE_1), & ! tile_sw_diffuse_albedo
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, ANY_DISCONTINUOUS_SPACE_2), & ! tile_lw_albedo
@@ -59,8 +59,7 @@ type, extends(kernel_type) :: rad_tile_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_7), & ! sea_ice_thickness
        arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u1_in_w3
        arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u2_in_w3
-       arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! height_w3
-       arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! height_wth
+       arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! dz_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_5), & ! z0msea
        arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_5)  & ! cos_zenith_angle
        /)
@@ -97,8 +96,7 @@ contains
 !> @param[in]     sea_ice_thickness      Sea ice thickness (m)
 !> @param[in]     u1_in_w3               'Zonal' wind in density space
 !> @param[in]     u2_in_w3               'Meridional' wind in density space
-!> @param[in]     height_w3              Height of w3 levels above mean sea level
-!> @param[in]     height_wth             Height of wth levels above mean sea level
+!> @param[in]     dz_wth                 Delta z at wtheta levels
 !> @param[in]     z0msea                 Roughness length of sea
 !> @param[in]     cos_zenith_angle       Cosine of the stellar zenith angle
 !> @param[in]     ndf_sw_tile            DOFs per cell for tiles and sw bands
@@ -151,8 +149,7 @@ subroutine rad_tile_code(nlayers,                                &
                          sea_ice_thickness,                      &
                          u1_in_w3,                               &
                          u2_in_w3,                               &
-                         height_w3,                              &
-                         height_wth,                             &
+                         dz_wth,                                 &
                          z0msea,                                 &
                          cos_zenith_angle,                       &
                          ndf_sw_tile, undf_sw_tile, map_sw_tile, &
@@ -237,8 +234,7 @@ subroutine rad_tile_code(nlayers,                                &
 
   real(r_def), intent(in) :: u1_in_w3(undf_w3)
   real(r_def), intent(in) :: u2_in_w3(undf_w3)
-  real(r_def), intent(in) :: height_w3(undf_w3)
-  real(r_def), intent(in) :: height_wth(undf_wth)
+  real(r_def), intent(in) :: dz_wth(undf_wth)
 
   ! Local variables for the kernel
   integer(i_def) :: i, i_tile, i_sice, i_band, n
@@ -403,7 +399,7 @@ subroutine rad_tile_code(nlayers,                                &
   ! 10m wind speed over the sea
   ws_10m_sea = sqrt(u1_in_w3(map_w3(1))**2 + u2_in_w3(map_w3(1))**2) &
     * log(10.0_r_def / z0msea(map_2d(1))) &
-    / log((height_w3(map_w3(1))-height_wth(map_wth(1))) / z0msea(map_2d(1)))
+    / log((dz_wth(map_wth(1))) / z0msea(map_2d(1)))
 
   ! Chlorophyll content of the sea
   chloro = real(chloro_sea(map_2d(1)), r_um)
