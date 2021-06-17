@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------------
-! (c) Crown copyright 2018 Met Office. All rights reserved.
+! (c) Crown copyright 2021 Met Office. All rights reserved.
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !------------------------------------------------------------------------------
@@ -19,7 +19,8 @@ use sw_kernel_mod,           only: sw_kernel_type
 use lw_kernel_mod,           only: lw_kernel_type
 use io_config_mod,           only: subroutine_timers
 use timer_mod,               only: timer
-use log_mod,                 only: log_event, LOG_LEVEL_INFO
+use log_mod,                 only: log_event, LOG_LEVEL_DEBUG, LOG_LEVEL_INFO
+use log_field_alg_mod,       only: log_field_alg
 
 implicit none
 private
@@ -140,7 +141,8 @@ subroutine radiation_alg(dtheta_rad, theta, exner, mr,                    &
 
   ! Local diagnostic fields
   type( field_type ) :: cloud_cover_rts, cloud_fraction_rts, &
-                        cloud_droplet_re_rts
+                        cloud_droplet_re_rts, sw_aer_optical_depth_rts, &
+                        lw_aer_optical_depth_rts
 
   call log_event( 'slow_physics: Running Radiation', LOG_LEVEL_INFO )
 
@@ -205,8 +207,19 @@ subroutine radiation_alg(dtheta_rad, theta, exner, mr,                    &
   ! Local 3D diagnostic fields
   call lw_heating_rate%copy_field_properties(cloud_fraction_rts)
   call lw_heating_rate%copy_field_properties(cloud_droplet_re_rts)
+  call sw_heating_rate%copy_field_properties(sw_aer_optical_depth_rts)
+  call lw_heating_rate%copy_field_properties(lw_aer_optical_depth_rts)
 
   if ( subroutine_timers ) call timer("sw_radiation")
+
+  call log_event( 'SW inputs:',               LOG_LEVEL_DEBUG )
+  call log_field_alg( mr(imr_v),              LOG_LEVEL_DEBUG )
+  call log_field_alg( area_fraction,          LOG_LEVEL_DEBUG )
+  call log_field_alg( cca,                    LOG_LEVEL_DEBUG )
+  call log_field_alg( tile_fraction,          LOG_LEVEL_DEBUG )
+  call log_field_alg( tile_sw_direct_albedo,  LOG_LEVEL_DEBUG )
+  call log_field_alg( tile_sw_diffuse_albedo, LOG_LEVEL_DEBUG )
+
   call invoke( sw_kernel_type(                                              &
                  sw_heating_rate, sw_down_surf, sw_direct_surf,             &
                  sw_down_blue_surf, sw_direct_blue_surf,                    &
@@ -215,6 +228,7 @@ subroutine radiation_alg(dtheta_rad, theta, exner, mr,                    &
                  sw_direct_toa_rts,                                         &
                  sw_down_blue_surf_rts, sw_direct_blue_surf_rts,            &
                  sw_up_tile_rts, sw_up_blue_tile_rts,                       &
+                 sw_aer_optical_depth_rts,                                  &
                  theta, exner, exner_in_wth, rho_in_wth,                    &
                  height_w3, height_wth,                                     &
                  cos_zenith_angle, lit_fraction,                            &
@@ -229,12 +243,28 @@ subroutine radiation_alg(dtheta_rad, theta, exner, mr,                    &
                  sulphuric, aer_mix_ratio,                                  &
                  aer_sw_absorption, aer_sw_scattering, aer_sw_asymmetry,    &
                  latitude, longitude, timestep ) )
+
+  call log_event( 'SW outputs:',           LOG_LEVEL_DEBUG )
+  call log_field_alg( sw_heating_rate,     LOG_LEVEL_DEBUG )
+  call log_field_alg( sw_down_surf,        LOG_LEVEL_DEBUG )
+  call log_field_alg( sw_direct_surf,      LOG_LEVEL_DEBUG )
+  call log_field_alg( sw_down_blue_surf,   LOG_LEVEL_DEBUG )
+  call log_field_alg( sw_direct_blue_surf, LOG_LEVEL_DEBUG )
+  call log_field_alg( sw_up_tile,          LOG_LEVEL_DEBUG )
+  call log_field_alg( sw_up_blue_tile,     LOG_LEVEL_DEBUG )
+
   if ( subroutine_timers ) call timer("sw_radiation")
   if ( subroutine_timers ) call timer("lw_radiation")
+
+  call log_event( 'LW inputs:',         LOG_LEVEL_DEBUG )
+  call log_field_alg( tile_temperature, LOG_LEVEL_DEBUG )
+  call log_field_alg( tile_lw_albedo,   LOG_LEVEL_DEBUG )
+
   call invoke( lw_kernel_type(                                              &
                  lw_heating_rate, lw_down_surf, lw_up_tile,                 &
                  lw_heating_rate_rts, lw_down_surf_rts, lw_up_tile_rts,     &
                  cloud_cover_rts, cloud_fraction_rts, cloud_droplet_re_rts, &
+                 lw_aer_optical_depth_rts,                                  &
                  theta, theta_in_w3, exner, exner_in_wth, rho_in_wth,       &
                  height_w3, height_wth,                                     &
                  ozone,                                                     &
@@ -246,7 +276,17 @@ subroutine radiation_alg(dtheta_rad, theta, exner, mr,                    &
                  sulphuric, aer_mix_ratio,                                  &
                  aer_lw_absorption, aer_lw_scattering, aer_lw_asymmetry,    &
                  latitude, longitude, timestep ) )
+
+  call log_event( 'LW outputs:',            LOG_LEVEL_DEBUG )
+  call log_field_alg( lw_heating_rate,      LOG_LEVEL_DEBUG )
+  call log_field_alg( lw_down_surf,         LOG_LEVEL_DEBUG )
+  call log_field_alg( lw_up_tile,           LOG_LEVEL_DEBUG )
+  call log_field_alg( cloud_cover_rts,      LOG_LEVEL_DEBUG )
+  call log_field_alg( cloud_fraction_rts,   LOG_LEVEL_DEBUG )
+  call log_field_alg( cloud_droplet_re_rts, LOG_LEVEL_DEBUG )
+
   if ( subroutine_timers ) call timer("lw_radiation")
+
   ! first calculate the total temperature increment
   dt_again=dt
   call invoke(aX_plus_bY(dtheta_rad, dt,       sw_heating_rate,  &
@@ -284,8 +324,10 @@ subroutine radiation_alg(dtheta_rad, theta, exner, mr,                    &
     call cloud_fraction_rts%write_field('cloud_fraction_rts')
     call cloud_droplet_re_rts%write_field('cloud_droplet_re_rts')
 
-    call sw_up_tile%write_field('sw_up_tile')
+    call sw_aer_optical_depth_rts%write_field('sw_aer_optical_depth_rts')
+    call lw_aer_optical_depth_rts%write_field('lw_aer_optical_depth_rts')
 
+    call sw_up_tile%write_field('sw_up_tile')
   end if
 
 end subroutine radiation_alg

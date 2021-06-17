@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------------
-! (c) Crown copyright 2018 Met Office. All rights reserved.
+! (c) Crown copyright 2021 Met Office. All rights reserved.
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-----------------------------------------------------------------------------
@@ -35,56 +35,57 @@ public :: sw_code
 ! Contains the metadata needed by the PSy layer.
 type, extends(kernel_type) :: sw_kernel_type
   private
-  type(arg_type) :: meta_args(48) = (/                                           &
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! sw_heating_rate
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! sw_down_surf
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_surf
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! sw_down_blue_surf
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_blue_surf
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2), & ! sw_up_tile
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2), & ! sw_up_blue_tile
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, Wtheta),                    & ! sw_heating_rate_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_down_surf_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_surf_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_toa_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_down_blue_surf_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_blue_surf_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! sw_up_tile_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! sw_up_blue_tile_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! theta
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! exner
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! exner_in_wth
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! rho_in_wth
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! height_w3
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! height_wth
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! cos_zenith_angle
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! lit_fraction
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! cos_zenith_angle_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! lit_fraction_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! stellar_irradiance_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ozone
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mv
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mcl
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mci
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! area_fraction
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! liquid_fraction
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ice_fraction
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sigma_qcw
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cca
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ccw
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cloud_drop_no_conc
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2), & ! tile_fraction
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_3), & ! tile_sw_direct_albedo
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_3), & ! tile_sw_diffuse_albedo
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sulphuric
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_4), & ! aer_mix_ratio
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_sw_absorption
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_sw_scattering
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_sw_asymmetry
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! latitude
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! longitude
-       arg_type(GH_SCALAR, GH_INTEGER, GH_READ                                )  & ! timestep
-       /)
+  type(arg_type) :: meta_args(49) = (/                             &
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! sw_heating_rate
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! sw_down_surf
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_surf
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! sw_down_blue_surf
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_blue_surf
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2), & ! sw_up_tile
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2), & ! sw_up_blue_tile
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, Wtheta),                    & ! sw_heating_rate_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_down_surf_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_surf_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_toa_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_down_blue_surf_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! sw_direct_blue_surf_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! sw_up_tile_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! sw_up_blue_tile_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! sw_aer_optical_depth_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! theta
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! exner
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! exner_in_wth
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! rho_in_wth
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! height_w3
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! height_wth
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! cos_zenith_angle
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! lit_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! cos_zenith_angle_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! lit_fraction_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! stellar_irradiance_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ozone
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mv
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mcl
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mci
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! area_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! liquid_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ice_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sigma_qcw
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cca
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ccw
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cloud_drop_no_conc
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2), & ! tile_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_3), & ! tile_sw_direct_albedo
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_3), & ! tile_sw_diffuse_albedo
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sulphuric
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_4), & ! aer_mix_ratio
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_sw_absorption
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_sw_scattering
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_sw_asymmetry
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! latitude
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! longitude
+    arg_type(GH_SCALAR, GH_INTEGER, GH_READ                                )  & ! timestep
+    /)
   integer :: operates_on = CELL_COLUMN
 contains
   procedure, nopass :: sw_code
@@ -95,76 +96,77 @@ end type
 !-------------------------------------------------------------------------------
 contains
 
-!> @param[in]     nlayers                 Number of layers
-!> @param[in,out] sw_heating_rate         SW heating rate
-!> @param[in,out] sw_down_surf            SW downward surface flux
-!> @param[in,out] sw_direct_surf          SW unscattered surface flux
-!> @param[in,out] sw_down_blue_surf       SW blue downward surface flux
-!> @param[in,out] sw_direct_blue_surf     SW blue unscattered surface flux
-!> @param[in,out] sw_up_tile              SW upward tiled surface flux
-!> @param[in,out] sw_up_blue_tile         SW blue upward tiled surface flux
-!> @param[in,out] sw_heating_rate_rts     SW heating rate
-!> @param[in,out] sw_down_surf_rts        SW downward surface flux
-!> @param[in,out] sw_direct_surf_rts      SW unscattered surface flux
-!> @param[in,out] sw_direct_toa_rts       SW unscattered top-of-atmosphere flux
-!> @param[in,out] sw_down_blue_surf_rts   SW blue downward surface flux
-!> @param[in,out] sw_direct_blue_surf_rts SW blue unscattered surface flux
-!> @param[in,out] sw_up_tile_rts          SW upward tiled surface flux
-!> @param[in,out] sw_up_blue_tile_rts     SW blue upward tiled surface flux
-!> @param[in]     theta                   Potential temperature field
-!> @param[in]     exner                   Exner pressure in density space
-!> @param[in]     exner_in_wth            Exner pressure in wth space
-!> @param[in]     rho_in_wth              Density in wth space
-!> @param[in]     height_w3               Height of w3 levels above surface
-!> @param[in]     height_wth              Height of wth levels above surface
-!> @param[in]     cos_zenith_angle        Cosine of the stellar zenith angle
-!> @param[in]     lit_fraction            Lit fraction of the timestep
-!> @param[in]     cos_zenith_angle_rts    Cosine of the stellar zenith angle
-!> @param[in]     lit_fraction_rts        Lit fraction of the timestep
-!> @param[in]     stellar_irradiance_rts  Stellar irradaince at the planet
-!> @param[in]     ozone                   Ozone field
-!> @param[in]     mv                      Water vapour field
-!> @param[in]     mcl                     Cloud liquid field
-!> @param[in]     mci                     Cloud ice field
-!> @param[in]     area_fraction           Total cloud area fraction field
-!> @param[in]     liquid_fraction         Liquid cloud fraction field
-!> @param[in]     ice_fraction            Ice cloud fraction field
-!> @param[in]     sigma_qcw               Fractional standard deviation of condensate
-!> @param[in]     cca                     Convective cloud amount (fraction)
-!> @param[in]     ccw                     Convective cloud water (kg/kg) (can be ice or liquid)
-!> @param[in]     cloud_drop_no_conc      Cloud Droplet Number Concentration
-!> @param[in]     tile_fraction           Surface tile fractions
-!> @param[in]     tile_sw_direct_albedo   SW direct tile albedos
-!> @param[in]     tile_sw_diffuse_albedo  SW diffuse tile albedos
-!> @param[in]     sulphuric               Sulphuric acid aerosol
-!> @param[in]     aer_mix_ratio           MODE aerosol mixing ratios
-!> @param[in]     aer_sw_absorption       MODE aerosol SW absorption
-!> @param[in]     aer_sw_scattering       MODE aerosol SW scattering
-!> @param[in]     aer_sw_asymmetry        MODE aerosol SW asymmetry
-!> @param[in]     latitude                Latitude field
-!> @param[in]     longitude               Longitude field
-!> @param[in]     timestep                Timestep number
-!> @param[in]     ndf_wth                 No. DOFs per cell for wth space
-!> @param[in]     undf_wth                No. unique of DOFs for wth space
-!> @param[in]     map_wth                 Dofmap for wth space column base cell
-!> @param[in]     ndf_2d                  No. of DOFs per cell for 2D space
-!> @param[in]     undf_2d                 No. unique of DOFs for 2D space
-!> @param[in]     map_2d                  Dofmap for 2D space column base cell
-!> @param[in]     ndf_tile                Number of DOFs per cell for tiles
-!> @param[in]     undf_tile               Number of total DOFs for tiles
-!> @param[in]     map_tile                Dofmap for tile space column base cell
-!> @param[in]     ndf_w3                  No. of DOFs per cell for w3 space
-!> @param[in]     undf_w3                 No. unique of DOFs for w3 space
-!> @param[in]     map_w3                  Dofmap for w3 space column base cell
-!> @param[in]     ndf_rtile               No. of DOFs per cell for rtile space
-!> @param[in]     undf_rtile              No. unique of DOFs for rtile space
-!> @param[in]     map_rtile               Dofmap for rtile space column base cell
-!> @param[in]     ndf_mode                No. of DOFs per cell for mode space
-!> @param[in]     undf_mode               No. unique of DOFs for mode space
-!> @param[in]     map_mode                Dofmap for mode space column base cell
-!> @param[in]     ndf_rmode_sw            No. of DOFs per cell for rmode_sw space
-!> @param[in]     undf_rmode_sw           No. unique of DOFs for rmode_sw space
-!> @param[in]     map_rmode_sw            Dofmap for rmode_sw space column base cell
+! @param[in]     nlayers                  Number of layers
+! @param[in,out] sw_heating_rate          SW heating rate
+! @param[in,out] sw_down_surf             SW downward surface flux
+! @param[in,out] sw_direct_surf           SW unscattered surface flux
+! @param[in,out] sw_down_blue_surf        SW blue downward surface flux
+! @param[in,out] sw_direct_blue_surf      SW blue unscattered surface flux
+! @param[in,out] sw_up_tile               SW upward tiled surface flux
+! @param[in,out] sw_up_blue_tile          SW blue upward tiled surface flux
+! @param[in,out] sw_heating_rate_rts      SW heating rate
+! @param[in,out] sw_down_surf_rts         SW downward surface flux
+! @param[in,out] sw_direct_surf_rts       SW unscattered surface flux
+! @param[in,out] sw_direct_toa_rts        SW unscattered top-of-atmosphere flux
+! @param[in,out] sw_down_blue_surf_rts    SW blue downward surface flux
+! @param[in,out] sw_direct_blue_surf_rts  SW blue unscattered surface flux
+! @param[in,out] sw_up_tile_rts           SW upward tiled surface flux
+! @param[in,out] sw_up_blue_tile_rts      SW blue upward tiled surface flux
+! @param[in,out] sw_aer_optical_depth_rts Aerosol optical depth in the visible
+! @param[in]     theta                    Potential temperature field
+! @param[in]     exner                    Exner pressure in density space
+! @param[in]     exner_in_wth             Exner pressure in wth space
+! @param[in]     rho_in_wth               Density in wth space
+! @param[in]     height_w3                Height of w3 levels above surface
+! @param[in]     height_wth               Height of wth levels above surface
+! @param[in]     cos_zenith_angle         Cosine of the stellar zenith angle
+! @param[in]     lit_fraction             Lit fraction of the timestep
+! @param[in]     cos_zenith_angle_rts     Cosine of the stellar zenith angle
+! @param[in]     lit_fraction_rts         Lit fraction of the timestep
+! @param[in]     stellar_irradiance_rts   Stellar irradaince at the planet
+! @param[in]     ozone                    Ozone field
+! @param[in]     mv                       Water vapour field
+! @param[in]     mcl                      Cloud liquid field
+! @param[in]     mci                      Cloud ice field
+! @param[in]     area_fraction            Total cloud area fraction field
+! @param[in]     liquid_fraction          Liquid cloud fraction field
+! @param[in]     ice_fraction             Ice cloud fraction field
+! @param[in]     sigma_qcw                Fractional standard deviation of condensate
+! @param[in]     cca                      Convective cloud amount (fraction)
+! @param[in]     ccw                      Convective cloud water (kg/kg) (can be ice or liquid)
+! @param[in]     cloud_drop_no_conc       Cloud Droplet Number Concentration
+! @param[in]     tile_fraction            Surface tile fractions
+! @param[in]     tile_sw_direct_albedo    SW direct tile albedos
+! @param[in]     tile_sw_diffuse_albedo   SW diffuse tile albedos
+! @param[in]     sulphuric                Sulphuric acid aerosol
+! @param[in]     aer_mix_ratio            MODE aerosol mixing ratios
+! @param[in]     aer_sw_absorption        MODE aerosol SW absorption
+! @param[in]     aer_sw_scattering        MODE aerosol SW scattering
+! @param[in]     aer_sw_asymmetry         MODE aerosol SW asymmetry
+! @param[in]     latitude                 Latitude field
+! @param[in]     longitude                Longitude field
+! @param[in]     timestep                 Timestep number
+! @param[in]     ndf_wth                  No. DOFs per cell for wth space
+! @param[in]     undf_wth                 No. unique of DOFs for wth space
+! @param[in]     map_wth                  Dofmap for wth space column base cell
+! @param[in]     ndf_2d                   No. of DOFs per cell for 2D space
+! @param[in]     undf_2d                  No. unique of DOFs for 2D space
+! @param[in]     map_2d                   Dofmap for 2D space column base cell
+! @param[in]     ndf_tile                 Number of DOFs per cell for tiles
+! @param[in]     undf_tile                Number of total DOFs for tiles
+! @param[in]     map_tile                 Dofmap for tile space column base cell
+! @param[in]     ndf_w3                   No. of DOFs per cell for w3 space
+! @param[in]     undf_w3                  No. unique of DOFs for w3 space
+! @param[in]     map_w3                   Dofmap for w3 space column base cell
+! @param[in]     ndf_rtile                No. of DOFs per cell for rtile space
+! @param[in]     undf_rtile               No. unique of DOFs for rtile space
+! @param[in]     map_rtile                Dofmap for rtile space column base cell
+! @param[in]     ndf_mode                 No. of DOFs per cell for mode space
+! @param[in]     undf_mode                No. unique of DOFs for mode space
+! @param[in]     map_mode                 Dofmap for mode space column base cell
+! @param[in]     ndf_rmode                No. of DOFs per cell for rmode space
+! @param[in]     undf_rmode               No. unique of DOFs for rmode space
+! @param[in]     map_rmode                Dofmap for rmode space column base cell
 subroutine sw_code(nlayers,                          &
                    sw_heating_rate,                  &
                    sw_down_surf,                     &
@@ -181,6 +183,7 @@ subroutine sw_code(nlayers,                          &
                    sw_direct_blue_surf_rts,          &
                    sw_up_tile_rts,                   &
                    sw_up_blue_tile_rts,              &
+                   sw_aer_optical_depth_rts,         &
                    theta,                            &
                    exner,                            &
                    exner_in_wth,                     &
@@ -218,7 +221,7 @@ subroutine sw_code(nlayers,                          &
                    ndf_w3, undf_w3, map_w3,          &
                    ndf_rtile, undf_rtile, map_rtile, &
                    ndf_mode, undf_mode, map_mode,    &
-                   ndf_rmode_sw, undf_rmode_sw, map_rmode_sw)
+                   ndf_rmode, undf_rmode, map_rmode)
 
   use well_mixed_gases_config_mod, only: &
     co2_mix_ratio, n2o_mix_ratio, ch4_mix_ratio, o2_mix_ratio
@@ -231,7 +234,7 @@ subroutine sw_code(nlayers,                          &
   use set_cloud_field_mod, only: set_cloud_field
   use jules_control_init_mod, only: n_surf_tile, sw_band_tile
   use um_physics_init_mod, only: n_aer_mode, mode_dimen, sw_band_mode
-  use socrates_runes, only: runes, ip_source_illuminate
+  use socrates_runes, only: runes, ip_source_illuminate, StrDiag
   use socrates_bones, only: bones
 
   implicit none
@@ -239,9 +242,9 @@ subroutine sw_code(nlayers,                          &
   ! Arguments
   integer(i_def), intent(in) :: nlayers, timestep
   integer(i_def), intent(in) :: ndf_wth, ndf_w3, ndf_2d
-  integer(i_def), intent(in) :: ndf_tile, ndf_rtile, ndf_mode, ndf_rmode_sw
+  integer(i_def), intent(in) :: ndf_tile, ndf_rtile, ndf_mode, ndf_rmode
   integer(i_def), intent(in) :: undf_wth, undf_w3, undf_2d
-  integer(i_def), intent(in) :: undf_tile, undf_rtile, undf_mode, undf_rmode_sw
+  integer(i_def), intent(in) :: undf_tile, undf_rtile, undf_mode, undf_rmode
 
   integer(i_def), dimension(ndf_wth),   intent(in) :: map_wth
   integer(i_def), dimension(ndf_w3),    intent(in) :: map_w3
@@ -249,7 +252,7 @@ subroutine sw_code(nlayers,                          &
   integer(i_def), dimension(ndf_tile),  intent(in) :: map_tile
   integer(i_def), dimension(ndf_rtile), intent(in) :: map_rtile
   integer(i_def), dimension(ndf_mode),  intent(in) :: map_mode
-  integer(i_def), dimension(ndf_rmode_sw), intent(in) :: map_rmode_sw
+  integer(i_def), dimension(ndf_rmode), intent(in) :: map_rmode
 
   real(r_def), dimension(undf_wth),  intent(inout) :: sw_heating_rate
   real(r_def), dimension(undf_2d),   intent(inout) :: sw_down_surf, &
@@ -257,12 +260,14 @@ subroutine sw_code(nlayers,                          &
   real(r_def), dimension(undf_tile), intent(inout) :: sw_up_tile, &
     sw_up_blue_tile
 
-  real(r_def), dimension(undf_wth),  intent(inout) :: sw_heating_rate_rts
   real(r_def), dimension(undf_2d),   intent(inout) :: sw_down_surf_rts, &
-    sw_direct_surf_rts, sw_direct_toa_rts, &
+    sw_direct_surf_rts, sw_direct_toa_rts
+  real(r_def), dimension(undf_wth),  intent(inout), target :: &
+    sw_heating_rate_rts, sw_aer_optical_depth_rts
+  real(r_def), dimension(undf_2d),   intent(inout), target :: &
     sw_down_blue_surf_rts, sw_direct_blue_surf_rts
-  real(r_def), dimension(undf_tile), intent(inout) :: sw_up_tile_rts, &
-    sw_up_blue_tile_rts
+  real(r_def), dimension(undf_tile), intent(inout), target :: &
+    sw_up_tile_rts, sw_up_blue_tile_rts
 
   real(r_def), dimension(undf_w3),   intent(in) :: exner, height_w3
   real(r_def), dimension(undf_wth),  intent(in) :: theta, exner_in_wth, &
@@ -277,7 +282,7 @@ subroutine sw_code(nlayers,                          &
     tile_sw_direct_albedo, tile_sw_diffuse_albedo
   real(r_def), dimension(undf_wth),   intent(in) :: sulphuric
   real(r_def), dimension(undf_mode),  intent(in) :: aer_mix_ratio
-  real(r_def), dimension(undf_rmode_sw), intent(in) :: &
+  real(r_def), dimension(undf_rmode), intent(in) :: &
     aer_sw_absorption, aer_sw_scattering, aer_sw_asymmetry
   real(r_def), dimension(undf_2d), intent(in) :: latitude, longitude
 
@@ -288,7 +293,7 @@ subroutine sw_code(nlayers,                          &
   integer(i_def) :: n_cloud_layer
   integer(i_def) :: wth_0, wth_1, wth_nlayers, w3_1, w3_nlayers
   integer(i_def) :: tile_1, tile_last, rtile_1, rtile_last
-  integer(i_def) :: mode_1, mode_last, rmode_sw_1, rmode_sw_last
+  integer(i_def) :: mode_1, mode_last, rmode_1, rmode_last
   real(r_def), dimension(nlayers) :: layer_heat_capacity
     ! Heat capacity for each layer
   real(r_def), dimension(nlayers) :: p_layer, t_layer
@@ -300,7 +305,8 @@ subroutine sw_code(nlayers,                          &
   real(r_def), dimension(nlayers) :: conv_frac, &
     liq_conv_frac, ice_conv_frac, liq_conv_mmr, ice_conv_mmr, liq_conv_dim
     ! Convective cloud fields
-  real(r_def), dimension(0:nlayers) :: sw_direct, sw_down, sw_up
+  real(r_def), dimension(0:nlayers), target :: sw_direct, sw_down, sw_up
+  type(StrDiag) :: sw_diag
 
 
   ! Set indexing
@@ -313,10 +319,10 @@ subroutine sw_code(nlayers,                          &
   tile_last = map_tile(1)+n_surf_tile-1
   rtile_1 = map_rtile(1)
   rtile_last = map_rtile(1)+sw_band_tile-1
-  mode_1 = map_mode(1) + 1
-  mode_last = map_mode(1) + ( (nlayers+1)*mode_dimen ) - 1
-  rmode_sw_1 = map_rmode_sw(1) + 1
-  rmode_sw_last = map_rmode_sw(1) + ( (nlayers+1)*sw_band_mode ) - 1
+  mode_1 = map_mode(1)+1
+  mode_last = map_mode(1)+(nlayers+1)*mode_dimen-1
+  rmode_1 = map_rmode(1)+1
+  rmode_last = map_rmode(1)+(nlayers+1)*sw_band_mode-1
 
   if (mod(timestep-1_i_def, n_radstep) == 0) then
     ! Radiation time-step: full calculation of radiative fluxes
@@ -337,8 +343,30 @@ subroutine sw_code(nlayers,                          &
       rand_seed, n_cloud_layer, cloud_frac, liq_dim, conv_frac, &
       liq_conv_frac, ice_conv_frac, liq_conv_mmr, ice_conv_mmr, liq_conv_dim)
 
+    ! Set pointers for diagnostic output (using pointer bound remapping)
+    sw_diag%heating_rate(1:1,1:nlayers) => &
+      sw_heating_rate_rts(wth_1:wth_nlayers)
+
+    sw_diag%flux_direct(1:1,0:nlayers) => sw_direct
+    sw_diag%flux_down(1:1,0:nlayers) => sw_down
+    sw_diag%flux_up(1:1,0:nlayers) => sw_up
+
+    sw_diag%flux_up_tile(1:1,1:n_surf_tile) => sw_up_tile_rts(tile_1:tile_last)
+    sw_diag%flux_up_blue_tile(1:1,1:n_surf_tile) => &
+      sw_up_blue_tile_rts(tile_1:tile_last)
+
+    sw_diag%flux_direct_blue_surf(1:1) => &
+      sw_direct_blue_surf_rts(map_2d(1):map_2d(1))
+    sw_diag%flux_down_blue_surf(1:1) => &
+      sw_down_blue_surf_rts(map_2d(1):map_2d(1))
+
+    ! Aerosol optical depth for SW band 3 is output (505-690nm). Once the
+    ! diagnostic infrastructure is in place the band(s) may be user defined.
+    sw_diag%aerosol_optical_depth(1:1,1:nlayers,3:3) => &
+      sw_aer_optical_depth_rts(wth_1:wth_nlayers)
+
     ! Calculate the SW fluxes (RUN the Edwards-Slingo two-stream solver)
-    call runes(n_profile, nlayers,                                             &
+    call runes(n_profile, nlayers, sw_diag,                                    &
       spectrum_name          = 'sw',                                           &
       i_source               = ip_source_illuminate,                           &
       n_cloud_layer          = n_cloud_layer,                                  &
@@ -354,7 +382,6 @@ subroutine sw_code(nlayers,                          &
       o2_mix_ratio           = o2_mix_ratio,                                   &
       cos_zenith_angle       = cos_zenith_angle_rts(map_2d(1):map_2d(1)),      &
       solar_irrad            = stellar_irradiance_rts(map_2d(1):map_2d(1)),    &
-      l_tile                 = .true.,                                         &
       n_tile                 = n_surf_tile,                                    &
       frac_tile_1d           = tile_fraction(tile_1:tile_last),                &
       albedo_diff_tile_1d    = tile_sw_diffuse_albedo(rtile_1:rtile_last),     &
@@ -395,18 +422,10 @@ subroutine sw_code(nlayers,                          &
       n_aer_mode             = n_aer_mode,                                     &
       n_aer_layer            = nlayers+1,                                      &
       aer_mix_ratio_1d       = aer_mix_ratio(mode_1:mode_last),                &
-      aer_absorption_1d      = aer_sw_absorption(rmode_sw_1:rmode_sw_last),    &
-      aer_scattering_1d      = aer_sw_scattering(rmode_sw_1:rmode_sw_last),    &
-      aer_asymmetry_1d       = aer_sw_asymmetry(rmode_sw_1:rmode_sw_last),     &
-      l_invert               = .true.,                                         &
-      flux_direct_1d         = sw_direct,                                      &
-      flux_down_1d           = sw_down,                                        &
-      flux_up_1d             = sw_up,                                          &
-      flux_up_tile_1d        = sw_up_tile_rts(tile_1:tile_last),               &
-      flux_up_blue_tile_1d   = sw_up_blue_tile_rts(tile_1:tile_last),          &
-      flux_direct_blue_surf  = sw_direct_blue_surf_rts(map_2d(1):map_2d(1)),   &
-      flux_down_blue_surf    = sw_down_blue_surf_rts(map_2d(1):map_2d(1)),     &
-      heating_rate_1d        = sw_heating_rate_rts(wth_1:wth_nlayers))
+      aer_absorption_1d      = aer_sw_absorption(rmode_1:rmode_last),          &
+      aer_scattering_1d      = aer_sw_scattering(rmode_1:rmode_last),          &
+      aer_asymmetry_1d       = aer_sw_asymmetry(rmode_1:rmode_last),           &
+      l_invert               = .true.)
 
     ! Set level 0 increment such that theta increment will equal level 1
     sw_heating_rate_rts(wth_0) = sw_heating_rate_rts(wth_1) &
@@ -466,5 +485,4 @@ subroutine sw_code(nlayers,                          &
   end if
 
 end subroutine sw_code
-
 end module sw_kernel_mod

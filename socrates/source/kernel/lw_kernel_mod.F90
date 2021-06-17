@@ -1,9 +1,9 @@
 !-----------------------------------------------------------------------------
-! (c) Crown copyright 2018 Met Office. All rights reserved.
+! (c) Crown copyright 2021 Met Office. All rights reserved.
 ! The file LICENCE, distributed with this code, contains details of the terms
 ! under which the code may be used.
 !-----------------------------------------------------------------------------
-!> @brief Interface to Socrates for longwave (thermal) fluxes
+! @brief Interface to Socrates for longwave (thermal) fluxes
 
 module lw_kernel_mod
 
@@ -35,46 +35,47 @@ public :: lw_code
 ! Contains the metadata needed by the PSy layer.
 type, extends(kernel_type) :: lw_kernel_type
   private
-  type(arg_type) :: meta_args(38) = (/                                           &
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! lw_heating_rate
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! lw_down_surf
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2), & ! lw_up_tile
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, Wtheta),                    & ! lw_heating_rate_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! lw_down_surf_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! lw_up_tile_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! cloud_cover_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! cloud_fraction_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! cloud_droplet_re_rts
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! theta
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! theta_in_w3
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! exner
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! exner_in_wth
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! rho_in_wth
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! height_w3
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! height_wth
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ozone
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mv
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mcl
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mci
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! area_fraction
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! liquid_fraction
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ice_fraction
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sigma_qcw
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cca
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ccw
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cloud_drop_no_conc
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2), & ! tile_fraction
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2), & ! tile_temperature
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_3), & ! tile_lw_albedo
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sulphuric
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_4), & ! aer_mix_ratio
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_lw_absorption
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_lw_scattering
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_lw_asymmetry
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! latitude
-       arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! longitude
-       arg_type(GH_SCALAR, GH_INTEGER, GH_READ                                )  & ! timestep
-       /)
+  type(arg_type) :: meta_args(39) = (/                             &
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! lw_heating_rate
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! lw_down_surf
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2), & ! lw_up_tile
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, Wtheta),                    & ! lw_heating_rate_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! lw_down_surf_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! lw_up_tile_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), & ! cloud_cover_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! cloud_fraction_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! cloud_droplet_re_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     Wtheta),                    & ! lw_aer_optical_depth_rts
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! theta
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! theta_in_w3
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! exner
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! exner_in_wth
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! rho_in_wth
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                        & ! height_w3
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! height_wth
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ozone
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mv
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mcl
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mci
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! area_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! liquid_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ice_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sigma_qcw
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cca
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ccw
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cloud_drop_no_conc
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2), & ! tile_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2), & ! tile_temperature
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_3), & ! tile_lw_albedo
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sulphuric
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_4), & ! aer_mix_ratio
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_lw_absorption
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_lw_scattering
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5), & ! aer_lw_asymmetry
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! latitude
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! longitude
+    arg_type(GH_SCALAR, GH_INTEGER, GH_READ                                )  & ! timestep
+    /)
   integer :: operates_on = CELL_COLUMN
 contains
   procedure, nopass :: lw_code
@@ -85,66 +86,67 @@ end type
 !-------------------------------------------------------------------------------
 contains
 
-!> @param[in]     nlayers                 Number of layers
-!> @param[in,out] lw_heating_rate         LW heating rate
-!> @param[in,out] lw_down_surf            LW downward flux at the surface
-!> @param[in,out] lw_up_tile              LW upward tiled surface flux
-!> @param[in,out] lw_heating_rate_rts     LW heating rate
-!> @param[in,out] lw_down_surf_rts        LW downward flux at the surface
-!> @param[in,out] lw_up_tile_rts          LW upward tiled surface flux
-!> @param[in,out] cloud_cover_rts         Total cloud cover 2D field
-!> @param[in,out] cloud_fraction_rts      Total cloud fraction 3D field
-!> @param[in,out] cloud_droplet_re_rts    Cloud droplet effective radius 3D field
-!> @param[in]     theta                   Potential temperature
-!> @param[in]     theta_in_w3             Potential temperature in density space
-!> @param[in]     exner                   Exner pressure in density space
-!> @param[in]     exner_in_wth            Exner pressure in wth space
-!> @param[in]     rho_in_wth              Density in potential temperature space
-!> @param[in]     height_w3               Height of w3 levels above surface
-!> @param[in]     height_wth              Height of wth levels above surface
-!> @param[in]     ozone                   Ozone field
-!> @param[in]     mv                      Water vapour field
-!> @param[in]     mcl                     Cloud liquid field
-!> @param[in]     mci                     Cloud ice field
-!> @param[in]     area_fraction           Total cloud area fraction field
-!> @param[in]     liquid_fraction         Liquid cloud fraction field
-!> @param[in]     ice_fraction            Ice cloud fraction field
-!> @param[in]     sigma_qcw               Fractional standard deviation of condensate
-!> @param[in]     cca                     Convective cloud amount (fraction)
-!> @param[in]     ccw                     Convective cloud water (kg/kg) (can be ice or liquid)
-!> @param[in]     cloud_drop_no_conc      Cloud Droplet Number Concentration
-!> @param[in]     tile_fraction           Surface tile fractions
-!> @param[in]     tile_temperature        Surface tile temperature
-!> @param[in]     tile_lw_albedo          LW tile albedos
-!> @param[in]     sulphuric               Sulphuric acid aerosol
-!> @param[in]     aer_mix_ratio           MODE aerosol mixing ratios
-!> @param[in]     aer_lw_absorption       MODE aerosol LW absorption
-!> @param[in]     aer_lw_scattering       MODE aerosol LW scattering
-!> @param[in]     aer_lw_asymmetry        MODE aerosol LW asymmetry
-!> @param[in]     latitude                Latitude field
-!> @param[in]     longitude               Longitude field
-!> @param[in]     timestep                Timestep number
-!> @param[in]     ndf_wth                 No. DOFs per cell for wth space
-!> @param[in]     undf_wth                No. unique of DOFs for wth space
-!> @param[in]     map_wth                 Dofmap for wth space column base cell
-!> @param[in]     ndf_2d                  No. of DOFs per cell for 2D space
-!> @param[in]     undf_2d                 No. unique of DOFs for 2D space
-!> @param[in]     map_2d                  Dofmap for 2D space column base cell
-!> @param[in]     ndf_tile                Number of DOFs per cell for tiles
-!> @param[in]     undf_tile               Number of total DOFs for tiles
-!> @param[in]     map_tile                Dofmap for tile space column base cell
-!> @param[in]     ndf_w3                  No. of DOFs per cell for w3 space
-!> @param[in]     undf_w3                 No. unique of DOFs for w3 space
-!> @param[in]     map_w3                  Dofmap for w3 space column base cell
-!> @param[in]     ndf_rtile               No. of DOFs per cell for rtile space
-!> @param[in]     undf_rtile              No. unique of DOFs for rtile space
-!> @param[in]     map_rtile               Dofmap for rtile space column base cell
-!> @param[in]     ndf_mode                No. of DOFs per cell for mode space
-!> @param[in]     undf_mode               No. unique of DOFs for mode space
-!> @param[in]     map_mode                Dofmap for mode space column base cell
-!> @param[in]     ndf_rmode_lw            No. of DOFs per cell for rmode_lw space
-!> @param[in]     undf_rmode_lw           No. unique of DOFs for rmode_lw space
-!> @param[in]     map_rmode_lw            Dofmap for rmode_lw space column base cell
+! @param[in]     nlayers                  Number of layers
+! @param[in,out] lw_heating_rate          LW heating rate
+! @param[in,out] lw_down_surf             LW downward flux at the surface
+! @param[in,out] lw_up_tile               LW upward tiled surface flux
+! @param[in,out] lw_heating_rate_rts      LW heating rate
+! @param[in,out] lw_down_surf_rts         LW downward flux at the surface
+! @param[in,out] lw_up_tile_rts           LW upward tiled surface flux
+! @param[in,out] cloud_cover_rts          Total cloud cover 2D field
+! @param[in,out] cloud_fraction_rts       Total cloud fraction 3D field
+! @param[in,out] cloud_droplet_re_rts     Cloud droplet effective radius 3D field
+! @param[in,out] lw_aer_optical_depth_rts Aerosol optical depth in the infra-red
+! @param[in]     theta                    Potential temperature
+! @param[in]     theta_in_w3              Potential temperature in density space
+! @param[in]     exner                    Exner pressure in density space
+! @param[in]     exner_in_wth             Exner pressure in wth space
+! @param[in]     rho_in_wth               Density in potential temperature space
+! @param[in]     height_w3                Height of w3 levels above surface
+! @param[in]     height_wth               Height of wth levels above surface
+! @param[in]     ozone                    Ozone field
+! @param[in]     mv                       Water vapour field
+! @param[in]     mcl                      Cloud liquid field
+! @param[in]     mci                      Cloud ice field
+! @param[in]     area_fraction            Total cloud area fraction field
+! @param[in]     liquid_fraction          Liquid cloud fraction field
+! @param[in]     ice_fraction             Ice cloud fraction field
+! @param[in]     sigma_qcw                Fractional standard deviation of condensate
+! @param[in]     cca                      Convective cloud amount (fraction)
+! @param[in]     ccw                      Convective cloud water (kg/kg) (can be ice or liquid)
+! @param[in]     cloud_drop_no_conc       Cloud Droplet Number Concentration
+! @param[in]     tile_fraction            Surface tile fractions
+! @param[in]     tile_temperature         Surface tile temperature
+! @param[in]     tile_lw_albedo           LW tile albedos
+! @param[in]     sulphuric                Sulphuric acid aerosol
+! @param[in]     aer_mix_ratio            MODE aerosol mixing ratios
+! @param[in]     aer_lw_absorption        MODE aerosol LW absorption
+! @param[in]     aer_lw_scattering        MODE aerosol LW scattering
+! @param[in]     aer_lw_asymmetry         MODE aerosol LW asymmetry
+! @param[in]     latitude                 Latitude field
+! @param[in]     longitude                Longitude field
+! @param[in]     timestep                 Timestep number
+! @param[in]     ndf_wth                  No. DOFs per cell for wth space
+! @param[in]     undf_wth                 No. unique of DOFs for wth space
+! @param[in]     map_wth                  Dofmap for wth space column base cell
+! @param[in]     ndf_2d                   No. of DOFs per cell for 2D space
+! @param[in]     undf_2d                  No. unique of DOFs for 2D space
+! @param[in]     map_2d                   Dofmap for 2D space column base cell
+! @param[in]     ndf_tile                 Number of DOFs per cell for tiles
+! @param[in]     undf_tile                Number of total DOFs for tiles
+! @param[in]     map_tile                 Dofmap for tile space column base cell
+! @param[in]     ndf_w3                   No. of DOFs per cell for w3 space
+! @param[in]     undf_w3                  No. unique of DOFs for w3 space
+! @param[in]     map_w3                   Dofmap for w3 space column base cell
+! @param[in]     ndf_rtile                No. of DOFs per cell for rtile space
+! @param[in]     undf_rtile               No. unique of DOFs for rtile space
+! @param[in]     map_rtile                Dofmap for rtile space column base cell
+! @param[in]     ndf_mode                 No. of DOFs per cell for mode space
+! @param[in]     undf_mode                No. unique of DOFs for mode space
+! @param[in]     map_mode                 Dofmap for mode space column base cell
+! @param[in]     ndf_rmode                No. of DOFs per cell for rmode space
+! @param[in]     undf_rmode               No. unique of DOFs for rmode space
+! @param[in]     map_rmode                Dofmap for rmode space column base cell
 subroutine lw_code(nlayers,                          &
                    lw_heating_rate,                  &
                    lw_down_surf,                     &
@@ -155,6 +157,7 @@ subroutine lw_code(nlayers,                          &
                    cloud_cover_rts,                  &
                    cloud_fraction_rts,               &
                    cloud_droplet_re_rts,             &
+                   lw_aer_optical_depth_rts,         &
                    theta,                            &
                    theta_in_w3,                      &
                    exner,                            &
@@ -188,7 +191,7 @@ subroutine lw_code(nlayers,                          &
                    ndf_w3, undf_w3, map_w3,          &
                    ndf_rtile, undf_rtile, map_rtile, &
                    ndf_mode, undf_mode, map_mode,    &
-                   ndf_rmode_lw, undf_rmode_lw, map_rmode_lw)
+                   ndf_rmode, undf_rmode, map_rmode)
 
   use well_mixed_gases_config_mod, only:         &
     co2_mix_ratio, n2o_mix_ratio, ch4_mix_ratio, &
@@ -202,7 +205,7 @@ subroutine lw_code(nlayers,                          &
   use set_cloud_field_mod, only: set_cloud_field
   use jules_control_init_mod, only: n_surf_tile, lw_band_tile
   use um_physics_init_mod, only: n_aer_mode, mode_dimen, lw_band_mode
-  use socrates_runes, only: runes, ip_source_thermal
+  use socrates_runes, only: runes, ip_source_thermal, StrDiag
   use socrates_bones, only: bones
 
   implicit none
@@ -210,9 +213,9 @@ subroutine lw_code(nlayers,                          &
   ! Arguments
   integer(i_def), intent(in) :: nlayers, timestep
   integer(i_def), intent(in) :: ndf_wth, ndf_w3, ndf_2d
-  integer(i_def), intent(in) :: ndf_tile, ndf_rtile, ndf_mode, ndf_rmode_lw
+  integer(i_def), intent(in) :: ndf_tile, ndf_rtile, ndf_mode, ndf_rmode
   integer(i_def), intent(in) :: undf_wth, undf_w3, undf_2d
-  integer(i_def), intent(in) :: undf_tile, undf_rtile, undf_mode, undf_rmode_lw
+  integer(i_def), intent(in) :: undf_tile, undf_rtile, undf_mode, undf_rmode
 
   integer(i_def), dimension(ndf_wth),   intent(in) :: map_wth
   integer(i_def), dimension(ndf_w3),    intent(in) :: map_w3
@@ -220,19 +223,19 @@ subroutine lw_code(nlayers,                          &
   integer(i_def), dimension(ndf_tile),  intent(in) :: map_tile
   integer(i_def), dimension(ndf_rtile), intent(in) :: map_rtile
   integer(i_def), dimension(ndf_mode),  intent(in) :: map_mode
-  integer(i_def), dimension(ndf_rmode_lw), intent(in) :: map_rmode_lw
+  integer(i_def), dimension(ndf_rmode), intent(in) :: map_rmode
 
   real(r_def), dimension(undf_wth),  intent(inout) :: lw_heating_rate
   real(r_def), dimension(undf_2d),   intent(inout) :: lw_down_surf
   real(r_def), dimension(undf_tile), intent(inout) :: lw_up_tile
 
-  real(r_def), dimension(undf_wth),  intent(inout) :: lw_heating_rate_rts
   real(r_def), dimension(undf_2d),   intent(inout) :: lw_down_surf_rts
-  real(r_def), dimension(undf_tile), intent(inout) :: lw_up_tile_rts
-
-  real(r_def), dimension(undf_2d),  intent(inout) :: cloud_cover_rts
-  real(r_def), dimension(undf_wth), intent(inout) :: cloud_fraction_rts
-  real(r_def), dimension(undf_wth), intent(inout) :: cloud_droplet_re_rts
+  real(r_def), dimension(undf_wth),  intent(inout), target :: &
+    lw_heating_rate_rts, lw_aer_optical_depth_rts
+  real(r_def), dimension(undf_tile), intent(inout), target :: lw_up_tile_rts
+  real(r_def), dimension(undf_2d),   intent(inout), target :: cloud_cover_rts
+  real(r_def), dimension(undf_wth),  intent(inout), target :: &
+    cloud_fraction_rts, cloud_droplet_re_rts
 
   real(r_def), dimension(undf_w3),  intent(in) :: theta_in_w3, exner, height_w3
   real(r_def), dimension(undf_wth), intent(in) :: theta, exner_in_wth, &
@@ -244,7 +247,7 @@ subroutine lw_code(nlayers,                          &
   real(r_def), dimension(undf_rtile), intent(in) :: tile_lw_albedo
   real(r_def), dimension(undf_wth),   intent(in) :: sulphuric
   real(r_def), dimension(undf_mode),  intent(in) :: aer_mix_ratio
-  real(r_def), dimension(undf_rmode_lw), intent(in) :: &
+  real(r_def), dimension(undf_rmode), intent(in) :: &
     aer_lw_absorption, aer_lw_scattering, aer_lw_asymmetry
   real(r_def), dimension(undf_2d),    intent(in) :: latitude, longitude
 
@@ -255,7 +258,7 @@ subroutine lw_code(nlayers,                          &
   integer(i_def) :: k, n_cloud_layer
   integer(i_def) :: wth_0, wth_1, wth_nlayers, w3_1, w3_nlayers
   integer(i_def) :: tile_1, tile_last, rtile_1, rtile_ntile, rtile_last
-  integer(i_def) :: mode_1, mode_last, rmode_lw_1, rmode_lw_last
+  integer(i_def) :: mode_1, mode_last, rmode_1, rmode_last
   real(r_def), dimension(nlayers) :: layer_heat_capacity
     ! Heat capacity for each layer
   real(r_def), dimension(nlayers) :: p_layer, t_layer
@@ -268,7 +271,8 @@ subroutine lw_code(nlayers,                          &
     liq_conv_frac, ice_conv_frac, liq_conv_mmr, ice_conv_mmr, liq_conv_dim
     ! Convective cloud fields
   real(r_def), dimension(0:nlayers) :: t_layer_boundaries
-  real(r_def), dimension(0:nlayers) :: lw_down, lw_up
+  real(r_def), dimension(0:nlayers), target :: lw_down, lw_up
+  type(StrDiag) :: lw_diag
 
 
   ! Set indexing
@@ -282,10 +286,10 @@ subroutine lw_code(nlayers,                          &
   rtile_1 = map_rtile(1)
   rtile_ntile = map_rtile(1)+n_surf_tile-1
   rtile_last = map_rtile(1)+lw_band_tile-1
-  mode_1 = map_mode(1) + 1
-  mode_last = map_mode(1) + ( (nlayers+1)*mode_dimen ) - 1
-  rmode_lw_1 = map_rmode_lw(1) + 1
-  rmode_lw_last = map_rmode_lw(1) + ( (nlayers+1)*lw_band_mode ) - 1
+  mode_1 = map_mode(1)+1
+  mode_last = map_mode(1)+(nlayers+1)*mode_dimen-1
+  rmode_1 = map_rmode(1)+1
+  rmode_last = map_rmode(1)+(nlayers+1)*lw_band_mode-1
 
   if (mod(timestep-1_i_def, n_radstep) == 0) then
     ! Radiation time-step: full calculation of radiative fluxes
@@ -313,8 +317,26 @@ subroutine lw_code(nlayers,                          &
       rand_seed, n_cloud_layer, cloud_frac, liq_dim, conv_frac, &
       liq_conv_frac, ice_conv_frac, liq_conv_mmr, ice_conv_mmr, liq_conv_dim)
 
+    ! Set pointers for diagnostic output (using pointer bound remapping)
+    lw_diag%heating_rate(1:1,1:nlayers) => &
+      lw_heating_rate_rts(wth_1:wth_nlayers)
+
+    lw_diag%total_cloud_cover(1:1) => cloud_cover_rts(map_2d(1):map_2d(1))
+    lw_diag%total_cloud_fraction(1:1,1:nlayers) => &
+      cloud_fraction_rts(wth_1:wth_nlayers)
+    lw_diag%liq_dim(1:1,1:nlayers) => cloud_droplet_re_rts(wth_1:wth_nlayers)
+
+    lw_diag%flux_down(1:1,0:nlayers) => lw_down
+    lw_diag%flux_up(1:1,0:nlayers) => lw_up
+    lw_diag%flux_up_tile(1:1,1:n_surf_tile) => lw_up_tile_rts(tile_1:tile_last)
+
+    ! Aerosol optical depth for LW band 5 is output (8.3-12.5 micron). Once the
+    ! diagnostic infrastructure is in place the band(s) may be user defined.
+    lw_diag%aerosol_optical_depth(1:1,1:nlayers,5:5) => &
+      lw_aer_optical_depth_rts(wth_1:wth_nlayers)
+
     ! Calculate the LW fluxes (RUN the Edwards-Slingo two-stream solver)
-    call runes(n_profile, nlayers,                                             &
+    call runes(n_profile, nlayers, lw_diag,                                    &
       spectrum_name           = 'lw',                                          &
       i_source                = ip_source_thermal,                             &
       n_cloud_layer           = n_cloud_layer,                                 &
@@ -333,7 +355,6 @@ subroutine lw_code(nlayers,                          &
       cfc113_mix_ratio        = cfc113_mix_ratio,                              &
       hcfc22_mix_ratio        = hcfc22_mix_ratio,                              &
       hfc134a_mix_ratio       = hfc134a_mix_ratio,                             &
-      l_tile                  = .true.,                                        &
       n_tile                  = n_surf_tile,                                   &
       frac_tile_1d            = tile_fraction(tile_1:tile_last),               &
       t_tile_1d               = tile_temperature(tile_1:tile_last),            &
@@ -373,17 +394,10 @@ subroutine lw_code(nlayers,                          &
       n_aer_mode              = n_aer_mode,                                    &
       n_aer_layer             = nlayers+1,                                     &
       aer_mix_ratio_1d        = aer_mix_ratio(mode_1:mode_last),               &
-      aer_absorption_1d       = aer_lw_absorption(rmode_lw_1:rmode_lw_last),   &
-      aer_scattering_1d       = aer_lw_scattering(rmode_lw_1:rmode_lw_last),   &
-      aer_asymmetry_1d        = aer_lw_asymmetry(rmode_lw_1:rmode_lw_last),    &
-      l_invert                = .true.,                                        &
-      total_cloud_cover       = cloud_cover_rts(map_2d(1):map_2d(1)),          &
-      total_cloud_fraction_1d = cloud_fraction_rts(wth_1:wth_nlayers),         &
-      liq_dim_diag_1d         = cloud_droplet_re_rts(wth_1:wth_nlayers),       &
-      flux_down_1d            = lw_down,                                       &
-      flux_up_1d              = lw_up,                                         &
-      flux_up_tile_1d         = lw_up_tile_rts(tile_1:tile_last),              &
-      heating_rate_1d         = lw_heating_rate_rts(wth_1:wth_nlayers))
+      aer_absorption_1d       = aer_lw_absorption(rmode_1:rmode_last),         &
+      aer_scattering_1d       = aer_lw_scattering(rmode_1:rmode_last),         &
+      aer_asymmetry_1d        = aer_lw_asymmetry(rmode_1:rmode_last),          &
+      l_invert                = .true.)
 
     ! Set level 0 increment such that theta increment will equal level 1
     lw_heating_rate_rts(wth_0) = lw_heating_rate_rts(wth_1) &
@@ -420,5 +434,4 @@ subroutine lw_code(nlayers,                          &
   end if
 
 end subroutine lw_code
-
 end module lw_kernel_mod

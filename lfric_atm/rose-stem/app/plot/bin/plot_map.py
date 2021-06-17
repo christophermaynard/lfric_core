@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-''' Quick plot of for lfric_atm global output '''
+''' Quick plot for lfric_atm global output '''
 
 # Need to set a non-interactive backend for suites
 from __future__ import absolute_import
@@ -30,8 +30,9 @@ sw_heating_rate = ['sw_heating_rate', 0,    7e-5]
 cloud_cover_rts = ['cloud_cover_rts', 0, 1]
 cloud_fraction_rts = ['cloud_fraction_rts', 0, 1]
 cloud_droplet_re_rts = ['cloud_droplet_re_rts', 0, 20e-6]
-trop_level      = ['trop_level', 12, 34]
+trop_level      = ['trop_level', 20, 50]
 sw_down_surf    = ['sw_down_surf', 0, 1400]
+sw_aod          = ['sw_aer_optical_depth_rts', 0, 1e-3]
 
 def load_cube_by_varname(filename, var):
    variable_constraint = iris.Constraint(cube_func=(lambda c: c.var_name == var))
@@ -114,3 +115,4 @@ if __name__ == "__main__":
     do_plot(datapath, cloud_droplet_re_rts, plotpath, plotlevel=17)
     do_plot(datapath, trop_level,      plotpath)
     do_plot(datapath, sw_down_surf,    plotpath)
+    do_plot(datapath, sw_aod, plotpath, plotlevel=38)

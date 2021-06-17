@@ -396,6 +396,8 @@
 	<field id="cloud_cover_rts" name="cloud_cover_rts" long_name="total_column_cloud_fraction" unit="1" domain_ref="face" />
         <field id="cloud_fraction_rts" name="cloud_fraction_rts" long_name="Total cloud fraction in layers" unit="1" grid_ref="full_level_face_grid" />
         <field id="cloud_droplet_re_rts" name="cloud_droplet_re_rts" long_name="Cloud droplet effective radius" unit="m" grid_ref="full_level_face_grid" />
+        <field id="sw_aer_optical_depth_rts" name="sw_aer_optical_depth_rts" long_name="Aerosol optical depth in the visible" unit="1" grid_ref="full_level_face_grid" />
+        <field id="lw_aer_optical_depth_rts" name="lw_aer_optical_depth_rts" long_name="Aerosol optical depth in the infra-red" unit="1" grid_ref="full_level_face_grid" />
       </field_group>
 
       <!-- Initial conditions group -->
