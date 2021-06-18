@@ -24,3 +24,9 @@ science/src/socrates/%.o science/src/socrates/%.mod: export FFLAGS += $(FFLAGS_S
 # latter is due to regular permitting of exponents going to zero for small numbers
 # to imply total extinction of radiation passing through a medium
 FFLAGS_RUNTIME           = -fcheck=all,no-bounds -ffpe-trap=invalid,zero,overflow
+
+# The lfric_atm app defines an extra set of debug flags for
+# fast-debug. For this compiler use the same as the full-debug
+# settings
+FFLAGS_FASTD_INIT         = $(FFLAGS_INIT) 
+FFLAGS_FASTD_RUNTIME      = $(FFLAGS_RUNTIME)

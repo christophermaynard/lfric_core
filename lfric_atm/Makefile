@@ -74,7 +74,8 @@ build: export WORKING_DIR := $(WORKING_DIR)/lfric_atm
 ifeq "$(PROFILE)" "full-debug"
 build: export FFLAG_GROUPS = DEBUG WARNINGS INIT RUNTIME NO_OPTIMISATION
 else ifeq "$(PROFILE)" "fast-debug"
-build: export FFLAG_GROUPS = DEBUG WARNINGS SAFE_OPTIMISATION
+# Use fast-debug environment vars from build/fortran/*.mk configs
+build: export FFLAG_GROUPS = DEBUG WARNINGS FASTD_INIT FASTD_RUNTIME SAFE_OPTIMISATION
 else ifeq "$(PROFILE)" "production"
 build: export FFLAG_GROUPS = DEBUG WARNINGS RISKY_OPTIMISATION
 else
