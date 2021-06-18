@@ -207,7 +207,8 @@ contains
          llcs_cloud_precip, llcs_opt_all_rain, llcs_rhcrit, llcs_timescale,&
          check_run_convection, l_fcape, cape_ts_min, cape_ts_max,          &
          cpress_term, pr_melt_frz_opt, llcs_opt_crit_condens,              &
-         llcs_detrain_coef, l_prog_pert, md_pert_opt, l_jules_flux
+         llcs_detrain_coef, l_prog_pert, md_pert_opt, l_jules_flux,        &
+         l_reset_neg_delthvu
     use cv_param_mod, only: mtrig_ntmlplus2, md_pert_orig
     use cv_stash_flg_mod, only: set_convection_output_flags
     use cv_set_dependent_switches_mod, only: cv_set_dependent_switches
@@ -496,6 +497,7 @@ contains
     plume_water_load     = 0
     tv1_sd_opt           = 2
     w_cape_limit         = 0.4_r_um
+    l_reset_neg_delthvu  = .true.
 
     if ( convection == convection_um ) then
 
@@ -578,7 +580,7 @@ contains
         tower_factor        = 1.0000_r_um
         ud_factor           = 1.0000_r_um
 
-        ! Deried switches and parameters are set here based on the options
+        ! Derived switches and parameters are set here based on the options
         ! above
         call cv_set_dependent_switches( )
         ! Flags for diagnostic output are set here
