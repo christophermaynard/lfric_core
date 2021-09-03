@@ -167,8 +167,8 @@ contains
          l_albedo_obs, l_hapke_soil, l_partition_albsoil,                   &
          ratio_albsoil, swdn_frac_albsoil
     use jules_science_fixes_mod, only: l_dtcanfix, l_fix_alb_ice_thick,     &
-         l_fix_albsnow_ts, l_fix_ctile_orog, l_fix_wind_snow,               &
-         l_accurate_rho, l_fix_osa_chloro, l_fix_ustar_dust
+         l_fix_albsnow_ts, ctile_orog_fix, l_fix_wind_snow,                 &
+         l_accurate_rho, l_fix_osa_chloro, l_fix_ustar_dust, correct_sea_only
     use jules_sea_seaice_mod, only: nice_use, iseasurfalg, emis_sea,        &
          seasalinityfactor, nice, ip_ss_surf_div, z0sice,                   &
          z0h_z0m_sice, emis_sice, l_ctile, l_tstar_sice_new,                &
@@ -448,9 +448,9 @@ contains
     ! ----------------------------------------------------------------
     l_dtcanfix = .true.
     ! Not strictly GA7 but sensible to set them
+    ctile_orog_fix      = correct_sea_only
     l_fix_alb_ice_thick = .true.
     l_fix_albsnow_ts    = .true.
-    l_fix_ctile_orog    = .true.
     l_fix_wind_snow     = .true.
     l_accurate_rho      = .false.
     l_fix_osa_chloro    = .true.
