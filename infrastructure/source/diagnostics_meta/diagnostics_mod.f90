@@ -255,11 +255,11 @@ module diagnostics_mod
     !> abstract_vertical_meta_data_type \endlink. This breaks down into two
     !> patterns:
     !> - When is it defined?
-    !>	- Model: definition is relative to a vertical axis defined as part of
+    !> - Model: definition is relative to a vertical axis defined as part of
     !>    the model configuration - e.g. standard vertical axis between 1st
     !>    atmospheric level and top level in boundary layer. This constrains
     !>    but defers the precise specification until user configuration.
-    !>	- Fixed: definition is hard coded by the developer - e.g. cloud amount
+    !> - Fixed: definition is hard coded by the developer - e.g. cloud amount
     !>    between 700-950m, 950-1100m and 1100-1300m.
     !>
     !> The vertical dimension also contains information about what standard

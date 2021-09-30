@@ -13,7 +13,8 @@ export FFLAGS_UM_PHYSICS = -fdefault-real-8 -fdefault-double-8
 # unused variables.
 # We reset the FFLAGS_WARNINGS variable here in order to prevent
 # -Werror induced build failures.
-FFLAGS_WARNINGS          = -Wall -Werror=character-truncation -Werror=unused-value
+FFLAGS_WARNINGS          = -Wall -Werror=character-truncation -Werror=unused-value \
+                           -Werror=tabs
 
 # But, we can apply full lfric infrastructure checking to socrates
 FFLAGS_SOCRATES_WARNINGS = -Werror=conversion -Werror=unused-variable

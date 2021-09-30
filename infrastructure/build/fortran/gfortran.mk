@@ -26,9 +26,11 @@ FFLAGS_SAFE_OPTIMISATION  = -Og
 FFLAGS_RISKY_OPTIMISATION = -Ofast
 FFLAGS_DEBUG              = -g
 FFLAGS_WARNINGS           = -Wall -Werror=conversion -Werror=unused-variable \
-                            -Werror=character-truncation -Werror=unused-value
+                            -Werror=character-truncation -Werror=unused-value \
+                            -Werror=tabs
 FFLAGS_UNIT_WARNINGS      = -Wall -Wconversion -Wunused-variable \
-                            -Wcharacter-truncation -Werror=unused-value
+                            -Wcharacter-truncation -Werror=unused-value \
+                            -Werror=tabs
 FFLAGS_INIT               = -finit-integer=31173 -finit-real=snan \
                             -finit-logical=true -finit-character=85
 FFLAGS_RUNTIME            = -fcheck=all -ffpe-trap=invalid,zero,overflow,underflow

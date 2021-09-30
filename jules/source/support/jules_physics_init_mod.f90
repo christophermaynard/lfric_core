@@ -198,7 +198,7 @@ contains
          capped_lowhill, explicit_stress, l_vary_z0m_soil
     use jules_vegetation_mod, only: can_rad_mod, ilayers, l_vegcan_soilfx,  &
          photo_model, photo_collatz, check_jules_vegetation,                &
-	 l_spec_veg_z0, l_limit_canhc
+         l_spec_veg_z0, l_limit_canhc
     use nvegparm, only:                                                     &
          albsnc_nvg, albsnf_nvgu, albsnf_nvg, albsnf_nvgl, catch_nvg,       &
          ch_nvg, emis_nvg, gs_nvg, infil_nvg, vf_nvg, z0_nvg

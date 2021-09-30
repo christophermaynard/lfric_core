@@ -159,7 +159,7 @@ contains
                                      u1_in_w3, u2_in_w3, w_physics,            &
                                      theta, exner_in_wth,                      &
                                      wetrho_in_w3, dry_rho_in_w3,              &
-				     height_w3, height_wth,                    &
+                                     height_w3, height_wth,                    &
                                      cloud_drop_no_conc,                       &
                                      dmr_mphys(imr_v),  dmr_mphys(imr_cl),     &
                                      dmr_mphys(imr_ci), dmr_mphys(imr_r),      &
