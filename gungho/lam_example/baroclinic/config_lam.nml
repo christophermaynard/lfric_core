@@ -46,7 +46,7 @@ diag_stem_name='diagGungho',
 orography_ancil_path='',
 start_dump_directory='',
 start_dump_filename='',
-lbc_directory='/data/users/cjohnson/r29105_timeaxis/gungho/lam_example/baroclinic',
+lbc_directory='.',
 lbc_filename='lbc',
 /
 &finite_element
@@ -163,10 +163,6 @@ orog_init_option='none',
 panel_decomposition='auto',
 panel_xproc=6,
 panel_yproc=1,
-/
-&physics
-heldsuarez_thermo_placement=0,
-heldsuarez_wind_placement=0,
 /
 &planet
 cp=1005.0,
