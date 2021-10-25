@@ -35,9 +35,12 @@ use idealised_config_mod,         only : test_cold_bubble_x,           &
                                          test_curl_free_reversible,    &
                                          test_rotational,              &
                                          test_translational,           &
-                                         test_vertical_cylinder
+                                         test_vertical_cylinder,       &
+                                         test_bryan_fritsch,           &
+                                         test_grabowski_clark
 use initial_density_config_mod,    only : r1, x1, y1, r2, x2, y2,      &
                                           tracer_max, tracer_background
+use initial_pressure_config_mod,   only : surface_pressure
 use base_mesh_config_mod,          only : geometry,                    &
                                           geometry_spherical
 use planet_config_mod,             only : p_zero, Rd, kappa, scaled_radius, &
@@ -139,6 +142,25 @@ function analytic_temperature(chi, choice) result(temperature)
       dt = 0.5_r_def*exp(-(l-50.0_r_def)**2/(100.0_r_def)**2)
     end if
     temperature = temperature + dt
+
+  ! Test from Bryan and Fritsch (2002)
+  case( test_bryan_fritsch )
+
+    l = sqrt(((chi(1)-XC)/2000.0_r_def)**2.0 + ((chi(3)-2000.0_r_def)/2000.0_r_def)**2.0)
+    if ( l <= 1.0_r_def ) then
+      dt = 2.0_r_def * (cos(PI*l/2.0_r_def))**2.0_r_def
+      temperature = 1.0_r_def + dt / 300.0_r_def
+    else
+      temperature = 1.0_r_def
+    end if
+
+  ! Test from Grabowski and Clark (1991)
+  case( test_grabowski_clark )
+
+    ! Value of theta at surface with temperature = 283 K
+    t0 = 283.0_r_def * (p_zero / surface_pressure) ** kappa
+    s = 1.3e-5_r_def  ! stability, in m^{-1}
+    temperature = t0*exp(s*chi(3))
 
   !> Test from Kelly & Giraldo
   case( test_warm_bubble_3d )

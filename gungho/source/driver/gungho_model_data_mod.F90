@@ -12,64 +12,64 @@
 !>
 module gungho_model_data_mod
 
-  use clock_mod,                        only : clock_type
-  use mr_indices_mod,                   only : nummr
-  use moist_dyn_mod,                    only : num_moist_factors
-  use field_mod,                        only : field_type
-  use field_parent_mod,                 only : write_interface
-  use field_collection_mod,             only : field_collection_type
-  use constants_mod,                    only : i_def, l_def
-  use log_mod,                          only : log_event,       &
-                                               LOG_LEVEL_INFO,  &
-                                               LOG_LEVEL_ERROR, &
-                                               log_scratch_space
-  use files_config_mod,                 only : checkpoint_stem_name
-  use formulation_config_mod,           only : use_physics
-  use initialization_config_mod,        only : init_option,                 &
-                                               init_option_analytic,        &
-                                               init_option_fd_start_dump,   &
-                                               init_option_checkpoint_dump, &
-                                               init_option_fe_start_dump,   &
-                                               ancil_option,                &
-                                               ancil_option_none,           &
-                                               ancil_option_aquaplanet,     &
-                                               ancil_option_basic_gal,      &
-                                               ancil_option_prototype_gal,  &
-                                               lbc_option,                  &
-                                               lbc_option_none,             &
-                                               lbc_option_analytic,         &
-                                               lbc_option_file
-  use io_config_mod,                    only : checkpoint_read,  &
-                                               checkpoint_write, &
-                                               write_dump
-  use lfric_xios_read_mod,              only : read_checkpoint,  &
-                                               read_state
-  use lfric_xios_write_mod,             only : write_checkpoint, &
-                                               write_state
-  use boundaries_config_mod,            only : limited_area
-  use create_lbcs_mod,                  only : create_lbc_fields
-  use create_gungho_prognostics_mod,    only : create_gungho_prognostics
-  use create_physics_prognostics_mod,   only : create_physics_prognostics
-  use section_choice_config_mod,        only : cloud, cloud_none
-  use map_fd_to_prognostics_alg_mod,    only : map_fd_to_prognostics
-  use init_gungho_prognostics_alg_mod,  only : init_gungho_prognostics_alg
-  use init_gungho_lbcs_alg_mod,         only : init_lbcs_file_alg,    &
-                                               init_lbcs_analytic_alg
-  use init_physics_prognostics_alg_mod, only : init_physics_prognostics_alg
+  use clock_mod,                          only : clock_type
+  use mr_indices_mod,                     only : nummr
+  use moist_dyn_mod,                      only : num_moist_factors
+  use field_mod,                          only : field_type
+  use field_parent_mod,                   only : write_interface
+  use field_collection_mod,               only : field_collection_type
+  use constants_mod,                      only : i_def, l_def
+  use log_mod,                            only : log_event,       &
+                                                 LOG_LEVEL_INFO,  &
+                                                 LOG_LEVEL_ERROR, &
+                                                 log_scratch_space
+  use files_config_mod,                   only : checkpoint_stem_name
+  use formulation_config_mod,             only : use_physics
+  use initialization_config_mod,          only : init_option,                 &
+                                                 init_option_analytic,        &
+                                                 init_option_fd_start_dump,   &
+                                                 init_option_checkpoint_dump, &
+                                                 init_option_fe_start_dump,   &
+                                                 ancil_option,                &
+                                                 ancil_option_none,           &
+                                                 ancil_option_aquaplanet,     &
+                                                 ancil_option_basic_gal,      &
+                                                 ancil_option_prototype_gal,  &
+                                                 lbc_option,                  &
+                                                 lbc_option_none,             &
+                                                 lbc_option_analytic,         &
+                                                 lbc_option_file
+  use io_config_mod,                      only : checkpoint_read,  &
+                                                 checkpoint_write, &
+                                                 write_dump
+  use lfric_xios_read_mod,                only : read_checkpoint,  &
+                                                 read_state
+  use lfric_xios_write_mod,               only : write_checkpoint, &
+                                                 write_state
+  use boundaries_config_mod,              only : limited_area
+  use create_lbcs_mod,                    only : create_lbc_fields
+  use create_gungho_prognostics_mod,      only : create_gungho_prognostics
+  use create_physics_prognostics_mod,     only : create_physics_prognostics
+  use section_choice_config_mod,          only : cloud, cloud_none
+  use map_fd_to_prognostics_alg_mod,      only : map_fd_to_prognostics
+  use gungho_init_prognostics_driver_mod, only : init_gungho_prognostics
+  use init_gungho_lbcs_alg_mod,           only : init_lbcs_file_alg,    &
+                                                 init_lbcs_analytic_alg
+  use init_physics_prognostics_alg_mod,   only : init_physics_prognostics_alg
 #ifdef COUPLED
   use coupler_mod,                      only : cpl_init_fields, l_esm_couple
 #endif
   use moist_dyn_factors_alg_mod,        only : moist_dyn_factors_alg
   use init_fd_prognostics_mod,          only : init_fd_prognostics_dump
 #ifdef UM_PHYSICS
-  use create_fd_prognostics_mod,        only : create_fd_prognostics
-  use init_ancils_mod,                  only : create_fd_ancils
-  use process_inputs_alg_mod,           only : process_inputs_alg
-  use update_tstar_alg_mod,             only : update_tstar_alg
+  use create_fd_prognostics_mod,          only : create_fd_prognostics
+  use init_ancils_mod,                    only : create_fd_ancils
+  use process_inputs_alg_mod,             only : process_inputs_alg
+  use update_tstar_alg_mod,               only : update_tstar_alg
 #endif
-  use linked_list_mod,                  only : linked_list_type, &
-                                               linked_list_item_type
-  use variable_fields_mod,              only : init_variable_fields
+  use linked_list_mod,                    only : linked_list_type, &
+                                                 linked_list_item_type
+  use variable_fields_mod,                only : init_variable_fields
 
   implicit none
 
@@ -454,9 +454,9 @@ contains
         ! Initialise prognostics analytically according to
         ! namelist options
 
-        call init_gungho_prognostics_alg( model_data%prognostic_fields, &
-                                          model_data%mr,                &
-                                          model_data%moist_dyn )
+        call init_gungho_prognostics( model_data%prognostic_fields, &
+                                      model_data%mr,                &
+                                      model_data%moist_dyn )
 
       case ( init_option_checkpoint_dump )
 

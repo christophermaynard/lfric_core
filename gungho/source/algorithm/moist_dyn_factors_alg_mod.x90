@@ -31,9 +31,9 @@ contains
     type( field_type ), intent(inout) :: moist_dyn(num_moist_factors)
     ! Moisture mixing ratios
     type( field_type ), intent(in)    :: mr(nummr)
-    integer (i_def) :: i
+    integer(kind=i_def) :: i
 
-    if (use_moisture)then
+    if (use_moisture) then
       ! Set moist dynamics factors
       call invoke(moist_dyn_factors_kernel_type( moist_dyn, mr, recip_epsilon ))
     else

@@ -67,3 +67,19 @@ def read_nodal_data(filestem, ncomp, comp):
                 all_data = all_data.loc[all_data['level'].mod(1) == 0.0]
 
     return all_data
+
+def load_cube_by_varname(filename, var):
+    variable_constraint = iris.Constraint(cube_func=(
+                                lambda c: c.var_name == var))
+    return iris.load_cube(filename, constraint=variable_constraint)
+
+def read_ugrid_data(filestem, field):
+    '''
+    Read from UGRID NetCDF file
+    # filestem - path to file
+    # field - field name
+    '''
+    # Read the file and extract field of interest
+    cube = load_cube_by_varname(filestem, field)
+
+    return cube

@@ -45,7 +45,9 @@ use idealised_config_mod,       only : test_cold_bubble_x,           &
                                        test_rotational,              &
                                        test_translational,           &
                                        test_vertical_cylinder,       &
-                                       test_specified_profiles
+                                       test_specified_profiles,      &
+                                       test_bryan_fritsch,           &
+                                       test_grabowski_clark
 use initial_density_config_mod, only : r1, x1, y1, z1, r2, x2, y2, z2, &
                                        tracer_max, tracer_background
 use base_mesh_config_mod,       only : geometry, &
@@ -175,7 +177,8 @@ contains
 
     !> No perturbation needed for warm bubble tests so just use background
     !> (isentropic) value
-    case (test_warm_bubble, test_warm_bubble_3d )
+    case (test_warm_bubble, test_warm_bubble_3d, &
+          test_bryan_fritsch, test_grabowski_clark )
       call reference_profile(pressure, density, temperature, chi, choice)
 
     case (test_gaussian_hill)

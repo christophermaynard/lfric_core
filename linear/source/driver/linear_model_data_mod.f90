@@ -14,7 +14,6 @@ module linear_model_data_mod
   use field_mod,                      only : field_type
   use field_collection_mod,           only : field_collection_type
   use finite_element_config_mod,      only : element_order
-  use init_gungho_prognostics_alg_mod,only : init_gungho_prognostics_alg
   use mr_indices_mod,                 only : nummr, &
                                              mr_names
   use moist_dyn_mod,                  only : num_moist_factors

@@ -23,22 +23,21 @@ module physics_common_mod
 contains
 
   ! Function to return the saturation mr over water
-  ! Based on tetans formula
+  ! Based on Tetens' formula
   ! QS=3.8/(P*EXP(-17.2693882*(T-273.15)/(T-35.86))-6.109)
   function qsaturation (T, p)
     implicit none
-    real(r_def), intent(IN) :: T, p
-    real(r_def) :: Qsaturation
-    ! Temperature in Kelvin
-    ! Pressure in mb
-    real(r_def), parameter ::tk0c = 273.15, qsa1 = 3.8, &
-       qsa2 = - 17.2693882, qsa3 = 35.86, qsa4 = 6.109
-    ! Temperature of freezing in Kelvin
-    ! Top in equation to calculate qsat
-    ! Constant in qsat equation
-    ! Constant in qsat equation
-    ! Constant in qsat equation
-    !
+    real(kind=r_def), intent(in) :: T     ! Temperature in Kelvin
+    real(kind=r_def), intent(in) :: p     ! Pressure in mb
+
+    real(kind=r_def)             :: Qsaturation
+
+    real(kind=r_def),  parameter :: tk0c = 273.15      ! Temperature of freezing in Kelvin
+    real(kind=r_def),  parameter :: qsa1 = 3.8         ! Top constant in qsat equation
+    real(kind=r_def),  parameter :: qsa2 = -17.2693882 ! Constant in qsat equation in Kelvin
+    real(kind=r_def),  parameter :: qsa3 = 35.86       ! Constant in qsat equation
+    real(kind=r_def),  parameter :: qsa4 = 6.109       ! Constant in qsat equation in mbar
+
     if (T > qsa3 .and. p * exp (qsa2 * (t - tk0c) / (T - qsa3)) > qsa4) then
       qsaturation=qsa1/(p*exp(qsa2*(t-tk0c)/(T-qsa3))-qsa4)
     else
