@@ -35,7 +35,9 @@ module gungho_setup_io_mod
                                        start_dump_filename,       &
                                        start_dump_directory,      &
                                        lbc_filename,              &
-                                       lbc_directory
+                                       lbc_directory,             &
+                                       ls_filename,               &
+                                       ls_directory
   use initialization_config_mod, only: init_option,               &
                                        init_option_fd_start_dump, &
                                        ancil_option,              &
@@ -43,7 +45,9 @@ module gungho_setup_io_mod
                                        ancil_option_fixed,        &
                                        ancil_option_updating,     &
                                        lbc_option,                &
-                                       lbc_option_file
+                                       lbc_option_file,           &
+                                       ls_option,                 &
+                                       ls_option_file
   use io_config_mod,             only: diagnostic_frequency,      &
                                        checkpoint_write,          &
                                        checkpoint_read,           &
@@ -82,7 +86,8 @@ module gungho_setup_io_mod
                                        checkpoint_read_fname,  &
                                        dump_fname,             &
                                        ancil_fname,            &
-                                       lbc_fname
+                                       lbc_fname,              &
+                                       ls_fname
 
     ! Setup diagnostic output file
     call tmp_file%init_xios_file("lfric_diag", freq=diagnostic_frequency)
@@ -217,6 +222,14 @@ module gungho_setup_io_mod
       write(lbc_fname,'(A)') trim(lbc_directory)//'/'// &
                              trim(lbc_filename)
       call tmp_file%init_xios_file("lbc", path=lbc_fname)
+      call files_list%insert_item(tmp_file)
+    endif
+
+    ! Setup the ls file
+    if ( ls_option == ls_option_file ) then
+      write(ls_fname,'(A)') trim(ls_directory)//'/'// &
+                            trim(ls_filename)
+      call tmp_file%init_xios_file("ls", path=ls_fname)
       call files_list%insert_item(tmp_file)
     endif
 

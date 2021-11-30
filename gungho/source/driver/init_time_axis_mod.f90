@@ -41,9 +41,11 @@ module init_time_axis_mod
   !> @param[in]     mesh_id                  Identifier for the primary mesh
   !> @param[in]     checkpoint_restart_flag  Flag to set checkpoint behaviour
   !> @param[in,out] time_axis                The operable time axis object
+  !> @param[in,out] mr                       The array of moisture mixing ratios
+  !> @param[in]     imr                      The moisture mixing ratio array index
   subroutine setup_field( collection, depository, prognostic_fields, &
                           name, fs, mesh_id, checkpoint_restart_flag, &
-                          time_axis )
+                          time_axis, mr, imr )
 
     use fs_continuity_mod,    only : W0
     use io_config_mod,        only : use_xios_io,             &
@@ -65,6 +67,8 @@ module init_time_axis_mod
     integer(i_def),                     intent(in)    :: fs
     logical(l_def),                     intent(in)    :: checkpoint_restart_flag
     type(time_axis_type), optional,     intent(inout) :: time_axis
+    type(field_type), optional,         intent(inout) :: mr(:)
+    integer(i_def), optional,           intent(in)    :: imr
 
     type(function_space_type),       pointer :: field_space => null()
     class(pure_abstract_field_type), pointer :: field_ptr => null()
@@ -85,19 +89,34 @@ module init_time_axis_mod
       field_space => function_space_collection%get_fs( &
                      mesh_id, element_order, fs, time_axis%get_window_size() )
 
-      call new_field%initialise( field_space, name=trim(name) )
-
-      call time_axis%add_field(new_field)
+      if ( present(imr) ) then
+        call mr(imr)%initialise( field_space, name=trim(name) )
+        call time_axis%add_field(mr(imr))
+      else
+        call new_field%initialise( field_space, name=trim(name) )
+        call time_axis%add_field(new_field)
+      endif
 
       ! Now just a single time level
       field_space => function_space_collection%get_fs( &
-                     mesh_id, element_order, fs)
+                     mesh_id, element_order, fs )
 
-      call new_field%initialise( field_space, name=trim(name) )
+      if ( present(imr) ) then
+        call mr(imr)%initialise( field_space, name=trim(name) )
+      else
+        call new_field%initialise( field_space, name=trim(name) )
+      endif
+
     else
+
       field_space => function_space_collection%get_fs( &
                                         mesh_id, element_order, fs )
-      call new_field%initialise( field_space, name=trim(name) )
+
+      if ( present(imr) ) then
+        call mr(imr)%initialise( field_space, name=trim(name) )
+      else
+        call new_field%initialise( field_space, name=trim(name) )
+      endif
 
       ! Don't need to read input, so no read definitions.
 
@@ -106,13 +125,21 @@ module init_time_axis_mod
     ! Set diagnostic write behaviour.
     if ( use_xios_io .and. write_diag ) then
 
-      if ( new_field%which_function_space() == W0 ) then
-        write_diag_behaviour => write_field_node
-      else
-        write_diag_behaviour => write_field_face
-      endif
+      if ( present(imr) ) then
 
-      call new_field%set_write_behaviour( write_diag_behaviour )
+        write_diag_behaviour => write_field_face
+        call mr(imr)%set_write_behaviour( write_diag_behaviour )
+
+      else
+
+        if ( new_field%which_function_space() == W0 ) then
+          write_diag_behaviour => write_field_node
+        else
+          write_diag_behaviour => write_field_face
+        endif
+
+        call new_field%set_write_behaviour( write_diag_behaviour )
+      endif
 
     endif
 
@@ -126,12 +153,25 @@ module init_time_axis_mod
         checkpoint_read_behaviour  => checkpoint_read_netcdf
       endif
 
-      call new_field%set_checkpoint_write_behaviour(checkpoint_write_behaviour)
-      call new_field%set_checkpoint_read_behaviour(checkpoint_read_behaviour)
+      if ( present(imr) ) then
+
+        call mr(imr)%set_checkpoint_write_behaviour(checkpoint_write_behaviour)
+        call mr(imr)%set_checkpoint_read_behaviour(checkpoint_read_behaviour)
+
+      else
+
+        call new_field%set_checkpoint_write_behaviour(checkpoint_write_behaviour)
+        call new_field%set_checkpoint_read_behaviour(checkpoint_read_behaviour)
+
+      endif
     endif
 
     ! Add field to depository, and add references to field collections.
-    call depository%add_field( new_field )
+    if ( present(imr) ) then
+      call depository%add_field( mr(imr) )
+    else
+      call depository%add_field( new_field )
+    endif
 
     field_ptr => depository%get_field( name )
 
@@ -140,6 +180,13 @@ module init_time_axis_mod
     if ( checkpoint_restart_flag ) then
       call prognostic_fields%add_reference_to_field( field_ptr )
     endif
+
+    ! Nullify pointers
+    field_space => null()
+    field_ptr => null()
+    write_diag_behaviour => null()
+    checkpoint_write_behaviour => null()
+    checkpoint_read_behaviour => null()
 
   end subroutine setup_field
 

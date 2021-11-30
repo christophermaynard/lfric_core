@@ -148,6 +148,10 @@ module gungho_model_data_mod
     type( field_type ), allocatable, public :: ls_mr(:)
     !> Array of linearisation fields containing the moist dynamics
     type( field_type ), allocatable, public :: ls_moist_dyn(:)
+    !> Linked list of time axis objects used to update time-varying
+    !> linearisation state
+    type( linked_list_type ),      public   :: ls_times_list
+
     contains
 
     procedure, private :: add_field_collection

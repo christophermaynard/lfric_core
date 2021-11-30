@@ -34,7 +34,12 @@ module linear_driver_mod
                                          linear_init_pert
   use linear_model_mod,           only : initialise_linear_model, &
                                          finalise_linear_model
+  use linear_diagnostics_driver_mod, &
+                                  only : linear_diagnostics_driver
   use linear_step_mod,            only : linear_step
+  use linear_data_algorithm_mod,  only : update_ls_file_alg
+  use initialization_config_mod,  only : ls_option, &
+                                         ls_option_file
 
   implicit none
 
@@ -120,7 +125,14 @@ contains
                                         model_data, &
                                         clock,      &
                                         nodal_output_on_w3 )
+
+        call linear_diagnostics_driver( mesh_id,    &
+                                        model_data, &
+                                        clock,      &
+                                        nodal_output_on_w3 )
     end if
+
+
 
   end subroutine initialise
 
@@ -139,6 +151,14 @@ contains
     clock => io_context%get_clock()
     do while ( clock%tick() )
 
+      if ( ls_option == ls_option_file ) then
+        call update_ls_file_alg( model_data%ls_times_list, &
+                                 clock,                    &
+                                 model_data%ls_fields,     &
+                                 model_data%ls_mr,         &
+                                 model_data%ls_moist_dyn )
+      end if
+
       call linear_step( mesh_id,      &
                         twod_mesh_id, &
                         model_data,   &
@@ -149,6 +169,11 @@ contains
 
         ! Calculation and output diagnostics
         call gungho_diagnostics_driver( mesh_id,    &
+                                        model_data, &
+                                        clock,      &
+                                        nodal_output_on_w3 )
+
+        call linear_diagnostics_driver( mesh_id,    &
                                         model_data, &
                                         clock,      &
                                         nodal_output_on_w3 )

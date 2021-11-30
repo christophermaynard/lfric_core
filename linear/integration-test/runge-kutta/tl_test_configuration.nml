@@ -81,6 +81,7 @@ test='gravity_wave',
 ancil_option='none',
 init_option='analytic',
 lbc_option='none',
+ls_option='analytic',
 /
 &initial_density
 r1=0.0,
@@ -128,9 +129,6 @@ write_diag=.true.,
 write_dump=.false.,
 write_fluxes=.false.,
 write_minmax_tseries=.false.,
-/
-&linear
-ls_option='analytical',
 /
 &logging
 run_log_level='info',

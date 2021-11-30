@@ -3,7 +3,7 @@ f_lat_deg=45.0,
 filename='mesh_BiP4x128-400x400.nc',
 fplane=.false.,
 geometry='planar',
-partitioner='planar',
+offline_partitioning = .false.
 prime_mesh_name='dynamics',
 topology='fully_periodic',
 /
