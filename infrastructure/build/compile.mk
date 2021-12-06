@@ -104,7 +104,7 @@ $(BIN_DIR)/%: %.x | $(BIN_DIR)
 	$(Q)cp $< $(BIN_DIR)/$(notdir $*)
 
 .PRECIOUS: %.x
-%.x: $$($$(shell echo $$* | tr a-z A-Z)_OBJS)
+%.x: $$($$(shell basename $$* | tr a-z A-Z)_OBJS)
 	$(call MESSAGE,Linking,$@)
 	$(Q)$(LDMPI) $(LDFLAGS) -o $@ \
 	             $^ \

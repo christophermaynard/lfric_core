@@ -18,7 +18,8 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
-iris.FUTURE.netcdf_promote = True
+if iris.__version__ < "3.0.0":
+    iris.FUTURE.netcdf_promote = True
 
 #------------------------------------------------------------------------------#
 # Use a variables name to obtain its data from an iris cube

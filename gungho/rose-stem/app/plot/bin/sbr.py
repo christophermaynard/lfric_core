@@ -23,12 +23,16 @@ from scipy.interpolate import griddata
 from read_data import read_ugrid_data
 
 # Use magma colormap
-from magma import magma_data
-from matplotlib.colors import ListedColormap
-magma = ListedColormap(magma_data, name='magma')
-plt.register_cmap(name='magma', cmap=magma)
+try:
+    magma = plt.get_cmap("magma")
+except ValueError:
+    from matplotlib.colors import ListedColormap
+    from magma import magma_data
+    magma = ListedColormap(magma_data, name='magma')
+    plt.register_cmap(name='magma', cmap=magma)
 
-iris.FUTURE.netcdf_promote = True
+if iris.__version__ < "3.0.0":
+    iris.FUTURE.netcdf_promote = True
 
 # Size of regular grid
 ny, nx = 360, 720

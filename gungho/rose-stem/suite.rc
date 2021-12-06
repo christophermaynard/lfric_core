@@ -163,6 +163,22 @@
     [[MONSOON-XC40]]
         inherit = METO-XC
 
+    [[NCI-GADI]]
+        init-script = """
+                      module use /g/data/hr22/modulefiles
+                      module load rose
+                      export http_proxy=http://130.56.246.247:80
+                      export CYLC_VERSION={{CYLC_VERSION}}
+                      export ROSE_VERSION={{ROSE_VERSION}}
+                      """
+        [[[environment]]]
+            HYPERTHREADS    = 1
+            CORES_PER_NODE  = 48
+            NUMA_REGIONS_PER_NODE = 2
+
+    [[NCI-OOD]]
+        inherit = NCI-GADI
+
     [[ LOCAL ]]
         [[[remote]]]
             host = {{ ROSE_ORIG_HOST }}

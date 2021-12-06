@@ -38,10 +38,13 @@ import sys
 from read_data import read_nodal_data
 
 # Use viridis colormap
-from python_maps import viridis_data
-from matplotlib.colors import ListedColormap
-viridis = ListedColormap(viridis_data, name='viridis')
-plt.register_cmap(name='viridis', cmap=viridis)
+try:
+    viridis = plt.get_cmap("viridis")
+except ValueError:
+    from matplotlib.colors import ListedColormap
+    from python_maps import viridis_data
+    viridis = ListedColormap(viridis_data, name='viridis')
+    plt.register_cmap(name='magma', cmap=magma)
 
 levels = None
 data = None
@@ -104,7 +107,8 @@ def make_figure(plotpath, nx, ny, field, component, timestep):
                      extend='min')
 
     # -1K contour (x,z) coordinates
-    minusonek_cont = cl.collections[3].get_paths()[0]
+    minusonek_idx = np.where(cl.levels == -1)[0][0]
+    minusonek_cont = cl.collections[minusonek_idx].get_paths()[0]
     # Front position, i.e. first intersection (negative x!) with x=0
     fp = minusonek_cont.vertices[0, 0]
     plt.axes().set_aspect(.8)

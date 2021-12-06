@@ -19,7 +19,8 @@ import glob
 import sys
 
 import iris
-iris.FUTURE.netcdf_promote = True
+if iris.__version__ < "3.0.0":
+    iris.FUTURE.netcdf_promote = True
 
 
 def load_cube_by_varname(filename, var):

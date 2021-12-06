@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 
 from scipy.interpolate import griddata
 
-iris.FUTURE.netcdf_promote = True
+if iris.__version__ < "3.0.0":
+    iris.FUTURE.netcdf_promote = True
 
 # Size of regular grid
 ny, nx = 200, 400

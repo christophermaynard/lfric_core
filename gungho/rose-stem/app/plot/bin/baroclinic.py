@@ -25,12 +25,13 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from read_data import read_ugrid_data
 # Use magma colormap
-from magma import magma_data
-from matplotlib.colors import ListedColormap
-
-
-magma = ListedColormap(magma_data, name='magma')
-plt.register_cmap(name='magma', cmap=magma)
+try:
+    magma = plt.get_cmap("magma")
+except ValueError:
+    from matplotlib.colors import ListedColormap
+    from magma import magma_data
+    magma = ListedColormap(magma_data, name='magma')
+    plt.register_cmap(name='magma', cmap=magma)
 
 # Size of regular grid
 ny, nx = 360, 720

@@ -10,7 +10,8 @@
 # desired without wasting time rerunning it.
 #
 IFORT_VERSION := $(shell ifort -v 2>&1 \
-                         | awk -F "[. ]" '/[0-9]\.[0-9]\.[0-9]/ { printf "%03i%02i%02i", $$(NF-2),$$(NF-1),$$NF}' )
+                       | cut -d' ' -f3 \
+                       | awk -F "." '/[0-9]\.[0-9]/ { yy = $$1 % 100; printf "%03i%02i%02i\n", yy,$$2,$$3}' )
 
 $(info ** Chosen Intel Fortran compiler version $(IFORT_VERSION))
 
@@ -47,7 +48,7 @@ export FFLAGS_INTEL_FIX_ARG         = -qoverride-limits
 # The "-assume realloc-lhs" switch causes Intel Fortran prior to v17 to
 # actually implement the Fortran2003 standard. At version 17 it becomes the
 # default behaviour.
-ifeq ($(shell test $(IFORT_VERSION) -lt 0170000; echo $$?), 0)
+ifeq ($(shell test "$(IFORT_VERSION)" -lt 0170000; echo $$?), 0)
   $(info ** Activating Intel "Make it work" switch for version earlier than 17)
   FFLAGS_COMPILER += -assume realloc-lhs
 endif
