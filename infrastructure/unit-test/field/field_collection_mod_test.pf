@@ -22,12 +22,9 @@ module field_collection_mod_test
                                               integer_field_proxy_type
     use r_solver_field_mod,            only : r_solver_field_type, &
                                               r_solver_field_proxy_type
-    use field_collection_mod,          only : field_collection_type, &
-                                              field_collection_iterator_type, &
-                                              field_collection_real_iterator_type, &
-                                              field_collection_integer_iterator_type, &
-                                              field_collection_r_solver_iterator_type
+    use field_collection_mod,          only : field_collection_type
     use fs_continuity_mod,             only : W0, W2, W3
+    use linked_list_mod,               only : linked_list_item_type
     use local_mesh_mod,                only : local_mesh_type
     use pure_abstract_field_mod,       only : pure_abstract_field_type
     use yaxt,                          only : xt_initialize, xt_finalize
@@ -162,19 +159,15 @@ contains
     type(field_proxy_type)              :: returned_field1a_p
     type(integer_field_proxy_type)      :: returned_field2_p
     type(r_solver_field_proxy_type)     :: returned_field3_p
+    class(linked_list_item_type), pointer &
+                                        :: first_field_item
 
     type(field_collection_type)         :: test_field_collectionA
     type(field_collection_type)         :: test_field_collectionB
 
-    type(field_collection_iterator_type)           :: iter
-    type(field_collection_real_iterator_type)      :: iter_real
-    type(field_collection_integer_iterator_type)   :: iter_integer
-    type(field_collection_r_solver_iterator_type)  :: iter_r_solver
-    class(field_parent_type), pointer              :: fld => null()
-
     real(r_def), parameter              :: tol = 1.0e-6_r_def
     real(r_solver), parameter           :: tol_r_solver = 1.0e-6_r_solver
-    integer(i_def)                      :: length, i
+    integer(i_def)                      :: length
     logical(l_def)                      :: exists
 
     !----------------- Create real, integer & r_solver fields ----------------------!
@@ -190,15 +183,15 @@ contains
     test_field2_p = test_field2%get_proxy()
     test_field2_p%data(1) = 33_i_def
 
-    ! Create an r_solver field object with the name 'test_field2'
+    ! Create an r_solver field object with the name 'test_field3'
     ! and put 600.0 in the first dof
     call test_field3%initialise( this%w3_fs, name='test_field3' )
     test_field3_p = test_field3%get_proxy()
-    test_field3_p%data(1) = 600.0_r_def
+    test_field3_p%data(1) = 600.0_r_solver
 
     !----------------- Create field collection 'A' & test extracts -------------------!
     ! Create a field_collection_A and put test_field1 and test_field2 in it
-    test_field_collectionA = field_collection_type()
+    call test_field_collectionA%initialise()
     call test_field_collectionA%add_field(test_field1)  ! a real field
     call test_field_collectionA%add_field(test_field2)  ! an integer field
     call test_field_collectionA%add_field(test_field3)  ! an r_solver field
@@ -217,6 +210,16 @@ contains
     returned_field1_p = returned_field1%get_proxy()
     ! Check that test_field1 has 99.0 in the first dof
     @assertEqual(99.0_r_def, returned_field1_p%data(1), tol)
+
+    !---Check that the real field is the first field in the collection
+    first_field_item => test_field_collectionA%get_first_item()
+    select type(listfield => first_field_item%payload)
+      type is (field_type)
+        @assertTrue(associated(returned_field1,listfield))
+      class default
+        !If we've got here, there's a problem - throw an assert failure
+        @assertTrue(.false.)
+    end select
 
     !---Integer field extract
     ! Extract the integer field called 'test_field2' into returned_field2
@@ -237,7 +240,7 @@ contains
 
     ! Create a second field_collection and put a reference to the field that is
     ! stored in the first field_collection into it
-    test_field_collectionB = field_collection_type()
+    call test_field_collectionB%initialise()
     field_ptr => returned_field1
     call test_field_collectionB%add_reference_to_field(field_ptr)
 
@@ -266,84 +269,6 @@ contains
     returned_field1_p = returned_field1%get_proxy()
     @assertEqual(99.0_r_def, returned_field1_p%data(1), tol)
 
-
-    !----------------------Iterating over the 'A' Collection --------------------------!
-
-    ! Check we can iterate over a collection
-    ! At this point, test_field_collectionA should contain:
-    ! 1. An integer field with 33 as the first data item
-    ! 2. An r_solver field with 600.0 as the first data item
-    ! 3. A real field with a first data item of 99.0
-    !    - so check for that:
-    iter=test_field_collectionA%get_iterator()
-    do i=1,10
-      if(.not.iter%has_next())exit
-      fld=>iter%next()
-      select type(fld)
-        type is (field_type)  ! r_def
-          @assertEqual(3, i)
-          test_field1_p = fld%get_proxy()
-          @assertEqual(99.0_r_def, returned_field1_p%data(1), tol)
-        type is (integer_field_type)
-          @assertEqual(1, i)
-          returned_field2_p = fld%get_proxy()
-          @assertEqual(33_i_def, returned_field2_p%data(1))
-        type is (r_solver_field_type)
-          @assertEqual(2, i)
-          returned_field3_p = fld%get_proxy()
-          @assertEqual(600_r_solver, returned_field3_p%data(1), tol_r_solver)
-      end select
-    end do
-    ! Test that there were only three items in the collection (so the iteration
-    ! loop exited on i==4)
-    @assertEqual(4, i)
-
-    !----------------------Iterating selectively by kind --------------------------!
-    ! Check we can iterate over just the real fields in a collection
-    ! At this point, test_field_collectionA should contain:
-    ! 1. An integer field with 33 as the first data item
-    ! 2. An r_solver field with 600.0 as the first data item
-    ! 3. A real (r_def) field with a first data item of 99.0
-
-    ! ------- real ---------
-    ! Check the real field iterator sees just the real field:
-    iter_real=test_field_collectionA%get_real_iterator()
-    do i=1,10
-      if(.not.iter_real%has_next())exit
-      returned_field1=>iter_real%next()
-      returned_field1_p = returned_field1%get_proxy()
-      @assertEqual(99.0_r_def, returned_field1_p%data(1), tol)
-    end do
-    ! Test that there was only one real field in the collection (so the
-    ! iteration loop should exit on i==2)
-    @assertEqual(2, i)
-
-    ! ------- integer ---------
-    ! Check the integer field iterator sees just the integer field:
-    iter_integer=test_field_collectionA%get_integer_iterator()
-    do i=1,10
-      if(.not.iter_integer%has_next())exit
-      returned_field2=>iter_integer%next()
-      returned_field2_p = returned_field2%get_proxy()
-      @assertEqual(33_i_def, returned_field2_p%data(1))
-    end do
-    ! Test that there was only one real field in the collection (so the
-    ! iteration loop should exit on i==2)
-    @assertEqual(2, i)
-
-    ! ------- r_solver ---------
-    ! Check the r_solver field iterator sees just the r_solver field:
-    iter_r_solver=test_field_collectionA%get_r_solver_iterator()
-    do i=1,10
-      if(.not.iter_r_solver%has_next())exit
-      returned_field3=>iter_r_solver%next()
-      returned_field3_p = returned_field3%get_proxy()
-      @assertEqual(600.0_r_solver, returned_field3_p%data(1), tol_r_solver)
-    end do
-    ! Test that there was only one r_solver field in the collection (so the
-    ! iteration loop should exit on i==2)
-    @assertEqual(2, i)
-
   end subroutine test_all
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -364,10 +289,10 @@ contains
 
     real(r_def), parameter :: tol = 1.0e-6_r_def
 
-    f_collection = field_collection_type("test_field_collectionA")
+    call f_collection%initialise("test_field_collectionA")
 
     ! Assert the copy has preserved the name.
-    f_collection_copy = f_collection
+    call f_collection%copy_collection(f_collection_copy)
     @assertEqual(f_collection_copy % get_name(), "test_field_collectionA")
 
     ! Create field with the name 'test_field1' and put 42.0 in the first dof.
@@ -381,7 +306,7 @@ contains
     @assertEqual(f_collection_copy % get_length(), 0)
 
     ! Copy the collection, and get hold of the copied field.
-    f_collection_copy = f_collection
+    call f_collection%copy_collection(f_collection_copy)
     returned_field => f_collection_copy % get_field( 'test_field1' )
 
     ! Check the name is the same, but that changing the data on one field
@@ -405,7 +330,7 @@ contains
     returned_field => f_collection % get_field('test_field2')
     ! Check that the field pointer has the same target after copy, but that
     ! the pointer object itself is different.
-    f_collection_copy = f_collection
+    call f_collection%copy_collection(f_collection_copy)
     returned_field => f_collection_copy % get_field('test_field2')
     @assertTrue(associated(test_field2_ptr, returned_field))
 
@@ -436,10 +361,10 @@ contains
     type(field_collection_type)                      :: f_collection_copy
 
 
-    f_collection = field_collection_type("test_field_collectionA")
+    call f_collection%initialise("test_field_collectionA")
 
     ! Assert the copy has preserved the name.
-    f_collection_copy = f_collection
+    call f_collection%copy_collection(f_collection_copy)
     @assertEqual(f_collection_copy % get_name(), "test_field_collectionA")
 
     ! Create field with the name 'test_field1' and put 42 in the first dof.
@@ -453,7 +378,7 @@ contains
     @assertEqual(f_collection_copy % get_length(), 0)
 
     ! Copy the collection, and get hold of the copied field.
-    f_collection_copy = f_collection
+    call f_collection%copy_collection(f_collection_copy)
     returned_field => f_collection_copy % get_integer_field( 'test_field1' )
 
     ! Check the name is the same, but that changing the data on one field
@@ -477,7 +402,7 @@ contains
     returned_field => f_collection % get_integer_field('test_field2')
     ! Check that the field pointer has the same target after copy, but that
     ! the pointer object itself is different.
-    f_collection_copy = f_collection
+    call f_collection%copy_collection(f_collection_copy)
     returned_field => f_collection_copy % get_integer_field('test_field2')
     @assertTrue(associated(test_field2_ptr, returned_field))
 
@@ -510,10 +435,10 @@ contains
 
     real(r_solver), parameter :: tol = 1.0e-6_r_solver
 
-    f_collection = field_collection_type("test_field_collectionA")
+    call f_collection%initialise("test_field_collectionA")
 
     ! Assert the copy has preserved the name.
-    f_collection_copy = f_collection
+    call f_collection%copy_collection(f_collection_copy)
     @assertEqual(f_collection_copy % get_name(), "test_field_collectionA")
 
     ! Create field with the name 'test_field1' and put 42.0 in the first dof.
@@ -527,7 +452,7 @@ contains
     @assertEqual(f_collection_copy % get_length(), 0)
 
     ! Copy the collection, and get hold of the copied field.
-    f_collection_copy = f_collection
+    call f_collection%copy_collection(f_collection_copy)
     returned_field => f_collection_copy % get_r_solver_field( 'test_field1' )
 
     ! Check the name is the same, but that changing the data on one field
@@ -551,7 +476,7 @@ contains
     returned_field => f_collection % get_r_solver_field('test_field2')
     ! Check that the field pointer has the same target after copy, but that
     ! the pointer object itself is different.
-    f_collection_copy = f_collection
+    call f_collection%copy_collection(f_collection_copy)
     returned_field => f_collection_copy % get_r_solver_field('test_field2')
     @assertTrue(associated(test_field2_ptr, returned_field))
 

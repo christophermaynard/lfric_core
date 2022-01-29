@@ -103,10 +103,10 @@ contains
 #endif
 
     if (create_depository) then
-       depository = field_collection_type(name='depository')
-       prognostic_fields = field_collection_type(name="prognostics")
+       call depository%initialise(name='depository')
+       call prognostic_fields%initialise(name="prognostics")
     endif
-    diagnostic_fields = field_collection_type(name="diagnostics")
+    call diagnostic_fields%initialise(name="diagnostics")
 
     ! Create prognostic fields
     call theta%initialise( vector_space = &

@@ -14,8 +14,9 @@ module lfric_xios_write_mod
                                   str_max_filename, xios_max_int
   use field_mod,            only: field_type, field_proxy_type
   use field_parent_mod,     only: field_parent_proxy_type
-  use field_collection_mod, only: field_collection_type, &
-                                  field_collection_iterator_type
+  use field_collection_iterator_mod, &
+                            only: field_collection_iterator_type
+  use field_collection_mod, only: field_collection_type
   use field_parent_mod,     only: field_parent_type
   use fs_continuity_mod,    only: W3
   use io_mod,               only: ts_fname
@@ -421,7 +422,8 @@ subroutine write_state(state, prefix, suffix)
 
   class(field_parent_type), pointer :: fld => null()
 
-  iter = state%get_iterator()
+  ! Create the iter iterator on the state collection
+  call iter%initialise(state)
   do
     if ( .not.iter%has_next() ) exit
     fld => iter%next()
@@ -510,7 +512,8 @@ subroutine write_checkpoint( state, clock, checkpoint_stem_name )
 
   class(field_parent_type), pointer :: fld => null()
 
-  iter = state%get_iterator()
+  ! Create the iter iterator on the state collection
+  call iter%initialise(state)
   do
      if ( .not.iter%has_next() ) exit
      fld => iter%next()

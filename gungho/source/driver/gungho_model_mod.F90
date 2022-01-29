@@ -24,8 +24,7 @@ module gungho_model_mod
   use derived_config_mod,         only : set_derived_config
   use field_mod,                  only : field_type
   use field_parent_mod,           only : write_interface
-  use field_collection_mod,       only : field_collection_type, &
-                                         field_collection_iterator_type
+  use field_collection_mod,       only : field_collection_type
   use formulation_config_mod,     only : l_multigrid,    &
                                          use_moisture,   &
                                          use_physics

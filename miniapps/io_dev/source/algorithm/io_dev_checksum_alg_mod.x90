@@ -21,8 +21,9 @@ contains
 
     use field_mod,              only: field_type
     use field_parent_mod,       only: field_parent_type
-    use field_collection_mod,   only: field_collection_type, &
-                                      field_collection_iterator_type
+    use field_collection_iterator_mod, &
+                                only: field_collection_iterator_type
+    use field_collection_mod,   only: field_collection_type
     use constants_mod,          only: i_def, r_def, str_max_filename
     use mpi_mod,                only: get_comm_rank
     use log_mod,                only: log_event,         &
@@ -44,7 +45,7 @@ contains
     allocate( checksum_bundle( state%get_length() ) )
 
     ! Loop through fields and generate checksums
-    iter = state%get_iterator()
+    call iter%initialise(state)
     iter_index = 0
     do
       if ( .not.iter%has_next() ) exit
@@ -74,7 +75,7 @@ contains
       call log_event( "io_dev: Writing checksum output", LOG_LEVEL_INFO )
 
       ! Loop through fields and write checksums to file
-      iter = state%get_iterator()
+      call iter%initialise(state)
       iter_index = 0
       do
         if ( .not.iter%has_next() ) exit

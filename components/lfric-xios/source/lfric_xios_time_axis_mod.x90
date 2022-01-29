@@ -13,8 +13,9 @@ module lfric_xios_time_axis_mod
   use constants_mod,        only: i_def, str_def, r_def, l_def
   use field_mod,            only: field_type, field_proxy_type
   use field_parent_mod,     only: field_parent_type
-  use field_collection_mod, only: field_collection_type, &
-                                  field_collection_iterator_type
+  use field_collection_iterator_mod, &
+                            only: field_collection_iterator_type
+  use field_collection_mod, only: field_collection_type
   use log_mod,              only: log_event, log_scratch_space, &
                                   LOG_LEVEL_ERROR, LOG_LEVEL_INFO
   use linked_list_data_mod, only: linked_list_data_type
@@ -134,7 +135,6 @@ contains
     logical(l_def), optional,     intent(in)    :: interp_flag
     character(*),   optional,     intent(in)    :: pop_freq
 
-    type(field_collection_type) :: init_fields
     type(xios_date)             :: start_date, time_origin
 
     ! Name the object
@@ -150,8 +150,7 @@ contains
     self%next_update = start_date + self%update_frequency
 
     ! Create object field collection
-    init_fields = field_collection_type(name=trim(name)//'_fields')
-    self%fields = init_fields
+    call self%fields%initialise(name=trim(name)//'_fields')
 
     ! Set optional attributes
     if ( present(yearly) ) self%yearly = yearly
@@ -503,7 +502,8 @@ contains
 
     type(field_proxy_type) :: tmp_proxy
 
-    read_iter = self%fields%get_iterator()
+    ! Create the read_iter iterator on the self%fields collection
+    call read_iter%initialise(self%fields)
     do
       if ( .not.read_iter%has_next() ) exit
       updated_field => read_iter%next()
@@ -542,7 +542,9 @@ contains
     type(field_proxy_type)               :: data_proxy, model_proxy
 
     ! Loop over time axis fields
-    pop_iter = self%fields%get_iterator()
+
+    ! Create the pop_iter iterator on the self%fields collection
+    call pop_iter%initialise(self%fields)
     do
       if ( .not. pop_iter%has_next() ) exit
 

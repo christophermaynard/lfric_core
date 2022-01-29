@@ -63,7 +63,7 @@ module create_lbcs_mod
 
     call log_event( 'Create LBC fields', LOG_LEVEL_INFO )
 
-    lbc_fields = field_collection_type( name='lbc_fields' )
+    call lbc_fields%initialise( name='lbc_fields' )
 
     ! Checkpoint all necessary LBC fields.
     ! At the moment, LBC fields will be set analytically and so all fields

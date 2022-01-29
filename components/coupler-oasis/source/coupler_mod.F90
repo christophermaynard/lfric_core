@@ -28,8 +28,8 @@ module coupler_mod
   use fs_continuity_mod,              only: W3
   use psykal_lite_mod,                only: invoke_nodal_coordinates_kernel
   use function_space_collection_mod,  only: function_space_collection
-  use field_collection_mod,           only: field_collection_type, &
-                                            field_collection_iterator_type
+  use field_collection_iterator_mod,  only: field_collection_iterator_type
+  use field_collection_mod,           only: field_collection_type
   use coupler_utils_mod,              only: bubble_sort
   use constants_mod,                  only: i_def, r_def, i_halo_index, l_def, &
                                             imdi, rmdi
@@ -315,7 +315,7 @@ module coupler_mod
    logical(l_def)                               :: lfail
 
    lfail = .false.
-   iter = dcpl_rcv%get_iterator()
+   call iter%initialise(dcpl_rcv)
    do
      if(.not.iter%has_next())exit
      cfield_iter => iter%next()
@@ -534,7 +534,7 @@ module coupler_mod
       endif
    enddo
 
-   iter = dcpl_rcv%get_iterator()
+   call iter%initialise(dcpl_rcv)
    do
       if(.not.iter%has_next())exit
       field_itr => iter%next()
@@ -570,7 +570,7 @@ module coupler_mod
       field_ptr   => null()
    end do
 
-   iter = dcpl_snd%get_iterator()
+   call iter%initialise(dcpl_snd)
    do
       if(.not.iter%has_next())exit
       field_itr => iter%next()
@@ -643,8 +643,8 @@ module coupler_mod
    write(log_scratch_space, * ) "cpl_fields: add coupling fields to repository"
    call log_event( log_scratch_space, LOG_LEVEL_INFO )
 
-   depository = field_collection_type(name='depository')
-   prognostic_fields = field_collection_type(name="prognostics")
+   call depository%initialise(name='depository')
+   call prognostic_fields%initialise(name="prognostics")
 
    vector_space=> function_space_collection%get_fs(twod_mesh_id, 0, W3)
    !coupling fields
@@ -740,7 +740,7 @@ module coupler_mod
 
    lfail = .false.
 
-   iter  = dcpl_snd%get_iterator()
+   call iter%initialise(dcpl_snd)
    do
       if(.not.iter%has_next())exit
       field => iter%next()
@@ -791,7 +791,7 @@ module coupler_mod
    mtime        = int(clock%seconds_from_steps(clock%get_step()) - &
                       clock%seconds_from_steps(clock%get_first_step()), i_def)
 
-   iter = dcpl_rcv%get_iterator()
+   call iter%initialise(dcpl_rcv)
    do
       if(.not.iter%has_next())exit
       field => iter%next()

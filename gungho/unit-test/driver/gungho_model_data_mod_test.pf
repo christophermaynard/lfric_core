@@ -148,7 +148,7 @@ contains
     field_proxy%data(1) = 1.0_r_def
 
     ! Initialise depository
-    model_data%depository = field_collection_type(name = "depository")
+    call model_data%depository%initialise(name = "depository")
 
     ! Add a field collection to model data
     call model_data%add_empty_field_collection("collection_1")

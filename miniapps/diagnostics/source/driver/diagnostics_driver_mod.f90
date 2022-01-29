@@ -15,8 +15,7 @@ module diagnostics_driver_mod
   use diagnostics_configuration_mod, only : load_configuration, program_name
   use field_mod,                     only : field_type
   use field_parent_mod,              only : field_parent_type
-  use field_collection_mod,          only : field_collection_type, &
-                                            field_collection_iterator_type
+  use field_collection_mod,          only : field_collection_type
   use fieldspec_collection_mod,      only : fieldspec_collection
   use gungho_model_data_mod,         only : model_data_type
   use io_config_mod,                 only : write_diag, &

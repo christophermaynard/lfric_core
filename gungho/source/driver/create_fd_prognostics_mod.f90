@@ -75,7 +75,7 @@ contains
     end if
 
     ! Create the field collection
-    fd_field_collection  =  field_collection_type(name="fd_prognostics")
+    call fd_field_collection%initialise(name="fd_prognostics")
 
     ! Setup I/O behaviour handler. In the case of FD prognostic fields these
     ! are currently read from a UM2LFRic dump

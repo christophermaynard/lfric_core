@@ -22,8 +22,7 @@ module init_ancils_mod
                                              read_field_time_var
   use lfric_xios_write_mod,           only : write_field_face, &
                                              write_field_single_face
-  use field_collection_mod,           only : field_collection_type, &
-                                             field_collection_real_iterator_type
+  use field_collection_mod,           only : field_collection_type
   use function_space_mod,             only : function_space_type
   use function_space_collection_mod,  only : function_space_collection
   use fs_continuity_mod,              only : W3, WTheta
@@ -101,7 +100,7 @@ contains
     write(log_scratch_space,'(A,A)') "Create ancil fields: "// &
           "Setting up ancil field collection"
     call log_event(log_scratch_space, LOG_LEVEL_INFO)
-    ancil_fields = field_collection_type(name='ancil_fields')
+    call ancil_fields%initialise(name='ancil_fields')
 
     ! Here ancil fields are set up with a call to setup_ancil_field. For ancils
     ! that are time-varying, the time-axis is passed to the setup_ancil_field

@@ -14,8 +14,7 @@ module diagnostics_step_mod
     use constants_mod,                  only : i_def, str_def, r_def
     use field_mod,                      only : field_type
     use field_parent_mod,               only : field_parent_type
-    use field_collection_mod,           only : field_collection_type, &
-                                               field_collection_iterator_type
+    use field_collection_mod,           only : field_collection_type
     use hex_alg_mod,                    only : hex_alg
     use io_config_mod,                  only : write_diag
     use gungho_model_data_mod,          only : model_data_type

@@ -173,7 +173,7 @@ contains
     !========================================================================
     ! Fields derived from the FE dynamical fields for use in physics
     !========================================================================
-    derived_fields  =  field_collection_type(name='derived_fields')
+    call derived_fields%initialise(name='derived_fields')
 
     ! Wtheta fields
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
@@ -223,7 +223,7 @@ contains
     !========================================================================
     ! Fields owned by the radiation scheme
     !========================================================================
-    radiation_fields = field_collection_type(name='radiation_fields')
+    call radiation_fields%initialise(name='radiation_fields')
 
     ! 2D fields, might need checkpointing
     if (surface == surface_jules .and. albedo_obs) then
@@ -345,7 +345,7 @@ contains
     !========================================================================
     ! Fields owned by the microphysics scheme
     !========================================================================
-    microphysics_fields = field_collection_type(name='microphysics_fields')
+    call microphysics_fields%initialise(name='microphysics_fields')
 
     ! 2D fields, don't need checkpointing
     call add_physics_field( microphysics_fields, depository, prognostic_fields,&
@@ -376,7 +376,7 @@ contains
     !========================================================================
     ! Fields owned by the orographic drag schemes
     !========================================================================
-    orography_fields = field_collection_type(name='orography_fields')
+    call orography_fields%initialise(name='orography_fields')
 
     ! 2D fields, might need checkpointing
     if (boundary_layer == boundary_layer_um .or. &
@@ -402,7 +402,7 @@ contains
     !========================================================================
     ! Fields owned by the turbulence scheme
     !========================================================================
-    turbulence_fields = field_collection_type(name='turbulence_fields')
+    call turbulence_fields%initialise(name='turbulence_fields')
 
     ! 2D fields, might need checkpointing
 
@@ -495,7 +495,7 @@ contains
     !========================================================================
     ! Fields owned by the convection scheme
     !========================================================================
-    convection_fields = field_collection_type(name='convection_fields')
+    call convection_fields%initialise(name='convection_fields')
 
     ! 2D fields, might need checkpointing
     if (convection == convection_um) then
@@ -590,7 +590,7 @@ contains
     !========================================================================
     ! Fields owned by the cloud scheme
     !========================================================================
-    cloud_fields = field_collection_type(name='cloud_fields')
+    call cloud_fields%initialise(name='cloud_fields')
 
     ! 3D fields, might need checkpointing
     if (cloud == cloud_um) then
@@ -643,7 +643,7 @@ contains
     !========================================================================
     ! Fields owned by the surface exchange scheme
     !========================================================================
-    surface_fields = field_collection_type(name='surface_fields')
+    call surface_fields%initialise(name='surface_fields')
 
     ! 2D fields, might need checkpointing
     if (surface == surface_jules) then
@@ -751,7 +751,7 @@ contains
     !========================================================================
     ! Fields owned by the soil hydrology scheme
     !========================================================================
-    soil_fields = field_collection_type(name='soil_fields')
+    call soil_fields%initialise(name='soil_fields')
 
     ! 2D fields, might need checkpointing
     if (surface == surface_jules) then
@@ -820,7 +820,7 @@ contains
     !========================================================================
     ! Fields owned by the snow scheme
     !========================================================================
-    snow_fields = field_collection_type(name='snow_fields')
+    call snow_fields%initialise(name='snow_fields')
 
     ! Fields on surface tiles, might need checkpointing
     if (surface == surface_jules) then
@@ -864,7 +864,7 @@ contains
     !========================================================================
     ! Fields owned by the chemistry scheme
     !========================================================================
-    chemistry_fields = field_collection_type(name='chemistry_fields')
+    call chemistry_fields%initialise(name='chemistry_fields')
 
     ! 3D fields, might need checkpointing and advecting
     if ( aerosol == aerosol_um .and. glomap_mode == glomap_mode_ukca ) then
@@ -912,7 +912,7 @@ contains
     !========================================================================
     ! Fields owned by the aerosol scheme
     !========================================================================
-    aerosol_fields = field_collection_type(name='aerosol_fields')
+    call aerosol_fields%initialise(name='aerosol_fields')
 
     ! 2D fields, might need checkpointing
     if ( aerosol == aerosol_um .and. glomap_mode == glomap_mode_ukca ) then

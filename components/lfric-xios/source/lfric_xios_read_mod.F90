@@ -13,8 +13,9 @@ module lfric_xios_read_mod
   use constants_mod,        only: i_def, dp_xios, str_def, r_def, &
                                   r_solver
   use field_mod,            only: field_type, field_proxy_type
-  use field_collection_mod, only: field_collection_type, &
-                                  field_collection_iterator_type
+  use field_collection_iterator_mod, &
+                            only: field_collection_iterator_type
+  use field_collection_mod, only: field_collection_type
   use field_parent_mod,     only: field_parent_type, &
                                   field_parent_proxy_type
   use fs_continuity_mod,    only: W3, WTheta, W2H
@@ -490,7 +491,8 @@ subroutine read_state(state, prefix, suffix)
 
   class( field_parent_type ), pointer :: fld => null()
 
-  iter = state%get_iterator()
+  ! Create the iter iterator on the state collection
+  call iter%initialise(state)
 
   do
     if ( .not.iter%has_next() ) exit
@@ -572,7 +574,9 @@ subroutine read_checkpoint(state, timestep, checkpoint_stem_name)
   type( field_collection_iterator_type) :: iter
 
   class( field_parent_type ), pointer :: fld => null()
-  iter = state%get_iterator()
+
+  ! Create the iter iterator on the state collection
+  call iter%initialise(state)
   do
     if ( .not.iter%has_next() ) exit
     fld => iter%next()

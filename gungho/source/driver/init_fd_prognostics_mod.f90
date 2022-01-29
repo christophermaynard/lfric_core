@@ -16,8 +16,7 @@ module init_fd_prognostics_mod
 
   ! Derived Types
   use field_mod,                       only: field_type
-  use field_collection_mod,            only: field_collection_type, &
-                                       field_collection_iterator_type
+  use field_collection_mod,            only: field_collection_type
 
   implicit none
 

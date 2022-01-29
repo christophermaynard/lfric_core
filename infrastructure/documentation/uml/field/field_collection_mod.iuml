@@ -5,20 +5,19 @@
 class field_collection_mod::field_collection_type {
   -field_list: linked_list_type
   -name: string
-
-  <<create>>+field_collection_constructor(<<in optional>> name : string ) : field_collection_type
-  <<destroy>>+field_collection_destructor()
-
-  <<assignment(=)>>+copy_collection( <<out>>dest : field_collection_type, <<in>>source : field_collection_type )
-
+  
+  +initialise(<<in optional>> name : string ) :
+  +copy_collection( <<out>>dest : field_collection_type, <<in optional>> name : string )
   +add_field( <<in>>field: field_type ) :
   +add_reference_to_field( <<in>>field: field_type <<pointer>> ) :
   +remove_field( <<in>>field_name: string ) :
   +field_exists( <<in>>field_name: string ) :
-  +clear() :
+  +get_first_item() : linked_list_item_type
   +get_field( <<in>>field_name: string ) : <<pointer>> field_type
-  +get_iterator() : field_collection_iterator_type
-  +get_real_iterator() : field_collection_real_iterator_type
+  +get_integer_field( <<in>>field_name: string ) : <<pointer>> integer_field_type
+  +get_r_solver_field( <<in>>field_name: string ) : <<pointer>> r_solver_field_type
   +get_length() : integer
   +get_name() : string
+  +clear() :
+  <<destroy>>+field_collection_destructor()
 }

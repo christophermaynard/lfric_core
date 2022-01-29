@@ -260,7 +260,7 @@ contains
 
     type(field_collection_type) :: field_collection
 
-    field_collection = field_collection_type(name = field_collection_name)
+    call field_collection%initialise(name = field_collection_name)
 
     ! Make sure field collection is empty
     if ( field_collection%get_length() == 0 ) then

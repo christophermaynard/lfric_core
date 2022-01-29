@@ -14,7 +14,7 @@ module io_dev_init_mod
   use field_parent_mod,               only : field_parent_type, read_interface, write_interface
   use field_mod,                      only : field_type
   use integer_field_mod,              only : integer_field_type
-  use field_collection_mod,           only : field_collection_type, field_collection_iterator_type
+  use field_collection_mod,           only : field_collection_type
   use function_space_mod,             only : function_space_type
   use function_space_collection_mod,  only : function_space_collection
   use fs_continuity_mod,              only : W0, W2H, W2V, Wtheta, W3
@@ -94,9 +94,9 @@ module io_dev_init_mod
     ! Create core fields to send/recieve data from file and set I/O behaviours
     !----------------------------------------------------------------------------
     ! Create the core and dump field collections.
-    core_fields = field_collection_type( name='core_fields' )
-    dump_fields = field_collection_type( name='dump_fields' )
-    alg_fields =  field_collection_type( name='alg_fields' )
+    call core_fields%initialise( name='core_fields' )
+    call dump_fields%initialise( name='dump_fields' )
+    call alg_fields%initialise( name='alg_fields' )
 
     if ( field_kind == field_kind_real ) then
       ! W0 (node) field

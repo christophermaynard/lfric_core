@@ -20,8 +20,9 @@ module gungho_diagnostics_driver_mod
   use diagnostics_calc_mod,      only : write_divergence_diagnostic, &
                                         write_hydbal_diagnostic, &
                                         write_vorticity_diagnostic
-  use field_collection_mod,      only : field_collection_type, &
-                                        field_collection_iterator_type
+  use field_collection_iterator_mod, &
+                                 only : field_collection_iterator_type
+  use field_collection_mod,      only : field_collection_type
   use gungho_model_data_mod,     only : model_data_type
   use field_mod,                 only : field_type
   use field_parent_mod,          only : field_parent_type
@@ -160,7 +161,7 @@ contains
     ! Cloud fields - are all scalars - so iterate over collection
     if (use_physics .and. cloud == cloud_um) then
 
-      iterator = cloud_fields%get_iterator()
+      call iterator%initialise(cloud_fields)
       do
         if ( .not.iterator%has_next() ) exit
         field_ptr => iterator%next()
@@ -179,7 +180,7 @@ contains
     ! Derived physics fields (only those on W3 or Wtheta)
     if (use_physics .and. .not. clock%is_initialisation()) then
 
-      iterator = derived_fields%get_iterator()
+      call iterator%initialise(derived_fields)
       do
         if ( .not.iterator%has_next() ) exit
         field_ptr => iterator%next()

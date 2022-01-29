@@ -93,7 +93,7 @@ contains
           "Setting up ls field collection"
     call log_event(log_scratch_space, LOG_LEVEL_INFO)
 
-    ls_fields = field_collection_type(name='ls_fields')
+    call ls_fields%initialise(name='ls_fields')
 
     if ( ls_option == ls_option_analytic ) then
 
