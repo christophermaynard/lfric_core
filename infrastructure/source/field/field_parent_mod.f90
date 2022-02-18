@@ -234,8 +234,11 @@ contains
 
     ! Create a flag for holding whether a halo depth is dirty or not
     mesh => vector_space%get_mesh()
-    allocate(self%halo_dirty(mesh%get_halo_depth()))
-    self%halo_dirty(:) = 1
+
+    ! Allow unphysical zero depth halos to support optimised halo exchanges
+    allocate(self%halo_dirty(0:mesh%get_halo_depth()))
+    self%halo_dirty(0) = 0
+    self%halo_dirty(1:) = 1
 
     nullify(mesh)
 
@@ -424,7 +427,8 @@ contains
 
     class(field_parent_proxy_type), intent(inout) :: self
 
-    self%halo_dirty(:) = 1
+    ! Leave zero depth clean
+    self%halo_dirty(1:) = 1
 
   end subroutine set_dirty
 

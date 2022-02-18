@@ -290,13 +290,20 @@ contains
     order = halo_routing%get_element_order()
     @assertEqual( element_order, order )
 
+    dirty=f1_p%is_dirty(0)
+    @assertFalse ( dirty )
+
+    call f1_p%set_dirty()
+    dirty=f1_p%is_dirty(0)
+    @assertFalse ( dirty )
+
     call f1_p%set_dirty()
     dirty=f1_p%is_dirty(1)
-    @assertEqual ( .true., dirty )
+    @assertTrue ( dirty )
 
     call f1_p%set_clean(1)
     dirty=f1_p%is_dirty(1)
-    @assertEqual ( .false., dirty )
+    @assertFalse ( dirty )
 
     ! check that a default field is ordered layer-first
     ! i.e. ndata_first is false
