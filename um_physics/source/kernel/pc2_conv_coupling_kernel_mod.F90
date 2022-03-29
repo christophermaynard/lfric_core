@@ -37,7 +37,7 @@ type, public, extends(kernel_type) :: pc2_conv_coupling_kernel_type
        arg_type(GH_FIELD,  GH_REAL, GH_READWRITE, WTHETA),      & ! dt_conv_wth
        arg_type(GH_FIELD,  GH_REAL, GH_READWRITE, WTHETA),      & ! dmv_conv_wth
        arg_type(GH_FIELD,  GH_REAL, GH_READWRITE, WTHETA),      & ! dmcl_conv_wth
-       arg_type(GH_FIELD,  GH_REAL, GH_READWRITE, WTHETA),      & ! dmcf_conv_wth
+       arg_type(GH_FIELD,  GH_REAL, GH_READWRITE, WTHETA),      & ! dmci_conv_wth
        arg_type(GH_FIELD,  GH_REAL, GH_READWRITE, WTHETA),      & ! dcfl_conv_wth
        arg_type(GH_FIELD,  GH_REAL, GH_READWRITE, WTHETA),      & ! dcff_conv_wth
        arg_type(GH_FIELD,  GH_REAL, GH_READWRITE, WTHETA),      & ! dbcf_conv_wth
@@ -71,7 +71,7 @@ contains
 !> @param[in,out] dt_conv_wth   Increment to theta in theta space
 !> @param[in,out] dmv_conv_wth  Increment to vapour from convection in theta space
 !> @param[in,out] dmcl_conv_wth Increment to liquid water content from convection in theta space
-!> @param[in,out] dmcf_conv_wth Increment to ice water content from convection in theta space
+!> @param[in,out] dmci_conv_wth Increment to ice water content from convection in theta space
 !> @param[in,out] dcfl_conv_wth Increment to liquid cloud fraction from convection in theta space
 !> @param[in,out] dcff_conv_wth Increment to ice cloud fraction from convection in theta space
 !> @param[in,out] dbcf_conv_wth Increment to bulk cloud fraction from convection in theta space
@@ -94,7 +94,7 @@ subroutine pc2_conv_coupling_code( nlayers, seg_len,                           &
                                    dt_conv_wth,                                &
                                    dmv_conv_wth,                               &
                                    dmcl_conv_wth,                              &
-                                   dmcf_conv_wth,                              &
+                                   dmci_conv_wth,                              &
                                    dcfl_conv_wth,                              &
                                    dcff_conv_wth,                              &
                                    dbcf_conv_wth,                              &
@@ -134,7 +134,7 @@ subroutine pc2_conv_coupling_code( nlayers, seg_len,                           &
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dt_conv_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dmv_conv_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dmcl_conv_wth
-    real(kind=r_def), intent(inout), dimension(undf_wth) :: dmcf_conv_wth
+    real(kind=r_def), intent(inout), dimension(undf_wth) :: dmci_conv_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dcfl_conv_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dcff_conv_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dbcf_conv_wth
@@ -231,7 +231,7 @@ subroutine pc2_conv_coupling_code( nlayers, seg_len,                           &
         dt_conv_wth  (map_wth(1,i) + k) = dt_conv_wth (map_wth(1,i) + k)  + t_incr(i,j)
         dmv_conv_wth (map_wth(1,i) + k) = dmv_conv_wth(map_wth(1,i) + k)  + qv_incr   (i,j)
         dmcl_conv_wth(map_wth(1,i) + k) = dmcl_conv_wth(map_wth(1,i) + k) + qcl_incr  (i,j)
-        dmcf_conv_wth(map_wth(1,i) + k) = dmcf_conv_wth(map_wth(1,i) + k) + qcf_incr  (i,j)
+        dmci_conv_wth(map_wth(1,i) + k) = dmci_conv_wth(map_wth(1,i) + k) + qcf_incr  (i,j)
         dcfl_conv_wth(map_wth(1,i) + k) = dcfl_conv_wth(map_wth(1,i) + k) + cfl_incr  (i,j)
         dcff_conv_wth(map_wth(1,i) + k) = dcff_conv_wth(map_wth(1,i) + k) + cff_incr  (i,j)
         dbcf_conv_wth(map_wth(1,i) + k) = dbcf_conv_wth(map_wth(1,i) + k) + bcf_incr  (i,j)
@@ -245,7 +245,7 @@ subroutine pc2_conv_coupling_code( nlayers, seg_len,                           &
                                       / exner_wth(map_wth(1,i) + 1)
       dmv_conv_wth (map_wth(1,i) + 0) = dmv_conv_wth (map_wth(1,i) + 1)
       dmcl_conv_wth(map_wth(1,i) + 0) = dmcl_conv_wth(map_wth(1,i) + 1)
-      dmcf_conv_wth(map_wth(1,i) + 0) = dmcf_conv_wth(map_wth(1,i) + 1)
+      dmci_conv_wth(map_wth(1,i) + 0) = dmci_conv_wth(map_wth(1,i) + 1)
       dcfl_conv_wth(map_wth(1,i) + 0) = dcfl_conv_wth(map_wth(1,i) + 1)
       dcff_conv_wth(map_wth(1,i) + 0) = dcff_conv_wth(map_wth(1,i) + 1)
       dbcf_conv_wth(map_wth(1,i) + 0) = dbcf_conv_wth(map_wth(1,i) + 1)

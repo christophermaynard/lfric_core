@@ -30,7 +30,7 @@ contains
   !> of subgrid orography is more than zero.
   subroutine invoke_orographic_drag_kernel(                              &
                       du_orog_blk, dv_orog_blk, du_orog_gwd, dv_orog_gwd,&
-                      dtemp_orog_blk, dtemp_orog_gwd, u1_in_w3, u2_in_w3,&
+                      dtemp_orog_blk, dtemp_orog_gwd, u_in_w3, v_in_w3,&
                       wetrho_in_w3, theta_in_wth, exner_in_w3, sd_orog,  &
                       grad_xx_orog, grad_xy_orog, grad_yy_orog,          &
                       mr_v, mr_cl, mr_ci,                                &
@@ -48,7 +48,7 @@ contains
                                        dtemp_orog_blk, dtemp_orog_gwd ! Temperature
 
     ! Inputs to orographic drag scheme
-    type(field_type), intent(in) :: u1_in_w3, u2_in_w3,         & ! Winds
+    type(field_type), intent(in) :: u_in_w3, v_in_w3,           & ! Winds
                                     wetrho_in_w3, theta_in_wth, & ! Density, Temperature
                                     exner_in_w3,                & ! Exner pressure
                                     sd_orog, grad_xx_orog,      & ! Orography ancils
@@ -73,7 +73,7 @@ contains
     type(field_proxy_type) :: du_blk_proxy, dv_blk_proxy,             &
                               du_orog_gwd_proxy, dv_orog_gwd_proxy,   &
                               dtemp_blk_proxy, dtemp_orog_gwd_proxy,  &
-                              u1_in_w3_proxy, u2_in_w3_proxy,         &
+                              u_in_w3_proxy, v_in_w3_proxy,           &
                               wetrho_in_w3_proxy, theta_in_wth_proxy, &
                               exner_in_w3_proxy,                      &
                               sd_orog_proxy, grad_xx_orog_proxy,      &
@@ -96,8 +96,8 @@ contains
     dv_orog_gwd_proxy = dv_orog_gwd%get_proxy()
     dtemp_blk_proxy = dtemp_orog_blk%get_proxy()
     dtemp_orog_gwd_proxy = dtemp_orog_gwd%get_proxy()
-    u1_in_w3_proxy = u1_in_w3%get_proxy()
-    u2_in_w3_proxy = u2_in_w3%get_proxy()
+    u_in_w3_proxy = u_in_w3%get_proxy()
+    v_in_w3_proxy = v_in_w3%get_proxy()
     wetrho_in_w3_proxy = wetrho_in_w3%get_proxy()
     theta_in_wth_proxy = theta_in_wth%get_proxy()
     exner_in_w3_proxy = exner_in_w3%get_proxy()
@@ -166,7 +166,7 @@ contains
                       nlayers, du_blk_proxy%data, dv_blk_proxy%data,       &
                       du_orog_gwd_proxy%data, dv_orog_gwd_proxy%data,      &
                       dtemp_blk_proxy%data, dtemp_orog_gwd_proxy%data,     &
-                      u1_in_w3_proxy%data, u2_in_w3_proxy%data,            &
+                      u_in_w3_proxy%data, v_in_w3_proxy%data,              &
                       wetrho_in_w3_proxy%data, theta_in_wth_proxy%data,    &
                       exner_in_w3_proxy%data,                              &
                       sd_orog_proxy%data, grad_xx_orog_proxy%data,         &

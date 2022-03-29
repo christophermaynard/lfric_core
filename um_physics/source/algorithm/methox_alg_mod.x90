@@ -145,7 +145,7 @@ contains
 
     ! Output diagnostic if requested
     if (write_diag .and. use_xios_io) then
-      call dmv_methox%write_field('dmv_methox')
+      call dmv_methox%write_field('processed__dmv_methox')
     end if
 
     if ( subroutine_timers ) call timer('methox_alg')

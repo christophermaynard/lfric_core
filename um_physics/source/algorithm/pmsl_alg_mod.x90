@@ -98,7 +98,7 @@ contains
     if (write_diag .and. use_xios_io) then
       write_diag_behaviour => write_field_single_face
       call pmsl%set_write_behaviour(write_diag_behaviour)
-      call pmsl%write_field('pmsl')
+      call pmsl%write_field('processed__pmsl')
     end if
 
     if ( subroutine_timers ) call timer('pmsl_alg')

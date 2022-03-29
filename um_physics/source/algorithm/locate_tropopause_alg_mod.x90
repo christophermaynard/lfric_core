@@ -61,7 +61,7 @@ subroutine locate_tropopause_alg(trop_level, theta, exner_in_wth, twod_mesh)
     if ( subroutine_timers ) call timer("locate_tropopause_xios")
     write_diag_behaviour => write_field_single_face
     call trop_level%set_write_behaviour(write_diag_behaviour)
-    call trop_level%write_field('trop_level')
+    call trop_level%write_field('processed__trop_level')
     if ( subroutine_timers ) call timer("locate_tropopause_xios")
   end if
 

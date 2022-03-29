@@ -184,7 +184,7 @@ contains
     ! Wtheta fields
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
-      'w_physics',      wtheta_space )
+      'velocity_w2v',      wtheta_space )
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
       'rho_in_wth',     wtheta_space )
@@ -196,7 +196,7 @@ contains
       'exner_in_wth',   wtheta_space )
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
-      'w_physics_star', wtheta_space )
+      'exner_wth_n',   wtheta_space )
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
       'theta_star',     wtheta_space )
@@ -207,13 +207,13 @@ contains
     ! W3 fields
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
-      'u1_in_w3',      w3_space )
+      'u_in_w3',      w3_space )
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
-      'u2_in_w3',      w3_space )
+      'v_in_w3',      w3_space )
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
-      'u3_in_w3',      w3_space )
+      'w_in_w3',      w3_space )
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
       'theta_in_w3',   w3_space )
@@ -222,13 +222,13 @@ contains
       'wetrho_in_w3',  w3_space )
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
-      'u1_in_w3_star', w3_space )
+      'u_in_w3_star', w3_space )
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
-      'u2_in_w3_star', w3_space )
+      'v_in_w3_star', w3_space )
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
       advected_fields, &
-      'u3_in_w3_star', w3_space )
+      'w_in_w3_star', w3_space )
 
     ! W2 fields
     call add_physics_field( derived_fields, depository, prognostic_fields,     &
@@ -761,7 +761,7 @@ contains
       'dmcl_conv', wtheta_space )
     call add_physics_field( convection_fields, depository, prognostic_fields,  &
       advected_fields, &
-      'dmcf_conv', wtheta_space )
+      'dmci_conv', wtheta_space )
     call add_physics_field(convection_fields, depository, prognostic_fields,   &
       advected_fields, &
       'dcfl_conv', wtheta_space )
@@ -820,7 +820,7 @@ contains
       advection_flag=advection_flag)
     call add_physics_field(cloud_fields, depository, prognostic_fields, &
       advected_fields, &
-      'ice_fraction',    wtheta_space, checkpoint_flag=checkpoint_flag, &
+      'frozen_fraction', wtheta_space, checkpoint_flag=checkpoint_flag, &
       advection_flag=advection_flag)
     call add_physics_field(cloud_fields, depository, prognostic_fields, &
       advected_fields, &
@@ -835,7 +835,7 @@ contains
       'departure_exner_wth', wtheta_space, advection_flag=advection_flag)
     call add_physics_field(cloud_fields, depository, prognostic_fields, &
        advected_fields, &
-      'sigma_qcw',   wtheta_space )
+      'sigma_mc',   wtheta_space )
 
     ! Fields for bimodal cloud scheme
     call add_physics_field(cloud_fields, depository, prognostic_fields, &

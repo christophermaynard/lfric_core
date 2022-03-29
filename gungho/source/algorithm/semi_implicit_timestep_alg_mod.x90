@@ -35,7 +35,8 @@ module semi_implicit_timestep_alg_mod
                                         si_momentum_equation,                 &
                                         exner_from_eos
   use io_config_mod,              only: subroutine_timers,                    &
-                                        write_conservation_diag
+                                        write_conservation_diag, write_diag,  &
+                                        use_xios_io, diagnostic_frequency
   use mixed_solver_config_mod,    only: guess_np1,                            &
                                         reference_reset_freq
   use timestepping_config_mod,    only: alpha,                                &
@@ -99,6 +100,7 @@ module semi_implicit_timestep_alg_mod
   use update_prognostic_scalars_alg_mod, &
                                   only: update_prognostic_scalars_alg
   use mixing_alg_mod,             only: mixing_alg
+  use si_diagnostics_mod,         only: output_diags_for_si
 
   ! LAM
   use limited_area_lbc_alg_mod,   only: lam_solver_lbc, &
@@ -146,10 +148,10 @@ module semi_implicit_timestep_alg_mod
   ! prognostic fields after slow physics, i.e. state_n + slow incs
   type( field_type ), allocatable :: state_after_slow(:)
   type( field_type ), allocatable :: advected_state(:)
-  type( field_type ), allocatable :: mr_n(:), mr_inc(:), mr_after_slow(:)
+  type( field_type ), allocatable :: mr_n(:), mr_after_adv(:), mr_after_slow(:)
   type( field_type ), allocatable :: rhs_n(:), rhs_np1(:), rhs_adv(:)
   type( field_type ), allocatable :: rhs_phys(:), rhs_lbc(:)
-  type( field_type ) :: dtheta ! increment to theta
+  type( field_type ) :: dtheta, dtheta_cld ! increment to theta
   type( field_type ) :: du ! increment to u
 
   type( field_type ) :: visc_m ! Smagorinsky diffusion coefficient for momentum
@@ -196,7 +198,7 @@ contains
     allocate(rhs_lbc(bundle_size))
     allocate(mr_n(nummr))
     allocate(mr_after_slow(nummr))
-    allocate(mr_inc(nummr))
+    allocate(mr_after_adv(nummr))
 
     use_moisture = ( moisture_formulation /= moisture_formulation_dry )
 
@@ -219,12 +221,13 @@ contains
     call clone_bundle(state, rhs_lbc,          bundle_size)
 
     call theta%copy_field_properties(dtheta)
+    call theta%copy_field_properties(dtheta_cld)
     call u%copy_field_properties(du)
 
     call clone_bundle(mr, mr_n, nummr)
     call clone_bundle(mr, mr_after_slow, nummr)
     if (use_moisture) then
-      call clone_bundle(mr, mr_inc, nummr)
+      call clone_bundle(mr, mr_after_adv, nummr)
     else
       call set_bundle_scalar(0.0_r_def, mr_n, nummr)
       call set_bundle_scalar(0.0_r_def, mr_after_slow, nummr)
@@ -360,6 +363,7 @@ contains
 
     ! Fields after slow physics to be advected
     type( field_collection_type ) :: cloud_fields_after_slow
+    type( field_collection_type ) :: cloud_fields_after_adv
     type( field_collection_type ) :: chemistry_fields_after_slow
     type( field_collection_type ) :: aerosol_fields_after_slow
 
@@ -387,8 +391,6 @@ contains
     if (clock%is_spinning_up()) then
        if (spinup_winds) then
          call invoke( setval_X(state(igh_u), u ) )
-       else
-         call invoke( set_any_dof_kernel_type(state(igh_u), T, 0.0_r_def) )
        end if
     end if
 
@@ -494,6 +496,9 @@ contains
                                         rhs_n, state, state_after_slow,        &
                                         moist_dyn, varalpha, clock, dt)
         end if
+        if (use_moisture) call copy_bundle(mr, mr_after_adv, nummr)
+        call pre_advection_generic_field(cloud_fields_after_adv, cloud_fields, &
+                                         advected_fields)
 
         !--------------------------------------------------------------------
         ! Call the fast physics terms
@@ -654,18 +659,30 @@ contains
     ! ----------------------------------------------------------------------
 #ifdef UM_PHYSICS
     if (use_physics .and. cloud == cloud_um  ) then
-      call cld_alg( dtheta, mr,                                     &
+      call cld_alg( dtheta_cld, mr,                                 &
                     state(igh_t), state(igh_p), state(igh_d),       &
                     derived_fields, turbulence_fields,              &
                     cloud_fields, convection_fields,                &
                     state_n(igh_t), mr_n,                           &
                     clock%get_step(), dt )
-      call invoke(inc_X_plus_Y(state(igh_t), dtheta))
+      call invoke(inc_X_plus_Y(state(igh_t), dtheta_cld))
+    end if
+#endif
+
+    ! Update derived variables for time level n+1
+    if (use_moisture) then
+      call moist_dyn_factors_alg(moist_dyn, mr)
+    end if
+    if (use_physics) then
+      call map_physics_fields_alg(state(igh_u), state(igh_p),              &
+                                  state(igh_d), state(igh_t),              &
+                                  moist_dyn, derived_fields)
     end if
 
     !--------------------------------------------------------------------
     ! Call UKCA for GLOMAP-mode prognostic aerosol updates
     !--------------------------------------------------------------------
+#ifdef UM_PHYSICS
     if (aerosol == aerosol_um .and. glomap_mode == glomap_mode_ukca) then
       call aerosol_ukca_alg ( chemistry_fields, aerosol_fields,          &
                               radiation_fields,                          &
@@ -675,6 +692,15 @@ contains
                               state, mr, clock%get_step() )
     end if
 #endif
+
+    ! Write diagnostic output
+    if (write_diag .and. use_xios_io .and. &
+         mod(clock%get_step(),diagnostic_frequency) == 0 ) then
+      call output_diags_for_si(state, state_n, state_after_slow, mr, mr_n,  &
+                               mr_after_slow, mr_after_adv, derived_fields, &
+                               du, dtheta, cloud_fields_after_slow,         &
+                               cloud_fields_after_adv)
+    end if
 
     !--------------------------------------------------------------------
     ! Update fields held in the driver layer
@@ -714,7 +740,7 @@ contains
     if (allocated(rhs_lbc))          deallocate(rhs_lbc)
     if (allocated(mr_n))             deallocate(mr_n)
     if (allocated(mr_after_slow))    deallocate(mr_after_slow)
-    if (allocated(mr_inc))           deallocate(mr_inc)
+    if (allocated(mr_after_adv))     deallocate(mr_after_adv)
 
     call dtheta%field_final()
     call du%field_final()

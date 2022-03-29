@@ -77,8 +77,8 @@ contains
     type( field_type ), pointer :: wetrho_in_w3 => null()
     type( field_type ), pointer :: w_physics => null()
     type( field_type ), pointer :: theta_star => null()
-    type( field_type ), pointer :: u1_in_w3_star => null()
-    type( field_type ), pointer :: u2_in_w3_star => null()
+    type( field_type ), pointer :: u_in_w3_star => null()
+    type( field_type ), pointer :: v_in_w3_star => null()
 
     type( field_type ), pointer :: zh => null()
     type( field_type ), pointer :: ntml => null()
@@ -104,7 +104,7 @@ contains
     type( field_type ), pointer :: dt_conv => null()
     type( field_type ), pointer :: dmv_conv => null()
     type( field_type ), pointer :: dmcl_conv => null()
-    type( field_type ), pointer :: dmcf_conv => null()
+    type( field_type ), pointer :: dmci_conv => null()
     type( field_type ), pointer :: dcfl_conv => null()
     type( field_type ), pointer :: dcff_conv => null()
     type( field_type ), pointer :: dbcf_conv => null()
@@ -115,7 +115,7 @@ contains
     type( field_type ), pointer :: massflux_down => null()
     type( field_type ), pointer :: cape_diluted => null()
 
-    type( field_type ), pointer :: cf_ice  => null()
+    type( field_type ), pointer :: cf_fro  => null()
     type( field_type ), pointer :: cf_liq  => null()
     type( field_type ), pointer :: cf_bulk  => null()
 
@@ -173,6 +173,7 @@ contains
     type( field_type ) :: pres_cv_base,pres_cv_top
     type( field_type ) :: deep_cfl_limited,mid_cfl_limited
     type( field_type ) :: massflux_up_half, massflux_up_cmpta
+    type( field_type ) :: dth_conv_noshal, dmv_conv_noshal
 
     type( mesh_type ), pointer  :: mesh => null()
 
@@ -187,10 +188,10 @@ contains
     wetrho_in_wth => derived_fields%get_field('wetrho_in_wth')
     wetrho_in_w3 => derived_fields%get_field('wetrho_in_w3')
     rho_in_wth => derived_fields%get_field('rho_in_wth')
-    w_physics => derived_fields%get_field('w_physics')
+    w_physics => derived_fields%get_field('velocity_w2v')
     theta_star => derived_fields%get_field('theta_star')
-    u1_in_w3_star => derived_fields%get_field('u1_in_w3_star')
-    u2_in_w3_star => derived_fields%get_field('u2_in_w3_star')
+    u_in_w3_star => derived_fields%get_field('u_in_w3_star')
+    v_in_w3_star => derived_fields%get_field('v_in_w3_star')
 
     ! Unpack turbulence fields
     zh => turbulence_fields%get_field('zh')
@@ -218,7 +219,7 @@ contains
     dt_conv => convection_fields%get_field('dt_conv')
     dmv_conv => convection_fields%get_field('dmv_conv')
     dmcl_conv => convection_fields%get_field('dmcl_conv')
-    dmcf_conv => convection_fields%get_field('dmcf_conv')
+    dmci_conv => convection_fields%get_field('dmci_conv')
     dcfl_conv => convection_fields%get_field('dcfl_conv')
     dcff_conv => convection_fields%get_field('dcff_conv')
     dbcf_conv => convection_fields%get_field('dbcf_conv')
@@ -230,7 +231,7 @@ contains
     cape_diluted => convection_fields%get_field('cape_diluted')
 
     ! Unpack cloud fields
-    cf_ice => cloud_fields%get_field('ice_fraction')
+    cf_fro => cloud_fields%get_field('frozen_fraction')
     cf_liq => cloud_fields%get_field('liquid_fraction')
     cf_bulk => cloud_fields%get_field('bulk_fraction')
 
@@ -317,13 +318,15 @@ contains
                                        deep_tops,         &
                                        massflux_up_half,  &
                                        massflux_up_cmpta, &
-                                       cca_unadjusted )
+                                       cca_unadjusted,    &
+                                       dth_conv_noshal,   &
+                                       dmv_conv_noshal)
 
     ! set increments to zero
     call invoke( setval_c(dt_conv, 0.0_r_def),          &
                  setval_c(dmv_conv, 0.0_r_def),         &
                  setval_c(dmcl_conv, 0.0_r_def),        &
-                 setval_c(dmcf_conv, 0.0_r_def),        &
+                 setval_c(dmci_conv, 0.0_r_def),        &
                  setval_c(dcfl_conv, 0.0_r_def),        &
                  setval_c(dcff_conv, 0.0_r_def),        &
                  setval_c(dbcf_conv, 0.0_r_def),        &
@@ -342,14 +345,14 @@ contains
                  ! call the scheme
                  conv_gr_kernel_type( outer, rho, rho_in_wth, wetrho_in_w3,   &
                           wetrho_in_wth, exner, exner_in_wth, w_physics,      &
-                          theta_star, u1_in_w3_star, u2_in_w3_star,           &
+                          theta_star, u_in_w3_star, v_in_w3_star,             &
                           height_w3, height_wth, delta,                       &
                           ntml, cumulus, tile_fraction,                       &
                           dt_conv, dmv_conv, dmcl_conv,                       &
-                          dmcf_conv, du_conv, dv_conv,                        &
+                          dmci_conv, du_conv, dv_conv,                        &
                           mr(imr_v), mr(imr_cl), mr(imr_ci),                  &
                           mr(imr_r), mr(imr_g),                               &
-                          cf_ice, cf_liq, cf_bulk, cca, ccw,                  &
+                          cf_fro, cf_liq, cf_bulk, cca, ccw,                  &
                           cape_diluted, conv_rain, conv_snow,                 &
                           conv_rain_3d, conv_snow_3d,                         &
                           cca_2d,                                             &
@@ -427,7 +430,7 @@ contains
                           deep_tops,                                          &
                           massflux_up_half,                                   &
                           massflux_up_cmpta,                                  &
-                          cca_unadjusted )                                    &
+                          cca_unadjusted, dth_conv_noshal, dmv_conv_noshal )  &
                                            ) ! end of invoke
 
     if ( subroutine_timers ) call timer("conv_gr_alg")
@@ -440,7 +443,7 @@ contains
                                        dt_conv,           & ! increments
                                        dmv_conv,          &
                                        dmcl_conv,         &
-                                       dmcf_conv,         &
+                                       dmci_conv,         &
                                        du_conv,           &
                                        dv_conv,           &
                                        dbcf_conv,         &
@@ -489,7 +492,9 @@ contains
                                        deep_tops,         &
                                        massflux_up_half,  &
                                        massflux_up_cmpta, &
-                                       cca_unadjusted )
+                                       cca_unadjusted,    &
+                                       dth_conv_noshal,   &
+                                       dmv_conv_noshal)
 
     end if
 

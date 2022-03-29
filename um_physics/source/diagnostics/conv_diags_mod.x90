@@ -8,7 +8,6 @@
 module conv_diags_mod
 
   use constants_mod,       only: l_def
-  use diagnostics_io_mod,  only: write_vector_diagnostic
   use field_mod,           only: field_type
   use io_config_mod,       only: subroutine_timers
   use timer_mod,           only: timer
@@ -53,7 +52,9 @@ module conv_diags_mod
                       deep_tops_flag,         &
                       massflux_up_half_flag,  &
                       massflux_up_cmpta_flag, &
-                      cca_unadjusted_flag
+                      cca_unadjusted_flag,    &
+                      dth_conv_noshal_flag,   &
+                      dmv_conv_noshal_flag
 
   public :: initialise_diags_for_conv
   public :: output_diags_for_conv
@@ -99,7 +100,9 @@ contains
                                        deep_tops,         &
                                        massflux_up_half,  &
                                        massflux_up_cmpta, &
-                                       cca_unadjusted )
+                                       cca_unadjusted,    &
+                                       dth_conv_noshal,   &
+                                       dmv_conv_noshal)
 
     implicit none
 
@@ -142,7 +145,9 @@ contains
                                        deep_tops,         &
                                        massflux_up_half,  &
                                        massflux_up_cmpta, &
-                                       cca_unadjusted
+                                       cca_unadjusted,    &
+                                       dth_conv_noshal,   &
+                                       dmv_conv_noshal
 
     if ( subroutine_timers ) call timer("conv_diags")
 
@@ -282,7 +287,7 @@ contains
     call invoke( setval_c(deep_tops, 0.0_r_def) )
 
     massflux_up_half_flag = .true.
-    call theta_star%copy_field_properties(massflux_up_half)
+    call rho%copy_field_properties(massflux_up_half)
     call invoke( setval_c(massflux_up_half, 0.0_r_def) )
 
     massflux_up_cmpta_flag = .true.
@@ -293,10 +298,16 @@ contains
     call theta_star%copy_field_properties(cca_unadjusted)
     call invoke( setval_c(cca_unadjusted, 0.0_r_def) )
 
+    dth_conv_noshal_flag = .true.
+    call theta_star%copy_field_properties(dth_conv_noshal)
+
+    dmv_conv_noshal_flag = .true.
+    call theta_star%copy_field_properties(dmv_conv_noshal)
+
     ! diagnostic interdependencies
     !
     if (massflux_up_cmpta_flag .and. (.not. massflux_up_half_flag)) then
-      call theta_star%copy_field_properties(massflux_up_half)
+      call rho%copy_field_properties(massflux_up_half)
       call invoke( setval_c(massflux_up_half, 0.0_r_def) )
     end if
     if (massflux_up_cmpta_flag .and. (.not. shallow_in_col_flag)) then
@@ -314,7 +325,7 @@ contains
                                        dt_conv,           & ! increments
                                        dmv_conv,          &
                                        dmcl_conv,         &
-                                       dmcf_conv,         &
+                                       dmci_conv,         &
                                        du_conv,           &
                                        dv_conv,           &
                                        dbcf_conv,         &
@@ -363,7 +374,9 @@ contains
                                        deep_tops,         &
                                        massflux_up_half,  &
                                        massflux_up_cmpta, &
-                                       cca_unadjusted )
+                                       cca_unadjusted,    &
+                                       dth_conv_noshal,   &
+                                       dmv_conv_noshal)
 
     implicit none
 
@@ -374,7 +387,7 @@ contains
     type( field_type ), intent(in)  :: dt_conv,   &
                                        dmv_conv,  &
                                        dmcl_conv, &
-                                       dmcf_conv, &
+                                       dmci_conv, &
                                        du_conv,   &
                                        dv_conv,   &
                                        dbcf_conv, &
@@ -425,7 +438,9 @@ contains
                                        deep_tops,         &
                                        massflux_up_half,  &
                                        massflux_up_cmpta, &
-                                       cca_unadjusted
+                                       cca_unadjusted,    &
+                                       dth_conv_noshal,   &
+                                       dmv_conv_noshal
 
     if ( subroutine_timers ) call timer("conv_diags")
 
@@ -437,7 +452,7 @@ contains
     call dt_conv%write_field('convection__dt_conv')
     call dmv_conv%write_field('convection__dmv_conv')
     call dmcl_conv%write_field('convection__dmcl_conv')
-    call dmcf_conv%write_field('convection__dmcf_conv')
+    call dmci_conv%write_field('convection__dmci_conv')
     call du_conv%write_field('convection__du_conv')
     call dv_conv%write_field('convection__dv_conv')
     call dbcf_conv%write_field('convection__dbcf_conv')
@@ -493,6 +508,8 @@ contains
     if (massflux_up_half_flag) call massflux_up_half%write_field('convection__massflux_up_half')
     if (massflux_up_cmpta_flag) call massflux_up_cmpta%write_field('convection__massflux_up_cmpta')
     if (cca_unadjusted_flag) call cca_unadjusted%write_field('convection__cca_unadjusted')
+    if (dth_conv_noshal_flag) call dth_conv_noshal%write_field('convection__dth_conv_noshal')
+    if (dmv_conv_noshal_flag) call dmv_conv_noshal%write_field('convection__dmv_conv_noshal')
 
     if ( subroutine_timers ) call timer("conv_diags")
 

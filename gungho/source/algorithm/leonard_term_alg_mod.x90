@@ -87,7 +87,7 @@ subroutine leonard_term_alg(mt_inc_leonard, thetal_inc_leonard, &
 
     ! Unpack derived fields
     exner_in_wth => derived_fields%get_field('exner_in_wth')
-    w_physics    => derived_fields%get_field('w_physics')
+    w_physics    => derived_fields%get_field('velocity_w2v')
 
     ! Unpack turbulence fields
     dtrdz_tq_bl  => turbulence_fields%get_field('dtrdz_tq_bl')

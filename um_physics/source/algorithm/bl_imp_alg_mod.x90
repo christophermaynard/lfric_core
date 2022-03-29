@@ -21,7 +21,7 @@ module bl_imp_alg_mod
   use io_config_mod, only: subroutine_timers
   use timer_mod,     only: timer
   ! xios output
-  use io_config_mod, only: write_diag, use_xios_io
+  use io_config_mod, only: write_diag, use_xios_io, diagnostic_frequency
   use bl_imp_diags_mod, only: initialise_diags_for_bl_imp, &
                               output_diags_for_bl_imp
   use log_mod,                       only: log_event, LOG_LEVEL_INFO
@@ -142,7 +142,7 @@ contains
     type( field_type ), pointer :: lsca_2d => null()
 
     type( field_type ), pointer :: cf_area    => null()
-    type( field_type ), pointer :: cf_ice     => null()
+    type( field_type ), pointer :: cf_fro     => null()
     type( field_type ), pointer :: cf_liq     => null()
     type( field_type ), pointer :: cf_bulk    => null()
     type( field_type ), pointer :: rh_crit    => null()
@@ -218,12 +218,12 @@ contains
     type( field_type ) :: wind10m_w2, u10m, v10m, w10m, u10m2, v10m2
     type( field_type ) :: wind10m_neut_w2, pseudotau_w2
     type( field_type ) :: wspd10m_neut, u10m_neut, v10m_neut, w10m_neut
-    type( field_type ) :: taux, tauy, tauz, tauz_ssi, wind_gust
+    type( field_type ) :: taux, tauy, tauz_ssi, wind_gust
     type( field_type ) :: visibility_with_precip, visibility_no_precip
     type( field_type ) :: fog_fraction, dew_point
-    type( field_type ) :: pseudotaux, pseudotauy, pseudotauz
-    type( field_type ) :: dmv_bl, dmcl_bl, dmci_bl, dcf_bulk_bl
-    type( field_type ) :: dcf_area_bl, dcf_liq_bl, dcf_ice_bl
+    type( field_type ) :: pseudotaux, pseudotauy
+    type( field_type ) :: dmv_bl, dmcl_bl, dmci_bl, dbcf_bl
+    type( field_type ) :: dacf_bl, dcfl_bl, dcff_bl
     type( field_type ) :: latent_heat, grid_latent_heat
     type( field_type ) :: snomlt_surf_htf
     type( field_type ) :: soil_evap, grid_canopy_evap
@@ -277,7 +277,7 @@ contains
 
     ! Unpack cloud fields
     cf_area  => cloud_fields%get_field('area_fraction')
-    cf_ice   => cloud_fields%get_field('ice_fraction')
+    cf_fro   => cloud_fields%get_field('frozen_fraction')
     cf_liq   => cloud_fields%get_field('liquid_fraction')
     cf_bulk  => cloud_fields%get_field('bulk_fraction')
     rh_crit  => cloud_fields%get_field('rh_crit')
@@ -373,11 +373,11 @@ contains
 
     ! Initialise the BL diagnostics
     call initialise_diags_for_bl_imp(mr(imr_v), mr(imr_cl), mr(imr_ci),        &
-                                     cf_bulk, cf_area, cf_liq, cf_ice,         &
+                                     cf_bulk, cf_area, cf_liq, cf_fro,         &
                                      exner, zh, tile_fraction,                 &
                                      dmv_bl, dmcl_bl, dmci_bl,                 &
-                                     dcf_bulk_bl, dcf_area_bl,                 &
-                                     dcf_liq_bl, dcf_ice_bl,                   &
+                                     dbcf_bl, dacf_bl,                         &
+                                     dcfl_bl, dcff_bl,                         &
                                      t1p5m_surft, q1p5m_surft,                 &
                                      t1p5m, q1p5m, qcl1p5m, rh1p5m, u10m, v10m,&
                                      wind_gust, wspd10m_neut, u10m_neut,       &
@@ -459,7 +459,7 @@ contains
                            water_extraction, total_snowmelt,                   &
                            dtheta_bl, diss_u, diss_v, dt_conv,                 &
                            mr(imr_v), mr(imr_cl), mr(imr_ci),                  &
-                           cf_area, cf_ice, cf_liq, cf_bulk, rh_crit,          &
+                           cf_area, cf_fro, cf_liq, cf_bulk, rh_crit,          &
                            dsldzm, wvar, gradrinr, tau_dec_bm, tau_hom_bm,     &
                            tau_mph_bm,                                         &
                            rhokh_bl, bq_bl, bt_bl, moist_flux_bl, heat_flux_bl,&
@@ -506,26 +506,23 @@ contains
                   inc_X_powreal_a(wspd10m_neut, 0.5_r_def) )
 
       ! Calculate zonal and meridional wind stresses
-      call exner%copy_field_properties(tauz)
-      call map_physics_winds(taux, tauy, tauz, tau_w2)
       call zh%copy_field_properties(tauz_ssi)
       call map_physics_winds(taux_ssi, tauy_ssi, tauz_ssi, tau_ssi_w2)
-      call zh%copy_field_properties(pseudotauz)
-      call map_physics_winds(pseudotaux, pseudotauy, pseudotauz, pseudotau_w2)
  
       ! Output the BL diagnostics
-      call output_diags_for_bl_imp(zh, du_bl, clock, tile_heat_flux,           &
+      if (mod(clock%get_step(),diagnostic_frequency) == 0) then
+        call output_diags_for_bl_imp(zh, du_bl, tile_heat_flux,                &
                                    tile_moisture_flux, tile_temperature,       &
                                    grid_surface_temperature,                   &
                                    snow_sublimation, canopy_evap,              &
                                    wspd10m, u10m, v10m, wind_gust,             &
                                    wspd10m_neut, u10m_neut, v10m_neut,         &
-                                   taux, tauy, taux_ssi, tauy_ssi,             &
-                                   pseudotaux, pseudotauy, z0m_eff,            &
-                                   rho, wetrho_in_w3, tile_fraction,           &
+                                   taux, tauy, tau_w2, taux_ssi, tauy_ssi,     &
+                                   pseudotaux, pseudotauy, pseudotau_w2,       &
+                                   z0m_eff, rho, wetrho_in_w3, tile_fraction,  &
                                    mr(imr_v), mr(imr_cl), mr(imr_ci),          &
                                    mr(imr_r),                                  &
-                                   cf_bulk, cf_area, cf_liq, cf_ice,           &
+                                   cf_bulk, cf_area, cf_liq, cf_fro,           &
                                    dtheta_bl, exner_in_wth, dt_conv,           &
                                    t1p5m_surft, q1p5m_surft,                   &
                                    t1p5m, q1p5m, qcl1p5m, rh1p5m,              &
@@ -539,11 +536,12 @@ contains
                                    heat_flux_bl, moist_flux_bl,                &
                                    ls_rain, ls_snow, lsca_2d,                  &
                                    conv_rain, conv_snow, cca_2d,               &
-                                   dmv_bl, dmcl_bl, dmci_bl, dcf_bulk_bl,      &
-                                   dcf_area_bl, dcf_liq_bl, dcf_ice_bl,        &
+                                   dmv_bl, dmcl_bl, dmci_bl, dbcf_bl,          &
+                                   dacf_bl, dcfl_bl, dcff_bl,                  &
                                    fog_fraction, dew_point,                    &
                                    visibility_with_precip,                     &
                                    visibility_no_precip )
+      end if
 
     end if
 

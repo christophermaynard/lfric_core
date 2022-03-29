@@ -47,7 +47,7 @@ contains
     type( field_type ), pointer :: delta     => null()
 
     type( field_type ), pointer :: area_fraction        => null()
-    type( field_type ), pointer :: sigma_qcw            => null()
+    type( field_type ), pointer :: sigma_mc             => null()
     type( field_type ), pointer :: cca                  => null()
 
     type( mesh_type), pointer :: mesh => null()
@@ -56,7 +56,7 @@ contains
 
     ! Unpack fields
     area_fraction   => cloud_fields%get_field('area_fraction')
-    sigma_qcw       => cloud_fields%get_field('sigma_qcw')
+    sigma_mc        => cloud_fields%get_field('sigma_mc')
     cca             => convection_fields%get_field('cca')
 
     mesh => area_fraction%get_mesh()
@@ -64,7 +64,7 @@ contains
     delta  => get_delta_at_wtheta(mesh%get_id())
     dz_wth => get_dz_at_wtheta(mesh%get_id())
 
-    call invoke ( fsd_condensate_kernel_type ( sigma_qcw,     & ! fsd of condensate
+    call invoke ( fsd_condensate_kernel_type ( sigma_mc,      & ! fsd of condensate
                                                f_arr,         & ! fsd parameters
                                                area_fraction, & ! area cloud fraction
                                                cca,           & ! convective cloud amount

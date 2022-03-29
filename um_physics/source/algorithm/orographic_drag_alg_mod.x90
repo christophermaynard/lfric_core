@@ -73,8 +73,8 @@ contains
     type( field_type ) :: dtemp_orog_gwd ! ... temperature
 
     ! Temporary unpacked fields from collections
-    type( field_type ), pointer :: u1_in_w3     => null()
-    type( field_type ), pointer :: u2_in_w3     => null()
+    type( field_type ), pointer :: u_in_w3      => null()
+    type( field_type ), pointer :: v_in_w3      => null()
     type( field_type ), pointer :: exner_in_wth => null()
     type( field_type ), pointer :: wetrho_in_w3 => null()
 
@@ -105,8 +105,8 @@ contains
     height_w3  => get_height(W3, mesh%get_id())
 
     ! Unpack fields
-    u1_in_w3 => derived_fields%get_field('u1_in_w3')
-    u2_in_w3 => derived_fields%get_field('u2_in_w3')
+    u_in_w3 => derived_fields%get_field('u_in_w3')
+    v_in_w3 => derived_fields%get_field('v_in_w3')
     exner_in_wth => derived_fields%get_field('exner_in_wth')
     wetrho_in_w3 => derived_fields%get_field('wetrho_in_w3')
 
@@ -117,13 +117,13 @@ contains
     grad_yy_orog => orography_fields%get_field('grad_yy_orog')
 
     ! Local increments
-    call u1_in_w3%copy_field_properties(du_orographic_drag)
-    call u2_in_w3%copy_field_properties(dv_orographic_drag)
+    call u_in_w3%copy_field_properties(du_orographic_drag)
+    call v_in_w3%copy_field_properties(dv_orographic_drag)
     call theta%copy_field_properties(dw_orographic_drag)
-    call u1_in_w3%copy_field_properties(du_orog_blk)
-    call u2_in_w3%copy_field_properties(dv_orog_blk)
-    call u1_in_w3%copy_field_properties(du_orog_gwd)
-    call u2_in_w3%copy_field_properties(dv_orog_gwd)
+    call u_in_w3%copy_field_properties(du_orog_blk)
+    call v_in_w3%copy_field_properties(dv_orog_blk)
+    call u_in_w3%copy_field_properties(du_orog_gwd)
+    call v_in_w3%copy_field_properties(dv_orog_gwd)
     call theta%copy_field_properties(dtemp_orographic_drag)
     call theta%copy_field_properties(dtemp_orog_blk)
     call theta%copy_field_properties(dtemp_orog_gwd)
@@ -139,7 +139,7 @@ contains
 
     ! Initialise orographic drag diagnostics
     call initialise_diags_for_orographic_drag(                              &
-                                theta, u1_in_w3,                            &
+                                theta, u_in_w3,                             &
                                 taux_orog_blk, tauy_orog_blk,               &
                                 taux_orog_gwd, tauy_orog_gwd)
 
@@ -153,7 +153,7 @@ contains
                 du_orog_blk, dv_orog_blk,                     &
                 du_orog_gwd, dv_orog_gwd,                     &
                 dtemp_orog_blk, dtemp_orog_gwd,               &
-                u1_in_w3, u2_in_w3,                           &
+                u_in_w3, v_in_w3,                             &
                 wetrho_in_w3, theta, exner_in_wth, sd_orog,   &
                 grad_xx_orog, grad_xy_orog, grad_yy_orog,     &
                 mr_n(imr_v), mr_n(imr_cl), mr_n(imr_ci),      &

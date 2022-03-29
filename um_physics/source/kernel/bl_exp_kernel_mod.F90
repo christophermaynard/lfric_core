@@ -54,14 +54,14 @@ module bl_exp_kernel_mod
   !>
   type, public, extends(kernel_type) :: bl_exp_kernel_type
     private
-    type(arg_type) :: meta_args(139) = (/                                      &
+    type(arg_type) :: meta_args(140) = (/                                      &
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! theta_in_wth
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      W3),                       &! rho_in_w3
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! wetrho_in_wth
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      W3),                       &! exner_in_w3
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! exner_in_wth
-         arg_type(GH_FIELD, GH_REAL,  GH_READ,      W3, STENCIL(CROSS)),       &! u1_in_w3
-         arg_type(GH_FIELD, GH_REAL,  GH_READ,      W3, STENCIL(CROSS)),       &! u2_in_w3
+         arg_type(GH_FIELD, GH_REAL,  GH_READ,      W3, STENCIL(CROSS)),       &! u_in_w3
+         arg_type(GH_FIELD, GH_REAL,  GH_READ,      W3, STENCIL(CROSS)),       &! v_in_w3
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! u3_in_wth
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! m_v_n
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! m_cl_n
@@ -193,7 +193,8 @@ module bl_exp_kernel_mod
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_12),&! dust_div_mrel
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_12),&! dust_div_flux
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), &! diag__zht
-         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1)  &! diag__z0h_eff
+         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1), &! diag__z0h_eff
+         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1)  &! diag__oblen
          /)
     integer :: operates_on = CELL_COLUMN
   contains
@@ -215,8 +216,8 @@ contains
   !> @param[in]     wetrho_in_wth          Wet density field in wth space
   !> @param[in]     exner_in_w3            Exner pressure field in density space
   !> @param[in]     exner_in_wth           Exner pressure field in wth space
-  !> @param[in]     u1_in_w3               'Zonal' wind in density space
-  !> @param[in]     u2_in_w3               'Meridional' wind in density space
+  !> @param[in]     u_in_w3                'Zonal' wind in density space
+  !> @param[in]     v_in_w3                'Meridional' wind in density space
   !> @param[in]     u3_in_wth              'Vertical' wind in theta space
   !> @param[in]     m_v_n                  Vapour mixing ratio at time level n
   !> @param[in]     m_cl_n                 Cloud liquid mixing ratio at time level n
@@ -349,6 +350,7 @@ contains
   !> @param[in,out] dust_div_flux          Dust emission fluxes in CLASSIC size divisions (kg m-2 s-1) 
   !> @param[in,out] zht                    Diagnostic: turb mixing height
   !> @param[in,out] z0h_eff                Diagnostic: Gridbox mean effective roughness length for scalars
+  !> @param[in,out] oblen                  Diagnostic: Obukhov length
   !> @param[in]     ndf_wth                Number of DOFs per cell for potential temperature space
   !> @param[in]     undf_wth               Number of unique DOFs for potential temperature space
   !> @param[in]     map_wth                Dofmap for the cell at the base of the column for potential temperature space
@@ -398,10 +400,10 @@ contains
                          wetrho_in_wth,                         &
                          exner_in_w3,                           &
                          exner_in_wth,                          &
-                         u1_in_w3,                              &
-                         u1_w3_stencil_size, u1_w3_stencil,     &
-                         u2_in_w3,                              &
-                         u2_w3_stencil_size, u2_w3_stencil,     &
+                         u_in_w3,                               &
+                         u_w3_stencil_size, u_w3_stencil,       &
+                         v_in_w3,                               &
+                         v_w3_stencil_size, v_w3_stencil,       &
                          u3_in_wth,                             &
                          m_v_n,                                 &
                          m_cl_n,                                &
@@ -535,6 +537,7 @@ contains
                          dust_div_flux,                         &
                          zht,                                   &
                          z0h_eff,                               &
+                         oblen,                                 &
                          ndf_wth,                               &
                          undf_wth,                              &
                          map_wth,                               &
@@ -643,9 +646,9 @@ contains
     integer(kind=i_def), intent(in) :: ndf_dust, undf_dust
     integer(kind=i_def), intent(in) :: map_dust(ndf_dust)
 
-    integer(kind=i_def), intent(in) :: u1_w3_stencil_size, u2_w3_stencil_size
-    integer(kind=i_def), dimension(ndf_w3,u1_w3_stencil_size), intent(in) :: u1_w3_stencil
-    integer(kind=i_def), dimension(ndf_w3,u2_w3_stencil_size), intent(in) :: u2_w3_stencil
+    integer(kind=i_def), intent(in) :: u_w3_stencil_size, v_w3_stencil_size
+    integer(kind=i_def), dimension(ndf_w3,u_w3_stencil_size), intent(in) :: u_w3_stencil
+    integer(kind=i_def), dimension(ndf_w3,v_w3_stencil_size), intent(in) :: v_w3_stencil
 
     integer(kind=i_def), intent(in) :: tile_stencil_size
     integer(kind=i_def), dimension(ndf_tile,tile_stencil_size), intent(in) :: tile_stencil
@@ -670,7 +673,7 @@ contains
                                                            fd_tauy
     real(kind=r_def), dimension(undf_w3),  intent(in)   :: rho_in_w3,          &
                                                            exner_in_w3,        &
-                                                           u1_in_w3, u2_in_w3, &
+                                                           u_in_w3, v_in_w3, &
                                                            height_w3
     real(kind=r_def), dimension(undf_wth), intent(in)   :: theta_in_wth,       &
                                                            wetrho_in_wth,      &
@@ -796,6 +799,7 @@ contains
 
     real(kind=r_def), pointer, intent(inout) :: zht(:)
     real(kind=r_def), pointer, intent(inout) :: z0h_eff(:)
+    real(kind=r_def), pointer, intent(inout) :: oblen(:)
     !-----------------------------------------------------------------------
     ! Local variables for the kernel
     !-----------------------------------------------------------------------
@@ -1029,14 +1033,14 @@ contains
       flandg(2,0) = 1.0_r_um
       flandg(2,2) = 1.0_r_um
       ! Set winds in stencil region
-      u_px(0,1,1) = u1_in_w3(u1_w3_stencil(1,2))
-      u_px(1,0,1) = u1_in_w3(u1_w3_stencil(1,3))
-      u_px(2,1,1) = u1_in_w3(u1_w3_stencil(1,4))
-      u_px(1,2,1) = u1_in_w3(u1_w3_stencil(1,5))
-      v_px(0,1,1) = u2_in_w3(u2_w3_stencil(1,2))
-      v_px(1,0,1) = u2_in_w3(u2_w3_stencil(1,3))
-      v_px(2,1,1) = u2_in_w3(u2_w3_stencil(1,4))
-      v_px(1,2,1) = u2_in_w3(u2_w3_stencil(1,5))
+      u_px(0,1,1) = u_in_w3(u_w3_stencil(1,2))
+      u_px(1,0,1) = u_in_w3(u_w3_stencil(1,3))
+      u_px(2,1,1) = u_in_w3(u_w3_stencil(1,4))
+      u_px(1,2,1) = u_in_w3(u_w3_stencil(1,5))
+      v_px(0,1,1) = v_in_w3(v_w3_stencil(1,2))
+      v_px(1,0,1) = v_in_w3(v_w3_stencil(1,3))
+      v_px(2,1,1) = v_in_w3(v_w3_stencil(1,4))
+      v_px(1,2,1) = v_in_w3(v_w3_stencil(1,5))
     else
       flandfac = 1.0_r_def
       fseafac = 1.0_r_def
@@ -1330,9 +1334,9 @@ contains
       exner_rho_levels(1,1,k) = exner_in_w3(map_w3(1) + k-1)
       exner_theta_levels(1,1,k) = exner_in_wth(map_wth(1) + k)
       ! u wind on rho levels
-      u_px(1,1,k) = u1_in_w3(u1_w3_stencil(1,1) + k-1)
+      u_px(1,1,k) = u_in_w3(u_w3_stencil(1,1) + k-1)
       ! v wind on rho levels
-      v_px(1,1,k) = u2_in_w3(u2_w3_stencil(1,1) + k-1)
+      v_px(1,1,k) = v_in_w3(v_w3_stencil(1,1) + k-1)
       ! w wind on theta levels
       w(1,1,k) = u3_in_wth(map_wth(1) + k)
       ! height of rho levels from centre of planet
@@ -1406,6 +1410,7 @@ contains
     sf_diag%l_z0h_eff_gb = .not. associated(z0h_eff, empty_real_data)
     ! needed to ensure zht is saved if wanted
     bl_diag%l_zht     = .not. associated(zht, empty_real_data)
+    bl_diag%l_oblen   = .not. associated(oblen, empty_real_data)
     !-----------------------------------------------------------------------
     ! Things saved from other parametrization schemes on this timestep
     !-----------------------------------------------------------------------
@@ -1934,6 +1939,9 @@ contains
 
     if (.not. associated(zht, empty_real_data) ) then
       zht(map_2d(1)) = BL_diag%zht(1,1)
+    end if
+    if (.not. associated(oblen, empty_real_data) ) then
+      oblen(map_2d(1)) = BL_diag%oblen(1,1)
     end if
     if (.not. associated(z0h_eff, empty_real_data) ) then
       z0h_eff(map_2d(1)) = sf_diag%z0h_eff_gb(1,1)

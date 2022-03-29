@@ -58,13 +58,13 @@ contains
     type( field_type ), pointer :: theta_star      => null()
 
     type( field_type ), pointer :: liquid_fraction => null()
-    type( field_type ), pointer :: ice_fraction    => null()
+    type( field_type ), pointer :: frozen_fraction => null()
     type( field_type ), pointer :: bulk_fraction   => null()
 
     type( field_type ), pointer :: dt_conv         => null()
     type( field_type ), pointer :: dmv_conv        => null()
     type( field_type ), pointer :: dmcl_conv       => null()
-    type( field_type ), pointer :: dmcf_conv       => null()
+    type( field_type ), pointer :: dmci_conv       => null()
     type( field_type ), pointer :: dcfl_conv       => null()
     type( field_type ), pointer :: dcff_conv       => null()
     type( field_type ), pointer :: dbcf_conv       => null()
@@ -78,13 +78,13 @@ contains
     theta_star      => derived_fields%get_field('theta_star')
 
     liquid_fraction => cloud_fields%get_field('liquid_fraction')
-    ice_fraction    => cloud_fields%get_field('ice_fraction')
+    frozen_fraction => cloud_fields%get_field('frozen_fraction')
     bulk_fraction   => cloud_fields%get_field('bulk_fraction')
 
     dt_conv         => convection_fields%get_field('dt_conv')
     dmv_conv        => convection_fields%get_field('dmv_conv')
     dmcl_conv       => convection_fields%get_field('dmcl_conv')
-    dmcf_conv       => convection_fields%get_field('dmcf_conv')
+    dmci_conv       => convection_fields%get_field('dmci_conv')
     dcfl_conv       => convection_fields%get_field('dcfl_conv')
     dcff_conv       => convection_fields%get_field('dcff_conv')
     dbcf_conv       => convection_fields%get_field('dbcf_conv')
@@ -102,13 +102,13 @@ contains
                                                   mr(imr_cl),      &
                                                   mr(imr_ci),      &
                                                   liquid_fraction, &
-                                                  ice_fraction,    &
+                                                  frozen_fraction, &
                                                   bulk_fraction,   &
                                                   exner_wth,       &
                                                   dt_conv,         &
                                                   dmv_conv,        &
                                                   dmcl_conv,       &
-                                                  dmcf_conv,       &
+                                                  dmci_conv,       &
                                                   dcfl_conv,       &
                                                   dcff_conv,       &
                                                   dbcf_conv, dt),  &
@@ -116,9 +116,9 @@ contains
                   ! All variables are being updated apart from theta
                   inc_X_plus_Y(mr(imr_v),       dmv_conv),         &
                   inc_X_plus_Y(mr(imr_cl),      dmcl_conv),        &
-                  inc_X_plus_Y(mr(imr_ci),      dmcf_conv),        &
+                  inc_X_plus_Y(mr(imr_ci),      dmci_conv),        &
                   inc_X_plus_Y(liquid_fraction, dcfl_conv),        &
-                  inc_X_plus_Y(ice_fraction,    dcff_conv),        &
+                  inc_X_plus_Y(frozen_fraction, dcff_conv),        &
                   inc_X_plus_Y(bulk_fraction,   dbcf_conv)         )
 
     ! Re-initialise UM back to columns
@@ -130,9 +130,9 @@ contains
     if ( write_diag .and. use_xios_io ) then
       if ( subroutine_timers ) call timer("pc2_conv_coupling_xios")
       call dt_conv%write_field('cloud__dtheta_pc2_conv_coupling')
-      call dmv_conv%write_field('cloud__dqv_pc2_conv_coupling')
-      call dmcl_conv%write_field('cloud__dqcl_pc2_conv_coupling')
-      call dmcf_conv%write_field('cloud__dqcf_pc2_conv_coupling')
+      call dmv_conv%write_field('cloud__dmv_pc2_conv_coupling')
+      call dmcl_conv%write_field('cloud__dmcl_pc2_conv_coupling')
+      call dmci_conv%write_field('cloud__dmci_pc2_conv_coupling')
       call dcfl_conv%write_field('cloud__dcfl_pc2_conv_coupling')
       call dcff_conv%write_field('cloud__dcff_pc2_conv_coupling')
       call dbcf_conv%write_field('cloud__dbcf_pc2_conv_coupling')

@@ -335,8 +335,8 @@ module spt_main_alg_mod
 
   !!!! 10) Add SPT diagnostics to iodef
   if (write_diag .and. use_xios_io) then
-    call dtheta_spt%write_field('dtheta_spt')
-    call dmv_spt%write_field('dmv_spt')
+    call dtheta_spt%write_field('stochastic__dtheta_spt')
+    call dmv_spt%write_field('stochastic__dmv_spt')
   end if
 
   nullify( mesh )

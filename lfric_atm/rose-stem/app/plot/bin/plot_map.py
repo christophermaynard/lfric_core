@@ -22,19 +22,24 @@ colbar_max=2
 
 # Fields which are available to plot
 theta           = ['theta',           265,  300]
+grid_surface_temperature = ['grid_surface_temperature',265,300]
 m_v             = ['m_v',             1e-3, 15e-3]
 m_cl            = ['m_cl',            0,    5e-5]
 m_ci            = ['m_ci',            0,    1e-4]
-u1              = ['u1',              -15,  15]
+u_in_w3         = ['u_in_w3',        -15,  15]
 sw_temperature_incr = ['sw_temperature_incr', 0, 0.1]
 lw_temperature_incr = ['lw_temperature_incr', -2, 1]
 sw_heating_rate = ['sw_heating_rate', 0,    7e-5]
 trop_level      = ['trop_level', 20, 50]
+grid_snow_mass  = ['grid_snow_mass',0,1000]
+total_prec      = ['total_prec',0,1e-3]
 sw_direct_toa   = ['sw_direct_toa', 0, 1450]
+sw_up_toa       = ['sw_up_toa',0,600]
 sw_down_surf    = ['sw_down_surf', 0, 1400]
 lw_down_surf    = ['lw_down_surf', 100, 600]
 lw_up_surf      = ['lw_up_surf', 100, 600]
 lw_up_toa       = ['lw_up_toa', 100, 600]
+cloud_amount_maxrnd = ['cloud_amount_maxrnd',0,1]
 cloud_cover_rts = ['cloud_cover_rts', 0, 1]
 cloud_fraction_rts = ['cloud_fraction_rts', 0, 1]
 cloud_droplet_re_rts = ['cloud_droplet_re_rts', 0, 20e-6]
@@ -137,13 +142,16 @@ if __name__ == "__main__":
     do_plot(datapath, m_v,             plotpath)
     do_plot(datapath, m_cl,            plotpath)
     do_plot(datapath, m_ci,            plotpath)
-    do_plot(datapath, u1,              plotpath)
-    do_plot(datapath, sw_heating_rate, plotpath)
-    do_plot(datapath, trop_level,      plotpath)
-    do_plot(datapath, sw_direct_toa,   plotpath)
+    do_plot(datapath, u_in_w3,         plotpath)
+    do_plot(datapath, cloud_amount_maxrnd, plotpath)
+    do_plot(datapath, grid_surface_temperature, plotpath)
+    do_plot(datapath, grid_snow_mass,  plotpath)
+    do_plot(datapath, sw_up_toa,       plotpath)
     do_plot(datapath, sw_down_surf,    plotpath)
     do_plot(datapath, lw_down_surf,    plotpath)
     do_plot(datapath, lw_up_toa,       plotpath)
+    do_plot(datapath, trop_level,      plotpath)
+    do_plot(datapath, total_prec,      plotpath)
     if rts_plots:
         do_plot(datapath, cloud_cover_rts,        plotpath)
         do_plot(datapath, cloud_fraction_rts,     plotpath, plotlevel=17)

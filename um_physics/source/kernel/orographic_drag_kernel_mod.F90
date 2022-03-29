@@ -46,8 +46,8 @@ module orographic_drag_kernel_mod
          arg_type(GH_FIELD, GH_REAL, GH_WRITE, W3),                        & ! dv_orog_gwd, v wind increment gwd
          arg_type(GH_FIELD, GH_REAL, GH_WRITE, Wtheta),                    & ! dtemp_orog_blk, T increment blocking
          arg_type(GH_FIELD, GH_REAL, GH_WRITE, Wtheta),                    & ! dtemp_orog_gwd, T increment gwd
-         arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u1_in_w3, zonal wind
-         arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u2_in_w3, meridional wind
+         arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u_in_w3, zonal wind
+         arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! v_in_w3, meridional wind
          arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! wetrho_in_w3, wet density in w3
          arg_type(GH_FIELD, GH_REAL, GH_READ,  Wtheta),                    & ! theta, theta in wtheta
          arg_type(GH_FIELD, GH_REAL, GH_READ,  Wtheta),                    & ! exner_in_wth
@@ -88,8 +88,8 @@ contains
   !! @param[in,out] dv_orog_gwd    v increment from gravity wave drag
   !! @param[in,out] dtemp_orog_blk T increment from blocking
   !! @param[in,out] dtemp_orog_gwd T increment from gravity wave drag
-  !! @param[in]     u1_in_w3       Zonal wind
-  !! @param[in]     u2_in_w3       Meridional wind
+  !! @param[in]     u_in_w3        Zonal wind
+  !! @param[in]     v_in_w3        Meridional wind
   !! @param[in]     wetrho_in_w3   Moist density
   !! @param[in]     theta_in_wth   Potential temperature
   !! @param[in]     exner_in_wth   Exner pressure
@@ -119,7 +119,7 @@ contains
   subroutine orographic_drag_kernel_code(                                  &
                         nlayers, du_orog_blk, dv_orog_blk,                 &
                         du_orog_gwd, dv_orog_gwd,                          &
-                        dtemp_orog_blk, dtemp_orog_gwd, u1_in_w3, u2_in_w3,&
+                        dtemp_orog_blk, dtemp_orog_gwd, u_in_w3, v_in_w3,  &
                         wetrho_in_w3, theta_in_wth, exner_in_wth, sd_orog, &
                         grad_xx_orog, grad_xy_orog, grad_yy_orog,          &
                         mr_v, mr_cl, mr_ci,                                &
@@ -155,7 +155,7 @@ contains
     real(r_def), intent(inout), dimension(undf_w3)  :: du_orog_blk, du_orog_gwd, &
                                                        dv_orog_blk, dv_orog_gwd
     real(r_def), intent(inout), dimension(undf_wth) :: dtemp_orog_blk, dtemp_orog_gwd
-    real(r_def), intent(in), dimension(undf_w3)     :: u1_in_w3, u2_in_w3, &
+    real(r_def), intent(in), dimension(undf_w3)     :: u_in_w3, v_in_w3, &
                                                        wetrho_in_w3
     real(r_def), intent(in), dimension(undf_wth)  :: theta_in_wth, exner_in_wth
     real(r_def), intent(in), dimension(undf_wth)  :: mr_v, mr_cl, mr_ci
@@ -289,8 +289,8 @@ contains
 
     ! Recasting fields to UM precision
     do k = 1, nlayers
-      u_on_p(1,k) = real(u1_in_w3(map_w3(1) + k-1), r_um)
-      v_on_p(1,k) = real(u2_in_w3(map_w3(1) + k-1), r_um)
+      u_on_p(1,k) = real(u_in_w3(map_w3(1) + k-1), r_um)
+      v_on_p(1,k) = real(v_in_w3(map_w3(1) + k-1), r_um)
 
       wetrho(1,k) = real(wetrho_in_w3(map_w3(1) + k-1), r_um)
 

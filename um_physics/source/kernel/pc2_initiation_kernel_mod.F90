@@ -55,9 +55,9 @@ type, public, extends(kernel_type) :: pc2_initiation_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1), & ! r_cumulus
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! height_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dtheta_inc
-       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dqv_inc_wth
-       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dqcl_inc_wth
-       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dqcf_inc_wth
+       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dmv_inc_wth
+       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dmcl_inc_wth
+       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dmci_inc_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dcfl_inc_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dcff_inc_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dbcf_inc_wth
@@ -107,9 +107,9 @@ contains
 !> @param[in]     r_cumulus      A real number representing the logical cumulus flag
 !> @param[in]     height_wth     Height of wth levels above mean sea level
 !> @param[in,out] dtheta_inc_wth Increment to theta in theta space
-!> @param[in,out] dqv_inc_wth    Increment to water vapour in theta space
-!> @param[in,out] dqcl_inc_wth   Increment to liquid water content in theta space
-!> @param[in,out] dqcf_inc_wth   Increment to ice water content in theta space
+!> @param[in,out] dmv_inc_wth    Increment to water vapour in theta space
+!> @param[in,out] dmcl_inc_wth   Increment to liquid water content in theta space
+!> @param[in,out] dmci_inc_wth   Increment to ice water content in theta space
 !> @param[in,out] dcfl_inc_wth   Increment to liquid cloud fraction in theta space
 !> @param[in,out] dcff_inc_wth   Increment to ice cloud fraction in theta space
 !> @param[in,out] dbcf_inc_wth   Increment to bulk cloud fraction in theta space
@@ -160,9 +160,9 @@ subroutine pc2_initiation_code( nlayers,                           &
                                 height_wth,                        &
                                 ! Responses
                                 dtheta_inc_wth,                    &
-                                dqv_inc_wth,                       &
-                                dqcl_inc_wth,                      &
-                                dqcf_inc_wth,                      &
+                                dmv_inc_wth,                       &
+                                dmcl_inc_wth,                      &
+                                dmci_inc_wth,                      &
                                 dcfl_inc_wth,                      &
                                 dcff_inc_wth,                      &
                                 dbcf_inc_wth,                      &
@@ -250,9 +250,9 @@ subroutine pc2_initiation_code( nlayers,                           &
 
     ! The changes to the fields as a result
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dtheta_inc_wth
-    real(kind=r_def), intent(inout), dimension(undf_wth) :: dqv_inc_wth
-    real(kind=r_def), intent(inout), dimension(undf_wth) :: dqcl_inc_wth
-    real(kind=r_def), intent(inout), dimension(undf_wth) :: dqcf_inc_wth
+    real(kind=r_def), intent(inout), dimension(undf_wth) :: dmv_inc_wth
+    real(kind=r_def), intent(inout), dimension(undf_wth) :: dmcl_inc_wth
+    real(kind=r_def), intent(inout), dimension(undf_wth) :: dmci_inc_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dcfl_inc_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dcff_inc_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dbcf_inc_wth
@@ -469,9 +469,9 @@ subroutine pc2_initiation_code( nlayers,                           &
       dtheta_inc_wth(map_wth(1) + k) = theta_work(1,1,k)   &
                                      - theta_wth(map_wth(1) + k)
       !
-      dqv_inc_wth (map_wth(1)+k) = qv_work(1,1,k)  - mv_wth(map_wth(1) + k)
-      dqcl_inc_wth(map_wth(1)+k) = qcl_work(1,1,k) - ml_wth(map_wth(1) + k)
-      dqcf_inc_wth(map_wth(1)+k) = qcf_work(1,1,k) - mi_wth(map_wth(1) + k)
+      dmv_inc_wth (map_wth(1)+k) = qv_work(1,1,k)  - mv_wth(map_wth(1) + k)
+      dmcl_inc_wth(map_wth(1)+k) = qcl_work(1,1,k) - ml_wth(map_wth(1) + k)
+      dmci_inc_wth(map_wth(1)+k) = qcf_work(1,1,k) - mi_wth(map_wth(1) + k)
       dcfl_inc_wth(map_wth(1)+k) = cfl_work(1,1,k) - cfl_wth(map_wth(1) + k)
       dcff_inc_wth(map_wth(1)+k) = cff_work(1,1,k) - cff_wth(map_wth(1) + k)
       dbcf_inc_wth(map_wth(1)+k) = bcf_work(1,1,k) - bcf_wth(map_wth(1) + k)
@@ -483,9 +483,9 @@ subroutine pc2_initiation_code( nlayers,                           &
     end do
 
     dtheta_inc_wth(map_wth(1)+0) = dtheta_inc_wth(map_wth(1)+1)
-    dqv_inc_wth   (map_wth(1)+0) = dqv_inc_wth   (map_wth(1)+1)
-    dqcl_inc_wth  (map_wth(1)+0) = dqcl_inc_wth  (map_wth(1)+1)
-    dqcf_inc_wth  (map_wth(1)+0) = dqcf_inc_wth  (map_wth(1)+1)
+    dmv_inc_wth   (map_wth(1)+0) = dmv_inc_wth   (map_wth(1)+1)
+    dmcl_inc_wth  (map_wth(1)+0) = dmcl_inc_wth  (map_wth(1)+1)
+    dmci_inc_wth  (map_wth(1)+0) = dmci_inc_wth  (map_wth(1)+1)
     dcfl_inc_wth  (map_wth(1)+0) = dcfl_inc_wth  (map_wth(1)+1)
     dcff_inc_wth  (map_wth(1)+0) = dcff_inc_wth  (map_wth(1)+1)
     dbcf_inc_wth  (map_wth(1)+0) = dbcf_inc_wth  (map_wth(1)+1)

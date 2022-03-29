@@ -298,13 +298,25 @@ subroutine write_vector_diagnostic( field_name, field, &
       call u2_wind%set_write_behaviour(tmp_write_ptr)
 
       if (clock%is_initialisation()) then
-        call u1_wind%write_field("init_"//trim(field_name)//"1")
-        call u2_wind%write_field("init_"//trim(field_name)//"2")
-        call u3_wind%write_field("init_"//trim(field_name)//"3")
+        if (field_name == 'u') then
+          call u1_wind%write_field("init_u_in_w2h")
+          call u2_wind%write_field("init_v_in_w2h")
+          call u3_wind%write_field("init_w_in_wth")
+        else
+          call u1_wind%write_field("init_"//trim(field_name)//"1")
+          call u2_wind%write_field("init_"//trim(field_name)//"2")
+          call u3_wind%write_field("init_"//trim(field_name)//"3")
+        end if
       else
-        call u1_wind%write_field(trim(field_name)//"1")
-        call u2_wind%write_field(trim(field_name)//"2")
-        call u3_wind%write_field(trim(field_name)//"3")
+        if (field_name == 'u') then
+          call u1_wind%write_field("u_in_w2h")
+          call u2_wind%write_field("v_in_w2h")
+          call u3_wind%write_field("w_in_wth")
+        else
+          call u1_wind%write_field(trim(field_name)//"1")
+          call u2_wind%write_field(trim(field_name)//"2")
+          call u3_wind%write_field(trim(field_name)//"3")
+        end if
       end if
 
       if (write_fluxes) then

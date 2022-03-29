@@ -95,11 +95,11 @@ def make_figures(filein, plotpath, fields, lid, figname, idx_list):
             levels = None
             if field == 'theta':
                 levels = np.linspace(-0.12, 0.12, 13)
-            if field == 'u1':
+            if field == 'u_in_w2h':
                 levels = np.linspace(-0.4, 0.4, 11)
-            if field == 'u2':
+            if field == 'v_in_w2h':
                 levels = np.linspace(-0.4, 0.4, 11)
-            if field == 'u3':
+            if field == 'w_in_wth':
                 levels = np.linspace(-0.2, 0.2, 11)
             if field == 'exner':
                 levels = np.linspace(-0.0001, 0.0001, 11)

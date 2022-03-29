@@ -114,7 +114,7 @@ def make_figures(filein, plotpath, fields, vertical_spacing, lid, n_full,
     for t in [-1]:
         if fields is None:
             fields_name = 'winds'
-            fields = ['u1', 'u2', 'u3']
+            fields = ['u_in_w2h', 'v_in_w2h', 'w_in_wth']
             separate_plots = False
         elif len(fields) == 1:
             fields_name = fields[0]
@@ -143,11 +143,11 @@ def make_figures(filein, plotpath, fields, vertical_spacing, lid, n_full,
             levels = None
             if field == 'theta':
                 levels = np.linspace(220, 330, 12)
-            if field == 'u1':
+            if field == 'u_in_w2h':
                 levels = np.linspace(-5, 45, 11)
-            if field == 'u2':
+            if field == 'v_in_w2h':
                 levels = np.linspace(-1.5, 1.5, 11)
-            if field == 'u3':
+            if field == 'w_in_wth':
                 levels = np.linspace(-0.25, 0.25, 11)
             if field == 'exner':
                 # exner will be converted to hPa

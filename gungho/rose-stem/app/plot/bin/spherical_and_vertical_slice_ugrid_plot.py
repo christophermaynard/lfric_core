@@ -130,9 +130,9 @@ def make_figures(filein, plotpath, field_list, slice_list,
 
     # Find max horizontal extent for non-spherical domains
     try:
-        cube = read_ugrid_data(filein, 'u1')
+        cube = read_ugrid_data(filein, 'u_in_w2h')
     except iris.exceptions.ConstraintMismatchError:
-        # if u1 is not in cube, then try wind1 (e.g. for transport miniapp)
+        # if u_in_w2h is not in cube, then try wind1 (e.g. for transport miniapp)
         cube = read_ugrid_data(filein, 'wind1')
 
     lon_data = np.around(cube.coord('longitude').points, decimals=5)

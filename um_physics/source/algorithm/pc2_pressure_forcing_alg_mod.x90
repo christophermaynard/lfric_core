@@ -52,19 +52,19 @@ contains
     type( field_collection_type ), intent(in) :: cloud_fields
 
     type( field_type ), intent( inout ) :: dtheta_pc2_inc
-    type( field_type )                  :: dqv_pc2_inc
-    type( field_type )                  :: dqcl_pc2_inc
+    type( field_type )                  :: dmv_pc2_inc
+    type( field_type )                  :: dmcl_pc2_inc
     type( field_type )                  :: dcfl_pc2_inc
     type( field_type )                  :: dbcf_pc2_inc
 
     ! Define multiple fields that get filled with zeros
     ! as they are associated with zero forcing when this algorithm
     ! calls pc2_homogeneous_kernel_type
-    type( field_type ) :: dtheta_forcing, dqv_forcing, dqcl_forcing
+    type( field_type ) :: dtheta_forcing, dmv_forcing, dmcl_forcing
 
     ! For PC2
     type( field_type ), pointer :: liquid_fraction      => null()
-    type( field_type ), pointer :: ice_fraction         => null()
+    type( field_type ), pointer :: frozen_fraction      => null()
     type( field_type ), pointer :: bulk_fraction        => null()
     type( field_type ), pointer :: exner_after_slow_wth => null()
 
@@ -72,42 +72,42 @@ contains
 
     ! Unpack fields
     liquid_fraction => cloud_fields%get_field('liquid_fraction')
-    ice_fraction    => cloud_fields%get_field('ice_fraction')
+    frozen_fraction => cloud_fields%get_field('frozen_fraction')
     bulk_fraction   => cloud_fields%get_field('bulk_fraction')
     exner_after_slow_wth => cloud_fields%get_field('departure_exner_wth')
 
     call theta%copy_field_properties(dtheta_forcing)
-    call theta%copy_field_properties(dqv_forcing)
-    call theta%copy_field_properties(dqcl_forcing)
+    call theta%copy_field_properties(dmv_forcing)
+    call theta%copy_field_properties(dmcl_forcing)
 
     call theta%copy_field_properties(dtheta_pc2_inc)
-    call theta%copy_field_properties(dqv_pc2_inc)
-    call theta%copy_field_properties(dqcl_pc2_inc)
+    call theta%copy_field_properties(dmv_pc2_inc)
+    call theta%copy_field_properties(dmcl_pc2_inc)
     call theta%copy_field_properties(dcfl_pc2_inc)
     call theta%copy_field_properties(dbcf_pc2_inc)
 
     call invoke( name="update_within_pc2_pressure_forcing",          &
                                                                      !
                  setval_c(dtheta_forcing, 0.0_r_def),                &
-                 setval_c(dqv_forcing,    0.0_r_def),                &
-                 setval_c(dqcl_forcing,   0.0_r_def),                &
+                 setval_c(dmv_forcing,    0.0_r_def),                &
+                 setval_c(dmcl_forcing,   0.0_r_def),                &
                                                                      !
                  pc2_homogeneous_kernel_type( mr(imr_v),             &
                                               mr(imr_cl),            &
                                               liquid_fraction,       &
-                                              ice_fraction,          &
+                                              frozen_fraction,       &
                                               bulk_fraction,         &
                                               theta,                 &
                                               exner_wth,             &
                                               exner_after_slow_wth,  &
                                                 ! Forcings
                                               dtheta_forcing,        &
-                                              dqv_forcing,           &
-                                              dqcl_forcing,          &
+                                              dmv_forcing,           &
+                                              dmcl_forcing,          &
                                                 ! Response increments
                                               dtheta_pc2_inc,        &
-                                              dqv_pc2_inc,           &
-                                              dqcl_pc2_inc,          &
+                                              dmv_pc2_inc,           &
+                                              dmcl_pc2_inc,          &
                                               dcfl_pc2_inc,          &
                                               dbcf_pc2_inc,          &
                                               dt ),                  &
@@ -116,11 +116,11 @@ contains
      ! theta (where we pass an increment back up instead).
      ! So we update the water vapour, liquid water content,
      ! liquid cloud fraction and bulk cloud fraction.
-     ! Ice water content and ice fraction increments do not get produced by
+     ! Ice water content and frozen fraction increments do not get produced by
      ! homogeneous forcing process so no need to increment those fields.
                                                                      !
-                        inc_X_plus_Y(mr(imr_v),       dqv_pc2_inc),  &
-                        inc_X_plus_Y(mr(imr_cl),      dqcl_pc2_inc), &
+                        inc_X_plus_Y(mr(imr_v),       dmv_pc2_inc),  &
+                        inc_X_plus_Y(mr(imr_cl),      dmcl_pc2_inc), &
                         inc_X_plus_Y(liquid_fraction, dcfl_pc2_inc), &
                         inc_X_plus_Y(bulk_fraction,   dbcf_pc2_inc)  )
 
@@ -129,8 +129,8 @@ contains
     if ( write_diag .and. use_xios_io ) then
       if ( subroutine_timers ) call timer("pc2_pressure_forcing_xios")
       call dtheta_pc2_inc%write_field('cloud__dtheta_pc2_pressure_change')
-      call dqv_pc2_inc%write_field('cloud__dqv_pc2_pressure_change')
-      call dqcl_pc2_inc%write_field('cloud__dqcl_pc2_pressure_change')
+      call dmv_pc2_inc%write_field('cloud__dmv_pc2_pressure_change')
+      call dmcl_pc2_inc%write_field('cloud__dmcl_pc2_pressure_change')
       call dcfl_pc2_inc%write_field('cloud__dcfl_pc2_pressure_change')
       call dbcf_pc2_inc%write_field('cloud__dbcf_pc2_pressure_change')
       if ( subroutine_timers ) call timer("pc2_pressure_forcing_xios")

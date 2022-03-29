@@ -30,7 +30,7 @@ private
 type, public, extends(kernel_type) :: fsd_condensate_kernel_type
   private
   type(arg_type) :: meta_args(6) = (/                                   &
-       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                   & ! sigma_qcw
+       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                   & ! sigma_mc
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, ANY_DISCONTINUOUS_SPACE_1),& ! f_arr_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                   & ! acf_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                   & ! cca_wth
@@ -51,7 +51,7 @@ contains
 !>          to determine variability in condensate for use by
 !>          radiation and microphysics scheme.
 !> @param[in]     nlayers    Number of layers
-!> @param[in,out] sigma_qcw  Fractional standard deviation of condensate
+!> @param[in,out] sigma_mc   Fractional standard deviation of condensate
 !> @param[in,out] f_arr_wth  Parameters related to fractional standard deviation of condensate
 !> @param[in]     acf_wth    Area cloud fraction
 !> @param[in]     cca_wth    Convective cloud amount
@@ -66,7 +66,7 @@ contains
 
 subroutine fsd_condensate_code( nlayers,                    &
                                            ! InOut
-                                sigma_qcw_wth,              &
+                                sigma_mc_wth,               &
                                 f_arr_wth,                  &
                                            ! In
                                 acf_wth,                    &
@@ -101,7 +101,7 @@ subroutine fsd_condensate_code( nlayers,                    &
     real(kind=r_def), intent(in),    dimension(undf_wth)  :: cca_wth
     real(kind=r_def), intent(in),    dimension(undf_wth)  :: dz_wth
     real(kind=r_def), intent(in),    dimension(undf_wth)  :: delta
-    real(kind=r_def), intent(inout), dimension(undf_wth)  :: sigma_qcw_wth
+    real(kind=r_def), intent(inout), dimension(undf_wth)  :: sigma_mc_wth
     real(kind=r_def), intent(inout), dimension(undf_farr) :: f_arr_wth
 
     real(kind=r_def), dimension(  nlayers) :: x_in_km ! Grid box size
@@ -144,13 +144,13 @@ subroutine fsd_condensate_code( nlayers,                    &
 
       if (acf_wth(map_wth(1)+k) < 1.0_r_def) then
         cloud_scale = acf_wth(map_wth(1)+k) * x_in_km(k)
-        sigma_qcw_wth(map_wth(1)+k) = two_d_fsd_factor *                       &
+        sigma_mc_wth(map_wth(1)+k) = two_d_fsd_factor *                        &
                      (f_arr(2,k)-(f_arr(3,k)*acf_wth(map_wth(1)+k)))           &
                      * (cloud_scale ** one_third)                              &
                      * ((((f_cons(1) * cloud_scale) ** f_cons(2)) + 1.0_r_def) &
                      ** (f_cons(3)))
       else
-        sigma_qcw_wth(map_wth(1)+k) = two_d_fsd_factor * f_arr(1,k)            &
+        sigma_mc_wth(map_wth(1)+k) = two_d_fsd_factor * f_arr(1,k)             &
                      * (x_in_km(k) ** one_third)                               &
                      * ((((f_cons(1) * x_in_km(k)) ** f_cons(2)) + 1.0_r_def)  &
                      ** (f_cons(3)))
@@ -167,7 +167,7 @@ subroutine fsd_condensate_code( nlayers,                    &
     end do
 
     ! Deal with bottom level
-    sigma_qcw_wth(map_wth(1)+0) = sigma_qcw_wth(map_wth(1)+1)
+    sigma_mc_wth(map_wth(1)+0) = sigma_mc_wth(map_wth(1)+1)
     do n = 1, 3
       ! There are 3 parameters in the FSD array, so loop over all 3
       f_arr_wth(map_farr(1) + (n-1)*(nlayers+1) + 0) = &

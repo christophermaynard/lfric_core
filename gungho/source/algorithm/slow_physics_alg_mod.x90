@@ -214,7 +214,7 @@ contains
     type( field_type ) :: total_snowmelt
     ! ...for PC2 checks
     type( field_type ) :: dtheta_pc2_checks, theta_updated
-    type( field_type ) :: dmv_pc2_checks, dmcl_pc2_checks, dmcf_pc2_checks
+    type( field_type ) :: dmv_pc2_checks, dmcl_pc2_checks, dmci_pc2_checks
     type( field_type ) :: dcfl_pc2_checks, dcff_pc2_checks, dbcf_pc2_checks
     ! ...for fractional standard deviation cloud (microphysics and radiation)
     type( field_type ) :: f_arr
@@ -226,9 +226,10 @@ contains
     type( field_type ), pointer :: departure_exner_wth => null()
 #endif
     type( field_type ), pointer :: exner_in_wth => null()
+    type( field_type ), pointer :: exner_wth_n => null()
     ! Fields required by PC2
     type( field_type ), pointer :: liquid_fraction => null()
-    type( field_type ), pointer :: ice_fraction    => null()
+    type( field_type ), pointer :: frozen_fraction => null()
     type( field_type ), pointer :: bulk_fraction   => null()
 
     integer( kind=i_def ) :: i_mr
@@ -256,6 +257,8 @@ contains
     call invoke( setval_c(dtheta, 0.0_r_def), &
                  setval_c(du, 0.0_r_def) )
     exner_in_wth => derived_fields%get_field('exner_in_wth')
+    exner_wth_n => derived_fields%get_field('exner_wth_n')
+    call invoke( setval_X(exner_wth_n,exner_in_wth) )
     theta_forcing_done   = .false.
     wind_forcing_done    = .false.
     microphysics_done    = .false.
@@ -574,7 +577,7 @@ contains
 
     if (cloud == cloud_um .and. scheme == scheme_pc2) then
         liquid_fraction => cloud_fields%get_field('liquid_fraction')
-        ice_fraction    => cloud_fields%get_field('ice_fraction')
+        frozen_fraction => cloud_fields%get_field('frozen_fraction')
         bulk_fraction   => cloud_fields%get_field('bulk_fraction')
     end if
 
@@ -584,7 +587,7 @@ contains
       if (cloud == cloud_um .and. scheme == scheme_pc2) then
         call invoke(name="update_with_pc2_mphys_inc",              &
                     inc_X_plus_Y(liquid_fraction, dcfl_pc2_mphys), &
-                    inc_X_plus_Y(ice_fraction,    dcff_pc2_mphys), &
+                    inc_X_plus_Y(frozen_fraction, dcff_pc2_mphys), &
                     inc_X_plus_Y(bulk_fraction,   dbcf_pc2_mphys)  )
       end if
     end if
@@ -649,7 +652,7 @@ contains
                              dtheta_pc2_checks, & ! Increments OUT
                              dmv_pc2_checks,    & ! Increments OUT
                              dmcl_pc2_checks,   & ! Increments OUT
-                             dmcf_pc2_checks,   & ! Increments OUT
+                             dmci_pc2_checks,   & ! Increments OUT
                              dcfl_pc2_checks,   & ! Increments OUT
                              dcff_pc2_checks,   & ! Increments OUT
                              dbcf_pc2_checks)     ! Increments OUT
@@ -659,9 +662,9 @@ contains
                     inc_X_plus_Y(dtheta,          dtheta_pc2_checks), &
                     inc_X_plus_Y(mr(imr_v),       dmv_pc2_checks),    &
                     inc_X_plus_Y(mr(imr_cl),      dmcl_pc2_checks),   &
-                    inc_X_plus_Y(mr(imr_ci),      dmcf_pc2_checks),   &
+                    inc_X_plus_Y(mr(imr_ci),      dmci_pc2_checks),   &
                     inc_X_plus_Y(liquid_fraction, dcfl_pc2_checks),   &
-                    inc_X_plus_Y(ice_fraction,    dcff_pc2_checks),   &
+                    inc_X_plus_Y(frozen_fraction, dcff_pc2_checks),   &
                     inc_X_plus_Y(bulk_fraction,   dbcf_pc2_checks)    )
       end if ! (microphysics_done .or. radiation_done))
 

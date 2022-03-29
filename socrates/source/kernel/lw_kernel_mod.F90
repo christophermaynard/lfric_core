@@ -67,8 +67,8 @@ type, extends(kernel_type) :: lw_kernel_type
     arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! mci
     arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! area_fraction
     arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! liquid_fraction
-    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ice_fraction
-    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sigma_qcw
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! frozen_fraction
+    arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! sigma_mc
     arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cca
     arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! ccw
     arg_type(GH_FIELD,  GH_REAL,    GH_READ,      Wtheta),                    & ! cloud_drop_no_conc
@@ -146,8 +146,8 @@ contains
 ! @param[in]     mci                      Cloud ice field
 ! @param[in]     area_fraction            Total cloud area fraction field
 ! @param[in]     liquid_fraction          Liquid cloud fraction field
-! @param[in]     ice_fraction             Ice cloud fraction field
-! @param[in]     sigma_qcw                Fractional standard deviation of condensate
+! @param[in]     frozen_fraction          Frozen cloud fraction field
+! @param[in]     sigma_mc                 Fractional standard deviation of condensate
 ! @param[in]     cca                      Convective cloud amount (fraction)
 ! @param[in]     ccw                      Convective cloud water (kg/kg) (can be ice or liquid)
 ! @param[in]     cloud_drop_no_conc       Cloud Droplet Number Concentration
@@ -221,8 +221,8 @@ subroutine lw_code(nlayers,                                                    &
                    theta, theta_in_w3, exner, exner_in_wth,                    &
                    rho_in_wth, dz_in_wth,                                      &
                    ozone, mv, mcl, mci,                                        &
-                   area_fraction, liquid_fraction, ice_fraction,               &
-                   sigma_qcw, cca, ccw, cloud_drop_no_conc,                    &
+                   area_fraction, liquid_fraction, frozen_fraction,            &
+                   sigma_mc, cca, ccw, cloud_drop_no_conc,                     &
                    tile_fraction, tile_temperature,                            &
                    tile_lw_albedo, tile_lwinc_albedo,                          &
                    sulphuric, aer_mix_ratio,                                   &
@@ -309,7 +309,7 @@ subroutine lw_code(nlayers,                                                    &
   real(r_def), dimension(undf_w3),  intent(in) :: theta_in_w3, exner
   real(r_def), dimension(undf_wth), intent(in) :: theta, exner_in_wth, &
     rho_in_wth, dz_in_wth, ozone, mv, mcl, mci, &
-    area_fraction, liquid_fraction, ice_fraction, sigma_qcw, &
+    area_fraction, liquid_fraction, frozen_fraction, sigma_mc, &
     cca, ccw, cloud_drop_no_conc
   real(r_def), dimension(undf_tile),  intent(in) :: tile_fraction
   real(r_def), dimension(undf_tile),  intent(in) :: tile_temperature
@@ -496,7 +496,7 @@ subroutine lw_code(nlayers,                                                    &
       albedo_diff_tile_1d     = tile_lw_albedo(rtile_1:rtile_last),            &
       cloud_frac_1d           = cloud_frac,                                    &
       liq_frac_1d             = liquid_fraction(wth_1:wth_nlayers),            &
-      ice_frac_1d             = ice_fraction(wth_1:wth_nlayers),               &
+      ice_frac_1d             = frozen_fraction(wth_1:wth_nlayers),            &
       liq_mmr_1d              = mcl(wth_1:wth_nlayers),                        &
       ice_mmr_1d              = mci(wth_1:wth_nlayers),                        &
       liq_dim_1d              = liq_dim,                                       &
@@ -508,8 +508,8 @@ subroutine lw_code(nlayers,                                                    &
       ice_conv_mmr_1d         = ice_conv_mmr,                                  &
       liq_conv_dim_1d         = liq_conv_dim,                                  &
       liq_conv_nc_1d          = cloud_drop_no_conc(wth_1:wth_nlayers),         &
-      liq_rsd_1d              = sigma_qcw(wth_1:wth_nlayers),                  &
-      ice_rsd_1d              = sigma_qcw(wth_1:wth_nlayers),                  &
+      liq_rsd_1d              = sigma_mc(wth_1:wth_nlayers),                   &
+      ice_rsd_1d              = sigma_mc(wth_1:wth_nlayers),                   &
       cloud_vertical_decorr   = cloud_vertical_decorr,                         &
       conv_vertical_decorr    = cloud_vertical_decorr,                         &
       rand_seed               = rand_seed,                                     &
@@ -635,7 +635,7 @@ subroutine lw_code(nlayers,                                                    &
       albedo_diff_tile_1d     = tile_lwinc_albedo(itile_1:itile_last),         &
       cloud_frac_1d           = cloud_frac,                                    &
       liq_frac_1d             = liquid_fraction(wth_1:wth_nlayers),            &
-      ice_frac_1d             = ice_fraction(wth_1:wth_nlayers),               &
+      ice_frac_1d             = frozen_fraction(wth_1:wth_nlayers),            &
       liq_mmr_1d              = mcl(wth_1:wth_nlayers),                        &
       ice_mmr_1d              = mci(wth_1:wth_nlayers),                        &
       liq_dim_1d              = liq_dim,                                       &
@@ -647,8 +647,8 @@ subroutine lw_code(nlayers,                                                    &
       ice_conv_mmr_1d         = ice_conv_mmr,                                  &
       liq_conv_dim_1d         = liq_conv_dim,                                  &
       liq_conv_nc_1d          = cloud_drop_no_conc(wth_1:wth_nlayers),         &
-      liq_rsd_1d              = sigma_qcw(wth_1:wth_nlayers),                  &
-      ice_rsd_1d              = sigma_qcw(wth_1:wth_nlayers),                  &
+      liq_rsd_1d              = sigma_mc(wth_1:wth_nlayers),                   &
+      ice_rsd_1d              = sigma_mc(wth_1:wth_nlayers),                   &
       cloud_vertical_decorr   = cloud_vertical_decorr,                         &
       conv_vertical_decorr    = cloud_vertical_decorr,                         &
       rand_seed               = rand_seed,                                     &

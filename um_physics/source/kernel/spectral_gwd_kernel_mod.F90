@@ -33,8 +33,8 @@ module spectral_gwd_kernel_mod
          arg_type(GH_FIELD, GH_REAL, GH_WRITE, W3),                        & ! du_spectral_gwd, u wind increment
          arg_type(GH_FIELD, GH_REAL, GH_WRITE, W3),                        & ! dv_spectral_gwd, v wind increment
          arg_type(GH_FIELD, GH_REAL, GH_WRITE, Wtheta),                    & ! dtemp_spectral_gwd, temperature increment
-         arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u1_in_w3
-         arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u2_in_w3
+         arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u_in_w3
+         arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! v_in_w3
          arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! wetrho_in_w3, wet density in w3
          arg_type(GH_FIELD, GH_REAL, GH_READ,  Wtheta),                    & ! exner_in_wth
          arg_type(GH_FIELD, GH_REAL, GH_READ,  Wtheta),                    & ! theta, theta in wtheta
@@ -67,8 +67,8 @@ contains
   !> @param[in,out] du_spectral_gwd       'Zonal' wind increment from spectral gravity wave drag
   !> @param[in,out] dv_spectral_gwd       'Meridional' wind increment from spectral gravity wave drag
   !> @param[in,out] dtemp_spectral_gwd    Theta increment from spectral gravity wave drag
-  !> @param[in]     u1_in_w3              'Zonal' wind in density space
-  !> @param[in]     u2_in_w3              'Meridional' wind in density space
+  !> @param[in]     u_in_w3               'Zonal' wind in density space
+  !> @param[in]     v_in_w3               'Meridional' wind in density space
   !> @param[in]     wetrho_in_w3           Wet density in density space
   !> @param[in]     exner                  Exner pressure in density space
   !> @param[in]     theta_in_wth           Theta in density space
@@ -91,7 +91,7 @@ contains
   !> @param[in]     map_2d                 Dofmap for the cell at the base of the column for 2D fields
   !>
   subroutine spectral_gwd_code(nlayers, du_spectral_gwd, dv_spectral_gwd,    &
-                               dtemp_spectral_gwd, u1_in_w3, u2_in_w3,       &
+                               dtemp_spectral_gwd, u_in_w3, v_in_w3,         &
                                wetrho_in_w3, exner_in_wth, theta_in_wth,     &
                                height_w3, height_wth, totalppn_2d, latitude, &
                                tau_east_spectral_gwd, tau_south_spectral_gwd,&
@@ -123,8 +123,8 @@ contains
     real(kind=r_def), intent(inout), dimension(undf_w3)  :: du_spectral_gwd
     real(kind=r_def), intent(inout), dimension(undf_w3)  :: dv_spectral_gwd
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dtemp_spectral_gwd
-    real(kind=r_def), intent(in), dimension(undf_w3)   :: u1_in_w3
-    real(kind=r_def), intent(in), dimension(undf_w3)   :: u2_in_w3
+    real(kind=r_def), intent(in), dimension(undf_w3)   :: u_in_w3
+    real(kind=r_def), intent(in), dimension(undf_w3)   :: v_in_w3
     real(kind=r_def), intent(in), dimension(undf_w3)   :: wetrho_in_w3
     real(kind=r_def), intent(in), dimension(undf_wth)  :: exner_in_wth
     real(kind=r_def), intent(in), dimension(undf_wth)  :: theta_in_wth
@@ -210,8 +210,8 @@ contains
 
     do k = 1, nlayers
 
-      u_on_p(1,1,k) = real(u1_in_w3(map_w3(1) + k-1), r_um)
-      v_on_p(1,1,k) = real(u2_in_w3(map_w3(1) + k-1), r_um)
+      u_on_p(1,1,k) = real(u_in_w3(map_w3(1) + k-1), r_um)
+      v_on_p(1,1,k) = real(v_in_w3(map_w3(1) + k-1), r_um)
 
       theta(1,1,k) = real(theta_in_wth(map_wth(1) + k), r_um)
 

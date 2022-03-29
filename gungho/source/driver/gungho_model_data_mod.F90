@@ -18,7 +18,7 @@ module gungho_model_data_mod
   use field_mod,                          only : field_type
   use field_parent_mod,                   only : write_interface
   use field_collection_mod,               only : field_collection_type
-  use constants_mod,                      only : i_def, l_def
+  use constants_mod,                      only : i_def, l_def, r_def
   use log_mod,                            only : log_event,       &
                                                  LOG_LEVEL_INFO,  &
                                                  LOG_LEVEL_ERROR, &
@@ -63,6 +63,9 @@ module gungho_model_data_mod
 #endif
   use moist_dyn_factors_alg_mod,        only : moist_dyn_factors_alg
   use init_fd_prognostics_mod,          only : init_fd_prognostics_dump
+  use map_physics_fields_alg_mod,       only : map_physics_fields_alg
+  use set_any_dof_alg_mod,              only : set_any_dof_alg
+  use reference_element_mod,            only : T
 #ifdef UM_PHYSICS
   use create_fd_prognostics_mod,          only : create_fd_prognostics
   use init_ancils_mod,                    only : create_fd_ancils
@@ -441,6 +444,11 @@ contains
     type( model_data_type ), intent(inout) :: model_data
     class(clock_type),       intent(in)    :: clock
 
+    type( field_type ), pointer :: theta => null()
+    type( field_type ), pointer :: rho   => null()
+    type( field_type ), pointer :: u     => null()
+    type( field_type ), pointer :: exner => null()
+
     ! Initialise all the physics fields here. We'll then re initialise
     ! them below if need be
     if (use_physics) then
@@ -545,6 +553,18 @@ contains
 
     ! Assuming this is only relevant for physics runs at the moment
     if (use_physics) then
+
+      ! Initial derived fields
+      u      => model_data%prognostic_fields%get_field('u')
+      theta  => model_data%prognostic_fields%get_field('theta')
+      exner  => model_data%prognostic_fields%get_field('exner')
+      rho    => model_data%prognostic_fields%get_field('rho')
+      if (clock%is_spinning_up()) then
+        call set_any_dof_alg(u, T, 0.0_r_def)
+      end if
+      call map_physics_fields_alg(u, exner, rho, theta,     &
+                                  model_data%moist_dyn,     &
+                                  model_data%derived_fields)
 
       ! Initialise ancillary fields
       select case ( ancil_choice )

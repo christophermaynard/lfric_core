@@ -18,7 +18,7 @@ module bl_exp_diags_mod
   private
 
   ! Logical indicating whether diagnostics are requested
-  logical( l_def ) :: gross_prim_prod_flag, zht_flag, z0h_eff_flag
+  logical( l_def ) :: gross_prim_prod_flag, zht_flag, z0h_eff_flag, oblen_flag
 
   public :: initialise_diags_for_bl_exp
   public :: output_diags_for_bl_exp
@@ -30,8 +30,9 @@ contains
   !> @param[inout] zht                Turbulent mixing height
   !> @param[inout] z0h_eff            Gridbox mean effective roughness length for scalars
   !> @param[inout] gross_prim_prod    Gross Primary Productivity
-
-  subroutine initialise_diags_for_bl_exp(zh, zht, z0h_eff, gross_prim_prod)
+  !> @param[inout] oblen              Obukhov length
+  subroutine initialise_diags_for_bl_exp(zh, zht, z0h_eff, gross_prim_prod, &
+                                         oblen)
 
     implicit none
 
@@ -39,6 +40,7 @@ contains
     type( field_type ), intent(inout) :: zht
     type( field_type ), intent(inout) :: z0h_eff
     type( field_type ), intent(inout) :: gross_prim_prod
+    type( field_type ), intent(inout) :: oblen
 
     if ( subroutine_timers ) call timer("bl_exp_diags")
 
@@ -48,6 +50,8 @@ contains
     call zh%copy_field_properties(z0h_eff)
     gross_prim_prod_flag = .true.
     call zh%copy_field_properties(gross_prim_prod)
+    oblen_flag = .true.
+    call zh%copy_field_properties(oblen)
 
     if ( subroutine_timers ) call timer("bl_exp_diags")
 
@@ -75,6 +79,7 @@ contains
   !> @param[in] ent_zrzi_dsc      Level height as fraction of DSC inversion height above DSC ML base
   !> @param[in] zht               Turbulent mixing height
   !> @param[in] z0h_eff           Gridbox mean effective roughness length for scalars
+  !> @param[in] oblen             Obukhov length
   !> @param[in] tile_fraction     Surface tile fractions
   !> @param[in] z0m_tile          tile roughness length for momentum
   !> @param[in] z0m               Cell roughness length
@@ -85,13 +90,12 @@ contains
   !> @param[in] ustar             surface friction velocity
   !> @param[in] z0m_eff           Gridbox mean effective roughness length for momentum
   !> @param[in] dust_flux         Flux of mineral dust by division
-
   subroutine output_diags_for_bl_exp(ntml, cumulus, bl_type_ind, wvar, dsldzm, &
                                      gradrinr, rhokh_bl, tke_bl, dtrdz_tq_bl,  &
                                      rdz_tq_bl, zhsc, level_ent, level_ent_dsc,&
                                      ent_we_lim, ent_t_frac, ent_zrzi,         &
                                      ent_we_lim_dsc, ent_t_frac_dsc,           &
-                                     ent_zrzi_dsc, zht, z0h_eff,               &
+                                     ent_zrzi_dsc, zht, z0h_eff, oblen,        &
                                      tile_fraction, z0m_tile, z0m,             &
                                      gross_prim_prod, net_prim_prod, gc_tile,  &
                                      soil_respiration, ustar, z0m_eff,         &
@@ -106,7 +110,7 @@ contains
                                          zht, z0h_eff,                         &
                                          ent_we_lim, ent_t_frac, ent_zrzi,     &
                                          ent_we_lim_dsc, ent_t_frac_dsc,       &
-                                         ent_zrzi_dsc
+                                         ent_zrzi_dsc, oblen
     type(integer_field_type), intent(in) :: level_ent, level_ent_dsc
     type( field_type ), intent(in)    :: tile_fraction, z0m_tile, z0m,         &
                                          gross_prim_prod, net_prim_prod,       &
@@ -152,11 +156,11 @@ contains
     ! Diagnostics computed in the kernel
     if (zht_flag) &
          call zht%write_field('turbulence__zht')
+    if (oblen_flag) call oblen%write_field('turbulence__oblen')
     if (z0h_eff_flag) &
          call z0h_eff%write_field('surface__z0h_eff')
     if (gross_prim_prod_flag) &
          call gross_prim_prod%write_field('surface__gross_prim_prod')
-
 
     if ( subroutine_timers ) call timer("bl_exp_diags")
 

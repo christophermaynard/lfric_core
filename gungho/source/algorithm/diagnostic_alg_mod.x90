@@ -42,6 +42,7 @@ module diagnostic_alg_mod
   public :: extract_w2h_diagnostic_alg
   public :: column_total_diagnostics_alg
   public :: calc_wbig_diagnostic_alg
+  public :: pressure_diag_alg
 
 contains
 
@@ -639,7 +640,7 @@ contains
 
       if (write_diag .and. use_xios_io) then
 
-        call tot_col_moist_mass(i_mr)%write_field('tot_col_'//trim(mr_names(i_mr)))
+        call tot_col_moist_mass(i_mr)%write_field('processed__tot_col_'//trim(mr_names(i_mr)))
 
       end if
 
@@ -650,8 +651,8 @@ contains
 
     if (write_diag .and. use_xios_io) then
 
-      call tot_col_dry_air_mass%write_field('tot_col_dry_air_mass')
-      call tot_col_wetplusdry_mass%write_field('tot_col_wetplusdry_mass')
+      call tot_col_dry_air_mass%write_field('processed__tot_col_dry_air_mass')
+      call tot_col_wetplusdry_mass%write_field('processed__tot_col_wetplusdry_mass')
 
     end if
 
@@ -690,10 +691,40 @@ contains
 
     if (write_diag .and. use_xios_io) then
 
-      call wbig%write_field('wbig')
+      call wbig%write_field('processed__wbig')
 
     end if
 
   end subroutine calc_wbig_diagnostic_alg
+!=============================================================================!
+  !> @brief Calculate the pressure from the exner function and output it as
+  !>        a diagnostic
+  !> @param[in] exner The exner function (Pa)
+  subroutine pressure_diag_alg(exner)
+
+    use planet_config_mod, only: p_zero, one_over_kappa
+    use io_config_mod,     only: use_xios_io
+
+    implicit none
+
+    type(field_type), intent(in) :: exner
+    type(field_type)             :: pressure
+    integer(i_def)               :: fs
+
+    call exner%copy_field(pressure)
+
+    call invoke(inc_X_powreal_a(pressure, one_over_kappa), &
+                inc_a_times_X(p_zero, pressure))
+
+    if (use_xios_io) then
+      fs = pressure%which_function_space()
+      if (fs == W3) then
+        call pressure%write_field('processed__pressure_in_w3')
+      else if (fs == Wtheta) then
+        call pressure%write_field('processed__pressure_in_wth')
+      end if
+    end if
+
+  end subroutine pressure_diag_alg
 
 end module diagnostic_alg_mod

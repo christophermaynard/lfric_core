@@ -60,11 +60,11 @@ contains
     type( field_type ), pointer :: exner_in_wth => null()
     type( field_type ), pointer :: wetrho_in_wth => null()
     type( field_type ), pointer :: wetrho_in_w3 => null()
-    type( field_type ), pointer :: u1_in_w3 => null()
-    type( field_type ), pointer :: u2_in_w3 => null()
-    type( field_type ), pointer :: u3_in_w3 => null()
-    type( field_type ), pointer :: u1_in_w3_star => null()
-    type( field_type ), pointer :: u2_in_w3_star => null()
+    type( field_type ), pointer :: u_in_w3 => null()
+    type( field_type ), pointer :: v_in_w3 => null()
+    type( field_type ), pointer :: w_in_w3 => null()
+    type( field_type ), pointer :: u_in_w3_star => null()
+    type( field_type ), pointer :: v_in_w3_star => null()
     type( field_type ), pointer :: u_physics => null()
     type( field_type ), pointer :: u_physics_star => null()
     type( field_type ), pointer :: w_physics => null()
@@ -97,21 +97,21 @@ contains
     ! Now the winds (NB if sample_physics_winds=.false. then the winds are
     ! not re-oriented and so they are not necessarily perpendicular or
     ! aligned lat-lon)
-    u1_in_w3 => derived_fields%get_field('u1_in_w3')
-    u2_in_w3 => derived_fields%get_field('u2_in_w3')
-    u3_in_w3 => derived_fields%get_field('u3_in_w3')
-    call map_physics_winds(u1_in_w3, u2_in_w3, u3_in_w3, u)
+    u_in_w3 => derived_fields%get_field('u_in_w3')
+    v_in_w3 => derived_fields%get_field('v_in_w3')
+    w_in_w3 => derived_fields%get_field('w_in_w3')
+    call map_physics_winds(u_in_w3, v_in_w3, w_in_w3, u)
 
     u_physics => derived_fields%get_field('u_physics')
-    w_physics => derived_fields%get_field('w_physics')
+    w_physics => derived_fields%get_field('velocity_w2v')
     ! map dynamics winds into physics space
     dA => get_da_at_w2(mesh_id)
     call invoke(         X_divideby_Y(u_physics, u, dA), &
                 extract_w_kernel_type(w_physics, u_physics) )
     call u_physics%log_minmax(LOG_LEVEL_INFO, 'u_physics')
-    call print_field_stats_alg(u1_in_w3, LOG_LEVEL_INFO, &
+    call print_field_stats_alg(u_in_w3, LOG_LEVEL_INFO, &
                                printmin=-150.0_r_def, printmax=150.0_r_def)
-    call print_field_stats_alg(u2_in_w3, LOG_LEVEL_INFO, &
+    call print_field_stats_alg(v_in_w3, LOG_LEVEL_INFO, &
                                printmin=-100.0_r_def, printmax=100.0_r_def)
     call print_field_stats_alg(w_physics, LOG_LEVEL_INFO, &
                                printmin=-10.0_r_def, printmax=10.0_r_def)
@@ -137,12 +137,12 @@ contains
       ! Set up predictors with start of timestep variables
       theta_star => derived_fields%get_field('theta_star')
       u_physics_star => derived_fields%get_field('u_physics_star')
-      u1_in_w3_star => derived_fields%get_field('u1_in_w3_star')
-      u2_in_w3_star => derived_fields%get_field('u2_in_w3_star')
+      u_in_w3_star => derived_fields%get_field('u_in_w3_star')
+      v_in_w3_star => derived_fields%get_field('v_in_w3_star')
       call invoke(setval_X(theta_star, theta),                                &
                   setval_X(u_physics_star, u_physics),                        &
-                  setval_X(u1_in_w3_star, u1_in_w3),                          &
-                  setval_X(u2_in_w3_star, u2_in_w3) )
+                  setval_X(u_in_w3_star, u_in_w3),                          &
+                  setval_X(v_in_w3_star, v_in_w3) )
     end if
 
     if ( subroutine_timers ) call timer("map_physics_fields")

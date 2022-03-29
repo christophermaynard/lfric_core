@@ -36,7 +36,7 @@ type, public, extends(kernel_type) :: mphys_turb_gen_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READ,      WTHETA), & ! rho
        arg_type(GH_FIELD, GH_REAL, GH_READ,      WTHETA), & ! wvar
        arg_type(GH_FIELD, GH_REAL, GH_READ,      WTHETA), & ! dz_in_wth
-       arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA), & ! theta_inc
+       arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA), & ! dtheta
        arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA), & ! dmr_v
        arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA), & ! dmr_cl
        arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA), & ! dmr_ci
@@ -67,7 +67,7 @@ contains
 !> @param[in]     rho        Dry density (kg/m3)
 !> @param[in]     wvar       Vertical velocity variance
 !> @param[in]     dz_in_wth  Depth of wth space
-!> @param[in,out] theta_inc  Potential temperature increment from microphysics
+!> @param[in,out] dtheta     Potential temperature increment from microphysics
 !> @param[in,out] dmr_v      Vapour mixing ratio increment from microphysics
 !> @param[in,out] dmr_cl     Liquid mixing ratio increment from microphysics
 !> @param[in,out] dmr_ci     Ice mixing ratio increment from microphysics
@@ -93,7 +93,7 @@ contains
                                   rho,       &
                                   wvar,      &
                                   dz_in_wth, &
-                                  theta_inc, &
+                                  dtheta,    &
                                   dmr_v,     &
                                   dmr_cl,    &
                                   dmr_ci,    &
@@ -129,7 +129,7 @@ contains
     real(r_def), intent(in), dimension(undf_wth) :: wvar
     real(r_def), intent(in), dimension(undf_wth) :: dz_in_wth
 
-    real(r_def), intent(inout), dimension(undf_wth) :: theta_inc
+    real(r_def), intent(inout), dimension(undf_wth) :: dtheta
     real(r_def), intent(inout), dimension(undf_wth) :: dmr_v
     real(r_def), intent(inout), dimension(undf_wth) :: dmr_cl
     real(r_def), intent(inout), dimension(undf_wth) :: dmr_ci
@@ -165,7 +165,7 @@ contains
         rhodz_dry(i,j,k) = rho(map_wth(1,i) + k)
 
         ! Updated values after microphysics
-        t_work(i,j,k) = (theta(map_wth(1,i) + k) + theta_inc(map_wth(1,i) + k)) * &
+        t_work(i,j,k) = (theta(map_wth(1,i) + k) + dtheta(map_wth(1,i) + k)) * &
                     exner(map_wth(1,i) + k)
         q_work(i,j,k) = mr_v(map_wth(1,i) + k) + dmr_v(map_wth(1,i) + k)
         qcl_work(i,j,k) = mr_cl(map_wth(1,i) + k) + dmr_cl(map_wth(1,i) + k)
@@ -176,7 +176,7 @@ contains
         cf_work(i,j,k) = bcf(map_wth(1,i) + k) + dbcf(map_wth(1,i) + k)
 
         !Increments from microphysics
-        t_inc(i,j,k) = theta_inc(map_wth(1,i) + k) * exner(map_wth(1,i) + k)
+        t_inc(i,j,k) = dtheta(map_wth(1,i) + k) * exner(map_wth(1,i) + k)
         q_inc(i,j,k) = dmr_v(map_wth(1,i) + k)
         qcl_inc(i,j,k) = dmr_cl(map_wth(1,i) + k)
         cfl_inc(i,j,k) = dcfl(map_wth(1,i) + k)
@@ -211,13 +211,13 @@ contains
     j = 1
     do i = 1, seg_len
       do k = 1, nlayers
-        theta_inc(map_wth(1,i) + k) = t_inc(i,j,k) / exner(map_wth(1,i) + k)
+        dtheta(map_wth(1,i) + k) = t_inc(i,j,k) / exner(map_wth(1,i) + k)
         dmr_v(map_wth(1,i) + k) = q_inc(i,j,k)
         dmr_cl(map_wth(1,i) + k) = qcl_inc(i,j,k)
         dcfl(map_wth(1,i) + k) = cfl_inc(i,j,k)
         dbcf(map_wth(1,i) + k) = cf_inc(i,j,k)
       end do
-      theta_inc(map_wth(1,i) + 0) = theta_inc(map_wth(1,i) + 1)
+      dtheta(map_wth(1,i) + 0) = dtheta(map_wth(1,i) + 1)
       dmr_v(map_wth(1,i) + 0)   = dmr_v(map_wth(1,i) + 1)
       dmr_cl(map_wth(1,i) + 0)   = dmr_cl(map_wth(1,i) + 1)
       dbcf(map_wth(1,i) + 0) = dbcf(map_wth(1,i) + 1)

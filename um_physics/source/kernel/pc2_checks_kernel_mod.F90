@@ -35,9 +35,9 @@ type, public, extends(kernel_type) :: pc2_checks_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA), & ! theta_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA), & ! exner_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA), & ! dtheta_response
-       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA), & ! dqv_response_wth
-       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA), & ! dqcl_response_wth
-       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA), & ! dqcf_response_wth
+       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA), & ! dmv_response_wth
+       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA), & ! dmcl_response_wth
+       arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA), & ! dmci_response_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA), & ! dcfl_response_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA), & ! dcff_response_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA)  & ! dbcf_response_wth
@@ -66,9 +66,9 @@ contains
 !> @param[in]     theta_wth            Potential temperature field
 !> @param[in]     exner_wth            Exner pressure in potential temperature space
 !> @param[in,out] dtheta_response_wth  Change in theta
-!> @param[in,out] dqv_response_wth     Change in water vapour
-!> @param[in,out] dqcl_response_wth    Change in liquid water content
-!> @param[in,out] dqcf_response_wth    Change in ice    water content
+!> @param[in,out] dmv_response_wth     Change in water vapour
+!> @param[in,out] dmcl_response_wth    Change in liquid water content
+!> @param[in,out] dmci_response_wth    Change in ice    water content
 !> @param[in,out] dcfl_response_wth    Change in liquid cloud fraction
 !> @param[in,out] dcff_response_wth    Change in ice    cloud fraction
 !> @param[in,out] dbcf_response_wth    Change in bulk   cloud fraction
@@ -91,9 +91,9 @@ subroutine pc2_checks_code( nlayers,                   &
                             exner_wth,                 &
                                            ! Responses
                             dtheta_response_wth,       &
-                            dqv_response_wth,          &
-                            dqcl_response_wth,         &
-                            dqcf_response_wth,         &
+                            dmv_response_wth,          &
+                            dmcl_response_wth,         &
+                            dmci_response_wth,         &
                             dcfl_response_wth,         &
                             dcff_response_wth,         &
                             dbcf_response_wth,         &
@@ -132,9 +132,9 @@ subroutine pc2_checks_code( nlayers,                   &
 
     ! The changes to the fields as a result
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dtheta_response_wth
-    real(kind=r_def), intent(inout), dimension(undf_wth) :: dqv_response_wth
-    real(kind=r_def), intent(inout), dimension(undf_wth) :: dqcl_response_wth
-    real(kind=r_def), intent(inout), dimension(undf_wth) :: dqcf_response_wth
+    real(kind=r_def), intent(inout), dimension(undf_wth) :: dmv_response_wth
+    real(kind=r_def), intent(inout), dimension(undf_wth) :: dmcl_response_wth
+    real(kind=r_def), intent(inout), dimension(undf_wth) :: dmci_response_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dcfl_response_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dcff_response_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dbcf_response_wth
@@ -196,18 +196,18 @@ subroutine pc2_checks_code( nlayers,                   &
       dtheta_response_wth(map_wth(1) + k) = theta_work(1,1,k) &
                                           - theta_wth(map_wth(1) + k)
       !
-      dqv_response_wth (map_wth(1)+k) = qv_work (1,1,k) - mv_wth (map_wth(1) + k)
-      dqcl_response_wth(map_wth(1)+k) = qcl_work(1,1,k) - ml_wth (map_wth(1) + k)
-      dqcf_response_wth(map_wth(1)+k) = qcf_work(1,1,k) - mi_wth (map_wth(1) + k)
+      dmv_response_wth (map_wth(1)+k) = qv_work (1,1,k) - mv_wth (map_wth(1) + k)
+      dmcl_response_wth(map_wth(1)+k) = qcl_work(1,1,k) - ml_wth (map_wth(1) + k)
+      dmci_response_wth(map_wth(1)+k) = qcf_work(1,1,k) - mi_wth (map_wth(1) + k)
       dcfl_response_wth(map_wth(1)+k) = cfl_work(1,1,k) - cfl_wth(map_wth(1) + k)
       dcff_response_wth(map_wth(1)+k) = cff_work(1,1,k) - cff_wth(map_wth(1) + k)
       dbcf_response_wth(map_wth(1)+k) = bcf_work(1,1,k) - bcf_wth(map_wth(1) + k)
     end do
 
     dtheta_response_wth(map_wth(1)+0) = dtheta_response_wth(map_wth(1)+1)
-    dqv_response_wth   (map_wth(1)+0) = dqv_response_wth   (map_wth(1)+1)
-    dqcl_response_wth  (map_wth(1)+0) = dqcl_response_wth  (map_wth(1)+1)
-    dqcf_response_wth  (map_wth(1)+0) = dqcf_response_wth  (map_wth(1)+1)
+    dmv_response_wth   (map_wth(1)+0) = dmv_response_wth   (map_wth(1)+1)
+    dmcl_response_wth  (map_wth(1)+0) = dmcl_response_wth  (map_wth(1)+1)
+    dmci_response_wth  (map_wth(1)+0) = dmci_response_wth  (map_wth(1)+1)
     dcfl_response_wth  (map_wth(1)+0) = dcfl_response_wth  (map_wth(1)+1)
     dcff_response_wth  (map_wth(1)+0) = dcff_response_wth  (map_wth(1)+1)
     dbcf_response_wth  (map_wth(1)+0) = dbcf_response_wth  (map_wth(1)+1)

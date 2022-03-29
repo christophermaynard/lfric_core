@@ -24,7 +24,8 @@ module gungho_diagnostics_driver_mod
                                  only : field_collection_iterator_type
   use field_collection_mod,      only : field_collection_type
   use diagnostic_alg_mod,        only : column_total_diagnostics_alg, &
-                                        calc_wbig_diagnostic_alg
+                                        calc_wbig_diagnostic_alg, &
+                                        pressure_diag_alg
   use gungho_model_data_mod,     only : model_data_type
   use field_mod,                 only : field_type
   use field_parent_mod,          only : field_parent_type
@@ -35,11 +36,13 @@ module gungho_diagnostics_driver_mod
   use integer_field_mod,         only : integer_field_type
   use moist_dyn_mod,             only : num_moist_factors
   use mr_indices_mod,            only : nummr, mr_names
-  use section_choice_config_mod, only : cloud, cloud_um
   use log_mod,                   only : log_event, &
                                         LOG_LEVEL_INFO
   use mesh_mod,                  only : mesh_type
-  use geometric_constants_mod,   only : get_panel_id
+  use geometric_constants_mod,   only : get_panel_id, get_height
+  use io_config_mod,             only: subroutine_timers
+  use timer_mod,                 only: timer
+
 
 #ifdef UM_PHYSICS
   use pmsl_alg_mod,              only : pmsl_alg
@@ -79,7 +82,6 @@ contains
     type( field_type ),            pointer :: mr(:) => null()
     type( field_type ),            pointer :: moist_dyn(:) => null()
     type( field_collection_type ), pointer :: derived_fields => null()
-    type( field_collection_type ), pointer :: cloud_fields => null()
 
     type( field_type), pointer :: theta => null()
     type( field_type), pointer :: u => null()
@@ -88,8 +90,10 @@ contains
     type( field_type), pointer :: rho => null()
     type( field_type), pointer :: exner => null()
     type( field_type), pointer :: panel_id => null()
-    type( field_type), pointer :: u_star => null()
     type( field_type), pointer :: w_physics => null()
+    type( field_type), pointer :: height_w3 => null()
+    type( field_type), pointer :: height_wth => null()
+    type( field_type), pointer :: exner_in_wth => null()
 
     ! Iterator for field collection
     type(field_collection_iterator_type)  :: iterator
@@ -102,6 +106,8 @@ contains
 
     integer :: i, fs
 
+    if ( subroutine_timers ) call timer('gungho_diagnostics_driver')
+
     call log_event("Gungho: writing diagnostic output", LOG_LEVEL_INFO)
 
     ! Get pointers to field collections for use downstream
@@ -111,8 +117,9 @@ contains
     mr => model_data%mr
     moist_dyn => model_data%moist_dyn
     derived_fields => model_data%derived_fields
-    cloud_fields => model_data%cloud_fields
-    panel_id => get_panel_id( mesh%get_id() )
+    panel_id => get_panel_id(mesh%get_id())
+    height_w3 => get_height(W3, mesh%get_id())
+    height_wth => get_height(Wtheta, mesh%get_id())
 
     ! Can't just iterate through the prognostic/diagnostic collections as
     ! some fields are scalars and some fields are vectors, so explicitly
@@ -128,6 +135,10 @@ contains
     call write_scalar_diagnostic('theta', theta, &
                                  clock, mesh, nodal_output_on_w3)
     call write_scalar_diagnostic('exner', exner, &
+                                 clock, mesh, nodal_output_on_w3)
+    call write_scalar_diagnostic('height_w3', height_w3, &
+                                 clock, mesh, nodal_output_on_w3)
+    call write_scalar_diagnostic('height_wth', height_wth, &
                                  clock, mesh, nodal_output_on_w3)
 
     ! Vector fields
@@ -183,25 +194,6 @@ contains
       endif
     endif
 
-    ! Cloud fields - are all scalars - so iterate over collection
-    if (use_physics .and. cloud == cloud_um) then
-
-      call iterator%initialise(cloud_fields)
-      do
-        if ( .not.iterator%has_next() ) exit
-        field_ptr => iterator%next()
-
-        select type(field_ptr)
-          type is (field_type)
-            name = trim(adjustl( field_ptr%get_name() ))
-            call write_scalar_diagnostic( trim(name), field_ptr, &
-                                          clock,                 &
-                                          mesh, nodal_output_on_w3 )
-        end select
-      end do
-      field_ptr => null()
-    end if
-
     ! Derived physics fields (only those on W3 or Wtheta)
     if (use_physics .and. .not. clock%is_initialisation()) then
 
@@ -222,18 +214,19 @@ contains
       end do
       field_ptr => null()
 
-      ! Output u_star as diagnostic
-      u_star => derived_fields%get_field('u_star')
-      call write_vector_diagnostic( 'u_star', u_star, clock, mesh, &
-                                    nodal_output_on_w3 )
-
       ! Get w_physics for WBig calculation
-      w_physics => derived_fields%get_field('w_physics')
-      call calc_wbig_diagnostic_alg( w_physics, mesh )
+      w_physics => derived_fields%get_field('velocity_w2v')
+      call calc_wbig_diagnostic_alg(w_physics, mesh)
+
+      ! Pressure diagnostics
+      exner => prognostic_fields%get_field('exner')
+      call pressure_diag_alg(exner)
+
+      exner_in_wth => derived_fields%get_field('exner_in_wth')
+      call pressure_diag_alg(exner_in_wth)
 
 #ifdef UM_PHYSICS
       ! Call PMSL algorithm
-      exner => prognostic_fields%get_field('exner')
       theta => prognostic_fields%get_field('theta')
       call pmsl_alg(exner, derived_fields, theta, twod_mesh)
 #endif
@@ -245,6 +238,7 @@ contains
     call write_hydbal_diagnostic( theta, moist_dyn, exner, mesh )
     call column_total_diagnostics_alg( rho, mr, mesh, twod_mesh )
 
+    if ( subroutine_timers ) call timer('gungho_diagnostics_driver')
   end subroutine gungho_diagnostics_driver
 
 end module gungho_diagnostics_driver_mod

@@ -32,7 +32,7 @@ module conv_gr_kernel_mod
   !>
   type, public, extends(kernel_type) :: conv_gr_kernel_type
     private
-    type(arg_type) :: meta_args(125) = (/                                         &
+    type(arg_type) :: meta_args(127) = (/                                         &
          arg_type(GH_SCALAR, GH_INTEGER, GH_READ),                                &! outer
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                       &! rho_in_w3
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! rho_in_wth
@@ -42,8 +42,8 @@ module conv_gr_kernel_mod
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! exner_in_wth
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! u3_in_wth
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! theta_star
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                       &! u1_star
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                       &! u2_star
+         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                       &! u_in_w3_star
+         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                       &! v_in_w3_star
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                       &! height_w3
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! height_wth
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! delta
@@ -53,7 +53,7 @@ module conv_gr_kernel_mod
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! dt_conv
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! dmv_conv
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! dmcl_conv
-         arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! dmcf_conv
+         arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! dmci_conv
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, W3),                       &! du_conv
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, W3),                       &! dv_conv
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! m_v
@@ -155,9 +155,11 @@ module conv_gr_kernel_mod
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! mid_dq
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! mid_massflux
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! deep_tops
-         arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! massflux_up_half
+         arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, W3),                       &! massflux_up_half
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, W3),                       &! massflux_up_cmpta
-         arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA)                    &! cca_unadjusted
+         arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! cca_unadjusted
+         arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     WTHETA),                   &! dth_conv_noshal
+         arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     WTHETA)                    &! dmv_conv_noshal
         /)
     integer :: operates_on = CELL_COLUMN
   contains
@@ -182,8 +184,8 @@ contains
   !> @param[in]     exner_in_wth         Exner pressure field in wth space
   !> @param[in]     u3_in_wth            'Vertical' wind in theta space
   !> @param[in]     theta_star           Potential temperature after advection
-  !> @param[in]     u1_star              'Zonal' wind after advection
-  !> @param[in]     u2_star              'Meridional' wind after advection
+  !> @param[in]     u_in_w3_star         'Zonal' wind after advection
+  !> @param[in]     v_in_w3_star         'Meridional' wind after advection
   !> @param[in]     height_w3            Height of density space above surface
   !> @param[in]     height_wth           Height of theta space above surface
   !> @param[in]     delta                Edge length on wtheta points
@@ -193,7 +195,7 @@ contains
   !> @param[in,out] dt_conv              Convection temperature increment
   !> @param[in,out] dmv_conv             Convection vapour increment
   !> @param[in,out] dmcl_conv            Convection cloud liquid increment
-  !> @param[in,out] dmcf_conv            Convection cloud ice increment
+  !> @param[in,out] dmci_conv            Convection cloud ice increment
   !> @param[in,out] du_conv              Convection 'zonal' wind increment
   !> @param[in,out] dv_conv              Convection 'meridional' wind increment
   !> @param[in]     m_v                  Vapour mixing ratio after advection
@@ -298,6 +300,8 @@ contains
   !> @param[in,out] massflux_up_half     Convective upwards mass flux on half-levels (Pa/s)
   !> @param[in,out] massflux_up_cmpta    Convective upwards mass flux component A (Pa/s)
   !> @param[in,out] cca_unadjusted       Convective cloud amout unadjusted for radiation calc.
+  !> @param[out]    dth_conv_noshal      Convection theta increment from non-shallow regions
+  !> @param[out]    dmv_conv_noshal      Convection vapour increment from non-shallow regions
   !> @param[in]     ndf_w3               Number of DOFs per cell for density space
   !> @param[in]     undf_w3              Number of unique DOFs  for density space
   !> @param[in]     map_w3               Dofmap for the cell at the base of the column for density space
@@ -320,8 +324,8 @@ contains
                           exner_in_wth,                      &
                           u3_in_wth,                         &
                           theta_star,                        &
-                          u1_star,                           &
-                          u2_star,                           &
+                          u_in_w3_star,                      &
+                          v_in_w3_star,                      &
                           height_w3,                         &
                           height_wth,                        &
                           delta,                             &
@@ -331,7 +335,7 @@ contains
                           dt_conv,                           &
                           dmv_conv,                          &
                           dmcl_conv,                         &
-                          dmcf_conv,                         &
+                          dmci_conv,                         &
                           du_conv,                           &
                           dv_conv,                           &
                           m_v,                               &
@@ -436,6 +440,8 @@ contains
                           massflux_up_half,                  &
                           massflux_up_cmpta,                 &
                           cca_unadjusted,                    &
+                          dth_conv_noshal,                   &
+                          dmv_conv_noshal,                   &
                           ndf_w3,                            &
                           undf_w3,                           &
                           map_w3,                            &
@@ -533,7 +539,8 @@ contains
     real(kind=r_def), dimension(undf_w3), intent(in) :: rho_in_w3,          &
                                                         wetrho_in_w3,       &
                                                         exner_in_w3,        &
-                                                        u1_star, u2_star,   &
+                                                        u_in_w3_star,       &
+                                                        v_in_w3_star,       &
                                                         height_w3
     real(kind=r_def), dimension(undf_wth), intent(in) :: cf_ice,            &
                                                          cf_liq, cf_bulk,   &
@@ -548,7 +555,7 @@ contains
                                                          delta
 
     real(kind=r_def), dimension(undf_wth), intent(inout) :: dt_conv, dmv_conv, &
-                                          dmcl_conv, dmcf_conv, cca, ccw,      &
+                                          dmcl_conv, dmci_conv, cca, ccw,      &
                                           massflux_up, massflux_down,          &
                                           conv_rain_3d, conv_snow_3d
 
@@ -640,7 +647,9 @@ contains
                                                 deep_tops(:),        &
                                                 massflux_up_half(:), &
                                                 massflux_up_cmpta(:),&
-                                                cca_unadjusted(:)
+                                                cca_unadjusted(:),   &
+                                                dth_conv_noshal(:),  &
+                                                dmv_conv_noshal(:)
 
     real(kind=r_def), dimension(undf_wth), intent(inout) :: dcfl_conv
     real(kind=r_def), dimension(undf_wth), intent(inout) :: dcff_conv
@@ -909,8 +918,8 @@ contains
     end if
     if (l_mom) then
       do k=1,nlayers
-        u_conv(1,1,k) = u1_star(map_w3(1) + k-1)
-        v_conv(1,1,k) = u2_star(map_w3(1) + k-1)
+        u_conv(1,1,k) = u_in_w3_star(map_w3(1) + k-1)
+        v_conv(1,1,k) = v_in_w3_star(map_w3(1) + k-1)
       end do ! k
     end if
 
@@ -1297,7 +1306,7 @@ contains
                                      + dqbydt(1,1,k) * timestep_conv
         dmcl_conv(map_wth(1) + k) =  dmcl_conv(map_wth(1) + k)            &
                                      + dqclbydt(1,1,k) * timestep_conv
-        dmcf_conv(map_wth(1) + k) =  dmcf_conv(map_wth(1) + k)            &
+        dmci_conv(map_wth(1) + k) =  dmci_conv(map_wth(1) + k)            &
                                      + dqcfbydt(1,1,k) * timestep_conv
 
         ! Update diagnostics
@@ -1413,7 +1422,7 @@ contains
       end if
       if (.not. associated(massflux_up_half, empty_real_data) ) then
         do k = 1, n_conv_levels
-          massflux_up_half(map_wth(1) + k) = massflux_up_half(map_wth(1) + k) +&
+          massflux_up_half(map_w3(1) + k-1) = massflux_up_half(map_w3(1) + k-1) +&
                                          it_up_flux_half(1,1,k)*one_over_conv_calls
         end do
       end if
@@ -1482,7 +1491,7 @@ contains
                              / exner_in_wth(map_wth(1) + 1)
     dmv_conv (map_wth(1) + 0) = dmv_conv (map_wth(1) + 1)
     dmcl_conv(map_wth(1) + 0) = dmcl_conv(map_wth(1) + 1)
-    dmcf_conv(map_wth(1) + 0) = dmcf_conv(map_wth(1) + 1)
+    dmci_conv(map_wth(1) + 0) = dmci_conv(map_wth(1) + 1)
 
     ! Store convective downdraught mass fluxes at cloud base
     ! if required for surface exchange.
@@ -1533,13 +1542,30 @@ contains
     ! component A of upward mass flux
     if (.not. associated(massflux_up_cmpta, empty_real_data) ) then
       do k = 1, n_conv_levels - 1
-        if ( (1.0 - max_mf_fall) * massflux_up_half(map_wth(1) + k) < &
-                                   massflux_up_half(map_wth(1) + k+1) ) then
-          massflux_up_cmpta(map_w3(1) + k-1) = massflux_up_half(map_wth(1) + k) &
+        if ( (1.0 - max_mf_fall) * massflux_up_half(map_w3(1) + k-1) < &
+                                   massflux_up_half(map_w3(1) + k) ) then
+          massflux_up_cmpta(map_w3(1) + k-1) = massflux_up_half(map_w3(1) + k-1) &
                                              * (1.0 - shallow_in_col(map_2d(1)))
         else
           massflux_up_cmpta(map_w3(1) + k-1) = 0.0_r_def
         end if
+      end do
+    end if
+
+    ! Convection theta increment without shallow for VAR
+    if (.not. associated(dth_conv_noshal, empty_real_data) ) then
+      do k = 0, nlayers
+        dth_conv_noshal(map_wth(1) + k) = dt_conv(map_wth(1) + k) / &
+                                          exner_in_wth(map_wth(1) + k) * &
+                                         (1.0_r_def - shallow_in_col(map_2d(1)))
+      end do
+    end if
+
+    ! Convection mixing ratio increment without shallow for VAR
+    if (.not. associated(dmv_conv_noshal, empty_real_data) ) then
+      do k = 0, nlayers
+        dmv_conv_noshal(map_wth(1) + k) = dmv_conv(map_wth(1) + k) * &
+                                         (1.0_r_def - shallow_in_col(map_2d(1)))
       end do
     end if
 

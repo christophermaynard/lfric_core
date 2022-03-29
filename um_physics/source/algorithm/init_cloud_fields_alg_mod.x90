@@ -36,30 +36,30 @@ contains
 
     ! Prognostic fields
     type( field_type ), pointer :: area_fraction   => null()
-    type( field_type ), pointer :: ice_fraction    => null()
+    type( field_type ), pointer :: frozen_fraction => null()
     type( field_type ), pointer :: liquid_fraction => null()
     type( field_type ), pointer :: bulk_fraction   => null()
     type( field_type ), pointer :: rh_crit         => null()
-    type( field_type ), pointer :: sigma_qcw       => null()
+    type( field_type ), pointer :: sigma_mc        => null()
 
     area_fraction   => cloud_fields%get_field('area_fraction')
-    ice_fraction    => cloud_fields%get_field('ice_fraction')
+    frozen_fraction => cloud_fields%get_field('frozen_fraction')
     liquid_fraction => cloud_fields%get_field('liquid_fraction')
     bulk_fraction   => cloud_fields%get_field('bulk_fraction')
     rh_crit         => cloud_fields%get_field('rh_crit')
-    sigma_qcw       => cloud_fields%get_field('sigma_qcw')
+    sigma_mc        => cloud_fields%get_field('sigma_mc')
 
     ! Initialise cloud fractions to zero so other schemes will use them
     ! correctly if the cloud scheme is off or no values are provided
     ! by the um2lfric dump.
-    ! Also ensure sigma_qcw initialised with a default value.
+    ! Also ensure sigma_mc initialised with a default value.
     call invoke( setval_c(area_fraction,   0.0_r_def),            &
                  setval_c(bulk_fraction,   0.0_r_def),            &
                  setval_c(liquid_fraction, 0.0_r_def),            &
-                 setval_c(ice_fraction,    0.0_r_def),            &
+                 setval_c(frozen_fraction, 0.0_r_def),            &
                  ! Needed for screen diagnostics even if cloud scheme off
                  setval_c(rh_crit,         0.99_r_def),           &
-                 setval_c(sigma_qcw,       cloud_horizontal_fsd)  )
+                 setval_c(sigma_mc,        cloud_horizontal_fsd)  )
 
     ! If cloud scheme is on, initialised 3D rh_crit from namelist
     if (cloud == cloud_um) then

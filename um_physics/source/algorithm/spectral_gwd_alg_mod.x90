@@ -71,9 +71,8 @@ contains
     type( field_type ) :: tau_north_spectral_gwd ! ... northward component
 
     ! Temporary unpacked fields from collections
-    type( field_type ), pointer :: u1_in_w3 => null()
-    type( field_type ), pointer :: u2_in_w3 => null()
-    type( field_type ), pointer :: u3_in_w3 => null()
+    type( field_type ), pointer :: u_in_w3 => null()
+    type( field_type ), pointer :: v_in_w3 => null()
     type( field_type ), pointer :: exner_in_wth => null()
     type( field_type ), pointer :: wetrho_in_w3 => null()
 
@@ -94,9 +93,8 @@ contains
     call log_event( 'slow_physics: Running spectral gravity wave drag', LOG_LEVEL_INFO )
 
     ! Unpack fields
-    u1_in_w3 => derived_fields%get_field('u1_in_w3')
-    u2_in_w3 => derived_fields%get_field('u2_in_w3')
-    u3_in_w3 => derived_fields%get_field('u3_in_w3')
+    u_in_w3 => derived_fields%get_field('u_in_w3')
+    v_in_w3 => derived_fields%get_field('v_in_w3')
     exner_in_wth => derived_fields%get_field('exner_in_wth')
     wetrho_in_w3 => derived_fields%get_field('wetrho_in_w3')
 
@@ -113,8 +111,8 @@ contains
     height_wth  => get_height(Wtheta, mesh%get_id())
     height_w3   => get_height(W3, mesh%get_id())
 
-    call u1_in_w3%copy_field_properties(du_spectral_gwd)
-    call u2_in_w3%copy_field_properties(dv_spectral_gwd)
+    call u_in_w3%copy_field_properties(du_spectral_gwd)
+    call v_in_w3%copy_field_properties(dv_spectral_gwd)
     call theta%copy_field_properties(dw_spectral_gwd)
     call dtheta_spectral_gwd%copy_field_properties(dtemp_spectral_gwd)
     call ls_rain%copy_field_properties(totalppn)
@@ -137,7 +135,7 @@ contains
 
                 ! Call spectral gravity wave drag kernel
                 spectral_gwd_kernel_type (du_spectral_gwd, dv_spectral_gwd, &
-                            dtemp_spectral_gwd, u1_in_w3, u2_in_w3,         &
+                            dtemp_spectral_gwd, u_in_w3, v_in_w3,           &
                             wetrho_in_w3, exner_in_wth, theta,              &
                             height_w3, height_wth, totalppn, latitude_w3,   &
                             tau_east_spectral_gwd, tau_south_spectral_gwd,  &

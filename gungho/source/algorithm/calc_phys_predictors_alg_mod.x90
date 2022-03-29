@@ -70,11 +70,10 @@ subroutine calc_phys_predictors_alg(derived_fields, rhs_np1,                &
 
     type( field_type ), pointer :: theta_star => null()
     type( field_type ), pointer :: u_star => null()
-    type( field_type ), pointer :: u1_in_w3_star => null()
-    type( field_type ), pointer :: u2_in_w3_star => null()
-    type( field_type ), pointer :: u3_in_w3_star => null()
+    type( field_type ), pointer :: u_in_w3_star => null()
+    type( field_type ), pointer :: v_in_w3_star => null()
+    type( field_type ), pointer :: w_in_w3_star => null()
     type( field_type ), pointer :: u_physics_star => null()
-    type( field_type ), pointer :: w_physics_star => null()
 
     type( field_type ), pointer :: dA => null()
 
@@ -108,20 +107,18 @@ subroutine calc_phys_predictors_alg(derived_fields, rhs_np1,                &
     end if !use_wavedynamics
 
     ! map physics predictors into required spaces
-    u1_in_w3_star => derived_fields%get_field('u1_in_w3_star')
-    u2_in_w3_star => derived_fields%get_field('u2_in_w3_star')
-    u3_in_w3_star => derived_fields%get_field('u3_in_w3_star')
-    call map_physics_winds(u1_in_w3_star, u2_in_w3_star, u3_in_w3_star, &
+    u_in_w3_star => derived_fields%get_field('u_in_w3_star')
+    v_in_w3_star => derived_fields%get_field('v_in_w3_star')
+    w_in_w3_star => derived_fields%get_field('w_in_w3_star')
+    call map_physics_winds(u_in_w3_star, v_in_w3_star, w_in_w3_star, &
                            u_star)
 
     u_physics_star  => derived_fields%get_field('u_physics_star')
-    w_physics_star  => derived_fields%get_field('w_physics_star')
 
     mesh => u_physics_star%get_mesh()
     dA => get_da_at_w2( mesh%get_id() )
 
-    call invoke(         X_divideby_Y(u_physics_star, u_star, dA),     &
-                extract_w_kernel_type(w_physics_star, u_physics_star) )
+    call invoke(X_divideby_Y(u_physics_star, u_star, dA))
 
     nullify( mesh )
 

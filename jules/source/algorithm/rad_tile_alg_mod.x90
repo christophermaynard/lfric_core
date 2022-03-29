@@ -106,8 +106,8 @@ subroutine rad_tile_alg(tile_sw_direct_albedo, tile_sw_diffuse_albedo,       &
   type( field_type ), pointer :: snowpack_density  => null()
   type( field_type ), pointer :: snow_soot         => null()
 
-  type( field_type ), pointer :: u1_in_w3          => null()
-  type( field_type ), pointer :: u2_in_w3          => null()
+  type( field_type ), pointer :: u_in_w3          => null()
+  type( field_type ), pointer :: v_in_w3          => null()
 
   type( field_type ), pointer :: dz_wth            => null()
 
@@ -187,10 +187,10 @@ subroutine rad_tile_alg(tile_sw_direct_albedo, tile_sw_diffuse_albedo,       &
     snowpack_density  => snow_fields%get_field('snowpack_density')
     snow_soot         => snow_fields%get_field('snow_soot')
 
-    u1_in_w3          => derived_fields%get_field('u1_in_w3')
-    u2_in_w3          => derived_fields%get_field('u2_in_w3')
+    u_in_w3          => derived_fields%get_field('u_in_w3')
+    v_in_w3          => derived_fields%get_field('v_in_w3')
 
-    dz_wth            => get_dz_at_wtheta(u1_in_w3%get_mesh_id())
+    dz_wth            => get_dz_at_wtheta(u_in_w3%get_mesh_id())
 
     ! SW albedos only required on radiation timesteps
     if (mod(timestep-1_i_def, n_radstep) == 0) then
@@ -206,7 +206,7 @@ subroutine rad_tile_alg(tile_sw_direct_albedo, tile_sw_diffuse_albedo,       &
         tile_temperature, tile_snow_mass, tile_snow_rgrain, &
         snow_depth, snowpack_density, snow_soot, &
         chloro_sea, sea_ice_thickness, &
-        u1_in_w3, u2_in_w3, dz_wth, z0msea, &
+        u_in_w3, v_in_w3, dz_wth, z0msea, &
         cos_zenith_angle_rts, n_sw_band))
     end if
 
@@ -224,7 +224,7 @@ subroutine rad_tile_alg(tile_sw_direct_albedo, tile_sw_diffuse_albedo,       &
           tile_temperature, tile_snow_mass, tile_snow_rgrain, &
           snow_depth, snowpack_density, snow_soot, &
           chloro_sea, sea_ice_thickness, &
-          u1_in_w3, u2_in_w3, dz_wth, z0msea, &
+          u_in_w3, v_in_w3, dz_wth, z0msea, &
           cos_zenith_angle_rts, n_swinc_band))
 
         call invoke(lw_rad_tile_kernel_type(tile_lwinc_albedo, &

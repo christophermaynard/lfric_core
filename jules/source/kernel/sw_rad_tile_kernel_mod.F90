@@ -56,8 +56,8 @@ type, extends(kernel_type) :: sw_rad_tile_kernel_type
     arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_4), & ! snow_soot
     arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_4), & ! chloro_sea
     arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_6), & ! sea_ice_thickness
-    arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u1_in_w3
-    arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u2_in_w3
+    arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! u_in_w3
+    arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                        & ! v_in_w3
     arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! dz_wth
     arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_4), & ! z0msea
     arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_4), & ! cos_zenith_angle_rts
@@ -93,8 +93,8 @@ contains
 !> @param[in]     snow_soot              Snow soot content (kg/kg)
 !> @param[in]     chloro_sea             Chlorophyll content of the sea
 !> @param[in]     sea_ice_thickness      Sea ice thickness (m)
-!> @param[in]     u1_in_w3               'Zonal' wind in density space
-!> @param[in]     u2_in_w3               'Meridional' wind in density space
+!> @param[in]     u_in_w3                'Zonal' wind in density space
+!> @param[in]     v_in_w3                'Meridional' wind in density space
 !> @param[in]     dz_wth                 Delta z at wtheta levels
 !> @param[in]     z0msea                 Roughness length of sea
 !> @param[in]     cos_zenith_angle_rts   Cosine of the stellar zenith angle
@@ -143,8 +143,8 @@ subroutine sw_rad_tile_code(nlayers,                                &
                             snow_soot,                              &
                             chloro_sea,                             &
                             sea_ice_thickness,                      &
-                            u1_in_w3,                               &
-                            u2_in_w3,                               &
+                            u_in_w3,                                &
+                            v_in_w3,                                &
                             dz_wth,                                 &
                             z0msea,                                 &
                             cos_zenith_angle_rts,                   &
@@ -228,8 +228,8 @@ subroutine sw_rad_tile_code(nlayers,                                &
 
   real(r_def), intent(in) :: sea_ice_thickness(undf_sice)
 
-  real(r_def), intent(in) :: u1_in_w3(undf_w3)
-  real(r_def), intent(in) :: u2_in_w3(undf_w3)
+  real(r_def), intent(in) :: u_in_w3(undf_w3)
+  real(r_def), intent(in) :: v_in_w3(undf_w3)
   real(r_def), intent(in) :: dz_wth(undf_wth)
 
   ! Local variables for the kernel
@@ -385,7 +385,7 @@ subroutine sw_rad_tile_code(nlayers,                                &
   jules_vars%ho2r2_orog_gb = real(sd_orog(map_2d(1)), r_um)
 
   ! 10m wind speed over the sea
-  ws_10m_sea = sqrt(u1_in_w3(map_w3(1))**2 + u2_in_w3(map_w3(1))**2) &
+  ws_10m_sea = sqrt(u_in_w3(map_w3(1))**2 + v_in_w3(map_w3(1))**2) &
        * log(10.0_r_def / z0msea(map_2d(1))) &
        / log((dz_wth(map_wth(1))) / z0msea(map_2d(1)))
 

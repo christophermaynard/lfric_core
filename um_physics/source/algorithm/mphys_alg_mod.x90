@@ -45,15 +45,15 @@ contains
   !>@param[in]     turbulence_fields      Fields for turbulence scheme
   !>@param[in]     f_arr                  Fractional standard dev params
   !>@param[in,out] dmr_mphys      Mixing ratio increment due to microphysics
-  !>@param[in,out] theta_inc      Potential temperature increment in wth space
-  !>@param[in,out] dcfl           Increment to liquid cloud fraction
-  !>@param[in,out] dcff           Increment to ice cloud fraction
-  !>@param[in,out] dbcf           Increment to bulk cloud fraction
+  !>@param[in,out] dtheta_mphys   Potential temperature increment in wth space
+  !>@param[in,out] dcfl_mphys     Increment to liquid cloud fraction
+  !>@param[in,out] dcff_mphys     Increment to frozen cloud fraction
+  !>@param[in,out] dbcf_mphys     Increment to bulk cloud fraction
   !>@param[in]     dt             The model timestep length
   subroutine mphys_alg( mr_n, theta, dry_rho_in_w3, derived_fields,            &
                         microphysics_fields, cloud_fields, aerosol_fields,     &
-                        turbulence_fields, f_arr, dmr_mphys, theta_inc, dcfl,  &
-                        dcff, dbcf, dt )
+                        turbulence_fields, f_arr, dmr_mphys, dtheta_mphys,     &
+                        dcfl_mphys, dcff_mphys, dbcf_mphys, dt )
 
     use pc2_conv_coupling_kernel_mod, only: pc2_conv_coupling_kernel_type
     use mphys_kernel_mod, only: mphys_kernel_type
@@ -79,18 +79,18 @@ contains
     real( kind=r_def ),            intent(in)    :: dt
 
     type( field_type ), intent( inout ) :: dmr_mphys ( nummr )
-    type( field_type ), intent( inout ) :: theta_inc
-    type( field_type ), intent( inout ) :: dcfl, dcff, dbcf
+    type( field_type ), intent( inout ) :: dtheta_mphys
+    type( field_type ), intent( inout ) :: dcfl_mphys, dcff_mphys, dbcf_mphys
 
     ! Temporary unpacked fields from collections
     type( field_type ), pointer :: exner_in_wth        => null()
-    type( field_type ), pointer :: u1_in_w3            => null()
-    type( field_type ), pointer :: u2_in_w3            => null()
+    type( field_type ), pointer :: u_in_w3             => null()
+    type( field_type ), pointer :: v_in_w3             => null()
     type( field_type ), pointer :: w_physics           => null()
     type( field_type ), pointer :: wetrho_in_w3        => null()
     type( field_type ), pointer :: rho_in_wth          => null()
 
-    type( field_type ), pointer :: cf_in               => null()
+    type( field_type ), pointer :: bcf_in              => null()
     type( field_type ), pointer :: cfl_in              => null()
     type( field_type ), pointer :: cff_in              => null()
 
@@ -126,25 +126,25 @@ contains
     height_wth => get_height( Wtheta, mesh%get_id() )
     height_w3  => get_height( W3, mesh%get_id() )
 
-    call theta%copy_field_properties(dcfl)
-    call theta%copy_field_properties(dcff)
-    call theta%copy_field_properties(dbcf)
-    call invoke( setval_c(dcfl,      0.0_r_def), &
-                 setval_c(dcff,      0.0_r_def), &
-                 setval_c(dbcf,      0.0_r_def), &
-                 setval_c(theta_inc, 0.0_r_def) )
+    call theta%copy_field_properties(dcfl_mphys)
+    call theta%copy_field_properties(dcff_mphys)
+    call theta%copy_field_properties(dbcf_mphys)
+    call invoke( setval_c(dcfl_mphys,   0.0_r_def), &
+                 setval_c(dcff_mphys,   0.0_r_def), &
+                 setval_c(dbcf_mphys,   0.0_r_def), &
+                 setval_c(dtheta_mphys, 0.0_r_def) )
 
     ! Unpack fields
     exner_in_wth       => derived_fields%get_field('exner_in_wth')
-    u1_in_w3           => derived_fields%get_field('u1_in_w3')
-    u2_in_w3           => derived_fields%get_field('u2_in_w3')
-    w_physics          => derived_fields%get_field('w_physics')
+    u_in_w3            => derived_fields%get_field('u_in_w3')
+    v_in_w3            => derived_fields%get_field('v_in_w3')
+    w_physics          => derived_fields%get_field('velocity_w2v')
     wetrho_in_w3       => derived_fields%get_field('wetrho_in_w3')
     rho_in_wth         => derived_fields%get_field('rho_in_wth')
 
-    cf_in              => cloud_fields%get_field('bulk_fraction')
+    bcf_in             => cloud_fields%get_field('bulk_fraction')
     cfl_in             => cloud_fields%get_field('liquid_fraction')
-    cff_in             => cloud_fields%get_field('ice_fraction')
+    cff_in             => cloud_fields%get_field('frozen_fraction')
 
     ls_rain            => microphysics_fields%get_field('ls_rain')
     ls_snow            => microphysics_fields%get_field('ls_snow')
@@ -167,24 +167,25 @@ contains
     ! subroutine to perform two lines of code. Can look at adding a subroutine
     ! in the future if more code is added to the lines below.
     superc_liq_flag = .true.
-    call cf_in%copy_field_properties(superc_liq)
+    call bcf_in%copy_field_properties(superc_liq)
     ! End of diagnostic initialisation.
 
     if (mphys_erosion) then
       call invoke( pc2_conv_coupling_kernel_type(theta, mr_n(imr_v),           &
                                                  mr_n(imr_cl), mr_n(imr_ci),   &
-                                                 cfl_in, cff_in, cf_in,        &
-                                                 exner_in_wth, theta_inc,      &
+                                                 cfl_in, cff_in, bcf_in,       &
+                                                 exner_in_wth, dtheta_mphys,   &
                                                  dmr_mphys(imr_v),             &
                                                  dmr_mphys(imr_cl),            &
                                                  dmr_mphys(imr_ci),            &
-                                                 dcfl, dcff, dbcf, dt) )
+                                                 dcfl_mphys, dcff_mphys,       &
+                                                 dbcf_mphys, dt) )
     end if
 
     call invoke( mphys_kernel_type ( mr_n(imr_v), mr_n(imr_cl), mr_n(imr_ci),  &
                                      mr_n(imr_r), mr_n(imr_g),                 &
-                                     cf_in, cfl_in, cff_in,                    &
-                                     u1_in_w3, u2_in_w3, w_physics,            &
+                                     bcf_in, cfl_in, cff_in,                   &
+                                     u_in_w3, v_in_w3, w_physics,              &
                                      theta, exner_in_wth,                      &
                                      wetrho_in_w3, dry_rho_in_w3,              &
                                      height_w3, height_wth,                    &
@@ -195,21 +196,22 @@ contains
                                      lsca_2d, ls_rain_3d, ls_snow_3d,          &
                                      autoconv, accretion,                      &
                                      rim_cry, rim_agg,                         &
-                                     theta_inc, dcfl, dcff, dbcf, f_arr,       &
-                                     superc_liq ) )
+                                     dtheta_mphys, dcfl_mphys, dcff_mphys,     &
+                                     dbcf_mphys, f_arr, superc_liq ) )
 
     if (turb_gen_mixph) then
       dz_in_wth => get_dz_at_wtheta( mesh%get_id() )
       call invoke( mphys_turb_gen_kernel_type(theta, mr_n(imr_v), mr_n(imr_cl),&
                                               mr_n(imr_ci), mr_n(imr_s),       &
-                                              cfl_in, cff_in, cf_in,           &
+                                              cfl_in, cff_in, bcf_in,          &
                                               exner_in_wth, rho_in_wth, wvar,  &
                                               dz_in_wth,                       &
-                                              theta_inc, dmr_mphys(imr_v),     &
+                                              dtheta_mphys, dmr_mphys(imr_v),  &
                                               dmr_mphys(imr_cl),               &
                                               dmr_mphys(imr_ci),               &
                                               dmr_mphys(imr_s),                &
-                                              dcfl, dcff, dbcf) )
+                                              dcfl_mphys, dcff_mphys,          &
+                                              dbcf_mphys) )
     end if
 
     ! Save mv increment for stochastic physics
@@ -220,23 +222,21 @@ contains
 
     ! Output microphysics diagnostics
     if (write_diag .and. use_xios_io) then
-      if ( subroutine_timers ) call timer("mphys_xios")
 
         call output_diags_for_mphys( exner_in_wth,                 &
-                                     theta_inc,                    &
+                                     dtheta_mphys,                 &
                                      dmr_mphys(imr_v),             &
                                      dmr_mphys(imr_cl),            &
                                      dmr_mphys(imr_ci),            &
-                                     dcfl,                         &
-                                     dcff,                         &
-                                     dbcf,                         &
+                                     dcfl_mphys,                   &
+                                     dcff_mphys,                   &
+                                     dbcf_mphys,                   &
                                      superc_liq,                   &
                                      ls_rain, ls_snow, lsca_2d,    &
                                      ls_rain_3d, ls_snow_3d,       &
                                      autoconv, accretion,          &
                                      rim_cry, rim_agg )
 
-      if ( subroutine_timers ) call timer("mphys_xios")
     end if
 
     nullify( mesh )

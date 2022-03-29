@@ -101,8 +101,8 @@ contains
     type( field_type ), pointer :: wetrho_in_wth => null()
     type( field_type ), pointer :: wetrho_in_w3  => null()
     type( field_type ), pointer :: wetrho_in_w2  => null()
-    type( field_type ), pointer :: u1_in_w3      => null()
-    type( field_type ), pointer :: u2_in_w3      => null()
+    type( field_type ), pointer :: u_in_w3       => null()
+    type( field_type ), pointer :: v_in_w3       => null()
     type( field_type ), pointer :: w_physics     => null()
     type( field_type ), pointer :: shear         => null()
     type( field_type ), pointer :: u_physics     => null()
@@ -247,7 +247,7 @@ contains
     type(function_space_type), pointer :: vector_space => null()
     type( field_type ) :: gross_prim_prod, dtl_mphys, dmt_mphys, ngstress_w2,  &
          fd_tau_w2, rhokm_bl, ngstress_bl, fd_taux, fd_tauy, fd_tauz,          &
-         surf_interp, zht, z0h_eff
+         surf_interp, zht, z0h_eff, oblen
 
     integer(i_def) :: stencil_depth
 
@@ -260,9 +260,9 @@ contains
     wetrho_in_wth => derived_fields%get_field('wetrho_in_wth')
     wetrho_in_w3  => derived_fields%get_field('wetrho_in_w3')
     wetrho_in_w2  => derived_fields%get_field('wetrho_in_w2')
-    u1_in_w3      => derived_fields%get_field('u1_in_w3')
-    u2_in_w3      => derived_fields%get_field('u2_in_w3')
-    w_physics     => derived_fields%get_field('w_physics')
+    u_in_w3       => derived_fields%get_field('u_in_w3')
+    v_in_w3       => derived_fields%get_field('v_in_w3')
+    w_physics     => derived_fields%get_field('velocity_w2v')
     shear         => derived_fields%get_field('shear')
     u_physics     => derived_fields%get_field('u_physics')
 
@@ -414,7 +414,7 @@ contains
     w2_rmultiplicity => get_rmultiplicity( W2, mesh%get_id() )
 
     ! Initialise diagnostics
-    call initialise_diags_for_bl_exp(zh, zht, z0h_eff, gross_prim_prod)
+    call initialise_diags_for_bl_exp(zh, zht, z0h_eff, gross_prim_prod, oblen)
 
     ! Fields from microphysics
     call dtheta_mphys%copy_field_properties(dtl_mphys)
@@ -449,7 +449,7 @@ contains
                 ! Call explicit BL scheme
                 bl_exp_kernel_type( theta, rho,                                &
                            wetrho_in_wth, exner, exner_in_wth,                 &
-                           u1_in_w3, stencil_depth, u2_in_w3, stencil_depth,   &
+                           u_in_w3, stencil_depth, v_in_w3, stencil_depth,     &
                            w_physics,                                          &
                            mr_n(imr_v), mr_n(imr_cl), mr_n(imr_ci),            &
                            height_w3, height_wth, shear, delta, max_diff_smag, &
@@ -495,7 +495,7 @@ contains
                            ent_we_lim, ent_t_frac, ent_zrzi,                   &
                            ent_we_lim_dsc, ent_t_frac_dsc, ent_zrzi_dsc,       &
                            soil_clay, soil_sand, dust_mrel, dust_flux,         &
-                           zht, z0h_eff ),                                     &
+                           zht, z0h_eff, oblen ),                              &
 
                 setval_c(rhokm_w2,       0.0_r_def),                           &
                 setval_c(surf_interp_w2, 0.0_r_def),                           &
@@ -534,7 +534,7 @@ contains
                                    rdz_tq_bl, zhsc, level_ent, level_ent_dsc,&
                                    ent_we_lim, ent_t_frac, ent_zrzi,         &
                                    ent_we_lim_dsc, ent_t_frac_dsc,           &
-                                   ent_zrzi_dsc, zht, z0h_eff,               &
+                                   ent_zrzi_dsc, zht, z0h_eff, oblen,        &
                                    tile_fraction, z0m_tile, z0m,             &
                                    gross_prim_prod, net_prim_prod, gc_tile,  &
                                    soil_respiration, ustar, z0m_eff,         &

@@ -39,8 +39,8 @@ type, public, extends(kernel_type) :: mphys_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                       & ! cf_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                       & ! cfl_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                       & ! cff_wth
-       arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                           & ! u1_in_w3
-       arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                           & ! u2_in_w3,
+       arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                           & ! u_in_w3
+       arg_type(GH_FIELD, GH_REAL, GH_READ,  W3),                           & ! v_in_w3,
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                       & ! w_phys
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                       & ! theta_in_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                       & ! exner_in_wth
@@ -63,7 +63,7 @@ type, public, extends(kernel_type) :: mphys_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                       & ! accretion
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                       & ! rim_cry
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                       & ! rim_agg
-       arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                   & ! theta_inc
+       arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                   & ! dtheta
        arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                   & ! dcfl_wth
        arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                   & ! dcff_wth
        arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                   & ! dbcf_wth
@@ -90,8 +90,8 @@ contains
 !> @param[in]     cf_wth              Bulk cloud fraction
 !> @param[in]     cfl_wth             Liquid cloud fraction
 !> @param[in]     cff_wth             Ice cloud fraction
-!> @param[in]     u1_in_w3            'Zonal' wind in density space
-!> @param[in]     u2_in_w3            'Meridional' wind in density space
+!> @param[in]     u_in_w3             'Zonal' wind in density space
+!> @param[in]     v_in_w3             'Meridional' wind in density space
 !> @param[in]     w_phys              'Vertical' wind in theta space
 !> @param[in]     theta_in_wth        Potential temperature field
 !> @param[in]     exner_in_wth        Exner pressure in potential temperature space
@@ -115,7 +115,7 @@ contains
 !> @param[in,out] accretion           Rain accretion rate (kg kg-1 s-1)
 !> @param[in,out] rim_cry             Riming rate for ice crystals (kg kg-1 s-1)
 !> @param[in,out] rim_agg             Riming rate for ice aggregates (kg kg-1 s-1)
-!> @param[in,out] theta_inc           Increment to theta
+!> @param[in,out] dtheta              Increment to theta
 !> @param[in,out] dcfl_wth            Increment to liquid cloud fraction
 !> @param[in,out] dcff_wth            Increment to ice cloud fraction
 !> @param[in,out] dbcf_wth            Increment to bulk cloud fraction
@@ -145,7 +145,7 @@ subroutine mphys_code( nlayers, seg_len,            &
                        mv_wth,   ml_wth,   mi_wth,  &
                        mr_wth,   mg_wth,            &
                        cf_wth,   cfl_wth,  cff_wth, &
-                       u1_in_w3, u2_in_w3, w_phys,  &
+                       u_in_w3, v_in_w3, w_phys,    &
                        theta_in_wth,                &
                        exner_in_wth, wetrho_in_w3,  &
                        dry_rho_in_w3,               &
@@ -158,7 +158,7 @@ subroutine mphys_code( nlayers, seg_len,            &
                        ls_rain_3d, ls_snow_3d,      &
                        autoconv, accretion,         &
                        rim_cry, rim_agg,            &
-                       theta_inc,                   &
+                       dtheta,                      &
                        dcfl_wth, dcff_wth, dbcf_wth,&
                        f_arr_wth,                   &
                        superc_liq_wth,              &
@@ -216,8 +216,8 @@ subroutine mphys_code( nlayers, seg_len,            &
     real(kind=r_def), intent(in),  dimension(undf_wth) :: cf_wth
     real(kind=r_def), intent(in),  dimension(undf_wth) :: cfl_wth
     real(kind=r_def), intent(in),  dimension(undf_wth) :: cff_wth
-    real(kind=r_def), intent(in),  dimension(undf_w3)  :: u1_in_w3
-    real(kind=r_def), intent(in),  dimension(undf_w3)  :: u2_in_w3
+    real(kind=r_def), intent(in),  dimension(undf_w3)  :: u_in_w3
+    real(kind=r_def), intent(in),  dimension(undf_w3)  :: v_in_w3
     real(kind=r_def), intent(in),  dimension(undf_wth) :: w_phys
     real(kind=r_def), intent(in),  dimension(undf_wth) :: theta_in_wth
     real(kind=r_def), intent(in),  dimension(undf_wth) :: exner_in_wth
@@ -242,7 +242,7 @@ subroutine mphys_code( nlayers, seg_len,            &
     real(kind=r_def), intent(inout), dimension(undf_wth) :: accretion
     real(kind=r_def), intent(inout), dimension(undf_wth) :: rim_cry
     real(kind=r_def), intent(inout), dimension(undf_wth) :: rim_agg
-    real(kind=r_def), intent(inout), dimension(undf_wth) :: theta_inc
+    real(kind=r_def), intent(inout), dimension(undf_wth) :: dtheta
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dcfl_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dcff_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dbcf_wth
@@ -395,14 +395,14 @@ subroutine mphys_code( nlayers, seg_len,            &
                         ( r_rho_levels(i,j,k)**2 )
         dry_rho(i,j,k) = dry_rho_in_w3(map_w3(1,i) + k-1)
 
-        u_on_p(i,j,k) = u1_in_w3(map_w3(1,i) + k-1)
-        v_on_p(i,j,k) = u2_in_w3(map_w3(1,i) + k-1)
+        u_on_p(i,j,k) = u_in_w3(map_w3(1,i) + k-1)
+        v_on_p(i,j,k) = v_in_w3(map_w3(1,i) + k-1)
         w(i,j,k)   = w_phys(map_wth(1,i) + k)
 
         t_n(i,j,k)    = theta_in_wth(map_wth(1,i) + k) *                       &
                         exner_in_wth(map_wth(1,i) + k)
-        ! N.B. theta_inc is actually a temperature increment when passed in
-        t_work(i,j,k) = t_n(i,j,k) + theta_inc(map_wth(1,i) + k)
+        ! N.B. dtheta is actually a temperature increment when passed in
+        t_work(i,j,k) = t_n(i,j,k) + dtheta(map_wth(1,i) + k)
 
         ! pressure on theta levels
         p_theta_levels(i,j,k)    = p_zero*(exner_in_wth(map_wth(1,i) + k))     &
@@ -618,7 +618,7 @@ end if
   j = 1
   do i = 1, seg_len
     do k = 1, nlayers
-      theta_inc(map_wth(1,i) + k) = ( t_work(i,j,k) - t_n(i,j,k) )             &
+      dtheta(map_wth(1,i) + k) = ( t_work(i,j,k) - t_n(i,j,k) )             &
                                 / exner_in_wth(map_wth(1,i) + k)
 
       dmv_wth(map_wth(1,i) + k ) = q_work(i,j,k)   - mv_wth( map_wth(1,i) + k )
@@ -630,7 +630,7 @@ end if
   ! Increment level 0 the same as level 1
   !  (as done in the UM)
   do i = 1, seg_len
-    theta_inc(map_wth(1,i) + 0) = theta_inc(map_wth(1,i) + 1)
+    dtheta(map_wth(1,i) + 0)    = dtheta(map_wth(1,i) + 1)
     dmv_wth(map_wth(1,i) + 0)   = dmv_wth(map_wth(1,i) + 1)
     dml_wth(map_wth(1,i) + 0)   = dml_wth(map_wth(1,i) + 1)
     dmi_wth(map_wth(1,i) + 0)   = dmi_wth(map_wth(1,i) + 1)

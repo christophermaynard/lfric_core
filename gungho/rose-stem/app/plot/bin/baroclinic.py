@@ -98,11 +98,11 @@ def make_figures(filein, plotpath, fields, vertical_spacing):
                 levels = None
                 if cfield == 'air_potential_temperature' or cfield == 'theta':
                     levels = np.linspace(220, 330, 12)
-                elif cfield == 'eastward_wind' or cfield == 'u1':
+                elif cfield == 'eastward_wind' or cfield == 'u_in_w2h':
                     levels = np.arange(-20, 36, 4.)
-                elif cfield == 'northward_wind' or cfield == 'u2':
+                elif cfield == 'northward_wind' or cfield == 'v_in_w2h':
                     levels = np.linspace(-25, 40, 14)
-                elif cfield == 'upward_air_velocity' or cfield == 'u3':
+                elif cfield == 'upward_air_velocity' or cfield == 'w_in_wth':
                     levels = np.linspace(-0.3, 0.3, 11)
                 elif cfield == 'exner_pressure' or cfield == 'exner':
                     # Exner will be converted to hPa
