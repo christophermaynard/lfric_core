@@ -44,6 +44,8 @@
     [[meto-x86-ifort-gcc]]
         inherit = PLATFORM_X86
         pre-script = """
+                     module purge
+                     module load ifort/16.0_64 # Since LFRic module does "swap ifort"
                      module use /data/users/lfric/modules/modulefiles.rhel7
                      module load environment/lfric/intel/17.0.1/2
                      module list 2>&1
@@ -54,6 +56,7 @@
     [[meto-x86-gfortran-gcc]]
         inherit = PLATFORM_X86
         pre-script = """
+                     module purge
                      module use /project/ukmo/rhel7/fortran/opt/gfortran/modulefiles
                      module use /data/users/lfric/modules/modulefiles.rhel7
                      module load environment/lfric/gnu/6.1.0/2
@@ -63,7 +66,8 @@
     [[rose_ana_x86]]
         inherit = PLATFORM_X86
         pre-script = """
-                     module swap ifort/16.0_64
+                     module purge
+                     module load ifort/16.0_64
                      module load um_tools
                      module list 2>&1
                      """
