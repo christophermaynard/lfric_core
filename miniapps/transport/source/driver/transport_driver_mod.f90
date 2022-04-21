@@ -58,7 +58,11 @@ module transport_driver_mod
   use runtime_constants_mod,            only: create_runtime_constants
   use simple_io_mod,                    only: initialise_simple_io
   use timer_mod,                        only: init_timer, timer, output_timer
-  use time_config_mod,                  only: timestep_end, timestep_start
+  use time_config_mod,                  only: timestep_start, &
+                                              timestep_end,   &
+                                              calendar_start, &
+                                              calendar_type,  &
+                                              key_from_calendar_type
   use timestepping_config_mod,          only: dt, spinup_period
   use transport_mod,                    only: transport_load_configuration, &
                                               program_name
@@ -261,7 +265,9 @@ contains
                             timestep_start,     &
                             timestep_end,       &
                             spinup_period,      &
-                            dt )
+                            dt,                 &
+                            calendar_start,     &
+                            key_from_calendar_type(calendar_type) )
     else
       call initialise_simple_io( io_context,         &
                                  timestep_start,     &

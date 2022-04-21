@@ -90,8 +90,11 @@ contains
                                            RUN_LOG_LEVEL_WARNING
     use mod_wait,                   only : init_wait
     use seed_diagnostics_mod,       only : seed_diagnostics
-    use time_config_mod,            only : timestep_end, &
-                                           timestep_start
+    use time_config_mod,            only : timestep_end,   &
+                                           timestep_start, &
+                                           calendar_start, &
+                                           calendar_type,  &
+                                           key_from_calendar_type
     use timestepping_config_mod,    only : dt, &
                                            spinup_period
     use diagnostics_miniapp_config_mod, only : iodef_path
@@ -186,7 +189,9 @@ contains
                             timestep_start,     &
                             timestep_end,       &
                             spinup_period,      &
-                            dt )
+                            dt,                 &
+                            calendar_start,     &
+                            key_from_calendar_type(calendar_type) )
     else
       call initialise_simple_io( io_context,     &
                                  timestep_start, &

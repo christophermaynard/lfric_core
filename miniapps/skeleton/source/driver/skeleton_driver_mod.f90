@@ -51,7 +51,11 @@ module skeleton_driver_mod
   use simple_io_context_mod,      only : simple_io_context_type
   use skeleton_mod,               only : load_configuration, program_name
   use skeleton_alg_mod,           only : skeleton_alg
-  use time_config_mod,            only : timestep_start, timestep_end
+  use time_config_mod,            only : timestep_start, &
+                                         timestep_end,   &
+                                         calendar_start, &
+                                         calendar_type,  &
+                                         key_from_calendar_type
   use timestepping_config_mod,    only : dt, &
                                          spinup_period
   use xios,                       only : xios_context_finalize, &
@@ -178,7 +182,9 @@ contains
                             timestep_start,     &
                             timestep_end,       &
                             spinup_period,      &
-                            dt )
+                            dt,                 &
+                            calendar_start,     &
+                            key_from_calendar_type(calendar_type) )
     else
       call initialise_simple_io( io_context,     &
                                  timestep_start, &

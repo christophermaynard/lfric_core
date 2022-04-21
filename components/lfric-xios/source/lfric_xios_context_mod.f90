@@ -19,10 +19,13 @@ module lfric_xios_context_mod
                                    log_level_error, &
                                    log_level_info
   use step_calendar_mod,    only : step_calendar_type
+  use lfric_xios_utils_mod, only : parse_date_as_xios
   use xios,                 only : xios_close_context_definition, &
                                    xios_context,                  &
                                    xios_context_finalize,         &
                                    xios_context_initialize,       &
+                                   xios_date,                     &
+                                   xios_define_calendar,          &
                                    xios_get_handle,               &
                                    xios_set_current_context
 
@@ -70,6 +73,8 @@ contains
   !> @param [in]     finish_time       Time of last step.
   !> @param [in]     spinup_period     Number of seconds in spinup period.
   !> @param [in]     seconds_per_step  Number of seconds in a time step.
+  !> @param [in]     calendar_start    Start date for calendar
+  !> @param [in]     calendar_type     Type of calendar.
   !> @param [in]     timer_flag        Flag for use of subroutine timers.
   !> @param [in]     populate_filelist Procedure use to populate list of files
   !>
@@ -78,6 +83,8 @@ contains
                          start_time, finish_time, &
                          spinup_period,           &
                          seconds_per_step,        &
+                         calendar_start,          &
+                         calendar_type,           &
                          timer_flag,              &
                          populate_filelist )
 
@@ -91,16 +98,25 @@ contains
     character(*),                       intent(in)    :: finish_time
     real(r_second),                     intent(in)    :: spinup_period
     real(r_second),                     intent(in)    :: seconds_per_step
+    character(*),                       intent(in)    :: calendar_start
+    character(*),                       intent(in)    :: calendar_type
     logical(l_def), optional,           intent(in)    :: timer_flag
     procedure(filelist_populator),  &
                      pointer, optional, intent(in)    :: populate_filelist
 
     type(step_calendar_type), allocatable :: calendar
     integer(i_native)                     :: rc
+    type(xios_date)                       :: calendar_start_xios
 
     call xios_context_initialize( id, communicator )
     call xios_get_handle( id, this%handle )
     call xios_set_current_context( this%handle )
+
+    ! Calendar start is adjusted when clock is initialised
+    calendar_start_xios = parse_date_as_xios(trim(adjustl(calendar_start)))
+    call xios_define_calendar( type=calendar_type,              &
+                               time_origin=calendar_start_xios, &
+                               start_date=calendar_start_xios )
 
     allocate( calendar, stat=rc )
     if (rc /= 0) then

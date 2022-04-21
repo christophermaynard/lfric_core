@@ -16,7 +16,11 @@ module gravity_wave_io_mod
   use log_mod,                 only : log_event, log_level_error
   use mesh_mod,                only : mesh_type
   use simple_io_mod,           only : initialise_simple_io
-  use time_config_mod,         only : timestep_end, timestep_start
+  use time_config_mod,         only : timestep_start, &
+                                      timestep_end,   &
+                                      calendar_start, &
+                                      calendar_type,  &
+                                      key_from_calendar_type
   use timestepping_config_mod, only : dt, spinup_period
   use lfric_xios_clock_mod,    only : lfric_xios_clock_type
   use lfric_xios_io_mod,       only : initialise_xios
@@ -73,7 +77,9 @@ contains
                             timestep_start,    &
                             timestep_end,      &
                             spinup_period,     &
-                            dt )
+                            dt,                &
+                            calendar_start,    &
+                            key_from_calendar_type(calendar_type) )
     else
       call initialise_simple_io( io_context,         &
                                  timestep_start,     &

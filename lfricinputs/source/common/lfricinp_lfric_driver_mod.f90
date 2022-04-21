@@ -25,7 +25,6 @@ USE io_context_mod,             ONLY: io_context_type
 USE mod_wait,                   ONLY: init_wait
 USE lfric_xios_context_mod,     ONLY: filelist_populator
 USE lfricinp_setup_io_mod,      ONLY: init_lfricinp_files
-USE lfricinp_iodef_updates_mod, ONLY: lfricinp_iodef_set_calendar
 USE local_mesh_collection_mod,  ONLY: local_mesh_collection,                   &
                                       local_mesh_collection_type
 USE mesh_collection_mod,        ONLY: mesh_collection,                         &
@@ -111,8 +110,7 @@ xios_id = TRIM(program_name) // "_client"
 CALL initialise_comm(comm)
 CALL init_wait()
 
-! Set calendar in iodef file, and then initialise xios
-CALL lfricinp_iodef_set_calendar(comm, calendar, start_date, time_origin)
+! Initialise xios
 CALL xios_initialize(xios_id, return_comm = comm)
 
 ! Save LFRic's part of the split communicator for later use, and
@@ -159,17 +157,19 @@ CALL init_fem(mesh, chi, panel_id)
 WRITE(char_first_step,'(I8)') first_step
 WRITE(char_last_step,'(I8)') last_step
 populate_pointer => init_lfricinp_files
-CALL initialise_xios( io_context,                                              &
-                      xios_ctx,                                                &
-                      comm,                                                    &
-                      mesh,                                                    &
-                      twod_mesh,                                               &
-                      chi,                                                     &
-                      panel_id,                                                &
-                      TRIM(ADJUSTL(char_first_step)),                          &
-                      TRIM(ADJUSTL(char_last_step)),                           &
-                      spinup_period,                                           &
-                      seconds_per_step,                                        &
+CALL initialise_xios( io_context,                          &
+                      xios_ctx,                            &
+                      comm,                                &
+                      mesh,                                &
+                      twod_mesh,                           &
+                      chi,                                 &
+                      panel_id,                            &
+                      TRIM(ADJUSTL(char_first_step)),      &
+                      TRIM(ADJUSTL(char_last_step)),       &
+                      spinup_period,                       &
+                      seconds_per_step,                    &
+                      time_origin,                         &
+                      calendar,                            &
                       populate_filelist=populate_pointer )
 
 END SUBROUTINE lfricinp_initialise_lfric

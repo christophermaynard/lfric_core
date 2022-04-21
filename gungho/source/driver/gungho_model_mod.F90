@@ -92,7 +92,11 @@ module gungho_model_mod
                                          surface, surface_jules
   use simple_io_mod,              only : initialise_simple_io
   use simple_io_context_mod,      only : simple_io_context_type
-  use time_config_mod,            only : timestep_start, timestep_end
+  use time_config_mod,            only : timestep_start, &
+                                         timestep_end,   &
+                                         calendar_start, &
+                                         calendar_type,  &
+                                         key_from_calendar_type
   use timer_mod,                  only : timer, output_timer, init_timer
   use timestepping_config_mod,    only : dt,                     &
                                          method,                 &
@@ -326,17 +330,19 @@ contains
 
     if ( use_xios_io ) then
       files_init_ptr => init_gungho_files
-      call initialise_xios( io_context,                       &
-                            io_context_name,                  &
-                            communicator,                     &
-                            mesh,                             &
-                            twod_mesh,                        &
-                            chi,                              &
-                            panel_id,                         &
-                            timestep_start,                   &
-                            timestep_end,                     &
-                            spinup_period,                    &
-                            dt,                               &
+      call initialise_xios( io_context,                            &
+                            io_context_name,                       &
+                            communicator,                          &
+                            mesh,                                  &
+                            twod_mesh,                             &
+                            chi,                                   &
+                            panel_id,                              &
+                            timestep_start,                        &
+                            timestep_end,                          &
+                            spinup_period,                         &
+                            dt,                                    &
+                            calendar_start,                        &
+                            key_from_calendar_type(calendar_type), &
                             populate_filelist=files_init_ptr )
     else
       call initialise_simple_io( &

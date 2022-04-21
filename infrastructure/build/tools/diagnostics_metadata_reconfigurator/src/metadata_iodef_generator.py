@@ -106,10 +106,6 @@ class MetadataIodefGenerator:
         self._context_node = ElementTree.SubElement(self._root_node,
                                                     'context',
                                                     id="diagnostics")
-        ElementTree.SubElement(self._context_node,
-                               "calendar",
-                               type="Gregorian",
-                               start_date="1997-10-29 12:00:00")
         self._axis_def = ElementTree.SubElement(self._context_node,
                                                 'axis_definition')
         self._grid_def = ElementTree.SubElement(self._context_node,

@@ -45,7 +45,11 @@ module io_dev_model_mod
   use configuration_mod,          only : final_configuration
   use io_config_mod,              only : use_xios_io, subroutine_timers, &
                                          timer_output_path
-  use time_config_mod,            only : timestep_end, timestep_start
+  use time_config_mod,            only : timestep_end,   &
+                                         timestep_start, &
+                                         calendar_start, &
+                                         calendar_type,  &
+                                         key_from_calendar_type
   use timestepping_config_mod,    only : dt, spinup_period
   ! IO_Dev driver modules
   use io_dev_mod,                 only : load_configuration
@@ -191,18 +195,20 @@ contains
     ! Set up XIOS domain and context
     files_init_ptr => init_io_dev_files
     if ( subroutine_timers ) call timer('initialise_xios')
-    call initialise_xios( io_context,                       &
-                          xios_context_id,                  &
-                          communicator,                     &
-                          mesh,                             &
-                          twod_mesh,                        &
-                          chi,                              &
-                          panel_id,                         &
-                          timestep_start,                   &
-                          timestep_end,                     &
-                          spinup_period,                    &
-                          dt,                               &
-                          timer_flag=subroutine_timers,     &
+    call initialise_xios( io_context,                            &
+                          xios_context_id,                       &
+                          communicator,                          &
+                          mesh,                                  &
+                          twod_mesh,                             &
+                          chi,                                   &
+                          panel_id,                              &
+                          timestep_start,                        &
+                          timestep_end,                          &
+                          spinup_period,                         &
+                          dt,                                    &
+                          calendar_start,                        &
+                          key_from_calendar_type(calendar_type), &
+                          timer_flag=subroutine_timers,          &
                           populate_filelist=files_init_ptr )
     if ( subroutine_timers ) call timer('initialise_xios')
 

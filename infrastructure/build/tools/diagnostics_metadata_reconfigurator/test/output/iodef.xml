@@ -1,7 +1,6 @@
 <?xml version="1.0" ?>
 <simulation>
     <context id="diagnostics">
-        <calendar start_date="1997-10-29 12:00:00" type="Gregorian"/>
         <axis_definition>
             <axis id="fixed_vert_axis_1" n_glo="2" name="fixed_vert_axis_1" positive="up" unit="m" value="(0, 1) [111.0 1949.0]"/>
             <axis id="fixed_vert_axis_2" n_glo="1" name="fixed_vert_axis_2" positive="up" unit="m" value="(0, 0) [0.0]"/>

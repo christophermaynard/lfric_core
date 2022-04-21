@@ -1,8 +1,6 @@
 <?xml version='1.0' encoding='ASCII'?>
 <simulation>
     <context id="diagnostics">
-        <calendar type="Gregorian" start_date="2016-01-01 15:00:00"
-                  time_origin="2016-01-01 15:00:00"/>
         <axis_definition>
             <axis id="vert_axis_half_levels" name="half_levels"/>
             <axis id="vert_axis_full_levels" name="full_levels"/>

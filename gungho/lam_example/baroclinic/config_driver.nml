@@ -175,6 +175,8 @@ rho_approximation_stencil_extent=2,
 calendar='timestep',
 timestep_end='20',
 timestep_start='1',
+calendar_type='gregorian',
+calendar_start='2016-01-01 15:00:00',
 /
 &timestepping
 alpha=0.5,
