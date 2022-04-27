@@ -262,7 +262,8 @@ contains
         cf_frozen  => cloud_fields%get_field('frozen_fraction')
 
         ! Calculate various diagnostics from the combined_cld_amount.
-        call invoke( cld_diags_kernel_type( cld_amount_max,                    &
+        call invoke( cld_diags_kernel_type( combined_cld_amount,               &
+                                            cld_amount_max,                    &
                                             cld_amount_rnd,                    &
                                             cld_amount_maxrnd,                 &
                                             ceil_cld_amount_maxrnd,            &
@@ -273,7 +274,6 @@ contains
                                             medium_cld_amount,                 &
                                             high_cld_amount,                   &
                                             very_high_cld_amount,              &
-                                            combined_cld_amount,               &
                                             mr(imr_ci),                        &
                                             cf_frozen,                         &
                                             height_wth,                        &

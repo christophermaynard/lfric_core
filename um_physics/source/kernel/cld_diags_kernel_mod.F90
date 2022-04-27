@@ -27,6 +27,7 @@ module cld_diags_kernel_mod
   type, public, extends(kernel_type) :: cld_diags_kernel_type
     private
     type(arg_type) :: meta_args(19) = (/                                       &
+         arg_type(GH_FIELD, GH_REAL, GH_READ, WTHETA),                         & ! combined_cld_amount_wth
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! cld_amount_max
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! cld_amount_rnd
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! cld_amount_maxrnd
@@ -38,7 +39,6 @@ module cld_diags_kernel_mod
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! medium_cld_amount
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! high_cld_amount
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), & ! very_high_cld_amount
-         arg_type(GH_FIELD, GH_REAL, GH_READ, WTHETA),                         & ! combined_cld_amount
          arg_type(GH_FIELD, GH_REAL, GH_READ, WTHETA),                         & ! mi_wth
          arg_type(GH_FIELD, GH_REAL, GH_READ, WTHETA),                         & ! cf_frozen
          arg_type(GH_FIELD, GH_REAL, GH_READ, WTHETA),                         & ! height_wth
@@ -59,37 +59,42 @@ contains
   !> @brief Interface to the cloud diagnostics.
   !> @details Calculation of various cloud diagnostics.
   !>
-  !> @param[in]     nlayers                Number of layers
-  !> @param[in,out] cld_amount_max         Cloud amount maximum overlap
-  !> @param[in,out] cld_amount_rnd         Cloud amount random overlap
-  !> @param[in,out] cld_amount_maxrnd      Cloud amount maximum-random overlap
-  !> @param[in,out] ceil_cld_amount_maxrnd Ceilometer filtered cloud amount maximum-random overlap
-  !> @param[in,out] cld_base_altitude      Cloud base altitude wrt sea level
-  !> @param[in,out] low_cld_base_altitude  Cloud base altitude wrt sea level for very low amount of cloud
-  !> @param[in,out] very_low_cld_amount    Maximum cloud amount below 111m
-  !> @param[in,out] low_cld_amount         Maximum cloud amount between 111 and 1949m above sea level
-  !> @param[in,out] medium_cld_amount      Maximum cloud amount between 1949 and 5574m above sea level
-  !> @param[in,out] high_cld_amount        Maximum cloud amount between 5574 and 13608m above sea level
-  !> @param[in,out] very_high_cld_amount   Maximum cloud amount above 13608m above sea level
-  !> @param[in]     combined_cld_amount    Combined cloud amount
-  !> @param[in]     mi_wth                 Ice water content
-  !> @param[in]     cf_frozen              Frozen fraction
-  !> @param[in]     height_wth             Height above sea level in wtheta
-  !> @param[in]     rho_wth                Dry air density in wtheta
-  !> @param[in]     height_w3              Height above sea level in w3
-  !> @param[in]     opt_depth_thresh       Optical depth filter threshold
-  !> @param[in]     filter_optical_depth   Apply optical depth filter for cloud diagnostics
-  !> @param[in]     ndf_2d                 Number of degrees of freedom per cell for 2D fields
-  !> @param[in]     undf_2d                Number unique of degrees of freedom  for 2D fields
-  !> @param[in]     map_2d                 Dofmap for the cell at the base of the column for 2D fields
-  !> @param[in]     ndf_wth                Number of degrees of freedom per cell for potential temperature space
-  !> @param[in]     undf_wth               Number unique of degrees of freedom for potential temperature space
-  !> @param[in]     map_wth                Dofmap for the cell at the base of the column for potential temperature space
-  !> @param[in]     ndf_w3                 Number of degrees of freedom per cell for density space
-  !> @param[in]     undf_w3                Number unique of degrees of freedom  for density space
-  !> @param[in]     map_w3                 Dofmap for the cell at the base of the column for density space
+  !> @param[in]     nlayers                    Number of layers
+  !> @param[in]     combined_cld_amount_wth    Combined cloud amount
+  !> @param[in,out] cld_amount_max             Cloud amount maximum overlap
+  !> @param[in,out] cld_amount_rnd             Cloud amount random overlap
+  !> @param[in,out] cld_amount_maxrnd          Cloud amount maximum-random overlap
+  !> @param[in,out] ceil_cld_amount_maxrnd     Ceilometer filtered cloud amount maximum-random overlap
+  !> @param[in,out] cld_base_altitude          Cloud base altitude wrt sea level
+  !> @param[in,out] low_cld_base_altitude      Cloud base altitude wrt sea level for very low amount of cloud
+  !> @param[in,out] very_low_cld_amount        Maximum cloud amount below 111m
+  !> @param[in,out] low_cld_amount             Maximum cloud amount between 111 and 1949m above sea level
+  !> @param[in,out] medium_cld_amount          Maximum cloud amount between 1949 and 5574m above sea level
+  !> @param[in,out] high_cld_amount            Maximum cloud amount between 5574 and 13608m above sea level
+  !> @param[in,out] very_high_cld_amount       Maximum cloud amount above 13608m above sea level
+  !> @param[in]     mi_wth                     Ice water content
+  !> @param[in]     cf_frozen                  Frozen fraction
+  !> @param[in]     height_wth                 Height above sea level in wtheta
+  !> @param[in]     rho_wth                    Dry air density in wtheta
+  !> @param[in]     height_w3                  Height above sea level in w3
+  !> @param[in]     opt_depth_thresh           Optical depth filter threshold
+  !> @param[in]     filter_optical_depth       Apply optical depth filter for cloud diagnostics
+  !> @param[in]     ndf_2d                     Number of degrees of freedom per cell for 2D fields
+  !> @param[in]     undf_2d                    Number unique of degrees of freedom  for 2D fields
+  !> @param[in]     map_2d                     Dofmap for the cell at the base of the column for 2D fields
+  !> @param[in]     ndf_wth                    Number of degrees of freedom per cell for potential temperature space
+  !> @param[in]     undf_wth                   Number unique of degrees of freedom for potential temperature space
+  !> @param[in]     map_wth                    Dofmap for the cell at the base of the column for potential temperature space
+  !> @param[in]     ndf_w3                     Number of degrees of freedom per cell for density space
+  !> @param[in]     undf_w3                    Number unique of degrees of freedom  for density space
+  !> @param[in]     map_w3                     Dofmap for the cell at the base of the column for density space
 
+
+ ! Note that combined_cld_amount_wth needs to be the first argument below, since
+ ! this field is used to determine the value of nlayers in psyclone and hence
+ ! needs to be a 3D field.
   subroutine cld_diags_code( nlayers,                 &
+                             combined_cld_amount_wth, &
                              cld_amount_max,          &
                              cld_amount_rnd,          &
                              cld_amount_maxrnd,       &
@@ -101,7 +106,6 @@ contains
                              medium_cld_amount,       &
                              high_cld_amount,         &
                              very_high_cld_amount,    &
-                             combined_cld_amount_wth, &
                              mi_wth,                  &
                              cf_frozen,               &
                              height_wth,              &
@@ -109,12 +113,12 @@ contains
                              height_w3,               &
                              opt_depth_thresh,        &
                              filter_optical_depth,    &
-                             ndf_2d,                  &
-                             undf_2d,                 &
-                             map_2d,                  &
                              ndf_wth,                 &
                              undf_wth,                &
                              map_wth,                 &
+                             ndf_2d,                  &
+                             undf_2d,                 &
+                             map_2d,                  &
                              ndf_w3,                  &
                              undf_w3,                 &
                              map_w3                   )
