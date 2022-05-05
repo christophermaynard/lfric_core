@@ -9,6 +9,7 @@ module cld_alg_mod
 
   use constants_mod,                 only: i_def, r_def
   use field_mod,                     only: field_type
+  use integer_field_mod,             only: integer_field_type
   use field_collection_mod,          only: field_collection_type
   use mr_indices_mod,                only: nummr, imr_v, imr_cl, imr_ci, imr_r
   use enforce_lower_bound_kernel_mod,only: enforce_lower_bound_kernel_type
@@ -96,8 +97,8 @@ contains
     type( field_type ), pointer :: cf_fro  => null()
     type( field_type ), pointer :: cf_liq  => null()
     type( field_type ), pointer :: cf_bulk  => null()
-    type( field_type ), pointer :: ntml => null()
-    type( field_type ), pointer :: cumulus => null()
+    type( integer_field_type ), pointer :: ntml => null()
+    type( integer_field_type ), pointer :: cumulus => null()
     type( field_type ), pointer :: rh_crit => null()
 
     type( field_type ), pointer :: dsldzm      => null()
@@ -106,7 +107,7 @@ contains
     type( field_type ), pointer :: zh          => null()
     type( field_type ), pointer :: zhsc        => null()
     type( field_type ), pointer :: inv_depth   => null()
-    type( field_type ), pointer :: bl_type_ind => null()
+    type( integer_field_type ), pointer :: bl_type_ind => null()
     type( field_type ), pointer :: tau_dec_bm  => null()
     type( field_type ), pointer :: tau_hom_bm  => null()
     type( field_type ), pointer :: tau_mph_bm  => null()
@@ -170,8 +171,8 @@ contains
       cf_fro  => cloud_fields%get_field('frozen_fraction')
       cf_liq  => cloud_fields%get_field('liquid_fraction')
       rh_crit => cloud_fields%get_field('rh_crit')
-      ntml    => turbulence_fields%get_field('ntml')
-      cumulus => turbulence_fields%get_field('cumulus')
+      ntml    => turbulence_fields%get_integer_field('ntml')
+      cumulus => turbulence_fields%get_integer_field('cumulus')
 
       call invoke( smith_kernel_type( theta, exner , exner_wth, rh_crit,       &
                                        ntml, cumulus, mr(imr_v), mr(imr_cl),   &
@@ -188,7 +189,7 @@ contains
       gradrinr    => turbulence_fields%get_field('gradrinr')
       zhsc        => turbulence_fields%get_field('zhsc')
       inv_depth   => turbulence_fields%get_field('inv_depth')
-      bl_type_ind => turbulence_fields%get_field('bl_type_ind')
+      bl_type_ind => turbulence_fields%get_integer_field('bl_type_ind')
 
       tau_dec_bm => cloud_fields%get_field('tau_dec_bm')
       tau_hom_bm => cloud_fields%get_field('tau_hom_bm')

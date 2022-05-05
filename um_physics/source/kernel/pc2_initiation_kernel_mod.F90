@@ -9,6 +9,7 @@ module pc2_initiation_kernel_mod
 
 use argument_mod,      only: arg_type,          &
                              GH_FIELD, GH_REAL, &
+                             GH_INTEGER,        &
                              GH_READ, GH_WRITE, &
                              CELL_COLUMN,       &
                              ANY_DISCONTINUOUS_SPACE_9, &
@@ -43,7 +44,7 @@ type, public, extends(kernel_type) :: pc2_initiation_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1), & ! zh
        arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1), & ! zhsc
        arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1), & ! inv_depth
-       arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_9), & ! bl_type_ind
+       arg_type(GH_FIELD, GH_INTEGER,GH_READ,ANY_DISCONTINUOUS_SPACE_9), & ! bl_type_ind
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! tau_dec_bm
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! tau_hom_bm
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! tau_mph_bm
@@ -52,7 +53,7 @@ type, public, extends(kernel_type) :: pc2_initiation_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! theta_n_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! exner_n_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1), & ! zlcl_mixed
-       arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1), & ! r_cumulus
+       arg_type(GH_FIELD, GH_INTEGER,GH_READ,ANY_DISCONTINUOUS_SPACE_1), & ! cumulus
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                    & ! height_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dtheta_inc
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                    & ! dmv_inc_wth
@@ -104,7 +105,7 @@ contains
 !> @param[in]     theta_n_wth    Start of timestep theta in theta space
 !> @param[in]     exner_n_wth    Start of timestep exner in theta space
 !> @param[in]     zlcl_mixed     The height of the lifting condensation level in the mixed layer
-!> @param[in]     r_cumulus      A real number representing the logical cumulus flag
+!> @param[in]     cumulus        The logical cumulus flag
 !> @param[in]     height_wth     Height of wth levels above mean sea level
 !> @param[in,out] dtheta_inc_wth Increment to theta in theta space
 !> @param[in,out] dmv_inc_wth    Increment to water vapour in theta space
@@ -156,7 +157,7 @@ subroutine pc2_initiation_code( nlayers,                           &
                                 theta_n_wth,                       &
                                 exner_n_wth,                       &
                                 zlcl_mixed,                        &
-                                r_cumulus,                         &
+                                cumulus,                           &
                                 height_wth,                        &
                                 ! Responses
                                 dtheta_inc_wth,                    &
@@ -229,10 +230,10 @@ subroutine pc2_initiation_code( nlayers,                           &
     real(kind=r_def), intent(in), dimension(undf_2d)  :: zh
     real(kind=r_def), intent(in), dimension(undf_2d)  :: zhsc
     real(kind=r_def), intent(in), dimension(undf_2d)  :: inv_depth
-    real(kind=r_def), intent(in), dimension(undf_bl)  :: bl_type_ind
+    integer(kind=i_def), intent(in), dimension(undf_bl) :: bl_type_ind
 
     real(kind=r_def), intent(in), dimension(undf_2d) :: zlcl_mixed
-    real(kind=r_def), intent(in), dimension(undf_2d) :: r_cumulus
+    integer(kind=i_def), intent(in), dimension(undf_2d) :: cumulus
     real(kind=r_def), intent(in), dimension(undf_wth) :: height_wth
 
     logical, dimension(row_length,rows) :: l_cumulus
@@ -299,12 +300,8 @@ subroutine pc2_initiation_code( nlayers,                           &
     logical,       parameter :: l_scmdiags(nscmdpkgs) = .false.
     logical,       parameter :: calculate_increments  = .false.
 
-    ! Convert cumulus flag from real to logical
-    if (r_cumulus(map_2d(1))>0.5_r_def) then
-      l_cumulus(1,1) = .true.
-    else
-      l_cumulus(1,1) = .false.
-    endif
+    ! Convert cumulus flag from integer to logical
+    l_cumulus(1,1) = (cumulus(map_2d(1)) == 1_i_def)
 
     zlcl_mix(1,1) = zlcl_mixed(map_2d(1))
 

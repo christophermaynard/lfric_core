@@ -12,7 +12,7 @@ module radaer_kernel_mod
 use argument_mod,      only: arg_type,                  &
                              GH_FIELD, GH_REAL,         &
                              GH_READ, GH_WRITE,         &
-                             CELL_COLUMN,               &
+                             CELL_COLUMN, GH_INTEGER,   &
                              ANY_DISCONTINUOUS_SPACE_1, &
                              ANY_DISCONTINUOUS_SPACE_2, &
                              ANY_DISCONTINUOUS_SPACE_3, &
@@ -36,7 +36,7 @@ type, public, extends(kernel_type) :: radaer_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA), & ! theta_in_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA), & ! exner_in_wth
        !trop_level
-       arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1), &
+       arg_type(GH_FIELD, GH_INTEGER, GH_READ,  ANY_DISCONTINUOUS_SPACE_1), &
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA), & ! n_ait_sol
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA), & ! ait_sol_su
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA), & ! ait_sol_bc
@@ -345,7 +345,7 @@ subroutine radaer_code( nlayers,                                               &
 
   real(kind=r_def), intent(in),    dimension(undf_wth)   :: theta_in_wth
   real(kind=r_def), intent(in),    dimension(undf_wth)   :: exner_in_wth
-  real(kind=r_def), intent(in),    dimension(undf_2d)    :: trop_level
+  integer(kind=i_def), intent(in), dimension(undf_2d)    :: trop_level
   real(kind=r_def), intent(in),    dimension(undf_wth)   :: n_ait_sol
   real(kind=r_def), intent(in),    dimension(undf_wth)   :: ait_sol_su
   real(kind=r_def), intent(in),    dimension(undf_wth)   :: ait_sol_bc
@@ -516,7 +516,7 @@ subroutine radaer_code( nlayers,                                               &
 
   ! Note that this is inverted compared to the UM
   ! This will be dealt with in ukca_radaer_band_average
-  trindxrad_um(1) = int( trop_level( map_2d(1) ) )
+  trindxrad_um(1) = trop_level( map_2d(1) )
 
   !-----------------------------------------------------------------------
   ! Populate ukca_radaer element arrays

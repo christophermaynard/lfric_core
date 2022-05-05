@@ -11,6 +11,7 @@ use argument_mod,      only : arg_type,          &
                               GH_FIELD, GH_REAL, &
                               GH_READ, GH_WRITE, &
                               CELL_COLUMN,       &
+                              GH_INTEGER,        &
                               ANY_DISCONTINUOUS_SPACE_1
 use fs_continuity_mod, only:  Wtheta, W3
 use constants_mod,     only : r_def, i_def
@@ -29,7 +30,7 @@ type, public, extends(kernel_type) :: strat_aerosol_kernel_type
   private
   type(arg_type) :: meta_args(3) = (/                                    &
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, Wtheta),                    & ! sulphuric
-       arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1), & ! trop_level
+       arg_type(GH_FIELD, GH_INTEGER,GH_READ,ANY_DISCONTINUOUS_SPACE_1), & ! trop_level
        arg_type(GH_FIELD, GH_REAL, GH_READ,  W3)                         & ! exner
        /)
   integer :: operates_on = CELL_COLUMN
@@ -80,7 +81,7 @@ subroutine strat_aerosol_code(nlayers,                    &
   integer(i_def), dimension(ndf_w3),  intent(in) :: map_w3
 
   real(r_def), dimension(undf_wth), intent(inout) :: sulphuric
-  real(r_def), dimension(undf_2d),  intent(in) :: trop_level
+  integer(i_def), dimension(undf_2d),  intent(in) :: trop_level
   real(r_def), dimension(undf_w3),  intent(in) :: exner
 
   ! Local variables
@@ -89,7 +90,7 @@ subroutine strat_aerosol_code(nlayers,                    &
 
 
   ! Level of tropopause
-  i_trop = int(trop_level(map_2d(1)))
+  i_trop = trop_level(map_2d(1))
 
   ! Sulphuric mass mixing ratio (kg/kg) above tropopause using the ratio of
   ! the stratospheric column amount of sulphuric acid aerosol (kg m-2) to

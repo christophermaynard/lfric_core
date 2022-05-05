@@ -64,7 +64,7 @@ contains
   !> @brief Initialise fields for locally-computed diagnostics
   subroutine initialise_diags_for_conv(theta_star,        &
                                        rho,               &
-                                       ntml,              &
+                                       zh,                &
                                        deep_in_col,       &    ! 2-D
                                        shallow_in_col,    &
                                        mid_in_col,        &
@@ -107,7 +107,7 @@ contains
     implicit none
 
     ! Fields passed in to copy properties from
-    type( field_type ), intent(in)    :: theta_star, rho, ntml
+    type( field_type ), intent(in)    :: theta_star, rho, zh
 
     ! Diagnostic fields to initialise
     type( field_type ), intent(inout) :: deep_in_col,     &    ! 2-D
@@ -153,72 +153,72 @@ contains
 
     ! Convective diagnostics - 2d
     deep_in_col_flag = .true.
-    call ntml%copy_field_properties(deep_in_col)
+    call zh%copy_field_properties(deep_in_col)
     call invoke( setval_c(deep_in_col, 0.0_r_def) )
 
     shallow_in_col_flag = .true.
-    call ntml%copy_field_properties(shallow_in_col)
+    call zh%copy_field_properties(shallow_in_col)
     call invoke( setval_c(shallow_in_col, 0.0_r_def) )
 
     mid_in_col_flag = .true.
-    call ntml%copy_field_properties(mid_in_col)
+    call zh%copy_field_properties(mid_in_col)
     call invoke( setval_c(mid_in_col, 0.0_r_def) )
 
     freeze_level_flag = .true.
-    call ntml%copy_field_properties(freeze_level)
+    call zh%copy_field_properties(freeze_level)
     call invoke( setval_c(freeze_level, 0.0_r_def) )
 
     deep_prec_flag = .true.
-    call ntml%copy_field_properties(deep_prec)
+    call zh%copy_field_properties(deep_prec)
     call invoke( setval_c(deep_prec, 0.0_r_def) )
 
     shallow_prec_flag = .true.
-    call ntml%copy_field_properties(shallow_prec)
+    call zh%copy_field_properties(shallow_prec)
     call invoke( setval_c(shallow_prec, 0.0_r_def) )
 
     mid_prec_flag = .true.
-    call ntml%copy_field_properties(mid_prec)
+    call zh%copy_field_properties(mid_prec)
     call invoke( setval_c(mid_prec, 0.0_r_def) )
 
     deep_term_flag = .true.
-    call ntml%copy_field_properties(deep_term)
+    call zh%copy_field_properties(deep_term)
     call invoke( setval_c(deep_term, 0.0_r_def) )
 
     cape_timescale_flag = .true.
-    call ntml%copy_field_properties(cape_timescale)
+    call zh%copy_field_properties(cape_timescale)
     call invoke( setval_c(cape_timescale, 0.0_r_def) )
 
     lowest_cv_base_flag = .true.
-    call ntml%copy_field_properties(lowest_cv_base)
+    call zh%copy_field_properties(lowest_cv_base)
     ! not zeroed because overwritten
 
     lowest_cv_top_flag = .true.
-    call ntml%copy_field_properties(lowest_cv_top)
+    call zh%copy_field_properties(lowest_cv_top)
     ! not zeroed because overwritten
 
     cv_base_flag = .true.
-    call ntml%copy_field_properties(cv_base)
+    call zh%copy_field_properties(cv_base)
     ! zeroed because value tested in kernel
     call invoke( setval_c(cv_base, 0.0_r_def) )
 
     cv_top_flag = .true.
-    call ntml%copy_field_properties(cv_top)
+    call zh%copy_field_properties(cv_top)
     ! not zeroed because overwritten
 
     pres_cv_base_flag = .true.
-    call ntml%copy_field_properties(pres_cv_base)
+    call zh%copy_field_properties(pres_cv_base)
     ! not zeroed because overwritten
 
     pres_cv_top_flag = .true.
-    call ntml%copy_field_properties(pres_cv_top)
+    call zh%copy_field_properties(pres_cv_top)
     ! not zeroed because overwritten
 
     deep_cfl_limited_flag = .true.
-    call ntml%copy_field_properties(deep_cfl_limited)
+    call zh%copy_field_properties(deep_cfl_limited)
     call invoke( setval_c(deep_cfl_limited, 0.0_r_def) )
 
     mid_cfl_limited_flag = .true.
-    call ntml%copy_field_properties(mid_cfl_limited)
+    call zh%copy_field_properties(mid_cfl_limited)
     call invoke( setval_c(mid_cfl_limited, 0.0_r_def) )
 
     ! Convective diagnostics - 3d  - theta levels
@@ -311,7 +311,7 @@ contains
       call invoke( setval_c(massflux_up_half, 0.0_r_def) )
     end if
     if (massflux_up_cmpta_flag .and. (.not. shallow_in_col_flag)) then
-      call ntml%copy_field_properties(shallow_in_col)
+      call zh%copy_field_properties(shallow_in_col)
       call invoke( setval_c(shallow_in_col, 0.0_r_def) )
     end if
 

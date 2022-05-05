@@ -11,6 +11,7 @@ use argument_mod,      only : arg_type,          &
                               GH_FIELD, GH_REAL, &
                               GH_READ, GH_WRITE, &
                               CELL_COLUMN,       &
+                              GH_INTEGER,        &
                               ANY_DISCONTINUOUS_SPACE_1
 use fs_continuity_mod, only:  Wtheta
 use constants_mod,     only : r_def, i_def
@@ -31,7 +32,7 @@ type, public, extends(kernel_type) :: locate_tropopause_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READ,  Wtheta),                   & ! theta
        arg_type(GH_FIELD, GH_REAL, GH_READ,  Wtheta),                   & ! exner_in_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  Wtheta),                   & ! height_wth
-       arg_type(GH_FIELD, GH_REAL, GH_WRITE, ANY_DISCONTINUOUS_SPACE_1) & ! trop_level
+       arg_type(GH_FIELD, GH_INTEGER,GH_WRITE,ANY_DISCONTINUOUS_SPACE_1)& ! trop_level
     /)
   integer :: operates_on = CELL_COLUMN
 contains
@@ -79,7 +80,7 @@ subroutine locate_tropopause_code(nlayers,                    &
   real(r_def), dimension(undf_wth), intent(in) :: theta, exner_in_wth
   real(r_def), dimension(undf_wth), intent(in) :: height_wth
 
-  real(r_def), dimension(undf_2d), intent(inout) :: trop_level
+  integer(i_def), dimension(undf_2d), intent(inout) :: trop_level
 
   ! Local variables
   integer(i_def) :: k, kk
@@ -133,9 +134,9 @@ subroutine locate_tropopause_code(nlayers,                    &
     end if
   end do
   if (lapse_rate_trop_level > 0) then
-    trop_level(map_2d(1)) = real(lapse_rate_trop_level, r_def)
+    trop_level(map_2d(1)) = lapse_rate_trop_level
   else
-    trop_level(map_2d(1)) = real(cold_point_trop_level, r_def)
+    trop_level(map_2d(1)) = cold_point_trop_level
   end if
 
 end subroutine locate_tropopause_code

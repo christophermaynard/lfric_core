@@ -10,6 +10,7 @@ module init_snow_fields_alg_mod
 
   ! Derived Types
   use field_mod,                 only: field_type
+  use integer_field_mod,         only: integer_field_type
   use field_collection_mod,      only: field_collection_type
 
   implicit none
@@ -37,7 +38,7 @@ contains
     ! Prognostic fields
     type( field_type ), pointer :: tile_snow_mass       => null()
     type( field_type ), pointer :: tile_snow_rgrain     => null()
-    type( field_type ), pointer :: n_snow_layers        => null()
+    type( integer_field_type ), pointer :: n_snow_layers => null()
     type( field_type ), pointer :: snow_depth           => null()
     type( field_type ), pointer :: snow_soot            => null()
     type( field_type ), pointer :: snow_under_canopy    => null()
@@ -50,7 +51,7 @@ contains
 
     tile_snow_mass       => snow_fields%get_field('tile_snow_mass')
     tile_snow_rgrain     => snow_fields%get_field('tile_snow_rgrain')
-    n_snow_layers        => snow_fields%get_field('n_snow_layers')
+    n_snow_layers        => snow_fields%get_integer_field('n_snow_layers')
     snow_depth           => snow_fields%get_field('snow_depth')
     snow_soot            => snow_fields%get_field('snow_soot')
     snow_under_canopy    => snow_fields%get_field('snow_under_canopy')
@@ -64,7 +65,7 @@ contains
     ! Set snow prognostics to fixed values for use in SCM snow test job
     if (test == test_snow) then ! Testing with snow present
       call invoke( setval_c(tile_snow_mass, 50.0_r_def),                    &
-                   setval_c(n_snow_layers,  3.0_r_def),                     &
+                   int_setval_c(n_snow_layers, 3_i_def),                    &
                    setval_c(snow_depth,     2.0_r_def),                     &
                    ! Initialise fields which vary with snow layer
                    initial_snow_kernel_type( snow_layer_thickness,          &
@@ -73,7 +74,7 @@ contains
     else ! Set prognostics to 0 for other tests without snow
          ! (except temperature, which must be nonzero)
       call invoke( setval_c(tile_snow_mass, 0.0_r_def),                     &
-                   setval_c(n_snow_layers,  0.0_r_def),                     &
+                   int_setval_c(n_snow_layers, 0_i_def),                    &
                    setval_c(snow_depth,     0.0_r_def),                     &
                    setval_c(snow_layer_thickness, 0.0_r_def),               &
                    setval_c(snow_layer_ice_mass, 0.0_r_def),                &

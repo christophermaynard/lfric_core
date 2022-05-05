@@ -104,14 +104,15 @@ contains
     implicit none
 
     ! Prognostic fields to output
-    type( field_type ), intent(in)    :: ntml, cumulus, bl_type_ind, wvar,     &
+    type( field_type ), intent(in)    :: wvar,                                 &
                                          dsldzm, gradrinr, rhokh_bl, tke_bl,   &
                                          dtrdz_tq_bl, rdz_tq_bl, zhsc,         &
                                          zht, z0h_eff,                         &
                                          ent_we_lim, ent_t_frac, ent_zrzi,     &
                                          ent_we_lim_dsc, ent_t_frac_dsc,       &
                                          ent_zrzi_dsc, oblen
-    type(integer_field_type), intent(in) :: level_ent, level_ent_dsc
+    type(integer_field_type), intent(in) :: level_ent, level_ent_dsc, ntml,    &
+                                            cumulus, bl_type_ind
     type( field_type ), intent(in)    :: tile_fraction, z0m_tile, z0m,         &
                                          gross_prim_prod, net_prim_prod,       &
                                          gc_tile, soil_respiration, ustar,     &

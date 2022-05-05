@@ -8,6 +8,7 @@
 module pc2_initiation_alg_mod
 
    use field_mod,               only: field_type
+   use integer_field_mod,       only: integer_field_type
    use field_collection_mod,    only: field_collection_type
    use fs_continuity_mod,       only: Wtheta
    use geometric_constants_mod, only: get_height
@@ -94,7 +95,7 @@ contains
     type( field_type ), pointer :: zh          => null()
     type( field_type ), pointer :: zhsc        => null()
     type( field_type ), pointer :: inv_depth   => null()
-    type( field_type ), pointer :: bl_type_ind => null()
+    type( integer_field_type ), pointer :: bl_type_ind => null()
     type( field_type ), pointer :: tau_dec_bm  => null()
     type( field_type ), pointer :: tau_hom_bm  => null()
     type( field_type ), pointer :: tau_mph_bm  => null()
@@ -104,7 +105,7 @@ contains
     type( field_type ), pointer :: svar_tb    => null()
 
     type( field_type ), pointer :: zlcl_mixed      => null()
-    type( field_type ), pointer :: r_cumulus       => null()
+    type( integer_field_type ), pointer :: cumulus => null()
 
     type( field_type ), pointer :: height_wth => null()
 
@@ -130,7 +131,7 @@ contains
     svar_tb         => cloud_fields%get_field('svar_tb')
 
     zlcl_mixed      => turbulence_fields%get_field('z_lcl')
-    r_cumulus       => turbulence_fields%get_field('cumulus')
+    cumulus         => turbulence_fields%get_integer_field('cumulus')
 
     dsldzm          => turbulence_fields%get_field('dsldzm')
     wvar            => turbulence_fields%get_field('wvar')
@@ -138,7 +139,7 @@ contains
     zh              => turbulence_fields%get_field('zh')
     zhsc            => turbulence_fields%get_field('zhsc')
     inv_depth       => turbulence_fields%get_field('inv_depth')
-    bl_type_ind     => turbulence_fields%get_field('bl_type_ind')
+    bl_type_ind     => turbulence_fields%get_integer_field('bl_type_ind')
 
     mesh       => theta%get_mesh()
     height_wth => get_height(Wtheta, mesh%get_id())
@@ -177,7 +178,7 @@ contains
                                               theta_n,           &
                                               exner_wth_n,       &
                                               zlcl_mixed,        &
-                                              r_cumulus,         &
+                                              cumulus,           &
                                               height_wth,        &
                                                 ! Responses
                                               dtheta_pc2_inc,    &

@@ -8,6 +8,7 @@ module process_snow_kernel_mod
 
   use argument_mod,  only: arg_type,                  &
                            GH_FIELD, GH_REAL,         &
+                           GH_INTEGER,                &
                            GH_READ, GH_READWRITE,     &
                            ANY_DISCONTINUOUS_SPACE_1, &
                            ANY_DISCONTINUOUS_SPACE_2, &
@@ -25,7 +26,7 @@ module process_snow_kernel_mod
     private
     type(arg_type) :: meta_args(11) = (/                                       &
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), &
-         arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), &
+         arg_type(GH_FIELD, GH_INTEGER,GH_READWRITE,ANY_DISCONTINUOUS_SPACE_1),&
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), &
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), &
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1), &
@@ -100,7 +101,7 @@ contains
     integer(kind=i_def), intent(in) :: map_soil(ndf_soil)
 
     real(kind=r_def), intent(inout) :: tile_snow_mass(undf_tile)
-    real(kind=r_def), intent(inout) :: n_snow_layers(undf_tile)
+    integer(kind=i_def), intent(inout) :: n_snow_layers(undf_tile)
     real(kind=r_def), intent(inout) :: snow_under_canopy(undf_tile)
     real(kind=r_def), intent(inout) :: snowpack_density(undf_tile)
     real(kind=r_def), intent(inout) :: snow_depth(undf_tile)
@@ -138,13 +139,13 @@ contains
         if (tile_snow_mass(map_tile(1)+i-1) >= 0.0_r_def .and. &
             tile_snow_mass(map_tile(1)+i-1) < snow_landice_min ) then
 
-          if (n_snow_layers(map_tile(1)+i-1) < real(nsmax, r_def) ) then
+          if (n_snow_layers(map_tile(1)+i-1) < nsmax ) then
             ! The ice is so thin that the snow pack should be reset.
             tile_snow_mass(map_tile(1)+i-1) = snow_landice_min
             if (can_model == 4) snow_under_canopy(map_tile(1)+i-1) = 0.0_r_def
             snowpack_density(map_tile(1)+i-1) = rho_snow_const
             snow_depth(map_tile(1)+i-1) = snow_landice_min / rho_snow_const
-            n_snow_layers(map_tile(1)+i-1) = real(nsmax, r_def)
+            n_snow_layers(map_tile(1)+i-1) = nsmax
             do n = 1, nsmax
               i_snow = (i-1)*nsmax + n-1
               snow_layer_thickness(map_snow(1)+i_snow) = dzsnow(n)
@@ -194,7 +195,7 @@ contains
           end if
           snowpack_density(map_tile(1)+i-1) = rho_snow_const
           snow_depth(map_tile(1)+i-1) = snow_icefree_max / rho_snow_const
-          n_snow_layers(map_tile(1)+i-1) = real(nsmax, r_def)
+          n_snow_layers(map_tile(1)+i-1) = nsmax
           do n = 1, nsmax
             i_snow = (i-1)*nsmax + n-1
             snow_layer_thickness(map_snow(1)+i_snow) = dzsnow(n)

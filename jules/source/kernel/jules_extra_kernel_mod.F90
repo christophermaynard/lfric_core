@@ -10,7 +10,7 @@ module jules_extra_kernel_mod
   use argument_mod,            only : arg_type,                  &
                                       GH_FIELD, GH_REAL,         &
                                       GH_READ, GH_WRITE,         &
-                                      GH_READWRITE,              &
+                                      GH_READWRITE, GH_INTEGER,  &
                                       ANY_DISCONTINUOUS_SPACE_1, &
                                       ANY_DISCONTINUOUS_SPACE_2, &
                                       ANY_DISCONTINUOUS_SPACE_3, &
@@ -72,7 +72,7 @@ module jules_extra_kernel_mod
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! canopy_water
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! tile_snow_mass
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! tile_snow_rgrain
-         arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! n_snow_layers
+         arg_type(GH_FIELD, GH_INTEGER,GH_READWRITE,ANY_DISCONTINUOUS_SPACE_2),& ! n_snow_layers
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! snow_depth
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! snow_under_canopy
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2), & ! snowpack_density
@@ -342,7 +342,7 @@ contains
     real(kind=r_def), intent(inout) :: canopy_water(undf_tile)
     real(kind=r_def), intent(inout) :: tile_snow_mass(undf_tile)
     real(kind=r_def), intent(inout) :: tile_snow_rgrain(undf_tile)
-    real(kind=r_def), intent(inout) :: n_snow_layers(undf_tile)
+    integer(kind=i_def), intent(inout) :: n_snow_layers(undf_tile)
     real(kind=r_def), intent(inout) :: snow_depth(undf_tile)
     real(kind=r_def), intent(inout) :: snow_under_canopy(undf_tile)
     real(kind=r_def), intent(inout) :: snowpack_density(undf_tile)
@@ -600,7 +600,7 @@ contains
       ! Snow grain size on tiles (microns)
       progs%rgrain_surft(1, i) = real(tile_snow_rgrain(map_tile(1)+i-1), r_um)
       ! Number of snow layers on tiles (nsnow_surft)
-      progs%nsnow_surft(1, i) = int(n_snow_layers(map_tile(1)+i-1), i_um)
+      progs%nsnow_surft(1, i) = n_snow_layers(map_tile(1)+i-1)
       ! Snow depth on tiles (snowdepth_surft)
       progs%snowdepth_surft(1, i) = real(snow_depth(map_tile(1)+i-1), r_um)
       ! Snow mass under canopy
@@ -706,7 +706,7 @@ contains
       ! Lying snow mass on land tiles
       tile_snow_mass(map_tile(1)+i-1) = real(progs%snow_surft(1, i), r_def)
       ! Number of snow layers on tiles (nsnow_surft)
-      n_snow_layers(map_tile(1)+i-1) = real(progs%nsnow_surft(1, i), r_def)
+      n_snow_layers(map_tile(1)+i-1) = progs%nsnow_surft(1, i)
       ! Snow depth on tiles (snowdepth_surft)
       snow_depth(map_tile(1)+i-1) = real(progs%snowdepth_surft(1, i), r_def)
       ! Snow grain size on tiles (microns)

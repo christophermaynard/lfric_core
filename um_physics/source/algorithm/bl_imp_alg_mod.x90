@@ -10,6 +10,7 @@ module bl_imp_alg_mod
   use constants_mod,                 only: i_def
   use clock_mod,                     only: clock_type
   use field_mod,                     only: field_type
+  use integer_field_mod,             only: integer_field_type
   use field_collection_mod,          only: field_collection_type
   use fs_continuity_mod,             only: W1, W2, W3, Wtheta
   use geometric_constants_mod,       only: get_height, get_da_at_w2, &
@@ -110,11 +111,11 @@ contains
 
     type( field_type ), pointer :: zh             => null()
     type( field_type ), pointer :: zhsc           => null()
-    type( field_type ), pointer :: ntml           => null()
-    type( field_type ), pointer :: cumulus        => null()
-    type( field_type ), pointer :: blend_height_tq => null()
+    type( integer_field_type ), pointer :: ntml   => null()
+    type( integer_field_type ), pointer :: cumulus => null()
+    type( integer_field_type ), pointer :: blend_height_tq => null()
     type( field_type ), pointer :: zh_nonloc      => null()
-    type( field_type ), pointer :: bl_type_ind    => null()
+    type( integer_field_type ), pointer :: bl_type_ind => null()
     type( field_type ), pointer :: z_lcl          => null()
     type( field_type ), pointer :: inv_depth      => null()
     type( field_type ), pointer :: qcl_at_inv_top => null()
@@ -199,7 +200,7 @@ contains
     type( field_type ), pointer :: soil_moist_avail   => null()
 
     type( field_type ), pointer :: tile_snow_mass     => null()
-    type( field_type ), pointer :: n_snow_layers      => null()
+    type( integer_field_type ), pointer :: n_snow_layers => null()
     type( field_type ), pointer :: snow_depth         => null()
 
     type( field_type ), pointer :: dA         => null()
@@ -251,11 +252,11 @@ contains
     ! Unpack turbulence fields
     zh              => turbulence_fields%get_field('zh')
     zhsc            => turbulence_fields%get_field('zhsc')
-    ntml            => turbulence_fields%get_field('ntml')
-    cumulus         => turbulence_fields%get_field('cumulus')
-    blend_height_tq => turbulence_fields%get_field('blend_height_tq')
+    ntml            => turbulence_fields%get_integer_field('ntml')
+    cumulus         => turbulence_fields%get_integer_field('cumulus')
+    blend_height_tq => turbulence_fields%get_integer_field('blend_height_tq')
     zh_nonloc       => turbulence_fields%get_field('zh_nonloc')
-    bl_type_ind     => turbulence_fields%get_field('bl_type_ind')
+    bl_type_ind     => turbulence_fields%get_integer_field('bl_type_ind')
     z_lcl           => turbulence_fields%get_field('z_lcl')
     inv_depth       => turbulence_fields%get_field('inv_depth')
     qcl_at_inv_top  => turbulence_fields%get_field('qcl_at_inv_top')
@@ -349,7 +350,7 @@ contains
 
     ! Snow fields
     tile_snow_mass        => snow_fields%get_field('tile_snow_mass')
-    n_snow_layers         => snow_fields%get_field('n_snow_layers')
+    n_snow_layers         => snow_fields%get_integer_field('n_snow_layers')
     snow_depth            => snow_fields%get_field('snow_depth')
 
     mesh       => theta%get_mesh()

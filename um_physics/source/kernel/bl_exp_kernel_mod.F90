@@ -75,8 +75,8 @@ module bl_exp_kernel_mod
          arg_type(GH_FIELD, GH_REAL,  GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1),&! zh_2d
          arg_type(GH_FIELD, GH_REAL,  GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1),&! z0msea_2d
          arg_type(GH_FIELD, GH_REAL,  GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1),&! z0m_2d
-         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! ntml_2d
-         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! cumulus_2d
+         arg_type(GH_FIELD, GH_INTEGER,  GH_WRITE,  ANY_DISCONTINUOUS_SPACE_1),&! ntml_2d
+         arg_type(GH_FIELD, GH_INTEGER,  GH_WRITE,  ANY_DISCONTINUOUS_SPACE_1),&! cumulus_2d
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_2, STENCIL(REGION)),&! tile_fraction
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_3),&! leaf_area_index
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_3),&! canopy_height
@@ -96,7 +96,7 @@ module bl_exp_kernel_mod
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_4),&! sea_ice_temperature
          arg_type(GH_FIELD, GH_REAL,  GH_READWRITE, ANY_DISCONTINUOUS_SPACE_2),&! tile_temperature
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! tile_snow_mass
-         arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! n_snow_layers
+         arg_type(GH_FIELD, GH_INTEGER,  GH_READ,   ANY_DISCONTINUOUS_SPACE_2),&! n_snow_layers
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! snow_depth
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_5),&! snow_layer_thickness
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_5),&! snow_layer_ice_mass
@@ -158,7 +158,7 @@ module bl_exp_kernel_mod
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2),&! gc_tile
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2),&! canhc_tile
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_8),&! tile_water_extract
-         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! blend_height_tq
+         arg_type(GH_FIELD, GH_INTEGER,  GH_WRITE,  ANY_DISCONTINUOUS_SPACE_1),&! blend_height_tq
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! z0m_eff
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! ustar
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! soil_moist_avail
@@ -167,17 +167,17 @@ module bl_exp_kernel_mod
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! z_lcl
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! inv_depth
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! qcl_at_inv_top
-         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! shallow_flag
+         arg_type(GH_FIELD, GH_INTEGER,  GH_WRITE,  ANY_DISCONTINUOUS_SPACE_1),&! shallow_flag
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! uw0_flux
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! vw0_flux
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! lcl_height
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! parcel_top
-         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! level_parcel_top
+         arg_type(GH_FIELD, GH_INTEGER,  GH_WRITE,  ANY_DISCONTINUOUS_SPACE_1),&! level_parcel_top
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! wstar_2d
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! thv_flux
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! parcel_buoyancy
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! qsat_at_lcl
-         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_9),&! bl_type_ind
+         arg_type(GH_FIELD, GH_INTEGER,  GH_WRITE,  ANY_DISCONTINUOUS_SPACE_9),&! bl_type_ind
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINUOUS_SPACE_3),&! snow_unload_rate
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      ANY_DISCONTINUOUS_SPACE_10),&! albedo_obs_scaling
          arg_type(GH_FIELD, GH_INTEGER,  GH_WRITE,  ANY_DISCONTINUOUS_SPACE_1), &! level_ent 
@@ -697,22 +697,24 @@ contains
                                                            z0msea_2d,          &
                                                            z0m_2d
 
-    real(kind=r_def), dimension(undf_2d), intent(inout) :: ntml_2d,            &
-                                                           cumulus_2d,         &
-                                                           blend_height_tq,    &
-                                                           z0m_eff,            &
+    integer(kind=i_def), dimension(undf_2d), intent(inout) :: ntml_2d,         &
+                                                              cumulus_2d,      &
+                                                              blend_height_tq, &
+                                                              shallow_flag,    &
+                                                              level_parcel_top
+ 
+
+    real(kind=r_def), dimension(undf_2d), intent(inout) :: z0m_eff,            &
                                                            ustar,              &
                                                            soil_moist_avail,   &
                                                            zh_nonloc,          &
                                                            z_lcl,              &
                                                            inv_depth,          &
                                                            qcl_at_inv_top,     &
-                                                           shallow_flag,       &
                                                            uw0_flux,           &
                                                            vw0_flux,           &
                                                            lcl_height,         &
                                                            parcel_top,         &
-                                                           level_parcel_top,   &
                                                            wstar_2d,           &
                                                            thv_flux,           &
                                                            parcel_buoyancy,    &
@@ -721,7 +723,7 @@ contains
     real(kind=r_def), intent(in) :: tile_fraction(undf_tile)
     real(kind=r_def), intent(inout) :: tile_temperature(undf_tile)
     real(kind=r_def), intent(in) :: tile_snow_mass(undf_tile)
-    real(kind=r_def), intent(in) :: n_snow_layers(undf_tile)
+    integer(kind=i_def), intent(in) :: n_snow_layers(undf_tile)
     real(kind=r_def), intent(in) :: snow_depth(undf_tile)
     real(kind=r_def), intent(in) :: canopy_water(undf_tile)
     real(kind=r_def), intent(inout) :: tile_heat_flux(undf_tile)
@@ -768,7 +770,7 @@ contains
 
     real(kind=r_def), intent(inout) :: tile_water_extract(undf_smtile)
 
-    real(kind=r_def), dimension(undf_bl),   intent(inout)  :: bl_type_ind
+    integer(kind=i_def), dimension(undf_bl), intent(inout) :: bl_type_ind
     real(kind=r_def), dimension(undf_pft),  intent(inout)  :: snow_unload_rate
     real(kind=r_def), dimension(undf_surf), intent(inout)  :: surf_interp
     real(kind=r_def), dimension(undf_tile), intent(inout):: alpha1_tile,      &
@@ -1304,7 +1306,7 @@ contains
     i_snow = 0
     do i = 1, n_land_tile
       snow_surft(1, i) = real(tile_snow_mass(map_tile(1)+i-1), r_um)
-      progs%nsnow_surft(1, i) = int(n_snow_layers(map_tile(1)+i-1), i_um)
+      progs%nsnow_surft(1, i) = n_snow_layers(map_tile(1)+i-1)
       progs%snowdepth_surft(1, i) = real(snow_depth(map_tile(1)+i-1), r_um)
       do j = 1, nsmax
         progs%ds_surft(1, i, j) = real(snow_layer_thickness(map_snow(1)+i_snow), r_um)
@@ -1824,7 +1826,7 @@ contains
     z0m_tile(map_tile(1)+first_sea_ice_tile-1) = z0mssi(1,1)
     chr1p5m_tile(map_tile(1)+first_sea_ice_tile-1) = chr1p5m_sice(1,1)
 
-    blend_height_tq(map_2d(1)) = real(k_blend_tq(1,1), r_def)
+    blend_height_tq(map_2d(1)) = k_blend_tq(1,1)
     z0m_eff(map_2d(1)) = z0m_eff_gb(1,1)
     ustar(map_2d(1)) = u_s(1,1)
     soil_moist_avail(map_2d(1)) = smc_soilt(1)
@@ -1833,15 +1835,15 @@ contains
     inv_depth(map_2d(1)) = real(dzh(1,1), r_def)
     qcl_at_inv_top(map_2d(1)) = real(qcl_inv_top(1,1), r_def)
     if ( l_shallow(1,1) ) then
-      shallow_flag(map_2d(1)) = 1.0_r_def
+      shallow_flag(map_2d(1)) = 1_i_def
     else
-      shallow_flag(map_2d(1)) = 0.0_r_def
+      shallow_flag(map_2d(1)) = 0_i_def
     end if
     uw0_flux(map_2d(1)) = uw0(1,1)
     vw0_flux(map_2d(1)) = vw0(1,1)
     lcl_height(map_2d(1)) = zlcl_uv(1,1)
     parcel_top(map_2d(1)) = zhpar(1,1)
-    level_parcel_top(map_2d(1)) = real(ntpar(1,1), r_def)
+    level_parcel_top(map_2d(1)) = ntpar(1,1)
     wstar_2d(map_2d(1)) = wstar(1,1)
     thv_flux(map_2d(1)) = wthvs(1,1)
     parcel_buoyancy(map_2d(1)) = delthvu(1,1)
@@ -1923,11 +1925,11 @@ contains
     zh_2d(map_2d(1))     = zh(1,1)
     zhsc_2d(map_2d(1))   = zhsc(1,1)
     z0msea_2d(map_2d(1)) = z0msea(1,1)
-    ntml_2d(map_2d(1))   = real(ntml(1,1))
+    ntml_2d(map_2d(1))   = ntml(1,1)
     if (cumulus(1,1)) then
-      cumulus_2d(map_2d(1)) = 1.0_r_def
+      cumulus_2d(map_2d(1)) = 1_i_def
     else
-      cumulus_2d(map_2d(1)) = 0.0_r_def
+      cumulus_2d(map_2d(1)) = 0_i_def
     endif
 
     if (rh_crit_opt == rh_crit_opt_tke) then

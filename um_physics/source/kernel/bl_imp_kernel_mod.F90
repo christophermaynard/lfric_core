@@ -60,8 +60,8 @@ module bl_imp_kernel_mod
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! theta_star
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                       &! height_w3
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! height_wth
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! ntml_2d
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! cumulus_2d
+         arg_type(GH_FIELD,  GH_INTEGER, GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! ntml_2d
+         arg_type(GH_FIELD,  GH_INTEGER, GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! cumulus_2d
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! tile_fraction
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_3),&! leaf_area_index
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_3),&! canopy_height
@@ -74,7 +74,7 @@ module bl_imp_kernel_mod
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1),&! time_since_transition
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! latitude
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! tile_snow_mass
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! n_snow_layers
+         arg_type(GH_FIELD,  GH_INTEGER, GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! n_snow_layers
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! snow_depth
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! canopy_water
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_5),&! soil_temperature
@@ -129,13 +129,13 @@ module bl_imp_kernel_mod
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, ANY_DISCONTINUOUS_SPACE_1),&! z_lcl
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! inv_depth
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! qcl_at_inv_top
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! blend_height_tq
+         arg_type(GH_FIELD,  GH_INTEGER, GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! blend_height_tq
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! ustar
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! soil_moist_avail
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! zh_nonloc
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! zh_2d
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! zhsc_2d
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_7),&! bl_type_ind
+         arg_type(GH_FIELD,  GH_INTEGER, GH_READ,      ANY_DISCONTINUOUS_SPACE_7),&! bl_type_ind
          arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2),&! t1p5m_surft
          arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_2),&! q1p5m_surft
          arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! t1p5m
@@ -523,9 +523,11 @@ contains
                                                            mt_inc_leonard_wth, &
                                                            thetal_inc_leonard_wth
 
-    real(kind=r_def), dimension(undf_2d), intent(in) :: ntml_2d,              &
-                                                        cumulus_2d, zh_2d,    &
-                                                        blend_height_tq,      &
+    integer(kind=i_def), dimension(undf_2d), intent(in) :: ntml_2d,            &
+                                                           cumulus_2d,         &
+                                                           blend_height_tq
+
+    real(kind=r_def), dimension(undf_2d), intent(in) :: zh_2d,                &
                                                         ustar,                &
                                                         soil_moist_avail,     &
                                                         zh_nonloc, zhsc_2d
@@ -536,7 +538,7 @@ contains
     real(kind=r_def), intent(inout) :: time_since_transition(undf_2d)
     real(kind=r_def), intent(in)    :: latitude(undf_2d)
     real(kind=r_def), intent(in)    :: tile_snow_mass(undf_tile)
-    real(kind=r_def), intent(in)    :: n_snow_layers(undf_tile)
+    integer(kind=i_def), intent(in) :: n_snow_layers(undf_tile)
     real(kind=r_def), intent(in)    :: snow_depth(undf_tile)
     real(kind=r_def), intent(in)    :: canopy_water(undf_tile)
     real(kind=r_def), intent(inout) :: tile_heat_flux(undf_tile)
@@ -579,7 +581,7 @@ contains
 
     real(kind=r_def), intent(in) :: tile_water_extract(undf_smtile)
 
-    real(kind=r_def), dimension(undf_bl),   intent(in)  :: bl_type_ind
+    integer(kind=i_def), dimension(undf_bl), intent(in) :: bl_type_ind
     real(kind=r_def), dimension(undf_tile), intent(in)  :: alpha1_tile,      &
                                                            ashtf_prime_tile, &
                                                            dtstar_tile,      &
@@ -1007,7 +1009,7 @@ contains
       ! Lying snow mass on land tiles
       snow_surft(1, i) = real(tile_snow_mass(map_tile(1)+i-1), r_um)
       ! Number of snow layers on tiles (nsnow_surft)
-      progs%nsnow_surft(1, i) = int(n_snow_layers(map_tile(1)+i-1), i_um)
+      progs%nsnow_surft(1, i) = n_snow_layers(map_tile(1)+i-1)
       ! Equivalent snowdepth for surface calculations.
       ! code copied from jules_land_sf_explicit
       ! 4 is a magic number inherited from Jules, meaning radiative canopy
@@ -1083,8 +1085,8 @@ contains
     !-----------------------------------------------------------------------
     ! Things passed from other parametrization schemes on this timestep
     !-----------------------------------------------------------------------
-    cumulus(1,1) = (cumulus_2d(map_2d(1)) > 0.5_r_def)
-    ntml(1,1) = INT(ntml_2d(map_2d(1)))
+    cumulus(1,1) = (cumulus_2d(map_2d(1)) == 1_i_def)
+    ntml(1,1) = ntml_2d(map_2d(1))
 
     do k = 1, bl_levels
       rhokh(1,1,k) = rhokh_bl(map_w3(1) + k-1)
@@ -1151,7 +1153,7 @@ contains
     z0mssi(1,1) = z0m_tile(map_tile(1)+first_sea_ice_tile-1)
     chr1p5m_sice(1,1) = chr1p5m_tile(map_tile(1)+first_sea_ice_tile-1)
 
-    k_blend_tq(1,1) = int(blend_height_tq(map_2d(1)), i_um)
+    k_blend_tq(1,1) = blend_height_tq(map_2d(1))
     u_s(1,1) = ustar(map_2d(1))
     smc_soilt(1) = soil_moist_avail(map_2d(1))
     zhnl(1,1) = zh_nonloc(map_2d(1))

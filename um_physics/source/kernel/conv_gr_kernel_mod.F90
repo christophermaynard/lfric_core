@@ -47,8 +47,8 @@ module conv_gr_kernel_mod
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                       &! height_w3
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! height_wth
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! delta
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! ntml_2d
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! cumulus_2d
+         arg_type(GH_FIELD,  GH_INTEGER, GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! ntml_2d
+         arg_type(GH_FIELD,  GH_INTEGER, GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! cumulus_2d
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_2),&! tile_fraction
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! dt_conv
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! dmv_conv
@@ -77,12 +77,12 @@ module conv_gr_kernel_mod
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! massflux_down
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! tke_bl
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! zh_2d
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! shallow_flag
+         arg_type(GH_FIELD,  GH_INTEGER, GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! shallow_flag
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! uw0_flux
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! vw0_flux
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! lcl_height
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! parcel_top
-         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! level_parcel_top
+         arg_type(GH_FIELD,  GH_INTEGER, GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! level_parcel_top
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! wstar_2d
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! thv_flux
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! parcel_buoyancy
@@ -565,14 +565,16 @@ contains
 
     real(kind=r_def), dimension(undf_w3), intent(inout) :: du_conv, dv_conv
 
-    real(kind=r_def), dimension(undf_2d), intent(in) :: ntml_2d,              &
-                                                        cumulus_2d, zh_2d,    &
-                                                        shallow_flag,         &
+    integer(kind=i_def), dimension(undf_2d), intent(in) :: ntml_2d,            &
+                                                           cumulus_2d,         &
+                                                           shallow_flag,       &
+                                                           level_parcel_top
+
+    real(kind=r_def), dimension(undf_2d), intent(in) :: zh_2d,                &
                                                         uw0_flux,             &
                                                         vw0_flux,             &
                                                         lcl_height,           &
                                                         parcel_top,           &
-                                                        level_parcel_top,     &
                                                         wstar_2d,             &
                                                         thv_flux,             &
                                                         parcel_buoyancy,      &
@@ -820,16 +822,16 @@ contains
     !-----------------------------------------------------------------------
     ! Things passed from other parametrization schemes on this timestep
     !-----------------------------------------------------------------------
-    cumulus(1,1) = (cumulus_2d(map_2d(1)) > 0.5_r_def)
-    ntml(1,1) = int(ntml_2d(map_2d(1)), i_um)
+    cumulus(1,1) = (cumulus_2d(map_2d(1)) == 1_i_def)
+    ntml(1,1) = ntml_2d(map_2d(1))
 
     zh(1,1) = zh_2d(map_2d(1))
-    l_shallow(1,1) = (shallow_flag(map_2d(1)) > 0.5_r_def)
+    l_shallow(1,1) = (shallow_flag(map_2d(1)) == 1_i_def)
     uw0(1,1) = uw0_flux(map_2d(1))
     vw0(1,1) = vw0_flux(map_2d(1))
     zlcl_uv(1,1) = lcl_height(map_2d(1))
     zhpar(1,1) = parcel_top(map_2d(1))
-    ntpar(1,1) = int(level_parcel_top(map_2d(1)), i_um)
+    ntpar(1,1) = level_parcel_top(map_2d(1))
     wstar(1,1) = wstar_2d(map_2d(1))
     wthvs(1,1) = thv_flux(map_2d(1))
     delthvu(1,1) = parcel_buoyancy(map_2d(1))

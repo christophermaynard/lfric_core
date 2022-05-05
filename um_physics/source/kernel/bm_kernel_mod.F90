@@ -10,6 +10,7 @@ module bm_kernel_mod
   use argument_mod,       only : arg_type,              &
                                  GH_FIELD, GH_REAL,     &
                                  GH_READ, GH_READWRITE, &
+                                 GH_INTEGER,            &
                                  ANY_DISCONTINUOUS_SPACE_1, &
                                  ANY_DISCONTINUOUS_SPACE_9, &
                                  GH_WRITE, CELL_COLUMN
@@ -39,7 +40,7 @@ module bm_kernel_mod
          arg_type(GH_FIELD, GH_REAL, GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! zh
          arg_type(GH_FIELD, GH_REAL, GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! zhsc
          arg_type(GH_FIELD, GH_REAL, GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! inv_depth
-         arg_type(GH_FIELD, GH_REAL, GH_READ,      ANY_DISCONTINUOUS_SPACE_9), & ! bl_type_ind
+         arg_type(GH_FIELD, GH_INTEGER, GH_READ,   ANY_DISCONTINUOUS_SPACE_9), & ! bl_type_ind
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA), & ! m_v
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA), & ! m_cl
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA), & ! m_ci
@@ -195,7 +196,7 @@ contains
     real(kind=r_def),    intent(in),    dimension(undf_2d)  :: zh
     real(kind=r_def),    intent(in),    dimension(undf_2d)  :: zhsc
     real(kind=r_def),    intent(in),    dimension(undf_2d)  :: inv_depth
-    real(kind=r_def),    intent(in),    dimension(undf_bl)  :: bl_type_ind
+    integer(kind=i_def), intent(in),    dimension(undf_bl)  :: bl_type_ind
 
     ! Local variables for the kernel
     integer(i_um) :: k

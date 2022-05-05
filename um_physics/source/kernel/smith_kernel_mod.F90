@@ -11,7 +11,8 @@ module smith_kernel_mod
                                  GH_FIELD, GH_REAL,     &
                                  GH_READ, GH_READWRITE, &
                                  GH_WRITE, CELL_COLUMN, &
-                                 ANY_DISCONTINUOUS_SPACE_1
+                                 ANY_DISCONTINUOUS_SPACE_1, &
+                                 GH_INTEGER
   use constants_mod,      only : r_def, r_double, i_def, i_um, r_um
   use fs_continuity_mod,  only : W3, Wtheta
   use kernel_mod,         only : kernel_type
@@ -29,8 +30,8 @@ module smith_kernel_mod
          arg_type(GH_FIELD, GH_REAL, GH_READ,      W3),                        & ! exner_in_w3
          arg_type(GH_FIELD, GH_REAL, GH_READ,      WTHETA),                    & ! exner_in_wth
          arg_type(GH_FIELD, GH_REAL, GH_READ,      WTHETA),                    & ! rh_crit_wth
-         arg_type(GH_FIELD, GH_REAL, GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! ntml_2d
-         arg_type(GH_FIELD, GH_REAL, GH_READ,      ANY_DISCONTINUOUS_SPACE_1), & ! cumulus_2d
+         arg_type(GH_FIELD, GH_INTEGER, GH_READ,   ANY_DISCONTINUOUS_SPACE_1), & ! ntml_2d
+         arg_type(GH_FIELD, GH_INTEGER, GH_READ,   ANY_DISCONTINUOUS_SPACE_1), & ! cumulus_2d
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                    & ! m_v
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                    & ! m_cl
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                    & ! m_ci
@@ -132,7 +133,7 @@ contains
     real(kind=r_def),    intent(in),    dimension(undf_wth) :: exner_in_wth
     real(kind=r_def),    intent(in),    dimension(undf_wth) :: theta_in_wth
     real(kind=r_def),    intent(in),    dimension(undf_wth) :: rh_crit_wth
-    real(kind=r_def),    intent(in),    dimension(undf_2d)  :: ntml_2d, cumulus_2d
+    integer(kind=i_def), intent(in),    dimension(undf_2d)  :: ntml_2d, cumulus_2d
     real(kind=r_def),    intent(inout), dimension(undf_wth) :: m_v
     real(kind=r_def),    intent(inout), dimension(undf_wth) :: m_cl
     real(kind=r_def),    intent(inout), dimension(undf_wth) :: m_ci
@@ -178,9 +179,9 @@ contains
     l_mcr_qcf2 = .false.
     l_mixing_ratio = .true.
 
-    cumulus(1,1) = (cumulus_2d(map_2d(1)) > 0.5_r_def)
+    cumulus(1,1) = (cumulus_2d(map_2d(1)) == 1_i_def)
 
-    ntml(1,1) = int(ntml_2d(map_2d(1)))
+    ntml(1,1) = ntml_2d(map_2d(1))
     errorstatus=0
 
     do k = 1, nlayers

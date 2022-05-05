@@ -573,10 +573,10 @@ contains
       'gradrinr', wtheta_space )
 
     ! 2D fields, don't need checkpointing
-    call add_physics_field( turbulence_fields, depository, prognostic_fields,  &
+    call add_integer_field( turbulence_fields, depository, prognostic_fields,  &
       advected_fields, &
       'ntml',    twod_space, twod=.true. )
-    call add_physics_field( turbulence_fields, depository, prognostic_fields,  &
+    call add_integer_field( turbulence_fields, depository, prognostic_fields,  &
       advected_fields, &
       'cumulus', twod_space, twod=.true. )
     call add_physics_field( turbulence_fields, depository, prognostic_fields,  &
@@ -588,7 +588,7 @@ contains
     call add_physics_field( turbulence_fields, depository, prognostic_fields,  &
       advected_fields, &
       'qcl_at_inv_top',  twod_space, twod=.true. )
-    call add_physics_field( turbulence_fields, depository, prognostic_fields,  &
+    call add_integer_field( turbulence_fields, depository, prognostic_fields,  &
       advected_fields, &
       'blend_height_tq',  twod_space, twod=.true. )
     call add_physics_field( turbulence_fields, depository, prognostic_fields,  &
@@ -606,7 +606,7 @@ contains
 
     ! Space for the 7 BL types
     vector_space => function_space_collection%get_fs(twod_mesh, 0, W3, 7)
-    call add_physics_field( turbulence_fields, depository, prognostic_fields,  &
+    call add_integer_field( turbulence_fields, depository, prognostic_fields,  &
       advected_fields, &
       'bl_type_ind',  vector_space, twod=.true. )
 
@@ -730,7 +730,7 @@ contains
     call add_physics_field( convection_fields, depository, prognostic_fields,  &
       advected_fields, &
       'cca_2d',  twod_space, twod=.true. )
-    call add_physics_field( convection_fields, depository, prognostic_fields,  &
+    call add_integer_field( convection_fields, depository, prognostic_fields,  &
       advected_fields, &
       'shallow_flag',  twod_space, twod=.true. )
     call add_physics_field( convection_fields, depository, prognostic_fields,  &
@@ -745,7 +745,7 @@ contains
     call add_physics_field( convection_fields, depository, prognostic_fields,  &
       advected_fields, &
       'parcel_top',  twod_space, twod=.true. )
-    call add_physics_field( convection_fields, depository, prognostic_fields,  &
+    call add_integer_field( convection_fields, depository, prognostic_fields,  &
       advected_fields, &
       'level_parcel_top',  twod_space, twod=.true. )
     call add_physics_field( convection_fields, depository, prognostic_fields,  &
@@ -1148,7 +1148,7 @@ contains
     call add_physics_field( snow_fields, depository, prognostic_fields,  &
       advected_fields, &
       'tile_snow_rgrain', surft_space, checkpoint_flag=checkpoint_flag, twod=.true. )
-    call add_physics_field( snow_fields, depository, prognostic_fields,  &
+    call add_integer_field( snow_fields, depository, prognostic_fields,  &
       advected_fields, &
       'n_snow_layers', surft_space, checkpoint_flag=checkpoint_flag, twod=.true. )
     call add_physics_field( snow_fields, depository, prognostic_fields,  &
