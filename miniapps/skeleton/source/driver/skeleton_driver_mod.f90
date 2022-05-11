@@ -19,6 +19,8 @@ module skeleton_driver_mod
   use driver_mesh_mod,            only : init_mesh
   use driver_fem_mod,             only : init_fem
   use field_mod,                  only : field_type
+  use halo_comms_mod,             only : initialise_halo_comms, &
+                                         finalise_halo_comms
   use init_skeleton_mod,          only : init_skeleton
   use lfric_xios_io_mod,          only : initialise_xios
   use io_config_mod,              only : write_diag, &
@@ -60,7 +62,6 @@ module skeleton_driver_mod
                                          spinup_period
   use xios,                       only : xios_context_finalize, &
                                          xios_update_calendar
-  use yaxt,                       only : xt_initialize, xt_finalize
 
   implicit none
 
@@ -107,8 +108,8 @@ contains
     !Store the MPI communicator for later use
     call store_comm( model_communicator )
 
-    ! Initialise YAXT
-    call xt_initialize( model_communicator )
+    ! Initialise halo functionality
+    call initialise_halo_comms( model_communicator )
 
     ! and get the rank information from the virtual machine
     total_ranks = get_comm_size()
@@ -256,8 +257,8 @@ contains
     ! Finalise namelist configurations
     call final_configuration()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
 
     call log_event( program_name//' completed.', LOG_LEVEL_ALWAYS )
 

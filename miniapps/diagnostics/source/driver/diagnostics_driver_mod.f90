@@ -17,6 +17,8 @@ module diagnostics_driver_mod
   use field_collection_mod,          only : field_collection_type
   use fieldspec_collection_mod,      only : fieldspec_collection
   use diagnostics_model_data_mod,    only : model_data_type
+  use halo_comms_mod,                only : initialise_halo_comms, &
+                                            finalise_halo_comms
   use io_config_mod,                 only : write_diag, &
                                             use_xios_io
   use io_context_mod,                only : io_context_type
@@ -40,7 +42,6 @@ module diagnostics_driver_mod
                                             get_comm_size, &
                                             get_comm_rank
   use simple_io_mod,                 only : initialise_simple_io
-  use yaxt,                          only : xt_initialize, xt_finalize
 
   implicit none
 
@@ -114,8 +115,8 @@ contains
     ! Store the MPI communicator for later use
     call store_comm( model_communicator )
 
-    ! Initialise YAXT
-    call xt_initialize( model_communicator )
+    ! Initialise halo functionality
+    call initialise_halo_comms( model_communicator )
 
     ! and get the rank information from the virtual machine
     total_ranks = get_comm_size()
@@ -290,8 +291,8 @@ contains
     ! Finalise namelist configurations
     call final_configuration()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
 
     call log_event(program_name // ' completed.', LOG_LEVEL_ALWAYS)
 

@@ -18,11 +18,11 @@ SUBROUTINE lfricinp_finalise_lfric()
 ! Description:
 !  Call finalise routines for associated APIs and logging system
 
+USE halo_comms_mod,            ONLY: finalise_halo_comms
 USE log_mod,                   ONLY: finalise_logging, LOG_LEVEL_INFO, &
                                      log_event
 ! External libraries
 USE xios,                      ONLY: xios_finalize
-USE yaxt,                      ONLY: xt_finalize
 USE mpi_mod,                   ONLY: finalise_comm
 
 
@@ -30,8 +30,8 @@ IMPLICIT NONE
 
 CALL log_event( 'Calling lfric finalise routines', LOG_LEVEL_INFO )
 
-! Finalise YAXT, XIOS, MPI, etc.
-CALL xt_finalize()
+! Finalise halos, XIOS, MPI, etc.
+CALL finalise_halo_comms()
 CALL xios_finalize()
 CALL finalise_comm()
 

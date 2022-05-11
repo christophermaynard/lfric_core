@@ -15,6 +15,8 @@ module io_dev_model_mod
                                          PRECISION_REAL
   use convert_to_upper_mod,       only : convert_to_upper
   use field_mod,                  only : field_type
+  use halo_comms_mod,             only : initialise_halo_comms, &
+                                         finalise_halo_comms
   use io_context_mod,             only : io_context_type, &
                                          io_context_initialiser_type
   use lfric_xios_context_mod,     only : filelist_populator
@@ -59,7 +61,6 @@ module io_dev_model_mod
   use driver_mesh_mod,            only : init_mesh, final_mesh
   ! External libraries
   use xios,                       only : xios_context_finalize
-  use yaxt,                       only : xt_initialize, xt_finalize
 
   implicit none
 
@@ -134,8 +135,8 @@ contains
     ! Save the model's part of the split communicator for later use
     call store_comm( communicator )
 
-    ! Initialise YAXT
-    call xt_initialize( communicator )
+    ! Initialise halo functionality
+    call initialise_halo_comms( communicator )
 
     total_ranks = get_comm_size()
     local_rank  = get_comm_rank()
@@ -243,8 +244,8 @@ contains
     ! Finalise namelist configurations
     call final_configuration()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
 
     ! Finalise the logging system
     call finalise_logging()

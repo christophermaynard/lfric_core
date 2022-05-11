@@ -27,7 +27,11 @@ module field_r32_mod
   use halo_routing_collection_mod, &
                           only: halo_routing_collection_type, &
                                 halo_routing_collection
-  use halo_routing_mod,   only: halo_routing_type
+  use halo_comms_mod,     only: halo_routing_type, &
+                                halo_exchange_id_type, &
+                                perform_halo_exchange, &
+                                perform_halo_exchange_start, &
+                                perform_halo_exchange_finish
 
   use log_mod,            only: log_event, &
                                 log_scratch_space, &
@@ -36,9 +40,6 @@ module field_r32_mod
                                 LOG_LEVEL_ERROR
   use mesh_mod,           only: mesh_type
   use scalar_r32_mod,     only: scalar_r32_type
-  use yaxt,               only: xt_redist,  xt_request, &
-                                xt_redist_s_exchange, &
-                                xt_redist_a_exchange, xt_request_wait
 
   use pure_abstract_field_mod, &
                           only: pure_abstract_field_type
@@ -185,7 +186,7 @@ module field_r32_mod
     real(kind=real32), public, pointer :: data( : ) => null()
     !> Unique identifier used to identify a halo exchange, so the start of an
     !> asynchronous halo exchange can be matched with the end
-    type(xt_request) :: halo_request
+    type(halo_exchange_id_type) :: halo_id
 
   contains
 
@@ -894,7 +895,6 @@ contains
 
     class( field_r32_proxy_type ), target, intent(inout) :: self
     integer(i_def), intent(in) :: depth
-    type(xt_redist) :: redist
     type(halo_routing_type), pointer :: halo_routing => null()
 
     if ( self%vspace%is_writable() ) then
@@ -902,10 +902,10 @@ contains
         call log_event( 'Error in field: '// &
                         'attempt to exchange halos with depth out of range.', &
                         LOG_LEVEL_ERROR )
-        ! Start a blocking (synchronous) halo exchange
-        halo_routing => self%get_halo_routing()
-        redist = halo_routing%get_redist(depth)
-        call xt_redist_s_exchange(redist, self%data, self%data)
+      ! Start a blocking (synchronous) halo exchange
+      halo_routing => self%get_halo_routing()
+
+      call perform_halo_exchange(self%data, halo_routing, depth)
 
       ! Halo exchange is complete so set the halo dirty flag to say it
       ! is clean (or more accurately - not dirty)
@@ -920,7 +920,7 @@ contains
 
   end subroutine halo_exchange
 
-  !! Start a halo exchange operation on the field
+  !! Start an asynchronous halo exchange operation on the field
   !!
   subroutine halo_exchange_start( self, depth )
 
@@ -928,17 +928,19 @@ contains
 
     class( field_r32_proxy_type ), target, intent(inout) :: self
     integer(i_def), intent(in) :: depth
-    type(xt_redist) :: redist
     type(halo_routing_type), pointer :: halo_routing => null()
     if ( self%vspace%is_writable() ) then
       if ( depth > self%max_halo_depth() ) &
         call log_event( 'Error in field: '// &
                         'attempt to exchange halos with depth out of range.', &
                         LOG_LEVEL_ERROR )
-      ! Start an asynchronous halo exchange
-      halo_routing => self%get_halo_routing()
-      redist = halo_routing%get_redist(depth)
-      call xt_redist_a_exchange(redist, self%data, self%data, self%halo_request)
+        ! Start an asynchronous halo exchange
+        halo_routing => self%get_halo_routing()
+
+        call perform_halo_exchange_start(self%data, &
+                                         halo_routing, &
+                                         depth, &
+                                         self%halo_id)
     else
       call log_event( 'Error in field: '// &
         'attempt to exchange halos (a write operation) on a read-only field.', &
@@ -947,7 +949,7 @@ contains
 
   end subroutine halo_exchange_start
 
-  !! Wait for a halo exchange to complete
+  !! Wait for an asynchronous halo exchange to complete
   !!
   subroutine halo_exchange_finish( self, depth )
 
@@ -963,7 +965,7 @@ contains
                         'attempt to exchange halos with depth out of range.', &
                         LOG_LEVEL_ERROR )
       ! Wait for the asynchronous halo exchange to complete
-      call xt_request_wait(self%halo_request)
+      call perform_halo_exchange_finish(self%halo_id)
 
       ! Halo exchange is complete so set the halo dirty flag to say it
       ! is clean (or more accurately - not dirty)

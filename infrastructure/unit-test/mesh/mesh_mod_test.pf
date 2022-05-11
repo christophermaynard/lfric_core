@@ -14,6 +14,8 @@ module mesh_mod_test
                             only: global_mesh_collection_type, &
                                   global_mesh_collection
   use global_mesh_mod,      only: global_mesh_type
+  use halo_comms_mod,       only: initialise_halo_comms, &
+                                  finalise_halo_comms
   use partition_mod,        only: partition_type
   use local_mesh_collection_mod, &
                             only: local_mesh_collection_type, &
@@ -33,7 +35,6 @@ module mesh_mod_test
   use partition_mod,        only: partition_type,                   &
                                   partitioner_interface,            &
                                   partitioner_cubedsphere_serial
-  use yaxt,                 only: xt_initialize, xt_finalize
   use mpi_mod,              only: store_comm, clear_comm
   use ugrid_mesh_data_mod,  only: ugrid_mesh_data_type
 
@@ -176,10 +177,10 @@ contains
     integer(i_def) :: global_mesh_id
     real(r_def)    :: scaled_radius
 
-    ! Initialise YAXT
-    call xt_initialize(this%getMpiCommunicator())
     !Store the MPI communicator for later use
     call store_comm(this%getMpiCommunicator())
+    ! Initialise halo functionality
+    call initialise_halo_comms( this%getMpiCommunicator() )
 
     global_mesh_collection = global_mesh_collection_type()
     local_mesh_collection  = local_mesh_collection_type()
@@ -207,8 +208,8 @@ contains
     call global_mesh_collection%clear()
     call local_mesh_collection%clear()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
     ! Clear the stored MPI communicator
     call clear_comm()
 

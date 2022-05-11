@@ -14,8 +14,12 @@
 !
 module halo_routing_collection_mod
 
-  use constants_mod,      only: i_def, l_def
-  use halo_routing_mod,   only: halo_routing_type
+  use constants_mod,      only: i_def, i_halo_index, l_def
+  use function_space_mod, only: function_space_type
+  use function_space_collection_mod, &
+                          only: function_space_collection_type, &
+                                function_space_collection
+  use halo_comms_mod,     only: halo_routing_type
   use linked_list_mod,    only: linked_list_type, &
                                 linked_list_item_type
   use mesh_mod,           only: mesh_type
@@ -99,6 +103,14 @@ function get_halo_routing( self, &
   integer(i_def), intent(in) :: fortran_type
   integer(i_def), intent(in) :: fortran_kind
 
+  type(function_space_type), pointer :: function_space => null()
+  integer(i_halo_index), allocatable :: global_dof_id(:)
+  integer(i_def), allocatable :: halo_start(:)
+  integer(i_def), allocatable :: halo_finish(:)
+  integer(i_def) :: idepth
+  integer(i_def) :: last_owned_dof
+  integer(i_def) :: mesh_id
+
   halo_routing => get_halo_routing_from_list( self, &
                                               mesh, &
                                               element_order, &
@@ -109,12 +121,50 @@ function get_halo_routing( self, &
 
   if (.not. associated(halo_routing)) then
 
-    call self%halo_routing_list%insert_item( halo_routing_type( mesh, &
+    !Get indices of owned and halo cells
+    function_space => function_space_collection%get_fs( mesh, &
+                                                        element_order, &
+                                                        lfric_fs, &
+                                                        ndata = ndata )
+
+    last_owned_dof = function_space%get_last_dof_owned()
+
+    ! Set up the global dof index array
+    allocate( global_dof_id( function_space%get_ndof_glob()*ndata ) )
+    call function_space%get_global_dof_id(global_dof_id)
+
+    ! Set up the boundaries of the different depths of halo
+    allocate( halo_start(mesh%get_halo_depth()) )
+    allocate( halo_finish(mesh%get_halo_depth()) )
+
+    do idepth = 1, mesh%get_halo_depth()
+
+      halo_start(idepth)  = function_space%get_last_dof_owned()+1
+      halo_finish(idepth) = function_space%get_last_dof_halo(idepth)
+      ! The above assumes there is a halo cell following the last owned cell.
+      ! This might not be true (e.g. in a serial run), so fix the start/finish
+      ! points when that happens
+      if ( halo_start(idepth) > function_space%get_last_dof_halo(idepth) ) then
+        halo_start(idepth)  = function_space%get_last_dof_halo(idepth)
+        halo_finish(idepth) = halo_start(idepth) - 1
+      end if
+
+    end do
+
+    mesh_id = mesh%get_id()
+
+    call self%halo_routing_list%insert_item( halo_routing_type( global_dof_id,&
+                                                                last_owned_dof,&
+                                                                halo_start, &
+                                                                halo_finish, &
+                                                                mesh_id, &
                                                                 element_order, &
                                                                 lfric_fs, &
                                                                 ndata, &
                                                                 fortran_type, &
                                                                 fortran_kind ) )
+    deallocate( halo_finish )
+    deallocate( global_dof_id )
 
     halo_routing => get_halo_routing_from_list( self, &
                                                 mesh, &

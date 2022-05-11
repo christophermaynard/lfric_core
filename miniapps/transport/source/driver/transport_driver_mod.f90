@@ -22,6 +22,8 @@ module transport_driver_mod
   use divergence_alg_mod,               only: divergence_alg
   use field_mod,                        only: field_type
   use formulation_config_mod,           only: l_multigrid
+  use halo_comms_mod,                   only: initialise_halo_comms, &
+                                              finalise_halo_comms
   use idealised_config_mod,             only: test, &
                                               test_hadley_like_dcmip
   use io_context_mod,                   only: io_context_type
@@ -73,7 +75,6 @@ module transport_driver_mod
                                               transport_final
   use transport_runtime_collection_mod, only: init_transport_runtime_collection, &
                                               transport_runtime_collection_final
-  use yaxt,                             only: xt_initialize, xt_finalize
 
   implicit none
 
@@ -148,8 +149,8 @@ contains
 
     call transport_load_configuration( filename )
 
-    ! Initialise YAXT
-    call xt_initialize( model_communicator )
+    ! Initialise halo functionality
+    call initialise_halo_comms( model_communicator )
 
     ! Get the rank information
     total_ranks = get_comm_size()
@@ -419,8 +420,8 @@ contains
     !----------------------------------------------------------------------------
     ! Driver layer finalise
     !----------------------------------------------------------------------------
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
 
     call log_event( program_name//' completed.', LOG_LEVEL_ALWAYS )
 

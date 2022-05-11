@@ -15,12 +15,12 @@ module mesh_collection_mod_test
     use global_mesh_collection_mod,                                         &
                               only : global_mesh_collection_type,           &
                                      global_mesh_collection
+    use halo_comms_mod,       only : initialise_halo_comms, &
+                                     finalise_halo_comms
     use local_mesh_mod,       only : local_mesh_type
     use mesh_collection_mod,  only : mesh_collection_type,                  &
                                      mesh_collection
     use mesh_mod,             only : mesh_type, PLANE_BI_PERIODIC, PLANE
-
-    use yaxt,       only: xt_initialize, xt_finalize
     use mpi_mod,    only: store_comm, clear_comm
     use pFUnit_Mod
 
@@ -58,10 +58,10 @@ contains
 
     integer(i_def) :: global_test_mesh_id
 
-    ! Initialise YAXT
-    call xt_initialize(this%getMpiCommunicator())
     !Store the MPI communicator for later use
     call store_comm(this%getMpiCommunicator())
+    ! Initialise halo functionality
+    call initialise_halo_comms( this%getMpiCommunicator() )
 
     ! Create top level collections
     global_mesh_collection = global_mesh_collection_type()
@@ -90,8 +90,8 @@ contains
     call global_mesh_collection%clear()
     call final_configuration()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
     ! Clear the stored MPI communicator
     call clear_comm()
 

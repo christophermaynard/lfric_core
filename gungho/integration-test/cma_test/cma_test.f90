@@ -33,7 +33,6 @@ program cma_test
                                              test_cma_diag_DhMDhT
   use constants_mod,                  only : i_def, r_def, pi
   use derived_config_mod,             only : set_derived_config
-  use yaxt,                           only : xt_initialize, xt_finalize
   use mpi_mod,                        only : initialise_comm, store_comm, &
                                              finalise_comm, &
                                              get_comm_size, get_comm_rank, &
@@ -43,6 +42,8 @@ program cma_test
   use fs_continuity_mod,              only : W0,W1,W2,W3
   use function_space_mod,             only : function_space_type
   use function_space_collection_mod,  only : function_space_collection
+  use halo_comms_mod,                 only : initialise_halo_comms, &
+                                             finalise_halo_comms
   use configuration_mod,              only : read_configuration, &
                                              ensure_configuration
   use driver_mesh_mod,                only : init_mesh
@@ -126,8 +127,8 @@ program cma_test
   ! Save the communicator for later use
   call store_comm(comm)
 
-  ! Initialise YAXT
-  call xt_initialize(comm)
+  ! Initialise halo functionality
+  call initialise_halo_comms( comm )
 
   total_ranks = get_comm_size()
   local_rank  = get_comm_rank()
@@ -297,8 +298,8 @@ program cma_test
   !
   call log_event( ' CMA functional testing completed ...', LOG_LEVEL_INFO )
 
-  ! Finalise YAXT
-  call xt_finalize()
+  ! Finalise halo functionality
+  call finalise_halo_comms()
 
   ! Finalise MPI communications
   call finalise_comm()

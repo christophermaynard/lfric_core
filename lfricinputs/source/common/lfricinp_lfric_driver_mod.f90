@@ -21,6 +21,7 @@ USE extrusion_mod,              ONLY: extrusion_type
 USE field_collection_mod,       ONLY: field_collection_type
 USE field_mod,                  ONLY: field_type
 USE gungho_extrusion_mod,       ONLY: create_extrusion
+USE halo_comms_mod,             ONLY: initialise_halo_comms
 USE io_context_mod,             ONLY: io_context_type
 USE mod_wait,                   ONLY: init_wait
 USE lfric_xios_context_mod,     ONLY: filelist_populator
@@ -37,7 +38,6 @@ USE mpi_mod,                    ONLY: initialise_comm, store_comm,             &
                                       finalise_comm
 ! External libs
 USE xios,                       ONLY: xios_finalize, xios_initialize
-USE yaxt,                       ONLY: xt_initialize
 
 ! lfricinp modules
 USE lfricinp_um_parameters_mod, ONLY: fnamelen
@@ -81,7 +81,7 @@ SUBROUTINE lfricinp_initialise_lfric(program_name_arg,                         &
                                      spinup_period, seconds_per_step)
 
 ! Description:
-!  Initialises LFRic infrastructure, MPI, XIOS and YAXT.
+!  Initialises LFRic infrastructure, MPI, XIOS and halos.
 
 IMPLICIT NONE
 
@@ -120,8 +120,8 @@ CALL store_comm(comm)
 total_ranks = get_comm_size()
 local_rank = get_comm_rank()
 
-!Initialise yaxt
-CALL xt_initialize(comm)
+!Initialise halo functionality
+CALL initialise_halo_comms( comm )
 
 ! Initialise logging system
 CALL initialise_logging(local_rank, total_ranks, program_name)
@@ -223,11 +223,11 @@ SUBROUTINE lfricinp_finalise_lfric()
 ! Description:
 !  Call finalise routines for associated APIs and logging system
 
+USE halo_comms_mod,            ONLY: finalise_halo_comms
 USE log_mod,                   ONLY: finalise_logging, LOG_LEVEL_INFO,         &
                                      log_event
 ! External libraries
 USE xios,                      ONLY: xios_finalize
-USE yaxt,                      ONLY: xt_finalize
 USE mpi_mod,                   ONLY: finalise_comm
 
 
@@ -235,8 +235,8 @@ IMPLICIT NONE
 
 CALL log_event( 'Calling lfric finalise routines', LOG_LEVEL_INFO )
 
-! Finalise YAXT, XIOS, MPI, etc.
-CALL xt_finalize()
+! Finalise halos, XIOS, MPI, etc.
+CALL finalise_halo_comms()
 CALL xios_finalize()
 CALL finalise_comm()
 

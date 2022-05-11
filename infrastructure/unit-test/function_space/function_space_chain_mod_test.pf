@@ -12,6 +12,8 @@ use constants_mod,           only: r_def, i_def, str_def, str_max_filename
 use global_mesh_mod,         only: global_mesh_type
 use function_space_mod,      only: function_space_type
 use fs_continuity_mod,       only: W0
+use halo_comms_mod,          only: initialise_halo_comms, &
+                                   finalise_halo_comms
 use mesh_mod,                only: mesh_type
 use mesh_map_mod,            only: mesh_map_type, generate_mesh_map_id
 use mesh_collection_mod,     only: mesh_collection, mesh_collection_type
@@ -26,7 +28,6 @@ use global_mesh_collection_mod,    only: global_mesh_collection_type, &
 use local_mesh_mod,                only: local_mesh_type
 use local_mesh_collection_mod,     only: local_mesh_collection_type, &
                                          local_mesh_collection
-use yaxt,                          only: xt_initialize, xt_finalize
 use mpi_mod,                       only: store_comm, clear_comm
 use ugrid_mesh_data_mod,           only: ugrid_mesh_data_type
 use pFUnit_Mod
@@ -127,10 +128,10 @@ integer(i_def) :: npanels = 6
 
 procedure (partitioner_interface), pointer :: partitioner_ptr => null()
 
-! Initialise YAXT
-call xt_initialize(this%getMpiCommunicator())
 !Store the MPI communicator for later use
 call store_comm(this%getMpiCommunicator())
+! Initialise halo functionality
+call initialise_halo_comms( this%getMpiCommunicator() )
 
 partitioner_ptr => partitioner_cubedsphere_serial
 
@@ -254,8 +255,8 @@ call local_mesh_collection%clear()
 call function_space_collection%clear()
 call final_configuration()
 
-! Finalise YAXT
-call xt_finalize()
+! Finalise halo functionality
+call finalise_halo_comms()
 ! Clear the stored MPI communicator
 call clear_comm()
 

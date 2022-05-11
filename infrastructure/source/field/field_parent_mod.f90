@@ -16,7 +16,7 @@ module field_parent_mod
   use constants_mod,               only: i_def, l_def, str_def, imdi
   use function_space_mod,          only: function_space_type
   use halo_routing_collection_mod, only: halo_routing_collection
-  use halo_routing_mod,            only: halo_routing_type
+  use halo_comms_mod,              only: halo_routing_type
   use pure_abstract_field_mod,     only: pure_abstract_field_type
   use mesh_mod,                    only: mesh_type
 

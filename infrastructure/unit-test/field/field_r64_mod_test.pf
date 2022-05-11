@@ -11,9 +11,11 @@ module field_r64_mod_test
 
   use, intrinsic :: iso_fortran_env,  only : real64
   use constants_mod,                  only : i_def, str_def, imdi
+  use halo_comms_mod,                 only : initialise_halo_comms, &
+                                             finalise_halo_comms
   use halo_routing_collection_mod,    only : halo_routing_collection_type, &
                                              halo_routing_collection
-  use halo_routing_mod,               only : halo_routing_type
+  use halo_comms_mod,                 only : halo_routing_type
   use function_space_collection_mod,  only : function_space_collection_type, &
                                              function_space_collection
   use local_mesh_mod,                 only : local_mesh_type
@@ -22,7 +24,6 @@ module field_r64_mod_test
   use mesh_mod,                       only : mesh_type, PLANE_BI_PERIODIC
   use function_space_mod,             only : function_space_type
   use fs_continuity_mod,              only : W2, W3
-  use yaxt,                           only : xt_initialize, xt_finalize
   use mpi_mod,                        only : store_comm, clear_comm
   use pFUnit_Mod
 
@@ -64,10 +65,11 @@ contains
     type(mesh_type) :: unit_test_mesh
     integer(i_def)  :: mesh_id
 
-    ! Initialise YAXT
-    call xt_initialize(this%getMpiCommunicator())
     !Store the MPI communicator for later use
     call store_comm(this%getMpiCommunicator())
+
+    ! Initialise halo functionality
+    call initialise_halo_comms( this%getMpiCommunicator() )
 
     ! Create top level mesh collection
     mesh_collection = mesh_collection_type()
@@ -103,8 +105,8 @@ contains
     call mesh_collection%clear()
     call halo_routing_collection%clear()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
     ! Clear the stored MPI communicator
     call clear_comm()
 

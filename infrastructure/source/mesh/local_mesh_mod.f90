@@ -14,7 +14,8 @@ module local_mesh_mod
                              l_def, str_def, integer_type, &
                              i_native, emdi
   use global_mesh_mod, only: global_mesh_type
-
+  use halo_comms_mod,                 only: halo_routing_type, &
+                                            perform_halo_exchange
   use linked_list_data_mod,           only: linked_list_data_type
   use local_mesh_map_collection_mod,  only: local_mesh_map_collection_type
   use local_mesh_map_mod,             only: local_mesh_map_type
@@ -550,42 +551,69 @@ contains
   !> An array representing all cells known to the local mesh has all the
   !> owned cells filled with the local rank ID (on every processor in
   !> parallel). When a halo swap is performed on this array, the array on
-  !> every processor has its halo cells filled with their owner.
+  !> every processor has its halo cells filled with their owner id.
   !>
   subroutine init_cell_owner(self)
-    use mpi_mod, only: generate_redistribution_map, get_mpi_datatype, &
-                       get_comm_rank
-    use yaxt,    only: xt_redist, xt_redist_s_exchange
+    use fs_continuity_mod, only: W3
+    use mpi_mod,           only: get_mpi_datatype, get_comm_rank
 
     implicit none
-    class (local_mesh_type), intent(inout) :: self
-    type(xt_redist) :: redist
+    class (local_mesh_type), intent(inout), target :: self
+    type(halo_routing_type), pointer :: halo_routing => null()
+    integer(i_halo_index), allocatable :: cell_id(:)
+    integer(i_def), pointer :: cell_owner_ptr( : ) => null()
     integer(i_def) :: cell
     integer(i_def) :: i
+    integer(i_def) :: last_owned_cell
     integer(i_def) :: total_inners
-    integer(i_def) :: halo_start, halo_finish
+    integer(i_def) :: halo_start(1), halo_finish(1)
     integer(i_def) :: local_rank
 
     allocate( self%cell_owner(self%num_cells_in_layer+self%num_ghost) )
+
+    ! Halo routines expect a 64-bit integer index - so convert global_cell_id
+    allocate( cell_id(size(self%global_cell_id)) )
+    do i = 1, size(self%global_cell_id)
+      cell_id(i) = self%global_cell_id(i)
+    end do
 
     ! Work out the boundary between owned and halo cells
     total_inners=0
     do i=1,self%inner_depth
       total_inners=total_inners+self%num_inner(i)
     end do
-    halo_start  = total_inners+self%num_edge+1
-    halo_finish = self%get_num_cells_in_layer()+self%get_num_cells_ghost()
-    !If this is a serial run (no halos), halo_start is out of bounds - so fix it
-    if(halo_start > self%get_num_cells_in_layer())then
-      halo_start  = self%get_num_cells_in_layer()
-      halo_finish = self%get_num_cells_in_layer() - 1
+    last_owned_cell = total_inners+self%num_edge
+    halo_start(1)  = last_owned_cell + 1
+    halo_finish(1) = self%get_num_cells_in_layer()+self%get_num_cells_ghost()
+    ! The above assumes there is a halo cell following the last owned cell.
+    ! This might not be true (e.g. in a serial run), so fix the start/finish
+    ! points when that happens
+    if(halo_start(1) > self%get_num_cells_in_layer())then
+      halo_start(1)  = self%get_num_cells_in_layer()
+      halo_finish(1) = self%get_num_cells_in_layer() - 1
     end if
 
-    !Get the redistribution map object for halo exchanging the cell owners array
-    redist = generate_redistribution_map( &
-      int(self%global_cell_id(1:total_inners+self%num_edge),kind=i_halo_index),&
-      int(self%global_cell_id( halo_start:halo_finish ),kind=i_halo_index), &
-      get_mpi_datatype( integer_type, i_def ) )
+    ! Set up a halo routing table for the cell owners data. Note this is
+    ! cell data rather than field dof data, The routing table is defined by
+    ! the first four arguments. The remaining arguments are used for finding the
+    ! correct routing table in a collection and are therefore not required here
+    ! as this is a one-use routing table. But to complete the argument list
+    ! the closest description of this data is that it is lowest order,
+    ! non-multidata, 32-bit integer, W3 data. As this is mesh data it's not
+    !'on' a mesh as such - so just pass a mesh_id of zero
+    allocate(halo_routing)
+    halo_routing = halo_routing_type( global_dof_id  = cell_id, &
+                                      last_owned_dof = last_owned_cell, &
+                                      halo_start     = halo_start, &
+                                      halo_finish    = halo_finish, &
+                                      mesh_id        = 0_i_def, &
+                                      element_order  = 0_i_def, &
+                                      lfric_fs       = W3, &
+                                      ndata          = 1_i_def, &
+                                      fortran_type   = integer_type, &
+                                      fortran_kind   = i_def )
+
+    deallocate(cell_id)
 
     ! Set ownership of all inner and edge cells to the local rank id
     ! - halo cells are unset
@@ -594,8 +622,12 @@ contains
       self%cell_owner(cell)=local_rank
     end do
 
-    ! Perform the halo swap
-    call xt_redist_s_exchange(redist, self%cell_owner, self%cell_owner)
+    ! Perform the halo swap to depth 1
+    cell_owner_ptr => self%cell_owner
+    call perform_halo_exchange( cell_owner_ptr, &
+                                halo_routing, &
+                                1_i_def )
+    deallocate(halo_routing)
 
   end subroutine init_cell_owner
 

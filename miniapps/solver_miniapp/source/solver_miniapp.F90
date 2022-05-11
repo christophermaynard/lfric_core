@@ -16,8 +16,9 @@ program solver_miniapp
   use cli_mod,                          only : get_initial_filename
   use driver_mesh_mod,                  only : init_mesh
   use driver_fem_mod,                   only : init_fem
+  use halo_comms_mod,                   only : initialise_halo_comms, &
+                                               finalise_halo_comms
   use init_solver_miniapp_mod,          only : init_solver_miniapp
-  use yaxt,                             only : xt_initialize, xt_finalize
   use mpi_mod,                          only : initialise_comm, store_comm, &
                                                finalise_comm,               &
                                                get_comm_size, get_comm_rank
@@ -75,8 +76,8 @@ program solver_miniapp
   ! Initialise MPI communicatios and get a valid communicator
   call initialise_comm(comm)
 
-  ! Initialise YAXT
-  call xt_initialize(comm)
+  ! Initialise halo functionality
+  call initialise_halo_comms( comm )
 
   ! Save the commmunicator for later use
   call store_comm(comm)
@@ -165,8 +166,8 @@ program solver_miniapp
   ! Finalise namelist configurations
   call final_configuration()
 
-  ! Finalise YAXT
-  call xt_finalize()
+  ! Finalise halo functionality
+  call finalise_halo_comms()
 
   ! Finalise MPI communications
   call finalise_comm()

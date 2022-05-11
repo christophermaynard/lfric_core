@@ -39,6 +39,8 @@ module multires_coupling_model_mod
   use gungho_mod,                 only : load_configuration
   use gungho_model_data_mod,      only : model_data_type
   use gungho_setup_io_mod,        only : init_gungho_files
+  use halo_comms_mod,             only : initialise_halo_comms, &
+                                         finalise_halo_comms
   use init_altitude_mod,          only : init_altitude
   use io_config_mod,              only : subroutine_timers,       &
                                          subroutine_counters,     &
@@ -95,7 +97,6 @@ module multires_coupling_model_mod
                                          method_semi_implicit, &
                                          method_rk,            &
                                          spinup_period
-  use yaxt,                       only : xt_initialize, xt_finalize
 
 #ifdef UM_PHYSICS
   use jules_control_init_mod,     only : jules_control_init
@@ -211,8 +212,8 @@ contains
     !Store the MPI communicator for later use
     call store_comm( communicator )
 
-    ! Initialise YAXT
-    call xt_initialize( communicator )
+    ! Initialise halo functionality
+    call initialise_halo_comms( communicator )
 
     ! Get the rank information
     total_ranks = get_comm_size()
@@ -576,8 +577,8 @@ contains
     ! Finalise namelist configurations
     call final_configuration()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
 
     ! Finalise the logging system
     call finalise_logging()

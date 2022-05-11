@@ -26,6 +26,8 @@ program planar_mesh_generator
   use rotation_mod,      only: get_target_north_pole,    &
                                get_target_null_island
   use global_mesh_mod,   only: global_mesh_type
+  use halo_comms_mod,    only: initialise_halo_comms, &
+                               finalise_halo_comms
   use io_utility_mod,    only: open_file, close_file
   use local_mesh_mod,    only: local_mesh_type
   use log_mod,           only: initialise_logging,       &
@@ -45,7 +47,6 @@ program planar_mesh_generator
   use ugrid_2d_mod,          only: ugrid_2d_type
   use ugrid_file_mod,        only: ugrid_file_type
   use ugrid_mesh_data_mod,   only: ugrid_mesh_data_type
-  use yaxt,                  only: xt_initialize, xt_finalize
 
   ! Configuration modules
   use mesh_config_mod,         only: mesh_filename, rotate_mesh, &
@@ -155,8 +156,8 @@ program planar_mesh_generator
   call initialise_comm(communicator)
   call store_comm(communicator)
 
-  ! Initialise YAXT
-  call xt_initialize( communicator )
+  ! Initialise halo functionality
+  call initialise_halo_comms( communicator )
 
   total_ranks = get_comm_size()
   local_rank  = get_comm_rank()
@@ -755,7 +756,7 @@ program planar_mesh_generator
   if ( allocated( target_edge_cells_x_tmp ) ) deallocate (target_edge_cells_x_tmp)
   if ( allocated( target_edge_cells_y_tmp ) ) deallocate (target_edge_cells_y_tmp)
 
-  call xt_finalize()
+  call finalise_halo_comms()
 
   call finalise_comm()
 

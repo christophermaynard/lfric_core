@@ -22,19 +22,15 @@ module mpi_mod
                             mpi_character, mpi_double_precision,        &
                             mpi_integer, mpi_integer1, mpi_integer2,    &
                             mpi_integer8, mpi_logical, mpi_real4
-  use yaxt,          only : xt_redist, xt_idxlist, xt_xmap, &
-                            xt_idxvec_new, xt_xmap_dist_dir_new, &
-                            xt_redist_p2p_off_new, &
-                            xt_xmap_delete, xt_idxlist_delete
   use log_mod,       only : log_event, LOG_LEVEL_ERROR
 
   implicit none
 
   private
   public initialise_comm, finalise_comm, store_comm, clear_comm, &
+         get_comm, is_comm_set, &
          global_sum, global_min, global_max, &
          all_gather, broadcast, &
-         generate_redistribution_map, &
          get_mpi_datatype, &
          get_comm_size, get_comm_rank
 
@@ -129,6 +125,24 @@ contains
     comm_rank = -999
     comm_set = .false.
   end subroutine clear_comm
+
+  !> Returns the stored MPI communicator
+  !> @return communicator The stored MPI communicator
+  !>
+  function get_comm() result(communicator)
+    implicit none
+    integer(i_def) :: communicator
+    communicator = comm
+  end function get_comm
+
+  !> Returns whether the MPI communicator has been stored
+  !> @return comm_state A flag indicating whether the MPI communicator is stored
+  !>
+  function is_comm_set() result(comm_state)
+    implicit none
+    logical(l_def) :: comm_state
+    comm_state = comm_set
+  end function is_comm_set
 
   !> Calculates the global sum of a collection of real local sums
   !>
@@ -555,66 +569,6 @@ contains
       LOG_LEVEL_ERROR )
     end if
   end subroutine broadcast_str
-
-
-
-  !> Generate the halo exchange redistribution object to be used for future
-  !> halo exchanges
-  !>
-  !> @param src_indices The global indices of all the owned points in this
-  !>                    MPI task
-  !> @param tgt_indices The global indices of all the halo points in this
-  !>                    MPI task
-  !> @param datatype    The MPI datatype of a single element in the data to be
-  !>                    exchanged
-  !> @return redist     The halo exchange redistribution object
-  !>
-  function generate_redistribution_map(src_indices, tgt_indices, datatype) &
-                                       result(redist)
-    implicit none
-    integer(i_halo_index), intent(in) :: src_indices(:), tgt_indices(:)
-    integer(i_def),        intent(in) :: datatype
-    type(xt_redist) :: redist
-
-    type(xt_idxlist) :: src_idxlist, tgt_idxlist
-    type(xt_xmap) :: xmap
-    integer(i_def), pointer :: src_offsets(:)
-    integer(i_def), pointer :: tgt_offsets(:)
-    integer(i_def) :: i
-
-    if(comm_set)then
-      ! create decomposition descriptors
-      src_idxlist = xt_idxvec_new( src_indices, size(src_indices) )
-      tgt_idxlist = xt_idxvec_new( tgt_indices, size(tgt_indices) )
-
-      ! generate exchange map
-      xmap = xt_xmap_dist_dir_new(src_idxlist, tgt_idxlist, comm)
-
-      allocate(src_offsets( size(src_indices) ))
-      allocate(tgt_offsets( size(tgt_indices) ))
-
-      do i = 1, size(src_indices)
-        src_offsets(i) = i - 1
-      end do
-
-      do i = 1, size(tgt_indices)
-        tgt_offsets(i) = i + size(src_indices) - 1
-      end do
-
-      redist = xt_redist_p2p_off_new(xmap, src_offsets,tgt_offsets, datatype)
-
-      call xt_xmap_delete(xmap)
-      call xt_idxlist_delete(tgt_idxlist)
-      call xt_idxlist_delete(src_idxlist)
-      deallocate(src_offsets)
-      deallocate(tgt_offsets)
-    else
-      call log_event( &
-      'Call to generate_redistribution_map failed. Must call store_comm first',&
-      LOG_LEVEL_ERROR )
-    end if
-
-  end function generate_redistribution_map
 
 
   !> Returns the appropriate MPI datatype enumerator for all the Fortran

@@ -12,6 +12,8 @@ module mesh_map_collection_mod_test
                                         str_max_filename, str_def
   use extrusion_mod,              only: uniform_extrusion_type, PRIME_EXTRUSION
   use global_mesh_mod,            only: global_mesh_type
+  use halo_comms_mod,             only: initialise_halo_comms, &
+                                        finalise_halo_comms
   use local_mesh_mod,             only: local_mesh_type
   use mesh_map_collection_mod,    only: mesh_map_collection_type
   use mesh_map_mod,               only: mesh_map_type
@@ -21,7 +23,6 @@ module mesh_map_collection_mod_test
                                         partitioner_cubedsphere_serial
   use ugrid_mesh_data_mod,        only: ugrid_mesh_data_type
 
-  use yaxt,                       only: xt_initialize, xt_finalize
   use pFUnit_Mod
 
   implicit none
@@ -81,11 +82,10 @@ contains
     procedure (partitioner_interface), pointer :: partitioner_ptr => null()
     integer(i_def)         :: npanels
 
-
-    ! Initialise YAXT
-    call xt_initialize(this%getMpiCommunicator())
     !Store the MPI communicator for later use
     call store_comm(this%getMpiCommunicator())
+    ! Initialise halo functionality
+    call initialise_halo_comms( this%getMpiCommunicator() )
 
     partitioner_ptr => partitioner_cubedsphere_serial
     npanels = 6
@@ -144,8 +144,8 @@ contains
 
     class( mesh_map_collection_test_type ), intent( inout ) :: this
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
     ! Clear the stored MPI communicator
     call clear_comm()
 

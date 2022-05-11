@@ -36,6 +36,8 @@ module gungho_model_mod
   use gungho_setup_io_mod,        only : init_gungho_files
   use gungho_transport_control_alg_mod, &
                                   only : gungho_transport_control_alg_final
+  use halo_comms_mod,             only : initialise_halo_comms, &
+                                         finalise_halo_comms
   use init_altitude_mod,          only : init_altitude
   use init_altitude_mod,          only : init_altitude
   use io_config_mod,              only : subroutine_timers,       &
@@ -104,7 +106,6 @@ module gungho_model_mod
                                          method_rk,              &
                                          method_no_timestepping, &
                                          spinup_period
-  use yaxt,                       only : xt_initialize, xt_finalize
   use derived_config_mod,         only : l_esm_couple
 #ifdef COUPLED
   use coupler_mod,                only : cpl_define, cpl_fields
@@ -219,8 +220,8 @@ contains
     !Store the MPI communicator for later use
     call store_comm( communicator )
 
-    ! Initialise YAXT
-    call xt_initialize( communicator )
+    ! Initialise halo functionality
+    call initialise_halo_comms( communicator )
 
     ! Get the rank information
     total_ranks = get_comm_size()
@@ -562,8 +563,8 @@ contains
     ! Finalise namelist configurations
     call final_configuration()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
 
     ! Finalise the logging system
     call finalise_logging()

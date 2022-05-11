@@ -15,6 +15,8 @@ module gravity_wave_infrastructure_mod
   use convert_to_upper_mod,       only : convert_to_upper
   use derived_config_mod,         only : set_derived_config
   use gravity_wave_mod,           only : load_configuration
+  use halo_comms_mod,             only : initialise_halo_comms, &
+                                         finalise_halo_comms
   use log_mod,                    only : log_event,          &
                                          log_set_level,      &
                                          log_scratch_space,  &
@@ -29,7 +31,6 @@ module gravity_wave_infrastructure_mod
   use mesh_mod,                   only : mesh_type
   use mpi_mod,                    only : store_comm, &
                                          get_comm_size, get_comm_rank
-  use yaxt,                       only : xt_initialize, xt_finalize
   use io_context_mod,             only : io_context_type
   use field_mod,                  only : field_type
   use mesh_collection_mod,        only : mesh_collection, &
@@ -95,11 +96,11 @@ contains
     class(clock_type), pointer :: clock
     real(r_def)                :: dt_model
 
-    ! Initialise YAXT
-    call xt_initialize(comm)
-
     !Store the MPI communicator for later use
     call store_comm(comm)
+
+    ! Initialise halo functionality
+    call initialise_halo_comms( comm )
 
     ! Get the rank information
     total_ranks = get_comm_size()
@@ -206,8 +207,8 @@ contains
     ! Finalise namelist configurations
     call final_configuration()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
 
     ! Finalise the logging system
     call finalise_logging()

@@ -14,13 +14,14 @@ module field_pointer_mod_test
                                              halo_routing_collection
   use function_space_collection_mod,  only : function_space_collection_type, &
                                              function_space_collection
+  use halo_comms_mod,                 only : initialise_halo_comms, &
+                                             finalise_halo_comms
   use local_mesh_mod,                 only : local_mesh_type
   use mesh_collection_mod,            only : mesh_collection_type, &
                                              mesh_collection
   use mesh_mod,                       only : mesh_type, PLANE_BI_PERIODIC
   use function_space_mod,             only : function_space_type
   use fs_continuity_mod,              only : W2
-  use yaxt,                           only : xt_initialize, xt_finalize
   use mpi_mod,                        only : store_comm, clear_comm
   use pFUnit_Mod
 
@@ -57,10 +58,11 @@ contains
     type(mesh_type) :: unit_test_mesh
     integer(i_def)  :: mesh_id
 
-    ! Initialise YAXT
-    call xt_initialize(this%getMpiCommunicator())
     !Store the MPI communicator for later use
     call store_comm(this%getMpiCommunicator())
+
+    ! Initialise halo functionality
+    call initialise_halo_comms( this%getMpiCommunicator() )
 
     ! Create top level mesh collection
     mesh_collection = mesh_collection_type()
@@ -95,8 +97,8 @@ contains
     call mesh_collection%clear()
     call halo_routing_collection%clear()
 
-    ! Finalise YAXT
-    call xt_finalize()
+    ! Finalise halo functionality
+    call finalise_halo_comms()
     ! Clear the stored MPI communicator
     call clear_comm()
 

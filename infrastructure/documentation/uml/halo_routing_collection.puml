@@ -7,7 +7,7 @@
 !include look.iuml
 !include field/halo_routing_collection_mod.iuml
 
-class halo_routing_mod::halo_routing_type {
+class halo_comms_mod::halo_routing_type {
   -mesh_id: integer
   -element_order: integer
   -lfric_fs: integer
@@ -26,6 +26,6 @@ class halo_routing_mod::halo_routing_type {
   +get_redist(<<in>>depth: integer) : xt_redist
 }
 
-halo_routing_collection_mod::halo_routing_collection_type o-> "*" halo_routing_mod::halo_routing_type
+halo_routing_collection_mod::halo_routing_collection_type o-> "*" halo_comms_mod::halo_routing_type
 
 @enduml
