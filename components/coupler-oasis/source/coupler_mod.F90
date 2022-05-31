@@ -45,10 +45,12 @@ module coupler_mod
                                             checkpoint_write_interface,       &
                                             checkpoint_read_interface
   use coupler_diagnostics_mod,        only: cpl_diagnostics, cpl_reset_field, &
-                                            sea_ice_frac_raw,                 &
+
                                             initialise_extra_coupling_fields
   use coupler_update_prognostics_mod, only: coupler_update_prognostics
-  use process_o2a_algorithm_mod,      only: process_o2a_algorithm
+  use process_o2a_algorithm_mod,      only: process_o2a_algorithm,            &
+                                            initialise_sea_ice_frac_raw,      &
+                                            sea_ice_frac_raw
   use derived_config_mod,             only: l_esm_couple
   use esm_couple_config_mod,          only: l_esm_couple_test
 
@@ -661,6 +663,7 @@ module coupler_mod
 
    ! Initialize extra coupling variables
    call initialise_extra_coupling_fields( fld_cpld_fs, sice_space )
+   call initialise_sea_ice_frac_raw( sice_space )
 
    nullify(field)
    deallocate(global_index)

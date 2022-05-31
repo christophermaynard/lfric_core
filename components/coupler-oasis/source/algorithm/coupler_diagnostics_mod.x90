@@ -40,10 +40,6 @@ module coupler_diagnostics_mod
   type( field_type )                 :: cpl_field1_si, cpl_field2_si,          &
                                         cpl_field3_si
 
-  ! Raw sea ice fractions that are unaltered by post processing
-  ! for use in scaling data going from atmos to ocean
-  type( field_type )                 :: sea_ice_frac_raw
-
   ! Sea ice fractions used in the previous timestep
   ! (i.e. not unpaded by the coupling)
   ! These ice fractions are stored as a fraction of
@@ -69,7 +65,6 @@ module coupler_diagnostics_mod
 #endif
 
   public cpl_diagnostics, cpl_reset_field, initialise_extra_coupling_fields
-  public sea_ice_frac_raw
   public save_sea_ice_frac_previous
   contains
 
@@ -360,8 +355,6 @@ module coupler_diagnostics_mod
                                         name="cpl_field3_sea_ice_W3" )
 
     ! Initialise other fields used in coupling
-    call sea_ice_frac_raw%initialise( vector_space = sice_space,             &
-                                        name="sea_ice_frac_raw" )
     call sea_ice_frac_previous%initialise( vector_space = sice_space,        &
                                         name="sea_ice_frac_previous" )
     call sea_frac_previous%initialise( vector_space = fld_cpld_fs,           &

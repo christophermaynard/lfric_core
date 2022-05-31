@@ -10,11 +10,16 @@ module process_o2a_algorithm_mod
   use field_mod,                     only: field_type
   use field_collection_mod,          only: field_collection_type
   use process_o2a_kernel_mod,        only: process_o2a_kernel_type
-  use coupler_diagnostics_mod,       only: sea_ice_frac_raw
 
   implicit none
 
-  public process_o2a_algorithm
+  private
+  ! Raw sea ice fractions that are unaltered by post processing
+  ! for use in scaling data going from atmos to ocean
+  type( field_type ) :: sea_ice_frac_raw
+
+  public process_o2a_algorithm, initialise_sea_ice_frac_raw
+  public sea_ice_frac_raw
 
   contains
 
@@ -44,4 +49,20 @@ module process_o2a_algorithm_mod
                                         sea_ice_layer_t_ptr ))
 
   end subroutine process_o2a_algorithm
+
+  !> @brief Initialises sea_ice_frac_raw.
+  !> @param[in] sice_space Sea ice function space
+  subroutine initialise_sea_ice_frac_raw(sice_space)
+
+    use function_space_mod, only: function_space_type
+
+    implicit none
+
+    type(function_space_type), intent(in), pointer :: sice_space
+
+    call sea_ice_frac_raw%initialise( vector_space = sice_space, &
+                                      name = "sea_ice_frac_raw" )
+
+  end subroutine initialise_sea_ice_frac_raw
+
 end module process_o2a_algorithm_mod
