@@ -52,5 +52,5 @@ pylint/%:
 
 .PHONY: pycodestyle
 pycodestyle:
-	pycodestyle $(VERBOSE_ARG) $(STYLED_FILES)
+	pycodestyle $(VERBOSE_ARG) $(STYLED_APPS) $(STYLED_FILES)
 

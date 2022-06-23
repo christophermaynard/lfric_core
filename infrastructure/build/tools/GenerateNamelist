@@ -36,8 +36,6 @@ def main():
     parser.add_argument('meta_filename', metavar='description-file', nargs=1,
                         type=Path,
                         help='The metadata file to load')
-    parser.add_argument('--norandom_enums', action="store_true",
-                        help='Disables randomised enumeration values.')
 
     args = parser.parse_args()
 
@@ -53,8 +51,7 @@ def main():
     meta_parser = namelist.NamelistConfigDescription()
 
     # Generate namelists from the namelist configuration file.
-    description_list = meta_parser.process_config(meta_filename,
-                                                  fix_enum=args.norandom_enums)
+    description_list = meta_parser.process_config(meta_filename)
 
     for description in description_list:
         leafname = description.get_module_name() + '.f90'

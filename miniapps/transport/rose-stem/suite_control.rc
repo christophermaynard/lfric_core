@@ -6,7 +6,6 @@
 {%- set projectName = 'transport' %}
 {%- set projectDir  = 'transport' %}
 {%- set miniappFlag = True %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = ['transport','mesh'] %}
 

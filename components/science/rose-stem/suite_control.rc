@@ -1,7 +1,6 @@
 {%- set projectName = 'science' %}
 {%- set projectDir  = 'components/science' %}
 {%- set miniappFlag = False %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = [ None ] %}
 

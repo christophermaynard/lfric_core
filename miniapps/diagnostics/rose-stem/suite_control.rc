@@ -1,7 +1,6 @@
 {%- set projectName = 'diagnostics' %}
 {%- set projectDir  = 'diagnostics' %}
 {%- set miniappFlag = True %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = ['diagnostics'] %}
 
@@ -22,7 +21,6 @@
 {%- set projectName = 'diagnostics' %}
 {%- set projectDir  = 'diagnostics' %}
 {%- set miniappFlag = True %}
-{%- set fix_enums   = False %}
 
 {# Default setting to enable xios for all tasks in this suite. Is overrided if #}
 {# 'use_xios' ["True"|"False"] is specified in the specific task directives    #}

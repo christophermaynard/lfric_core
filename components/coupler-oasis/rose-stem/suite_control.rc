@@ -1,7 +1,6 @@
 {%- set projectName = 'coupler-oasis' %}
 {%- set projectDir  = 'coupling' %}
 {%- set miniappFlag = False %}
-{%- set fix_enums   = False %}
 
 {# Set the  compiler debug profile for runs in this suite #}
 {# Options are ['fast-debug'|'full-debug'|'production'], omission defaults to 'fast-debug' #}

@@ -32,9 +32,9 @@ module test_config_mod
             read_test_namelist, postprocess_test_namelist, &
             test_is_loadable, test_is_loaded, test_final
 
-  integer(i_native), public, parameter :: enum_one = 138
-  integer(i_native), public, parameter :: enum_three = 870
-  integer(i_native), public, parameter :: enum_two = 584
+  integer(i_native), public, parameter :: enum_one = 189779348
+  integer(i_native), public, parameter :: enum_three = 1061269036
+  integer(i_native), public, parameter :: enum_two = 1625932035
 
   integer(i_def), public, protected :: dint = imdi
   logical(l_def), public, protected :: dlog = .false.
@@ -59,9 +59,9 @@ module test_config_mod
                                        'two']
 
   integer(i_native), parameter :: enum_value(3) &
-          = [138_i_native, &
-             870_i_native, &
-             584_i_native]
+          = [189779348_i_native, &
+             1061269036_i_native, &
+             1625932035_i_native]
 
 contains
 

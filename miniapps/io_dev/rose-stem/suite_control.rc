@@ -6,7 +6,6 @@
 {%- set projectName = 'io_dev' %}
 {%- set projectDir  = 'io_dev' %}
 {%- set miniappFlag = True %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = ['io_dev'] %}
 

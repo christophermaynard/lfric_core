@@ -11,9 +11,9 @@ from abc import ABC, abstractmethod
 import collections
 import json
 from pathlib import Path
-import random
 import re
 from typing import Dict, List, Optional, Sequence, Tuple
+from zlib import crc32
 
 import jinja2
 
@@ -347,10 +347,9 @@ class NamelistDescription:
     """
     Describes a namelist and its contained fields.
     """
-    def __init__(self, listname: str, fix_enum: bool = False):
+    def __init__(self, listname: str):
         """
         :param listname: Identifying name.
-        :param fix_enum: Do not randomise enumerator values.
         """
         self._listname = listname
 
@@ -363,9 +362,6 @@ class NamelistDescription:
         self._module_usage = collections.defaultdict(set)
         self._module_usage['constants_mod'] = set(['cmdi', 'emdi', 'unset_key',
                                                    'imdi', 'rmdi'])
-        self._last_enum_key = 1
-        self._fix_enum = fix_enum
-        self._enum_pool = list(range(1, 1000))
 
     def get_namelist_name(self) -> str:
         """
@@ -383,6 +379,10 @@ class NamelistDescription:
         """
         Adds an enumerated field to the namelist.
 
+        .. warning::
+            This routine will becomes stuck in an infinite loop if asked
+            to handle an enumeration with 2^31 enumerators.
+
         :param name: Identifying name.
         :param enumerators:
         """
@@ -390,15 +390,20 @@ class NamelistDescription:
             message = 'Expected list of enumerators'
             raise NamelistDescriptionException(message)
 
-        key_dict = collections.OrderedDict()
+        key_dict: Dict[str, int] = collections.OrderedDict()
         for key in enumerators:
-            if self._fix_enum:
-                key_dict[key] = self._last_enum_key
-                self._last_enum_key = self._last_enum_key + 1
-            else:
-                key_dict[key] = random.choice(self._enum_pool)
-
-            self._enum_pool.remove(key_dict[key])
+            # Hash collisions are always possible and uniqueness is essential
+            # for our enumerators. This is a simple way of ensuring that
+            # uniqueness. Obviously it will get in an infinite loop if there
+            # are more than 2^32 things to deal with but that seems unlikely.
+            #
+            # Furthermore everything is limited to 2^31 as Fortran integers are
+            # always signed.
+            #
+            value = crc32(bytes(name + key, encoding='ascii')) & 0x7fffffff
+            while value in key_dict.values():
+                value = (value + 1) & 0x7fffffff
+            key_dict[key] = value
 
         self._parameters[name] = _Enumeration(name, key_dict)
 
@@ -665,12 +670,10 @@ class NamelistConfigDescription:  # pylint: disable=too-few-public-methods
     Manages the JSON representation of the configuration metadata.
     """
     @staticmethod
-    def process_config(nml_config_file: Path,
-                       fix_enum: bool = False) -> List[NamelistDescription]:
+    def process_config(nml_config_file: Path) -> List[NamelistDescription]:
         """
         Loads the file and dissects it.
         :param nml_config_file: Input JSON file.
-        :param fix_enum: Force enumerator values to be repeatable.
         """
         with open(nml_config_file, encoding='utf8') as config_file:
             namelist_config = json.load(config_file)
@@ -678,7 +681,7 @@ class NamelistConfigDescription:  # pylint: disable=too-few-public-methods
         result = []
 
         for listname in namelist_config.keys():
-            description = NamelistDescription(listname, fix_enum=fix_enum)
+            description = NamelistDescription(listname)
             list_dict = namelist_config[listname]
 
             for member in sorted(list_dict.keys()):

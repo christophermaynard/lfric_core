@@ -1,7 +1,6 @@
 {%- set projectName   = 'mesh_tools' %}
 {%- set projectDir    = 'mesh_tools' %}
 {%- set miniappFlag   = False %}
-{%- set fix_enums     = False %}
 {%- set rdef_default  = "64" %}
 {%- set MAXRUNAHEAD     = 1 %}
 

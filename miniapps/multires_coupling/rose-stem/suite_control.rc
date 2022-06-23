@@ -6,7 +6,6 @@
 {%- set projectName = 'multires_coupling' %}
 {%- set projectDir  = 'multires_coupling' %}
 {%- set miniappFlag = True %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = ['multires_coupling'] %}
 

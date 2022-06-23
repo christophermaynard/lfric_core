@@ -6,7 +6,6 @@
 {%- set projectName = 'lfric_coupled' %}
 {%- set projectDir  = 'lfric_coupled' %}
 {%- set miniappFlag = True %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = ['lfric_coupled'] %}
 

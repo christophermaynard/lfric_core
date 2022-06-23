@@ -109,16 +109,6 @@ ifeq '$(PURGE_SUITES)' '0'
   CLEAN_OPT =
 endif
 
-# Fix enumeration arguments between builds, only for technical
-# development
-
-FIX_ENUMS ?= 0
-ifeq '$(FIX_ENUMS)' '1'
-  FIX_ENUMS_OPT = '--norandom_enums'
-else
-  FIX_ENUMS_OPT =
-endif
-
 # We only want to send terminal control characters if there is a terminal to
 # interpret them...
 #
@@ -246,7 +236,6 @@ launch-test-suite:
 # Generate configuration source.
 #
 .PHONY: configuration
-configuration: FIX_ENUMS_OPT:=$(FIX_ENUMS_OPT)
 configuration:
 	$Q$(MAKE) $(QUIET_ARG) -f $(LFRIC_BUILD)/configuration.mk
 

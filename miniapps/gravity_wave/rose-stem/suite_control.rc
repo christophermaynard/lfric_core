@@ -6,7 +6,6 @@
 {%- set projectName = 'gravity_wave' %}
 {%- set projectDir  = 'gravity_wave' %}
 {%- set miniappFlag = True %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = ['gravity_wave'] %}
 

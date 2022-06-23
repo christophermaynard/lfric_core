@@ -333,9 +333,6 @@ fi
       PROFILE          = {{build}}
       MAKE_THREADS     = 1
       RDEF_PRECISION   = {{precision}}
-{%-         if fix_enums %}
-      FIX_ENUMS        = 1
-{%-         endif %}
 
 {{ directives(PRIMARY_TARGET, 'build') }}
 {%-       endif %}   {# integration_tests #}

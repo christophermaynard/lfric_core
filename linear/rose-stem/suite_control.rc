@@ -6,7 +6,6 @@
 {%- set projectName = 'linear' %}
 {%- set projectDir  = 'linear' %}
 {%- set miniappFlag = False %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = ['linear'] %}
 

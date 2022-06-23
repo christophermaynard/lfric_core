@@ -1,7 +1,6 @@
 {%- set projectName = 'infrastructure' %}
 {%- set projectDir  = 'infrastructure' %}
 {%- set miniappFlag = False %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = [ None ] %}
 

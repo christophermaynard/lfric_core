@@ -24,12 +24,12 @@ module twoenum_config_mod
             read_twoenum_namelist, postprocess_twoenum_namelist, &
             twoenum_is_loadable, twoenum_is_loaded, twoenum_final
 
-  integer(i_native), public, parameter :: first_one = 138
-  integer(i_native), public, parameter :: first_three = 870
-  integer(i_native), public, parameter :: first_two = 584
-  integer(i_native), public, parameter :: second_ay = 824
-  integer(i_native), public, parameter :: second_bee = 785
-  integer(i_native), public, parameter :: second_see = 65
+  integer(i_native), public, parameter :: first_one = 1952457118
+  integer(i_native), public, parameter :: first_three = 1813125082
+  integer(i_native), public, parameter :: first_two = 533081353
+  integer(i_native), public, parameter :: second_ay = 1248446338
+  integer(i_native), public, parameter :: second_bee = 144118421
+  integer(i_native), public, parameter :: second_see = 359914450
 
   integer(i_native), public, protected :: first = emdi
   integer(i_native), public, protected :: second = emdi
@@ -46,13 +46,13 @@ module twoenum_config_mod
                                        'see']
 
   integer(i_native), parameter :: first_value(3) &
-          = [138_i_native, &
-             870_i_native, &
-             584_i_native]
+          = [1952457118_i_native, &
+             1813125082_i_native, &
+             533081353_i_native]
   integer(i_native), parameter :: second_value(3) &
-          = [824_i_native, &
-             785_i_native, &
-             65_i_native]
+          = [1248446338_i_native, &
+             144118421_i_native, &
+             359914450_i_native]
 
 contains
 

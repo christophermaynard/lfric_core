@@ -1,7 +1,6 @@
 {%- set projectName = 'components' %}
 {%- set projectDir  = 'components' %}
 {%- set miniappFlag = False %}
-{%- set fix_enums   = False %}
 
 {%- set projectName = 'driver' %}
 

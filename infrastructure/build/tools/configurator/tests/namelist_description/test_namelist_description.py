@@ -4,13 +4,15 @@
 # The file LICENCE, distributed with this code, contains details of the terms
 # under which the code may be used.
 ##############################################################################
+"""
+Unit test namelist reader generator.
+"""
 import io
-import random
-import os
 from pathlib import Path
-import pytest
-from subprocess import Popen
+from subprocess import run
 from textwrap import dedent
+
+import pytest
 
 import configurator.namelistdescription as description
 
@@ -20,7 +22,14 @@ HERE = Path(__file__).resolve().parent
 
 
 class TestNamelistMeta():
+    """
+    Tests writing namelist reading source.
+    """
     def test_module_write_empty(self):
+        # pylint: disable=no-self-use
+        """
+        Writing an empty record.
+        """
         output_file = io.StringIO()
 
         uut = description.NamelistDescription('test')
@@ -28,7 +37,10 @@ class TestNamelistMeta():
             uut.write_module(output_file)
 
     def test_module_write_one_of_each(self, tmp_path: Path):
-        random.seed(1)
+        # pylint: disable=no-self-use
+        """
+        Writing all possible field types.
+        """
         uut = description.NamelistDescription('test')
         uut.add_value('vint', 'integer')
         uut.add_value('dint', 'integer', 'default')
@@ -48,9 +60,14 @@ class TestNamelistMeta():
         uut.write_module(output_file)
 
         expected_file = HERE / 'one_each_mod.f90'
-        assert expected_file.read_text() == output_file.read_text() + '\n'
+        assert (expected_file.read_text(encoding='ascii')
+                == output_file.read_text(encoding='ascii') + '\n')
 
     def test_module_write_growing(self, tmp_path: Path):
+        # pylint: disable=no-self-use
+        """
+        Rewriting a growing record.
+        """
         output_file = tmp_path / 'growing_mod.f90'
 
         uut = description.NamelistDescription('test')
@@ -58,26 +75,35 @@ class TestNamelistMeta():
         uut.write_module(output_file)
 
         expected_file = HERE / 'first_growing_mod.f90'
-        assert output_file.read_text() + '\n' == expected_file.read_text()
+        assert (output_file.read_text(encoding='ascii') + '\n'
+                == expected_file.read_text(encoding='ascii'))
 
         uut.add_value('bar', 'real', 'default')
         uut.write_module(output_file)
 
         expected_file = HERE / 'second_growing_mod.f90'
-        assert output_file.read_text() + '\n' == expected_file.read_text()
+        assert (output_file.read_text(encoding='ascii') + '\n'
+                == expected_file.read_text(encoding='ascii'))
 
     def test_enumeration_only(self, tmp_path: Path):
-        random.seed(1)
+        # pylint: disable=no-self-use
+        """
+        Writing only an enumeration field.
+        """
         uut = description.NamelistDescription('enum')
         uut.add_enumeration('value', enumerators=['one', 'two', 'three'])
         output_file = tmp_path / 'enum_mod.f90'
         uut.write_module(output_file)
 
         expected_file = HERE / 'enum_only_mod.f90'
-        assert output_file.read_text() + '\n' == expected_file.read_text()
+        assert (output_file.read_text(encoding='ascii') + '\n'
+                == expected_file.read_text(encoding='ascii'))
 
     def test_more_than_one_enumeration(self, tmp_path: Path):
-        random.seed(1)
+        # pylint: disable=no-self-use
+        """
+        Writing multiple enumeration fields.
+        """
         uut = description.NamelistDescription('twoenum')
         uut.add_enumeration('first', enumerators=['one', 'two', 'three'])
         uut.add_enumeration('second', enumerators=['ay', 'bee', 'see'])
@@ -85,9 +111,14 @@ class TestNamelistMeta():
         uut.write_module(output_file)
 
         expected_file = HERE / 'two_enum_mod.f90'
-        assert output_file.read_text() + '\n' == expected_file.read_text()
+        assert (output_file.read_text(encoding='ascii') + '\n'
+                == expected_file.read_text(encoding='ascii'))
 
     def test_module_write_string(self, tmp_path: Path):
+        # pylint: disable=no-self-use
+        """
+        Writing string value fields.
+        """
         output_file = tmp_path / 'string_mod.f90'
 
         test_unit = description.NamelistDescription('mirth')
@@ -98,9 +129,14 @@ class TestNamelistMeta():
         test_unit.write_module(output_file)
 
         expected_file = HERE / 'string_mod.f90'
-        assert output_file.read_text() + '\n' == expected_file.read_text()
+        assert (output_file.read_text(encoding='ascii') + '\n'
+                == expected_file.read_text(encoding='ascii'))
 
     def test_module_write_computed(self, tmp_path: Path):
+        # pylint: disable=no-self-use
+        """
+        Writing calculated fields.
+        """
         output_file = tmp_path / 'computed_mod.f90'
 
         uut = description.NamelistDescription('teapot')
@@ -110,9 +146,14 @@ class TestNamelistMeta():
         uut.write_module(output_file)
 
         expected_file = HERE / 'computed_mod.f90'
-        assert output_file.read_text() + '\n' == expected_file.read_text()
+        assert (output_file.read_text(encoding='ascii') + '\n'
+                == expected_file.read_text(encoding='ascii'))
 
     def test_module_write_constant(self, tmp_path: Path):
+        # pylint: disable=no-self-use
+        """
+        Writing calculated fields containing constants.
+        """
         output_file = tmp_path / 'constants_mod.f90'
 
         uut = description.NamelistDescription('cheese')
@@ -123,9 +164,14 @@ class TestNamelistMeta():
         uut.write_module(output_file)
 
         expected_file = HERE / 'constants_mod.f90'
-        assert output_file.read_text() + '\n' == expected_file.read_text()
+        assert (output_file.read_text(encoding='ascii') + '\n'
+                == expected_file.read_text(encoding='ascii'))
 
     def test_module_write_array(self, tmp_path: Path):
+        # pylint: disable=no-self-use
+        """
+        Writing array fields.
+        """
         output_file = tmp_path / 'array_module.f90'
 
         uut = description.NamelistDescription('aerial')
@@ -138,10 +184,14 @@ class TestNamelistMeta():
         uut.write_module(output_file)
 
         expected_file = HERE / 'array_mod.f90'
-        assert output_file.read_text() + '\n' == expected_file.read_text()
+        assert (output_file.read_text(encoding='ascii') + '\n'
+                == expected_file.read_text(encoding='ascii'))
 
 
 class TestNamelistConfigDescription():
+    """
+    Tests reading a configuration metadata file.
+    """
     @staticmethod
     def _compile_dictionary(namelists):
 
@@ -173,6 +223,9 @@ class TestNamelistConfigDescription():
         return dictionary
 
     def test_parser_good_file(self, tmp_path: Path):
+        """
+        Reading well formed file.
+        """
         input_file = tmp_path / 'test.ini'
         input_file.write_text(dedent('''
             [namelist:fred]
@@ -193,8 +246,7 @@ class TestNamelistConfigDescription():
             '''))
 
         picker_command = [PICKER_EXE, str(input_file)]
-        out = Popen(picker_command, cwd=input_file.parent)
-        out.wait()
+        _ = run(picker_command, cwd=input_file.parent, check=True)
 
         json_file = input_file.with_suffix('.json')
 
@@ -208,6 +260,9 @@ class TestNamelistConfigDescription():
                          'second':      ['integer', 'i_def']}} == result
 
     def test_only_enumeration(self, tmp_path: Path):
+        """
+        Reading enumerated field.
+        """
         input_file = tmp_path / 'input.ini'
         input_file.write_text(dedent('''
             [namelist:barney]
@@ -218,8 +273,7 @@ class TestNamelistConfigDescription():
             '''))
 
         picker_command = [PICKER_EXE, str(input_file)]
-        out = Popen(picker_command, cwd=input_file.parent)
-        out.wait()
+        _ = run(picker_command, cwd=input_file.parent, check=True)
 
         json_file = input_file.with_suffix('.json')
 
@@ -229,17 +283,11 @@ class TestNamelistConfigDescription():
         assert {'barney': {'stuff': ['integer', 'i_native',
                                      'one', 'two', 'three']}} == result
 
-    def test_non_randomized_enumerations(self, tmp_path: Path):
-        result_file = tmp_path / 'telly.f90'
-
-        uut = description.NamelistDescription('telly', fix_enum=True)
-        uut.add_enumeration('tubbies', enumerators=['lala', 'po', 'inky'])
-        uut.write_module(result_file)
-
-        expected_file = HERE / 'non_random_enum_mod.f90'
-        assert result_file.read_text() + '\n' == expected_file.read_text()
-
     def test_non_enumeration_no_type(self, tmp_path: Path):
+        # pylint: disable=no-self-use
+        """
+        Reading choice field without type.
+        """
         input_file = tmp_path / 'test.init'
         input_file.write_text(dedent('''
             [namelist:barney]
@@ -249,8 +297,7 @@ class TestNamelistConfigDescription():
             '''))
 
         picker_command = [PICKER_EXE, str(input_file)]
-        out = Popen(picker_command, cwd=input_file.parent)
-        out.wait()
+        _ = run(picker_command, cwd=input_file.parent, check=True)
 
         json_file = input_file.with_suffix('.json')
 
@@ -259,6 +306,10 @@ class TestNamelistConfigDescription():
             uut.process_config(json_file)
 
     def test_no_member_type(self, tmp_path: Path):
+        # pylint: disable=no-self-use
+        """
+        Reading field without type.
+        """
         input_file = tmp_path / 'input.init'
         input_file.write_text(dedent('''
             [namelist:santa]
@@ -268,8 +319,7 @@ class TestNamelistConfigDescription():
             '''))
 
         picker_command = [PICKER_EXE, str(input_file)]
-        out = Popen(picker_command, cwd=input_file.parent)
-        out.wait()
+        _ = run(picker_command, cwd=input_file.parent, check=True)
 
         json_file = input_file.with_suffix('.json')
 
@@ -277,14 +327,16 @@ class TestNamelistConfigDescription():
         with pytest.raises(description.NamelistDescriptionException):
             uut.process_config(json_file)
 
-    def test_computed_fields(self, tmp_path: Path):
+    def test_computed_fields(self):
+        """
+        Reading computed fields.
+        """
         input_file = HERE / 'computed.ini'
 
         picker_command = [PICKER_EXE, str(input_file)]
-        out = Popen(picker_command, cwd=tmp_path)
-        out.wait()
+        _ = run(picker_command, cwd=input_file.parent, check=True)
 
-        json_file = tmp_path / 'computed.json'
+        json_file = input_file.with_suffix('.json')
 
         uut = description.NamelistConfigDescription()
         result = self._compile_dictionary(uut.process_config(json_file))
@@ -298,6 +350,9 @@ class TestNamelistConfigDescription():
             == result
 
     def test_constant_in_computed(self, tmp_path: Path):
+        """
+        Reading computed field with constants.
+        """
         input_file = tmp_path / 'input.ini'
         input_file.write_text(dedent('''
             [namelist:cheese]
@@ -311,8 +366,7 @@ class TestNamelistConfigDescription():
             '''))
 
         picker_command = [PICKER_EXE, str(input_file)]
-        out = Popen(picker_command, cwd=input_file.parent)
-        out.wait()
+        _ = run(picker_command, cwd=input_file.parent, check=True)
 
         json_file = input_file.with_suffix('.json')
 
@@ -323,6 +377,9 @@ class TestNamelistConfigDescription():
                 'wilma': ['real', 'r_def', 'fred * FUDGE']}} == result
 
     def test_array_fields(self, tmp_path: Path):
+        """
+        Reading array fields.
+        """
         input_file = tmp_path / 'input.ini'
         input_file.write_text(dedent('''
             [namelist:aerial]
@@ -351,8 +408,7 @@ class TestNamelistConfigDescription():
             '''))
 
         picker_command = [PICKER_EXE, str(input_file)]
-        out = Popen(picker_command, cwd=input_file.parent)
-        out.wait()
+        _ = run(picker_command, cwd=input_file.parent, check=True)
 
         json_file = input_file.with_suffix('.json')
 

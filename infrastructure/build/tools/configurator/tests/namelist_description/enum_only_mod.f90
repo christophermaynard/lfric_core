@@ -23,9 +23,9 @@ module enum_config_mod
             read_enum_namelist, postprocess_enum_namelist, &
             enum_is_loadable, enum_is_loaded, enum_final
 
-  integer(i_native), public, parameter :: value_one = 138
-  integer(i_native), public, parameter :: value_three = 870
-  integer(i_native), public, parameter :: value_two = 584
+  integer(i_native), public, parameter :: value_one = 1695414371
+  integer(i_native), public, parameter :: value_three = 839906103
+  integer(i_native), public, parameter :: value_two = 246150388
 
   integer(i_native), public, protected :: value = emdi
 
@@ -37,9 +37,9 @@ module enum_config_mod
                                        'two']
 
   integer(i_native), parameter :: value_value(3) &
-          = [138_i_native, &
-             870_i_native, &
-             584_i_native]
+          = [1695414371_i_native, &
+             839906103_i_native, &
+             246150388_i_native]
 
 contains
 

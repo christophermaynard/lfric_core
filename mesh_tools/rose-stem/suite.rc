@@ -287,9 +287,6 @@ echo $CYLC_TASK_LOG_ROOT > $DESTINATION_DIRECTORY/lfric.mesher."+compiler+".log
       TARGET                = build
       MAKE_THREADS          = 4
       RDEF_PRECISION        = {{precision}}
-{%-         if fix_enums %}
-      FIX_ENUMS             = 1
-{%-         endif %}
 
 {{          directives(PRIMARY_TARGET, 'build') }}
 {%-       endif %} {#- if 'compile_'+ projectName + '_with_' + label in scheduledTasks #}

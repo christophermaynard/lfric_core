@@ -111,8 +111,7 @@ build: ALWAYS
                   PROJECT=$(PROJECT) \
 	          SOURCE_DIR=source \
                   WORKING_DIR=$(WORKING_DIR) \
-                  META_FILE_DIR=$(META_FILE_DIR) \
-                  FIX_ENUMS_OPT=$(FIX_ENUMS_OPT)
+                  META_FILE_DIR=$(META_FILE_DIR)
 	$(call MESSAGE,=========================================================)
 	$(call MESSAGE,Analysing $(PROJECT) build dependencies)
 	$(call MESSAGE,=========================================================)

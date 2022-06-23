@@ -129,8 +129,7 @@ build: ALWAYS
 	$(call MESSAGE,=========================================================)
 	$Q$(MAKE) $(QUIET_ARG) -f $(LFRIC_BUILD)/configuration.mk \
 	          SOURCE_DIR=$(ROOT_DIR)/gungho/source \
-	          META_FILE_DIR=$(META_FILE_DIR) \
-	          FIX_ENUMS_OPT=$(FIX_ENUMS_OPT)
+	          META_FILE_DIR=$(META_FILE_DIR)
 	$(call MESSAGE,==============================)
 	$(call MESSAGE,Extracting $(PROJECT_NAME))
 	$(call MESSAGE,==============================)
@@ -147,8 +146,7 @@ build: ALWAYS
 	$(call MESSAGE,=========================================================)
 	$Q$(MAKE) $(QUIET_ARG) -f $(LFRIC_BUILD)/configuration.mk \
 	          SOURCE_DIR=$(ROOT_DIR)/gungho/source \
-	          META_FILE_DIR=$(META_FILE_DIR) \
-	          FIX_ENUMS_OPT=$(FIX_ENUMS_OPT)
+	          META_FILE_DIR=$(META_FILE_DIR)
 	$(call MESSAGE,=========================================================)
 	$(call MESSAGE,Analysing $(PROJECT) build dependencies)
 	$(call MESSAGE,=========================================================)

@@ -367,9 +367,6 @@ echo $RELATIVE_LOG_ROOT > $DESTINATION_DIRECTORY/compile.log.path
             LFRIC_TARGET_PLATFORM = {{TARGET_OPT}}
             MAKE_THREADS          = 4
             RDEF_PRECISION        = {{precision}}
-{%-         if fix_enums %}
-            FIX_ENUMS             = 1
-{%-         endif %}
 
             {{directives(PRIMARY_TARGET, 'build')}}
 {%-       endif %}
@@ -444,9 +441,6 @@ echo $RELATIVE_LOG_ROOT > $DESTINATION_DIRECTORY/compile.log.path
             LFRIC_TARGET_PLATFORM = {{TARGET_OPT}}
             MAKE_THREADS          = 4
             RDEF_PRECISION        = {{mesh_rdef}}
-{%-   if fix_enums %}
-            FIX_ENUMS             = 1
-{%-   endif %}
 
         {{TARGET_BATCHER_OVERRIDE | default()}}
 
@@ -492,9 +486,6 @@ echo $RELATIVE_LOG_ROOT > $DESTINATION_DIRECTORY/compile.log.path
         [[[environment]]]
             WORKING_DIR    = {{get_target_property(PRIMARY_TARGET, 'build_root')}}/integration_{{label}}
             RDEF_PRECISION = {{precision}}
-{%-         if fix_enums %}
-            FIX_ENUMS      = 1
-{%-         endif %}
 
             {{directives(PRIMARY_TARGET, 'build')}}
         [[[job]]]

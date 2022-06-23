@@ -7,7 +7,6 @@
 {%- set projectName = 'shallow_water' %}
 {%- set projectDir  = 'shallow_water' %}
 {%- set miniappFlag = True %}
-{%- set fix_enums   = False %}
 
 {%- set projectApps = ['shallow_water','mesh'] %}
 

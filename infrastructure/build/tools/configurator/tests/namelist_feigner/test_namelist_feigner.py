@@ -4,7 +4,9 @@
 # The file LICENCE, distributed with this code, contains details of the terms
 # under which the code may be used.
 ##############################################################################
-import io
+"""
+Unit test feigner generator.
+"""
 from pathlib import Path
 
 import configurator.namelistdescription as namelist
@@ -15,20 +17,33 @@ HERE = Path(__file__).resolve().parent
 
 ###############################################################################
 class TestFeigner:
-    def setUp(self):
-        self.maxDiff = None
+    """
+    Feigner generator unit tests.
+    """
+    def setUp(self):  # pylint: disable=invalid-name
+        """
+        Configures test framework.
+        """
+        self.maxDiff = None  # pylint: disable=invalid-name
 
     ###########################################################################
-    def test_empty(self, tmp_path: Path):
+    def test_empty(self, tmp_path: Path):  # pylint: disable=no-self-use
+        """
+        Generation of feigner for empty namelist.
+        """
         output_file = tmp_path / 'empty_mod.f90'
         uut = feigner.NamelistFeigner('empty_mod')
         uut.write_module(output_file)
 
         expected_file = HERE / 'empty_mod.f90'
-        assert expected_file.read_text() == output_file.read_text() + '\n'
+        assert (expected_file.read_text(encoding='ascii')
+                == output_file.read_text(encoding='ascii') + '\n')
 
     ###########################################################################
-    def test_simple(self, tmp_path: Path):
+    def test_simple(self, tmp_path: Path):  # pylint: disable=no-self-use
+        """
+        Generation of feigner for simple value fields.
+        """
         simple = namelist.NamelistDescription('simple')
         simple.add_value('foo', 'integer', 'default')
         simple.add_value('bar', 'real', 'double')
@@ -42,10 +57,14 @@ class TestFeigner:
         uut.write_module(output_file)
 
         expected_file = HERE / 'simple_mod.f90'
-        assert expected_file.read_text() == output_file.read_text() + '\n'
+        assert (expected_file.read_text(encoding='ascii')
+                == output_file.read_text(encoding='ascii') + '\n')
 
     ###########################################################################
-    def test_enumeration(self, tmp_path: Path):
+    def test_enumeration(self, tmp_path: Path):  # pylint: disable=no-self-use
+        """
+        Generation of feigner for enumerated fields.
+        """
         enumable = namelist.NamelistDescription('enum')
         enumable.add_enumeration('thing', enumerators=['one', 'two'])
 
@@ -55,10 +74,14 @@ class TestFeigner:
         uut.write_module(output_file)
 
         expected_file = HERE / 'enum_mod.f90'
-        assert expected_file.read_text() == output_file.read_text() + '\n'
+        assert (expected_file.read_text(encoding='ascii')
+                == output_file.read_text(encoding='ascii') + '\n')
 
     ###########################################################################
-    def test_computed(self, tmp_path: Path):
+    def test_computed(self, tmp_path: Path):  # pylint: disable=no-self-use
+        """
+        Generation of feigner for computed fields.
+        """
         simple = namelist.NamelistDescription('computed')
         simple.add_value('teapot', 'integer', 'default')
         simple.add_value('cheese', 'integer', 'default')
@@ -71,10 +94,14 @@ class TestFeigner:
         uut.write_module(output_file)
 
         expected_file = HERE / 'computed_mod.f90'
-        assert expected_file.read_text() == output_file.read_text() + '\n'
+        assert (expected_file.read_text(encoding='ascii')
+                == output_file.read_text(encoding='ascii') + '\n')
 
     ###########################################################################
-    def test_everything(self, tmp_path: Path):
+    def test_everything(self, tmp_path: Path):  # pylint: disable=no-self-use
+        """
+        Generation of feigner for every kind of namelist value.
+        """
         everything = namelist.NamelistDescription('everything')
         everything.add_string('cake', configure_string_length='filename')
         everything.add_enumeration('teapot', enumerators=['brown', 'steel'])
@@ -98,10 +125,14 @@ class TestFeigner:
         uut.write_module(output_file)
 
         expected_file = HERE / 'everything_mod.f90'
-        assert expected_file.read_text() == output_file.read_text() + '\n'
+        assert (expected_file.read_text(encoding='ascii')
+                == output_file.read_text(encoding='ascii') + '\n')
 
     ###########################################################################
-    def test_multi_file(self, tmp_path: Path):
+    def test_multi_file(self, tmp_path: Path):  # pylint: disable=no-self-use
+        """
+        Generation of feigner for multiple namelists.
+        """
         firstfile = namelist.NamelistDescription('first')
         firstfile.add_string('cake', configure_string_length='filename')
         firstfile.add_enumeration('teapot', enumerators=['brown', 'steel'])
@@ -118,4 +149,5 @@ class TestFeigner:
         uut.write_module(output_file)
 
         expected_file = HERE / 'multifile_mod.f90'
-        assert expected_file.read_text() == output_file.read_text() + '\n'
+        assert (expected_file.read_text(encoding='ascii')
+                == output_file.read_text(encoding='ascii') + '\n')
