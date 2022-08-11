@@ -1,4 +1,11 @@
-{# Dictionary of suite groups #}
+{# Dictionary of suite groups                                 #}
+{#                                                            #}
+{# TODO: "developer", "nightly" and "weekly" suite groups are #}
+{#       currently launching only on XC40 due to the use of   #}
+{#       deprecated LFRic environment modules on Spice.       #}
+{#       Full system testing on Spice and XC40 will be        #}
+{#       restored in the LFRic ticket                         #}
+{#       https://code.metoffice.gov.uk/trac/lfric/ticket/3319 #}
 
 {%- do SUITE_GROUPS.update({
 
@@ -177,6 +184,8 @@
 "lfric2um"                                : ["lfric2um-safe",
                                              "lfric2um-rigorous",],
 
+"lfric2um-xc40-developer"                 : ["lfric2um-xc40-safe",
+                                             "lfric2um-xc40_crayftn_craycc_rigorous-aquaplanet_C48L38_N48L38",],
 
 
 "scintelapi-spice-safe-basic"             : ["scintelapi-spice_gfortran_gcc_safe-basic_C48L38_C48L38",
@@ -235,6 +244,8 @@
 "scintelapi"                              : ["scintelapi-spice",
                                              "scintelapi-xc40",],
 
+"scintelapi-xc40-developer"               : ["scintelapi-xc40-safe",
+                                             "scintelapi-xc40_crayftn_craycc_rigorous-basic_C48L38_C48L38",],
 
 
 "skeleton-spice-safe-aquaplanet"          : ["skeleton-spice_gfortran_gcc_safe-aquaplanet_N48L38_C48L38",
@@ -261,6 +272,9 @@
 "skeleton-xc40"                           : ["skeleton-xc40-safe",
                                              "skeleton-xc40-rigorous",],
 
+"skeleton-xc40-developer"                 : ["skeleton-xc40-safe",
+                                             "skeleton-xc40_crayftn_craycc_rigorous-aquaplanet_N48L38_C48L38",],
+
 "skeleton-aquaplanet"                     : ["skeleton-aquaplanet-spice",
                                              "skeleton-aquaplanet-xc40",],
 
@@ -283,6 +297,14 @@
                                              "scintelapi",
                                              "skeleton"],
 
+"standard-xc40-developer"                 : ["um2lfric-xc40",
+                                             "lfric2um-xc40-developer",
+                                             "scintelapi-xc40-developer",
+                                             "skeleton-xc40-developer"],
+"standard-xc40"                           : ["um2lfric-xc40",
+                                             "lfric2um-xc40",
+                                             "scintelapi-xc40",
+                                             "skeleton-xc40"],
 
 "integration-spice-safe"                  : ["integration-spice_gfortran_gcc_safe-um2um",
                                              "integration-spice_ifort_gcc_safe-um2um",
@@ -323,14 +345,13 @@
                             "lfric2um-spice",
                             "um2lfric-spice",],
 
-"developer"              : ["standard-developer",
-                            "integration-spice-safe",],
+"developer"              : ["standard-xc40-developer",
+                            "integration-xc40-safe",],
 
+"nightly"                : ["standard-xc40",
+                            "integration-xc40",],
 
-"nightly"                : ["standard",
-                            "integration",],
-
-"weekly"                 : ["standard",
-                            "integration",],
+"weekly"                 : ["standard-xc40",
+                            "integration-xc40",],
 
 }) %}
