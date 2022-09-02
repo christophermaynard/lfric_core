@@ -58,7 +58,7 @@ contains
     call bubble_sort( 5_i_def, input )
 
     @assertEqual( answer, input )
-    
+
   end subroutine sort_test
 
 end module sort_mod_test
