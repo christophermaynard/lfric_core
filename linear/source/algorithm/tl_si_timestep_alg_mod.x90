@@ -360,8 +360,7 @@ contains
     ! Predictor the wind field (u-beta*dt*rhs) to be advected
     type( field_type ) :: advected_u
     type( field_type ) :: ls_advected_u
-    ! Density field used for moisture conservation diagnostics
-    type( field_type ) :: rho_guess
+    ! Whether to write moisture conservation diagnostics
     logical(kind=l_def) :: write_moisture_diag
 
     if ( subroutine_timers ) call timer('semi_implicit_timestep_alg')
@@ -379,9 +378,6 @@ contains
     else
       mm_vel => get_w2_si_mass_matrix(mesh%get_id())
     end if
-
-    ! Density predictor used for moisture conservation diagnostics
-    call rho_guess%initialise( vector_space = rho%get_function_space() )
 
    !--------------------------------------------------------------------
     ! If off-centring is being spun up then modify the alpha value
@@ -597,7 +593,6 @@ contains
                            ls_rhs_np1(:, outer, inner),                        &
                            ls_moist_dyn_itns(gas_law, next_outer, next_inner), &
                            ls_mr_itns(:, next_outer, next_inner),              &
-                           rho_guess,                                          &
                            write_moisture_diag )
             ! If not already done update factors for moist dynamics
             if ( .not. guess_np1 .and. use_moisture) then
@@ -773,7 +768,7 @@ contains
           call semi_implicit_solver_alg_step( state, rhs_np1,       &
                                               moist_dyn(gas_law),   &
                                               mr,                   &
-                                              rho_guess, write_moisture_diag )
+                                              write_moisture_diag )
           ! Update factors for moist dynamics
           if (use_moisture) then
             call tl_moist_dyn_factors_alg(moist_dyn, mr )

@@ -35,6 +35,7 @@ module gungho_step_mod
   use mesh_mod,                       only : mesh_type
   use minmax_tseries_mod,             only : minmax_tseries
   use mr_indices_mod,                 only : nummr
+  use section_choice_config_mod,      only : cloud, cloud_um
   use semi_implicit_timestep_alg_mod, only : semi_implicit_alg_step
   use sum_fluxes_alg_mod,             only : sum_fluxes_alg
   use moist_dyn_mod,                  only : num_moist_factors
@@ -220,7 +221,7 @@ module gungho_step_mod
         call moisture_conservation_alg( rho,              &
                                         mr,               &
                                         'After timestep' )
-        if ( use_physics ) then
+        if ( use_physics .and. cloud == cloud_um ) then
           dA => get_dA_at_w2(mesh%get_id())
           call moisture_fluxes_alg( microphysics_fields, &
                                     convection_fields,   &

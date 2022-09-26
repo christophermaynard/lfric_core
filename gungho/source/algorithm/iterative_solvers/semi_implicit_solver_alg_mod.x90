@@ -402,14 +402,11 @@ contains
   !> @param[in,out] rhs                 Residuals
   !> @param[in]     moist_dyn_gas_law   Gas law component of moist dynamics factors
   !> @param[in]     mr                  Mixing ratio array
-  !> @param[in]     rho_guess           Estimate for rho^n+1 used for moisture
-  !!                                    diagnostics
   !> @param[in]     write_moisture_diag Flag to control output of moisture
   !!                                    conservation diagnostics
   subroutine semi_implicit_solver_alg_step(state, rhs, &
                                            moist_dyn_gas_law, &
-                                           mr, rho_guess, &
-                                           write_moisture_diag)
+                                           mr, write_moisture_diag)
 
     use fem_constants_mod,             only: get_inverse_w3_mass_matrix_r_solver, &
                                              get_normalisation_r_solver, &
@@ -447,7 +444,6 @@ contains
     type( field_type ), dimension(bundle_size), intent( inout ) :: rhs
     type( field_type ),                         intent( in )    :: moist_dyn_gas_law
     type( field_type ), dimension(nummr),       intent( in )    :: mr
-    type( field_type ),                         intent( in )    :: rho_guess
     logical( kind=l_def ),                      intent( in )    :: write_moisture_diag
 
     real( kind=r_def )                    :: si_err(bundle_size)
@@ -461,6 +457,9 @@ contains
                           inc_theta, &
                           inc_rho,   &
                           inc_exner
+
+    type( field_type ) :: rho_guess
+
     type( r_solver_field_type ), dimension(bundle_size) :: rhs_rsol
     type( r_solver_field_type )    :: div_u,          &
                                       rhs_tmp,        &
@@ -495,6 +494,7 @@ contains
       ! Best guess for the prognostic fields state can be calculated as
       ! state_best_guess = rhs_n - rhs_np1 + state + rhs_adv + rhs_phys
       ! where fortunately all of the above except "state" is already in "rhs_np1"
+      call rho_guess%initialise( state(igh_d)%get_function_space() )
       call invoke(X_plus_Y(rho_guess, state(igh_d), rhs(igh_d)))
       call moisture_conservation_alg( rho_guess, mr, 'Before solve' )
     end if

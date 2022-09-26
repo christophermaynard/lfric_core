@@ -364,7 +364,6 @@ contains
                                              ! during the spinup period
 
     ! Density field used for moisture conservation diagnostics
-    type( field_type ) :: rho_guess
     logical(kind=l_def) :: write_moisture_diag
 
     ! Fields after slow physics to be advected (i.e. field_n + slow phys inc)
@@ -386,9 +385,6 @@ contains
     else
       mm_vel => get_w2_si_mass_matrix(mesh%get_id())
     end if
-
-    ! Density predictor used for moisture conservation diagnostics
-    call rho_guess%initialise( vector_space = rho%get_function_space() )
 
     !--------------------------------------------------------------------
     ! If winds are being spunup overwrite the local copy of the winds
@@ -510,7 +506,7 @@ contains
                           convection_fields, cloud_fields,                     &
                           surface_fields, soil_fields, snow_fields,            &
                           chemistry_fields, aerosol_fields,                    &
-                          outer, clock, dt, rho_guess)
+                          outer, clock, dt)
 
         if (smagorinsky .and. smagorinsky_placement == smagorinsky_placement_outer) then
           call smagorinsky_alg(dtheta, du, mr, state(igh_t), state(igh_u), &
@@ -604,7 +600,7 @@ contains
           call semi_implicit_solver_alg_step( state, rhs_np1,     &
                                               moist_dyn(gas_law), &
                                               mr,                 &
-                                              rho_guess, write_moisture_diag )
+                                              write_moisture_diag )
 
           ! If not already done update factors for moist dynamics
           if ( .not. guess_np1 .and. use_moisture ) &

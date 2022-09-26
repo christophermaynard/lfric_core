@@ -87,7 +87,6 @@ module tl_test_transport_control_mod
     type(field_type), dimension(nummr) :: diff_mr
 
     type(field_type) :: ls_advected_u, p_advected_u, n_advected_u
-    type(field_type) :: rho_guess
 
     real(r_def) :: gamma_u, gamma_rho, gamma_exner, gamma_theta
     real(r_def) :: gamma_moist_dyn, gamma_mr
