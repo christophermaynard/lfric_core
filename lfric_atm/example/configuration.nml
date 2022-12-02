@@ -359,7 +359,7 @@ spinup_alpha=.false.,
 spinup_period=0.0,
 spinup_winds=.false.,
 tau_r=1.0,
-tau_t=0.55,
+tau_t=1.0,
 tau_u=0.55,
 /
 &transport
