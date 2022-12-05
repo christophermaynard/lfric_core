@@ -86,6 +86,7 @@ ancil_option='none',
 init_option='analytic',
 lbc_option='none',
 ls_option='file',
+n_orog_smooth=0,
 read_w2h_wind=.false.,
 /
 &initial_density
