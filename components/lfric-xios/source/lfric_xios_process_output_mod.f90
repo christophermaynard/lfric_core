@@ -9,17 +9,21 @@
 !>
 module lfric_xios_process_output_mod
 
-  use constants_mod,            only: i_native
-  use file_mod,                 only: FILE_MODE_WRITE,     &
-                                      FILE_OP_OPEN
-  use io_config_mod,            only: file_convention,       &
-                                      file_convention_ugrid, &
-                                      file_convention_cf
-  use lfric_ncdf_field_mod,     only: lfric_ncdf_field_type
-  use lfric_ncdf_file_mod,      only: lfric_ncdf_file_type
-  use lfric_xios_constants_mod, only: dp_xios
-  use log_mod,                  only: log_event, log_level_trace
-  use mpi_mod,                  only: get_comm_rank
+  use constants_mod,              only: i_native, r_def, str_def
+  use file_mod,                   only: FILE_MODE_WRITE,     &
+                                        FILE_OP_OPEN
+  use io_config_mod,              only: file_convention,       &
+                                        file_convention_ugrid, &
+                                        file_convention_cf
+  use lfric_ncdf_dims_mod,        only: lfric_ncdf_dims_type
+  use lfric_ncdf_field_mod,       only: lfric_ncdf_field_type
+  use lfric_ncdf_field_group_mod, only: lfric_ncdf_field_group_type
+  use lfric_ncdf_file_mod,        only: lfric_ncdf_file_type
+  use lfric_xios_constants_mod,   only: dp_xios
+  use lfric_xios_utils_mod,       only: parse_date_as_xios, seconds_from_date
+  use log_mod,                    only: log_event, log_level_trace
+  use mpi_mod,                    only: get_comm_rank
+  use xios,                       only: xios_date, xios_get_start_date
 
   implicit none
 
@@ -66,6 +70,8 @@ subroutine process_output_file(file_path)
     call format_mesh(file_ncdf)
   end if
 
+  call format_time(file_ncdf)
+
   call file_ncdf%close_file()
 
 end subroutine process_output_file
@@ -80,7 +86,7 @@ subroutine format_version(file_ncdf)
 
   type(lfric_ncdf_file_type), intent(inout) :: file_ncdf
 
-  call file_ncdf%set_attribute("description", "LFRic file format v0.1.1")
+  call file_ncdf%set_attribute("description", "LFRic file format v0.2.0")
 
   select case(file_convention)
   case (file_convention_ugrid)
@@ -116,6 +122,74 @@ subroutine format_mesh(file_ncdf)
   end if
 
 end subroutine format_mesh
+
+
+!> @brief Formats the time coordinate into CF compliant forecast metadata
+!>
+!> @param[in] file_ncdf  The netcdf file to be edited
+subroutine format_time(output_file)
+
+  implicit none
+
+  type(lfric_ncdf_file_type), intent(in) :: output_file
+  ! In the future we may need an optional argument to determine the expected
+  ! name of the time axis
+
+  type(lfric_ncdf_dims_type)        :: time_dims
+  type(lfric_ncdf_field_type)       :: time_field, frt_field, fp_field
+  type(lfric_ncdf_field_group_type) :: fields_in_file, time_var_fields
+  type(xios_date)                   :: time_origin_date, model_start_date
+  character(:), allocatable         :: time_var_name, time_dim_name
+  real(r_def), allocatable          :: time_data(:), fp(:)
+  real(r_def)                       :: frt(1)
+  integer(i_native)                 :: i
+
+  ! Set time variable and dimension names
+  time_var_name = "time"
+  time_dim_name = "time"
+
+  ! Files that contain no time-variation will not have a time
+  ! variable/dimension, so they do not need to be processed
+  if (.not. output_file%contains_var(trim(time_var_name))) return
+
+  ! Read the time data from the output file
+  time_field = lfric_ncdf_field_type(trim(time_var_name), output_file)
+  time_dims = lfric_ncdf_dims_type(trim(time_dim_name), output_file)
+  allocate(time_data(time_dims%get_size()))
+  call time_field%read_data(time_data)
+
+  ! Calculate forecast metadata using XIOS calendar
+  time_origin_date = parse_date_as_xios( &
+                  trim(adjustl(time_field%get_char_attribute("time_origin"))) )
+  call xios_get_start_date(model_start_date)
+  frt(1) = seconds_from_date(model_start_date) - &
+           seconds_from_date(time_origin_date)
+
+  allocate(fp(time_dims%get_size()))
+  do i = 1, time_dims%get_size()
+    fp(i) = time_data(i) - seconds_from_date(time_origin_date)
+  end do
+
+  ! Setup netCDF fields for forecast metadata
+  frt_field = lfric_ncdf_field_type("forecast_reference_time", output_file)
+  call frt_field%write_data(frt)
+  call frt_field%set_char_attribute("units", "seconds since "// &
+                    trim(adjustl(time_field%get_char_attribute("time_origin"))))
+  call frt_field%set_char_attribute("calendar", time_field%get_char_attribute("calendar"))
+  call frt_field%set_char_attribute("standard_name", "forecast_reference_time")
+
+  fp_field = lfric_ncdf_field_type("forecast_period", output_file, time_dims)
+  call fp_field%write_data(fp)
+  call fp_field%set_char_attribute("units", "seconds")
+  call fp_field%set_char_attribute("standard_name", "forecast_period")
+
+  ! Set forecast metadata as time coordinates
+  fields_in_file = lfric_ncdf_field_group_type(output_file, output_file%get_all_varids())
+  time_var_fields = fields_in_file%get_group_subset(dimension=time_dims)
+  call time_var_fields%add_coordinate("forecast_reference_time")
+  call time_var_fields%add_coordinate("forecast_period")
+
+end subroutine format_time
 
 !> @brief Fixes issues with planar coordinates in output file
 !>

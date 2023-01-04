@@ -7,13 +7,18 @@
 !>
 module lfric_xios_utils_mod
 
-    use xios,           only : xios_date
-    use constants_mod,  only : i_def, i_native
+    use constants_mod,  only : i_def, i_native, r_def
     use mesh_mod,       only : mesh_type
+    use xios,           only : xios_date,                       &
+                               xios_get_time_origin,            &
+                               xios_get_year_length_in_seconds, &
+                               xios_date_convert_to_seconds,    &
+                               operator(<)
 
     implicit none
     private
-    public :: parse_date_as_xios, set_prime_io_mesh, prime_io_mesh_is
+    public :: parse_date_as_xios, seconds_from_date, &
+              set_prime_io_mesh, prime_io_mesh_is
 
     integer(kind=i_def), private, allocatable :: prime_io_mesh_ids(:)
 
@@ -45,6 +50,41 @@ module lfric_xios_utils_mod
       date_obj = xios_date( y, mo, d, h, mi, s )
 
     end function parse_date_as_xios
+
+    !> @brief  Wrapper around xios_date_convert_to_seconds to nullify XIOS bug.
+    !>
+    !> @param[in] date            The input xios_date object
+    !> @result    date_in_seconds The resulting seconds converted from "date"
+    function seconds_from_date(date) result(date_in_seconds)
+
+      implicit none
+
+      type(xios_date), intent(in) :: date
+
+      type(xios_date)        :: time_origin
+      integer(i_def)         :: year_diff
+      real(r_def)            :: date_in_seconds
+
+      integer(i_def), parameter :: length360d = 31104000
+
+      call xios_get_time_origin(time_origin)
+
+      ! Get time in seconds from XIOS dates - due to a bug in XIOS, non-360day
+      ! calendars do not return the correct values around the time origin so a
+      ! workaround is implemented below. Also due to a bug in XIOS calendar types
+      ! cannot be identified except by the number of seconds per year
+      if ( date < time_origin .and. &
+           xios_get_year_length_in_seconds(date%year) /= length360d ) &
+        then
+        year_diff = date%year - time_origin%year
+        date_in_seconds = real(xios_date_convert_to_seconds(date), r_def) + &
+          ( real(xios_get_year_length_in_seconds(date%year), r_def) * &
+            real(year_diff, r_def) )
+      else
+        date_in_seconds = real(xios_date_convert_to_seconds(date), r_def)
+      end if
+
+    end function seconds_from_date
 
     !> @brief Registers a mesh to be used as the primary I/O mesh
     !> @param[in] mesh  The mesh object to be registered

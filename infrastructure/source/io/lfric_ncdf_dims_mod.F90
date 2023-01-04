@@ -26,7 +26,7 @@ module lfric_ncdf_dims_mod
 
     private
 
-    integer(kind=i_def)                 :: ncid
+    integer(kind=i_def)                 :: dimid
     character(len=str_max_filename)     :: name
     integer(kind=i_def)                 :: size
     type(lfric_ncdf_file_type), pointer :: file
@@ -68,12 +68,12 @@ contains
     self%file => file
     if ( present(size) ) self%size = size
 
-    ierr = nf90_inq_dimid(self%file%get_id(), name, self%ncid)
+    ierr = nf90_inq_dimid(self%file%get_id(), name, self%dimid)
 
     if (ierr /= nf90_noerr .and. file%get_io_mode() /= nf90_nowrite) then
-      ierr = nf90_def_dim(self%file%get_id(), name, size, self%ncid)
+      ierr = nf90_def_dim(self%file%get_id(), name, size, self%dimid)
     else
-      ierr = nf90_inquire_dimension(self%file%get_id(), self%ncid, self%name, &
+      ierr = nf90_inquire_dimension(self%file%get_id(), self%dimid, self%name, &
                                     self%size)
     end if
 
@@ -94,7 +94,7 @@ contains
 
     integer(kind=i_def) :: id
 
-    id = self%ncid
+    id = self%dimid
 
     return
 

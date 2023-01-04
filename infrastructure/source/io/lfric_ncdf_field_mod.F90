@@ -14,7 +14,7 @@ module lfric_ncdf_field_mod
   use netcdf,              only: nf90_strerror, nf90_noerr, nf90_double,     &
                                  nf90_def_var, nf90_put_var, nf90_get_var,   &
                                  nf90_inq_varid, nf90_put_att, nf90_get_att, &
-                                 nf90_nowrite
+                                 nf90_rename_var, nf90_nowrite
 
   implicit none
 
@@ -25,10 +25,12 @@ module lfric_ncdf_field_mod
 
     private
 
-    integer(kind=i_def)                 :: ncid
+    integer(kind=i_def)                 :: varid
     character(len=str_def)              :: name
     type(lfric_ncdf_file_type), pointer :: file
     type(lfric_ncdf_dims_type), pointer :: dimensions
+    logical                             :: is_scalar = .false.
+    integer(kind=i_def)                 :: data_type = nf90_double
 
   contains
 
@@ -53,10 +55,10 @@ contains
   !!           write permissions), it will be created. The generated ID is
   !!           passed back and held in the object.
   !>
-  !> @param[in]  name  The name of the field in the NetCDF file
-  !> @param[in]  file  The associated NetCDF file
-  !> @param[in]  dims  The associated NetCDF dimensions
-  function lfric_ncdf_field_constructor(name, file, dims) result(self)
+  !> @param[in]  name       The name of the field in the NetCDF file
+  !> @param[in]  file       The associated NetCDF file
+  !> @param[in]  dims       The associated NetCDF dimensions
+function lfric_ncdf_field_constructor(name, file, dims) result(self)
 
     implicit none
 
@@ -71,13 +73,22 @@ contains
 
     self%name = trim(name)
     self%file => file
-    self%dimensions => dims
 
-    ierr = nf90_inq_varid(self%file%get_id(), name, self%ncid)
+    if (present(dims)) then
+      self%dimensions => dims
+    else
+      self%is_scalar = .true.
+    end if
+
+    ierr = nf90_inq_varid(self%file%get_id(), name, self%varid)
 
     if (ierr /= nf90_noerr .and. file%get_io_mode() /= nf90_nowrite) then
-      ierr = nf90_def_var(self%file%get_id(), name, nf90_double, &
-                          self%dimensions%get_id(), self%ncid)
+      if (present(dims)) then
+        ierr = nf90_def_var(self%file%get_id(), name, self%data_type, &
+                          self%dimensions%get_id(), self%varid)
+      else
+        ierr = nf90_def_var(self%file%get_id(), name, self%data_type, self%varid)
+      end if
       cmess = "Defining variable with ID: " // name
 
     else
@@ -106,7 +117,7 @@ contains
     character(len=*), parameter :: routine = 'read_data'
     character(len=str_long)     :: cmess = ''
 
-    ierr = nf90_get_var(self%file%get_id(), self%ncid, field_data(:))
+    ierr = nf90_get_var(self%file%get_id(), self%varid, field_data(:))
 
     cmess = "Getting NetCDF variable with ID: " // trim(self%name)
     call check_err(ierr, routine, cmess)
@@ -129,7 +140,11 @@ contains
     character(len=*), parameter :: routine = 'write_data'
     character(len=str_long)     :: cmess = ''
 
-    ierr = nf90_put_var(self%file%get_id(), self%ncid, field_data(:))
+    if (self%is_scalar) then
+      ierr = nf90_put_var(self%file%get_id(), self%varid, field_data(1))
+    else
+      ierr = nf90_put_var(self%file%get_id(), self%varid, field_data)
+    end if
 
     cmess = "Writing NetCDF variable with ID: " // trim(self%name)
     call check_err(ierr, routine, cmess)
@@ -156,7 +171,7 @@ contains
     character(len=*), parameter :: routine = 'set_char_attribute'
     character(len=str_long)     :: cmess = ''
 
-    ierr = nf90_put_att(self%file%get_id(), self%ncid, attr_name, &
+    ierr = nf90_put_att(self%file%get_id(), self%varid, attr_name, &
                         trim(attr_value))
 
     cmess = "Setting NetCDF attribute '" // attr_name // &
@@ -184,7 +199,7 @@ contains
     character(len=*), parameter :: routine = 'get_char_attribute'
     character(len=str_long)     :: cmess = ''
 
-    ierr = nf90_get_att(self%file%get_id(), self%ncid, attr_name, attr_value)
+    ierr = nf90_get_att(self%file%get_id(), self%varid, attr_name, attr_value)
     attr_value = trim(attr_value)
 
     cmess = "Getting NetCDF attribute '" // attr_name // &
@@ -213,7 +228,7 @@ contains
     character(len=*), parameter :: routine = 'set_real_attribute'
     character(len=str_long)     :: cmess = ''
 
-    ierr = nf90_put_att(self%file%get_id(), self%ncid, attr_name, attr_value)
+    ierr = nf90_put_att(self%file%get_id(), self%varid, attr_name, attr_value)
 
     cmess = "Setting NetCDF attribute '" // attr_name // &
             "' for variable with ID: " // trim(self%name)
@@ -240,7 +255,7 @@ contains
     character(len=*), parameter :: routine = 'read_attribute'
     character(len=str_long)     :: cmess = ''
 
-    ierr = nf90_get_att(self%file%get_id(), self%ncid, attr_name, attr_value)
+    ierr = nf90_get_att(self%file%get_id(), self%varid, attr_name, attr_value)
 
     cmess = "Getting NetCDF attribute '" // attr_name // &
             "' for variable with ID: " // trim(self%name)

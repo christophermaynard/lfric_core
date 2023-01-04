@@ -15,7 +15,7 @@ module lfric_ncdf_file_mod
                            nf90_write, nf90_nowrite, nf90_clobber,       &
                            nf90_strerror, nf90_noerr, nf90_64bit_offset, &
                            nf90_put_att, nf90_inq_varid, nf90_global,    &
-                           nf90_enddef
+                           nf90_enddef, nf90_inquire, nf90_inq_varids
 
   implicit none
 
@@ -39,6 +39,7 @@ module lfric_ncdf_file_mod
     procedure, public  :: get_io_mode
     procedure, public  :: set_attribute
     procedure, public  :: contains_var
+    procedure, public  :: get_all_varids
     procedure, public  :: close_definition
 
   end type
@@ -236,6 +237,29 @@ contains
     return
 
   end function contains_var
+
+  !> @brief  Returns an lfric_ncdf_field_group object comprising all the
+  !!         variables in the file
+  !>
+  !> @return  The lfric_ncdf_field_group object comprising all the variables
+  !!          in the file
+  function get_all_varids(self) result(varid_list)
+
+    implicit none
+
+    class(lfric_ncdf_file_type), intent(in) :: self
+
+    integer(kind=i_def)               :: ierr, nvar
+    integer(kind=i_def), allocatable  :: varid_list(:)
+
+    ierr = nf90_inquire(self%ncid, nvariables=nvar)
+    allocate(varid_list(nvar))
+
+    ierr = nf90_inq_varids(self%ncid, nvar, varid_list)
+
+    return
+
+  end function get_all_varids
 
   !> @brief  Closes the NetCDF file definition.
   subroutine close_definition(self)

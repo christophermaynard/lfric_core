@@ -31,9 +31,11 @@ contains
     type(lfric_ncdf_file_type)  :: file1, file2, file3
     type(lfric_ncdf_dims_type)  :: dims1, dims2, dims3
     type(lfric_ncdf_field_type) :: field1, field2, field3
+    type(lfric_ncdf_field_type) :: scalar_field, return_scalar_field
     character(len=str_def)      :: test_attr, return_attr
 
     real(kind=r_def) :: data_array1(10), data_array2(10), return_array(10)
+    real(kind=r_def) :: return_scalar(1)
     real(kind=r_def) :: tol, test_attr_real, return_attr_real
 
     tol = 10.0e-8_r_def
@@ -47,22 +49,28 @@ contains
                                   io_mode=FILE_MODE_WRITE)
     dims1 = lfric_ncdf_dims_type("dims1", file1, 10)
     field1 = lfric_ncdf_field_type("test_field", file1, dims1)
+    scalar_field = lfric_ncdf_field_type("scalar_field", file1)
     call field1%set_char_attribute("test_attr", test_attr)
     call field1%set_real_attribute("test_attr_real", test_attr_real)
 
     call file1%close_definition()
 
     call field1%write_data(data_array1)
+    call scalar_field%write_data([42.0_r_def])
+
     call file1%close_file()
 
     file2 = lfric_ncdf_file_type("test_field.nc", open_mode=FILE_OP_OPEN, &
                                   io_mode=FILE_MODE_WRITE)
     dims2 = lfric_ncdf_dims_type("dims1", file2)
     field2 = lfric_ncdf_field_type("test_field", file2, dims2)
+    return_scalar_field = lfric_ncdf_field_type("scalar_field", file2)
 
     call field2%read_data(data_array2)
-
     @assertEqual(data_array1, data_array2)
+
+    call scalar_field%read_data(return_scalar)
+    @assertEqual(return_scalar(1), 42.0_r_def)
 
     data_array2 = data_array2 * 2
     call field2%write_data(data_array2)
