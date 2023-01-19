@@ -22,7 +22,6 @@ use idealised_config_mod,           only : test_cold_bubble_x,    &
                                            test_dry_cbl,          &
                                            test_snow,             &
                                            test_gravity_wave,     &
-                                           test_held_suarez,      &
                                            test_isentropic,       &
                                            test_isot_atm,         &
                                            test_isot_cold_atm,    &
@@ -86,6 +85,19 @@ if ( geometry == geometry_spherical .and. &
       theta_s = t/exner_s
 
       rho_s = p/(Rd*t)
+
+    case( test_isot_atm )
+      t = theta_surf
+      p = p_zero * exp(-gravity * z / (Rd * t))
+
+      ! Convert p (pressure) to exner_s (exner pressure)
+      exner_s = (p / p_zero) ** (kappa)
+
+      ! Convert t (temperature) to theta (potential temperature)
+      theta_s = t / exner_s
+
+      ! Calculate density using the ideal gas law
+      rho_s = p / (Rd * t)
 
     case default
       ! Gravity wave test only for now

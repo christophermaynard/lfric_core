@@ -6,40 +6,41 @@
 !> @brief Interface to external forcing code.
 module external_forcing_alg_mod
 
-  use external_forcing_config_mod,    only: theta_forcing,             &
-                                            theta_forcing_none,        &
-                                            theta_forcing_held_suarez, &
-                                            theta_forcing_earth_like,  &
-                                            theta_forcing_temp_tend,   &
-                                            wind_forcing,              &
-                                            wind_forcing_none,         &
-                                            wind_forcing_held_suarez
-  use log_mod,                        only: log_event, LOG_LEVEL_INFO, &
-                                            LOG_LEVEL_ERROR
+  use external_forcing_config_mod,     only: theta_forcing,                      &
+                                             theta_forcing_none,                 &
+                                             theta_forcing_held_suarez,          &
+                                             theta_forcing_earth_like,           &
+                                             theta_forcing_tidally_locked_earth, &
+                                             theta_forcing_temp_tend,            &
+                                             wind_forcing,                       &
+                                             wind_forcing_none,                  &
+                                             wind_forcing_held_suarez
+  use log_mod,                         only: log_event, LOG_LEVEL_INFO,          &
+                                             LOG_LEVEL_ERROR
 
-  use held_suarez_fv_kernel_mod,      only: held_suarez_fv_kernel_type
-  use held_suarez_fv_wind_kernel_mod, only: held_suarez_fv_wind_kernel_type
-
-  use earth_like_kernel_mod,       only: earth_like_kernel_type
+  use held_suarez_fv_kernel_mod,       only: held_suarez_fv_kernel_type
+  use held_suarez_fv_wind_kernel_mod,  only: held_suarez_fv_wind_kernel_type
+  use earth_like_kernel_mod,           only: earth_like_kernel_type
+  use tidally_locked_earth_kernel_mod, only: tidally_locked_earth_kernel_type
 
   ! Derived Types
-  use constants_mod,                  only: i_def, r_def, l_def
-  use field_mod,                      only: field_type
-  use field_collection_mod,           only: field_collection_type
+  use constants_mod,                   only: i_def, r_def, l_def
+  use field_mod,                       only: field_type
+  use field_collection_mod,            only: field_collection_type
 
-  use fs_continuity_mod,              only: W2, Wtheta
-  use fem_constants_mod,              only: get_rmultiplicity
-  use geometric_constants_mod,        only: get_coordinates, &
-                                            get_da_at_w2,    &
-                                            get_panel_id,    &
-                                            get_height
-  use mesh_mod,                       only: mesh_type
+  use fs_continuity_mod,               only: W2, Wtheta
+  use fem_constants_mod,               only: get_rmultiplicity
+  use geometric_constants_mod,         only: get_coordinates, &
+                                             get_da_at_w2,    &
+                                             get_panel_id,    &
+                                             get_height
+  use mesh_mod,                        only: mesh_type
 
-  use io_config_mod,                  only: subroutine_timers
-  use planet_config_mod,              only: kappa
+  use io_config_mod,                   only: subroutine_timers
+  use planet_config_mod,               only: kappa
 
-  use temp_tend_profile_alg_mod,      only: temp_tend_profile_alg
-  use timer_mod,                      only: timer
+  use temp_tend_profile_alg_mod,       only: temp_tend_profile_alg
+  use timer_mod,                       only: timer
 
   implicit none
 
@@ -118,6 +119,15 @@ contains
           call invoke(earth_like_kernel_type(dtheta_forcing, theta,         &
                                              exner_in_wth, height_wth, chi, &
                                              panel_id, kappa, dt) )
+
+        case(theta_forcing_tidally_locked_earth)
+
+          call log_event( 'slow_physics: Running TLE theta forcing', &
+                          LOG_LEVEL_INFO )
+
+          call invoke(tidally_locked_earth_kernel_type(dtheta_forcing, theta, &
+                                                       exner_in_wth, chi,     &
+                                                       panel_id, kappa, dt) )
 
         case(theta_forcing_temp_tend)
 
