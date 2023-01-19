@@ -15,7 +15,6 @@
 module geometric_constants_mod
 
   ! Infrastructure
-  use check_configuration_mod,            only: check_any_scheme_ffsl
   use constants_mod,                      only: i_def, r_def, l_def, str_def
   use field_mod,                          only: field_type
   use fs_continuity_mod,                  only: W0, W1, W2, W3, Wtheta, Wchi
@@ -49,7 +48,6 @@ module geometric_constants_mod
   use compute_latlon_kernel_mod,          only: compute_latlon_kernel_type
   use get_height_kernel_mod,              only: get_height_kernel_type
   use get_dz_w3_kernel_mod,               only: get_dz_w3_kernel_type
-  use psykal_lite_mod,                    only: invoke_mpi_calc_cell_orientation
 
   implicit none
 
@@ -65,7 +63,6 @@ module geometric_constants_mod
   type(field_type), allocatable, target :: chi_list(:,:)
 
   ! Other geometric objects
-  type(field_type), allocatable, target :: cell_orientation_list(:)
   type(field_type), allocatable, target :: dA_at_w2_list(:)
   type(field_type), allocatable, target :: height_w1_list(:)
   type(field_type), allocatable, target :: height_w2_list(:)
@@ -81,7 +78,6 @@ module geometric_constants_mod
   public :: final_geometric_constants
   public :: get_panel_id
   public :: get_coordinates
-  public :: get_cell_orientation
   public :: get_dA_at_w2
   public :: get_height
   public :: get_dz_w3
@@ -112,14 +108,11 @@ contains
     type(function_space_type), pointer :: w1_k0_fs  => null() ! lowest order w1 fs
     type(function_space_type), pointer :: w2_k0_fs  => null() ! lowest order w2 fs
     type(function_space_type), pointer :: w3_k0_fs  => null() ! lowest order w3 fs
-    type(field_type)                   :: temp_w2_field
 
     type(mesh_type), pointer :: mesh => null()
 
     ! Temporary values for iterating through list
     integer(kind=i_def) :: i, j, num_meshes
-    logical(kind=l_def) :: any_scheme_ffsl
-
 
     if ( subroutine_timers ) call timer('geometric_constants_alg')
     call log_event( "Gungho: creating geometric_constants", LOG_LEVEL_INFO )
@@ -128,7 +121,6 @@ contains
 
     allocate(chi_list(3,num_meshes))
     allocate(panel_id_list(num_meshes))
-    allocate(cell_orientation_list(num_meshes))
     allocate(height_w1_list(num_meshes))
     allocate(height_w2_list(num_meshes))
     allocate(height_w3_list(num_meshes))
@@ -164,28 +156,6 @@ contains
       end do
 
       call panel_id_in(i)%copy_field(panel_id_list(i))
-
-      !================== Create cell orientation field =======================!
-
-      any_scheme_ffsl = check_any_scheme_ffsl()
-
-      if ( any_scheme_ffsl .and. &
-           ( label_list(i) == primary_mesh_label .or. &
-             label_list(i) == shifted_mesh_label ) ) then
-
-        if ( element_order == 0 ) then
-          ! Currently this isn't set up to work with high order dynamics
-          call temp_w2_field%initialise( vector_space = w2_k0_fs )
-          call cell_orientation_list(i)%initialise( vector_space = w3_k0_fs )
-          call invoke( setval_c(temp_w2_field,    0.0_r_def), &
-                       setval_c(cell_orientation_list(i), 0.0_r_def) )
-          call invoke_mpi_calc_cell_orientation( temp_w2_field, &
-                                                 cell_orientation_list(i) )
-        else
-          call log_event( "Cell orientation not set up for high order elements", &
-                           LOG_LEVEL_ERROR )
-        end if
-      end if
 
       !======================= Create a height field ==========================!
       ! Note that these fields represent the height relative to
@@ -292,25 +262,6 @@ contains
     coords_ptr => chi_list(:,mesh_index)
 
   end function get_coordinates
-
-  !> @brief Returns a pointer to the cell_orientation field
-  !> @param[in] mesh_id The ID of the mesh to get the object for
-  !> @return The cell_orientation field
-  function get_cell_orientation(mesh_id) result(orientation)
-    implicit none
-    integer(kind=i_def), intent(in) :: mesh_id
-    integer(kind=i_def)             :: mesh_index
-    type(field_type),       pointer :: orientation
-    character(str_def)              :: field_name
-
-    field_name = 'cell orientation'
-
-    mesh_index = find_mesh_index(mesh_id)
-    orientation => cell_orientation_list(mesh_index)
-
-    call check_initialised_field(orientation, field_name, mesh_id)
-
-  end function get_cell_orientation
 
   !> @brief Returns the dA values at W2 DoF locations
   !> @param[in] mesh_id The ID of the mesh to get the object for
@@ -424,7 +375,6 @@ contains
     if (allocated(height_w2_list)) deallocate(height_w2_list)
     if (allocated(height_w1_list)) deallocate(height_w1_list)
     if (allocated(dz_w3_list)) deallocate(dz_w3_list)
-    if (allocated(cell_orientation_list)) deallocate(cell_orientation_list)
     if (allocated(panel_id_list)) deallocate(panel_id_list)
     if (allocated(chi_list)) deallocate(chi_list)
 
