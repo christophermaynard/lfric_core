@@ -296,8 +296,10 @@ module mesh_mod
   !
   !> @}
   !> @name Horizontal Grid Types for pFunit tests
-  integer(i_def), parameter, public :: PLANE             = 1
-  integer(i_def), parameter, public :: PLANE_BI_PERIODIC = 2
+  integer(i_def), parameter, public :: PLANE                  = 1
+  integer(i_def), parameter, public :: PLANE_BI_PERIODIC      = 2
+  integer(i_def), parameter, public :: PLANE_TWOD             = 3
+  integer(i_def), parameter, public :: PLANE_TWOD_BI_PERIODIC = 4
   !> @}
 
 contains
@@ -2290,7 +2292,9 @@ contains
     !    +---+---+---+
     !
 
-    use extrusion_mod,         only : uniform_extrusion_type, PRIME_EXTRUSION
+    use extrusion_mod,         only : uniform_extrusion_type, &
+                                      PRIME_EXTRUSION,        &
+                                      TWOD
     use reference_element_mod, only : reference_cube_type
 
     implicit none
@@ -2334,7 +2338,7 @@ contains
       self%nlayers = 5
       self%ncells  = 45
       self%nverts  = 96
-      self%nfaces  = 156
+      self%nfaces  = 174
       self%nedges  = 224
 
     else if (mesh_cfg == PLANE_BI_PERIODIC) then
@@ -2348,8 +2352,37 @@ contains
       self%nlayers = 3
       self%ncells  = 27
       self%nverts  = 36
-      self%nfaces  = 90
+      self%nfaces  = 108
       self%nedges  = 99
+
+    else if ( mesh_cfg == PLANE_TWOD ) then
+      self%mesh_name = 'test mesh: planar twod'
+      self%domain_top = 10000.0_r_def
+
+      self%ncells_2d = 9
+      self%nverts_2d = 16
+      self%nedges_2d = 24
+
+      self%nlayers = 1
+      self%ncells  = 9
+      self%nverts  = 32
+      self%nfaces  = 42
+      self%nedges  = 64
+
+    else if ( mesh_cfg == PLANE_TWOD_BI_PERIODIC ) then
+      self%mesh_name = 'test mesh: planar twod bi-periodic'
+      self%domain_top = 10000.0_r_def
+
+      self%ncells_2d = 9
+      self%nverts_2d = 9
+      self%nedges_2d = 18
+
+      self%nlayers = 1
+      self%ncells  = 9
+      self%nverts  = 18
+      self%nfaces  = 36
+      self%nedges  = 45
+
     else
       write(log_scratch_space,'(A,I0)')  &
           "mesh_constructor_unit_test_data:bad mesh specifier:", mesh_cfg
@@ -2378,35 +2411,73 @@ contains
     ! Calculate vertical coordinates eta[0,1] and dz in a separate subroutine
     ! for the unit tests.
     ! Hard wires for uniform vertical grid on planar mesh.
-    extrusion = uniform_extrusion_type( 0.0_r_def,       &
-                                        self%domain_top, &
-                                        self%nlayers,    &
-                                        PRIME_EXTRUSION )
+    if ( mesh_cfg == PLANE_TWOD .or. mesh_cfg == PLANE_TWOD_BI_PERIODIC) then
+      extrusion = uniform_extrusion_type( 0.0_r_def,       &
+                                          self%domain_top, &
+                                          self%nlayers,    &
+                                          TWOD )
+    else
+      extrusion = uniform_extrusion_type( 0.0_r_def,       &
+                                          self%domain_top, &
+                                          self%nlayers,    &
+                                          PRIME_EXTRUSION )
+    end if
     call extrusion%extrude( self%eta )
 
-    self%vert_cell_owner (:,:) = reshape( [ &
-         9, 8, 5, 6, &  ! Cell 1
-         8, 9, 6, 5, &  ! Cell 2
-         9, 9, 6, 6, &  ! Cell 3
-         6, 5, 8, 9, &  ! Cell 4
-         5, 6, 9, 8, &  ! Cell 5
-         6, 6, 9, 9, &  ! Cell 6
-         9, 8, 8, 9, &  ! Cell 7
-         8, 9, 9, 8, &  ! Cell 8
-         9, 9, 9, 9  &  ! Cell 9
-         ], shape(self%vert_cell_owner) )
+    self%extrusion_id = extrusion%get_id()
 
-    self%edge_cell_owner (:,:) = reshape( [ &
-         3, 7, 2, 4, &  ! Cell 1
-         2, 8, 3, 5, &  ! Cell 2
-         3, 9, 3, 6, &  ! Cell 3
-         6, 4, 5, 7, &  ! Cell 4
-         5, 5, 6, 8, &  ! Cell 5
-         6, 6, 6, 9, &  ! Cell 6
-         9, 7, 8, 7, &  ! Cell 7
-         8, 8, 9, 8, &  ! Cell 8
-         9, 9, 9, 9  &  ! Cell 9
-         ], shape(self%edge_cell_owner) )
+    if (mesh_cfg == PLANE_BI_PERIODIC .or. mesh_cfg == PLANE_TWOD_BI_PERIODIC) then
+      ! Periodic
+      self%vert_cell_owner (:,:) = reshape( [ &
+          9, 8, 5, 6, &  ! Cell 1
+          8, 9, 6, 5, &  ! Cell 2
+          9, 9, 6, 6, &  ! Cell 3
+          6, 5, 8, 9, &  ! Cell 4
+          5, 6, 9, 8, &  ! Cell 5
+          6, 6, 9, 9, &  ! Cell 6
+          9, 8, 8, 9, &  ! Cell 7
+          8, 9, 9, 8, &  ! Cell 8
+          9, 9, 9, 9  &  ! Cell 9
+          ], shape(self%vert_cell_owner) )
+
+      self%edge_cell_owner (:,:) = reshape( [ &
+          3, 7, 2, 4, &  ! Cell 1
+          2, 8, 3, 5, &  ! Cell 2
+          3, 9, 3, 6, &  ! Cell 3
+          6, 4, 5, 7, &  ! Cell 4
+          5, 5, 6, 8, &  ! Cell 5
+          6, 6, 6, 9, &  ! Cell 6
+          9, 7, 8, 7, &  ! Cell 7
+          8, 8, 9, 8, &  ! Cell 8
+          9, 9, 9, 9  &  ! Cell 9
+          ], shape(self%edge_cell_owner) )
+    else
+      ! Non-periodic
+      self%vert_cell_owner (:,:) = reshape( [ &
+          1, 2, 5, 4, &  ! Cell 1
+          2, 3, 6, 5, &  ! Cell 2
+          3, 3, 6, 6, &  ! Cell 3
+          4, 5, 8, 7, &  ! Cell 4
+          5, 6, 9, 8, &  ! Cell 5
+          6, 6, 9, 9, &  ! Cell 6
+          7, 8, 8, 7, &  ! Cell 7
+          8, 9, 9, 8, &  ! Cell 8
+          9, 9, 9, 9  &  ! Cell 9
+          ], shape(self%vert_cell_owner) )
+
+      ! left, bottom, right, top
+      self%edge_cell_owner (:,:) = reshape( [ &
+          1, 1, 2, 4, &  ! Cell 1
+          2, 2, 3, 5, &  ! Cell 2
+          3, 3, 3, 6, &  ! Cell 3
+          4, 4, 5, 7, &  ! Cell 4
+          5, 5, 6, 8, &  ! Cell 5
+          6, 6, 6, 9, &  ! Cell 6
+          7, 7, 8, 7, &  ! Cell 7
+          8, 8, 9, 8, &  ! Cell 8
+          9, 9, 9, 9  &  ! Cell 9
+          ], shape(self%edge_cell_owner) )
+    end if
 
     self%edge_ownership   (:,:) = 0
     self%vertex_ownership (:,:) = 0
@@ -2959,6 +3030,283 @@ contains
       self%domain_size%minimum%z =  0.0_r_def
       self%domain_size%maximum%z =  self%domain_top
 
+    else if ( mesh_cfg == PLANE_TWOD ) then
+      !=========================================================
+      ! Assign 3D cell local ids on adjacent to given cell
+      !
+      ! Index ordering follows:
+      ! 1) West
+      ! 2) South
+      ! 3) East
+      ! 4) North
+      ! 5) Bottom
+      ! 6) Top
+      !=========================================================
+      ! Layer 1
+      self%cell_next(:, 1) = [ 0,  0,  2,  4,  0,  0]
+      self%cell_next(:, 2) = [ 1,  0,  3,  5,  0,  0]
+      self%cell_next(:, 3) = [ 2,  0,  0,  6,  0,  0]
+      self%cell_next(:, 4) = [ 0,  1,  5,  7,  0,  0]
+      self%cell_next(:, 5) = [ 4,  2,  6,  8,  0,  0]
+      self%cell_next(:, 6) = [ 5,  3,  0,  9,  0,  0]
+      self%cell_next(:, 7) = [ 0,  4,  8,  0,  0,  0]
+      self%cell_next(:, 8) = [ 7,  5,  9,  0,  0,  0]
+      self%cell_next(:, 9) = [ 8,  6,  0,  0,  0,  0]
+
+      !=========================================================
+      ! Assign vertex local ids on cell corners
+      !
+      ! Index ordering follows:
+      ! 1) South-West Bottom
+      ! 2) South-East Bottom
+      ! 3) North-East Bottom
+      ! 4) North-West Bottom
+      ! 5) South-West Top
+      ! 6) South-East Top
+      ! 7) North-East Top
+      ! 8) North-West Top
+      !=========================================================
+      ! Layer 1
+      self%vert_on_cell(:, 1) = [ 1,  2,  3,  4, 17, 18, 19, 20]
+      self%vert_on_cell(:, 2) = [ 2,  5,  6,  3, 18, 21, 22, 19]
+      self%vert_on_cell(:, 3) = [ 5,  7,  8,  6, 21, 23, 24, 22]
+      self%vert_on_cell(:, 4) = [ 4,  3,  9, 10, 20, 19, 25, 26]
+      self%vert_on_cell(:, 5) = [ 3,  6, 11,  9, 19, 22, 27, 25]
+      self%vert_on_cell(:, 6) = [ 6,  8, 12, 11, 22, 24, 28, 27]
+      self%vert_on_cell(:, 7) = [10,  9, 13, 14, 26, 25, 29, 30]
+      self%vert_on_cell(:, 8) = [ 9, 11, 15, 13, 25, 27, 31, 29]
+      self%vert_on_cell(:, 9) = [11, 12, 16, 15, 27, 28, 32, 31]
+
+      !=========================================================
+      ! Assign edge local ids on cell edges
+      !
+      ! Index ordering follows:
+      ! 1)  West  Bottom
+      ! 2)  South Bottom
+      ! 3)  East  Bottom
+      ! 4)  North Bottom
+      ! 5)  South-West Middle
+      ! 6)  South-East Middle
+      ! 7)  North-East Middle
+      ! 8)  North-West Middle
+      ! 9)  West  Top
+      ! 10) South Top
+      ! 11) East  Top
+      ! 12) North Top
+      !=========================================================
+      ! Layer 1
+      self%edge_on_cell(:,1) = [ 1,  3,  5,  7,  9, 10, 11, 12,  2,  4,  6,  8]
+      self%edge_on_cell(:,2) = [ 5, 13, 15, 17, 10, 19, 20, 11,  6, 14, 16, 18]
+      self%edge_on_cell(:,3) = [15, 21, 23, 25, 19, 27, 28, 20, 16, 22, 24, 26]
+      self%edge_on_cell(:,4) = [29,  7, 31, 33, 12, 11, 35, 36, 30,  8, 32, 34]
+      self%edge_on_cell(:,5) = [31, 17, 37, 39, 11, 20, 41, 35, 32, 18, 38, 40]
+      self%edge_on_cell(:,6) = [37, 25, 42, 44, 20, 28, 46, 41, 38, 26, 43, 45]
+      self%edge_on_cell(:,7) = [47, 33, 49, 51, 36, 35, 53, 54, 48, 34, 50, 52]
+      self%edge_on_cell(:,8) = [49, 39, 55, 57, 35, 41, 59, 53, 50, 40, 56, 58]
+      self%edge_on_cell(:,9) = [55, 44, 60, 62, 41, 46, 64, 59, 56, 45, 61, 63]
+
+      !=========================================================
+      ! Assign face local ids on cell sides
+      !
+      ! Index ordering follows:
+      ! 1)  West
+      ! 2)  South
+      ! 3)  East
+      ! 4)  North
+      ! 5)  Bottom
+      ! 6)  Top
+      !=========================================================
+      ! Layer 1
+      self%face_on_cell(:,1) = [ 1,  2,  3,  4,  5,  6]
+      self%face_on_cell(:,2) = [ 3,  7,  8,  9, 10, 11]
+      self%face_on_cell(:,3) = [ 8, 12, 13, 14, 15, 16]
+      self%face_on_cell(:,4) = [17,  4, 18, 19, 20, 21]
+      self%face_on_cell(:,5) = [18,  9, 22, 23, 24, 25]
+      self%face_on_cell(:,6) = [22, 14, 26, 27, 28, 29]
+      self%face_on_cell(:,7) = [30, 19, 31, 32, 33, 34]
+      self%face_on_cell(:,8) = [31, 23, 35, 36, 37, 38]
+      self%face_on_cell(:,9) = [35, 27, 39, 40, 41, 42]
+
+      !=========================================================
+      ! Assign [x,y,z] vertex coords in (m), with [0,0,0] at centre
+      ! of planet (radius=30000.0).
+      ! Level 0
+      self%vertex_coords (:, 1) = [  5195.345687_r_def,  11352.037430_r_def, &
+                                    -27278.922805_r_def ]
+      self%vertex_coords (:, 2) = [ -6745.352861_r_def,  10505.264651_r_def, &
+                                    -27278.922805_r_def ]
+      self%vertex_coords (:, 3) = [  8757.797452_r_def, -13639.461402_r_def, &
+                                    -25244.129544_r_def ]
+      self%vertex_coords (:, 4) = [ -6745.352861_r_def, -14738.864893_r_def, &
+                                    -25244.129544_r_def ]
+      self%vertex_coords (:, 5) = [ -6745.352861_r_def, -10505.264651_r_def, &
+                                    -27278.922805_r_def ]
+      self%vertex_coords (:, 6) = [  8757.797452_r_def,  13639.461402_r_def, &
+                                    -25244.129544_r_def ]
+      self%vertex_coords (:, 7) = [  5195.345687_r_def, -11352.037430_r_def, &
+                                    -27278.922805_r_def ]
+      self%vertex_coords (:, 8) = [ -6745.352861_r_def,  14738.864893_r_def, &
+                                    -25244.129544_r_def ]
+      self%vertex_coords (:, 9) = [  8757.797452_r_def, -13639.461402_r_def, &
+                                      25244.129544_r_def ]
+      self%vertex_coords (:,10) = [ -6745.352861_r_def, -14738.864893_r_def, &
+                                      25244.129544_r_def ]
+      self%vertex_coords (:,11) = [  8757.797452_r_def,  13639.461402_r_def, &
+                                      25244.129544_r_def ]
+      self%vertex_coords (:,12) = [ -6745.352861_r_def,  14738.864893_r_def, &
+                                      25244.129544_r_def ]
+      self%vertex_coords (:,13) = [ -6745.352861_r_def,  10505.264651_r_def, &
+                                      27278.922805_r_def ]
+      self%vertex_coords (:,14) = [  5195.345687_r_def,  11352.037430_r_def, &
+                                      27278.922805_r_def ]
+      self%vertex_coords (:,15) = [ -6745.352861_r_def, -10505.264651_r_def, &
+                                      27278.922805_r_def ]
+      self%vertex_coords (:,16) = [  5195.345687_r_def, -11352.037430_r_def, &
+                                      27278.922805_r_def ]
+
+      ! Level 1
+      self%vertex_coords (:,17) = [  5541.702066_r_def,  12108.839925_r_def, &
+                                    -29097.517658_r_def ]
+      self%vertex_coords (:,18) = [ -7195.043052_r_def,  11205.615628_r_def, &
+                                    -29097.517658_r_def ]
+      self%vertex_coords (:,19) = [  9341.650615_r_def, -14548.758829_r_def, &
+                                    -26927.071514_r_def ]
+      self%vertex_coords (:,20) = [ -7195.043052_r_def, -15721.455886_r_def, &
+                                    -26927.071514_r_def ]
+      self%vertex_coords (:,21) = [ -7195.043052_r_def, -11205.615628_r_def, &
+                                    -29097.517658_r_def ]
+      self%vertex_coords (:,22) = [  9341.650615_r_def,  14548.758829_r_def, &
+                                    -26927.071514_r_def ]
+      self%vertex_coords (:,23) = [  5541.702066_r_def, -12108.839925_r_def, &
+                                    -29097.517658_r_def ]
+      self%vertex_coords (:,24) = [ -7195.043052_r_def,  15721.455886_r_def, &
+                                    -26927.071514_r_def ]
+      self%vertex_coords (:,25) = [  9341.650615_r_def, -14548.758829_r_def, &
+                                      26927.071514_r_def ]
+      self%vertex_coords (:,26) = [ -7195.043052_r_def, -15721.455886_r_def, &
+                                      26927.071514_r_def ]
+      self%vertex_coords (:,27) = [  9341.650615_r_def,  14548.758829_r_def, &
+                                      26927.071514_r_def ]
+      self%vertex_coords (:,28) = [ -7195.043052_r_def,  15721.455886_r_def, &
+                                      26927.071514_r_def ]
+      self%vertex_coords (:,29) = [ -7195.043052_r_def,  11205.615628_r_def, &
+                                      29097.517658_r_def ]
+      self%vertex_coords (:,30) = [  5541.702066_r_def,  12108.839925_r_def, &
+                                      29097.517658_r_def ]
+      self%vertex_coords (:,31) = [ -7195.043052_r_def, -11205.615628_r_def, &
+                                      29097.517658_r_def ]
+      self%vertex_coords (:,32) = [  5541.702066_r_def, -12108.839925_r_def, &
+                                      29097.517658_r_def ]
+
+
+
+      ! Domain limits
+      self%domain_size%minimum%x =  0.0_r_def
+      self%domain_size%maximum%x =  2.0_r_def*PI
+      self%domain_size%minimum%y = -0.5_r_def*PI
+      self%domain_size%maximum%y =  0.5_r_def*PI
+      self%domain_size%minimum%z =  0.0_r_def
+      self%domain_size%maximum%z =  self%domain_top
+
+    else if ( mesh_cfg == PLANE_TWOD_BI_PERIODIC ) then
+      !=========================================================
+      ! Assign 3D cell local ids on adjacent to given cell
+      !
+      ! Index ordering follows:
+      ! 1) West
+      ! 2) South
+      ! 3) East
+      ! 4) North
+      ! 5) Bottom
+      ! 6) Top
+      !=========================================================
+      ! Layer 1
+      self%cell_next(:, 1) = [ 3,  7,  2,  4,  0,  0]
+      self%cell_next(:, 2) = [ 1,  8,  3,  5,  0,  0]
+      self%cell_next(:, 3) = [ 2,  9,  1,  6,  0,  0]
+      self%cell_next(:, 4) = [ 6,  1,  5,  7,  0,  0]
+      self%cell_next(:, 5) = [ 4,  2,  6,  8,  0,  0]
+      self%cell_next(:, 6) = [ 5,  3,  4,  9,  0,  0]
+      self%cell_next(:, 7) = [ 9,  4,  8,  1,  0,  0]
+      self%cell_next(:, 8) = [ 7,  5,  9,  2,  0,  0]
+      self%cell_next(:, 9) = [ 8,  6,  7,  3,  0,  0]
+
+      !=========================================================
+      ! Assign vertex local ids on cell corners
+      !
+      ! Index ordering follows:
+      ! 1) South-West Bottom
+      ! 2) South-East Bottom
+      ! 3) North-East Bottom
+      ! 4) North-West Bottom
+      ! 5) South-West Top
+      ! 6) South-East Top
+      ! 7) North-East Top
+      ! 8) North-West Top
+      !=========================================================
+      ! Layer 1
+      self%vert_on_cell(:, 1) = [ 1,  2,  3,  4, 10, 11, 12, 13]
+      self%vert_on_cell(:, 2) = [ 2,  5,  6,  3, 11, 14, 15, 12]
+      self%vert_on_cell(:, 3) = [ 5,  1,  4,  6, 14, 10, 13, 15]
+      self%vert_on_cell(:, 4) = [ 4,  3,  7,  8, 13, 12, 16, 17]
+      self%vert_on_cell(:, 5) = [ 3,  6,  9,  7, 12, 15, 18, 16]
+      self%vert_on_cell(:, 6) = [ 6,  4,  8,  9, 15, 13, 17, 18]
+      self%vert_on_cell(:, 7) = [ 8,  7,  2,  1, 17, 16, 11, 10]
+      self%vert_on_cell(:, 8) = [ 7,  9,  5,  2, 16, 18, 14, 11]
+      self%vert_on_cell(:, 9) = [ 9,  8,  1,  5, 18, 17, 10, 14]
+
+      !=========================================================
+      ! Assign edge local ids on cell edges
+      !
+      ! Index ordering follows:
+      ! 1)  West  Bottom
+      ! 2)  South Bottom
+      ! 3)  East  Bottom
+      ! 4)  North Bottom
+      ! 5)  South-West Middle
+      ! 6)  South-East Middle
+      ! 7)  North-East Middle
+      ! 8)  North-West Middle
+      ! 9)  West  Top
+      ! 10) South Top
+      ! 11) East  Top
+      ! 12) North Top
+      !=========================================================
+      ! Layer 1
+      self%edge_on_cell(:,1) = [ 1,  3,  5,  7,  9, 10, 11, 12,  2,  4,  6,  8]
+      self%edge_on_cell(:,2) = [ 5, 13, 15, 17, 10, 19, 20, 11,  6, 14, 16, 18]
+      self%edge_on_cell(:,3) = [15, 21,  1, 23, 19,  9, 12, 20, 16, 22,  2, 24]
+      self%edge_on_cell(:,4) = [25,  7, 27, 29, 12, 11, 31, 32, 26,  8, 28, 30]
+      self%edge_on_cell(:,5) = [27, 17, 33, 35, 11, 20, 37, 31, 28, 18, 34, 36]
+      self%edge_on_cell(:,6) = [33, 23, 25, 38, 20, 12, 32, 37, 34, 24, 26, 39]
+      self%edge_on_cell(:,7) = [40, 29, 42,  3, 32, 31, 10,  9, 41, 30, 43,  4]
+      self%edge_on_cell(:,8) = [42, 35, 44, 13, 31, 37, 19, 10, 43, 36, 45, 14]
+      self%edge_on_cell(:,9) = [44, 38, 40, 21, 37, 32,  9, 19, 45, 39, 41, 22]
+
+      !=========================================================
+      ! Assign face local ids on cell sides
+      !
+      ! Index ordering follows:
+      ! 1)  West
+      ! 2)  South
+      ! 3)  East
+      ! 4)  North
+      ! 5)  Bottom
+      ! 6)  Top
+      !=========================================================
+      self%face_on_cell(:,1) = [ 1,  2,  3,  4,  5,  6]
+      self%face_on_cell(:,2) = [ 3,  7,  8,  9, 10, 11]
+      self%face_on_cell(:,3) = [ 8, 12,  1, 13, 14, 15]
+      self%face_on_cell(:,4) = [16,  4, 17, 18, 19, 20]
+      self%face_on_cell(:,5) = [17,  9, 21, 22, 23, 24]
+      self%face_on_cell(:,6) = [21, 13, 16, 25, 26, 27]
+      self%face_on_cell(:,7) = [28, 18, 29,  2, 30, 31]
+      self%face_on_cell(:,8) = [29, 22, 32,  7, 33, 34]
+      self%face_on_cell(:,9) = [32, 25, 28, 12, 35, 36]
+
+      ! Domain limits
+      self%domain_size%minimum%z =  0.0_r_def
+      self%domain_size%maximum%z =  self%domain_top
     end if
 
     ! Calculate layer depth dz for flat planet surface
