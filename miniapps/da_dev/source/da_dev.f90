@@ -52,7 +52,7 @@ program da_dev
   ! Model Config
   call jedi_pseudo_model_config%initialise()
   ! Forecast config
-  date_time_duration = 0
+  date_time_duration = 5
 
   ! Run object
   ! handles initialization and finalization of required infrastructure

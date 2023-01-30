@@ -1,1 +1,1 @@
-Inner product checksum rho = 404B000000000000
+Inner product checksum rho = 4095180000000000
