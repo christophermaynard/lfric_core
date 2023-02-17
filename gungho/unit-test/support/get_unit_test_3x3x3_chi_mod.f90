@@ -118,8 +118,8 @@ module get_unit_test_3x3x3_chi_mod
   end subroutine get_wchi_3x3x3_field
 
   subroutine get_wchi_3x3x3_latlon_field(chi1, chi2, chi3,       &
-                                            dlat, dlon, dr, radius, &
-                                            dofmap, nlayers)
+                                         dlat, dlon, dr, radius, &
+                                         dofmap, nlayers)
     !external imports
 
     use coord_transform_mod, only : llr2xyz

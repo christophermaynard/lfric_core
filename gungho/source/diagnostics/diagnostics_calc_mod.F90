@@ -15,7 +15,8 @@ module diagnostics_calc_mod
   use constants_mod,                 only: i_def, r_def, str_max_filename
   use diagnostic_alg_mod,            only: divergence_diagnostic_alg,   &
                                            hydbal_diagnostic_alg,       &
-                                           vorticity_diagnostic_alg
+                                           vorticity_diagnostic_alg,    &
+                                           potential_vorticity_diagnostic_alg
   use io_config_mod,                 only: use_xios_io,          &
                                            nodal_output_on_w3
   use files_config_mod,              only: diag_stem_name
@@ -43,6 +44,7 @@ module diagnostics_calc_mod
   implicit none
   private
   public :: write_divergence_diagnostic, &
+            write_pv_diagnostic,         &
             write_hydbal_diagnostic,     &
             write_vorticity_diagnostic
 
@@ -147,5 +149,33 @@ subroutine write_vorticity_diagnostic(u_field, clock)
                                vorticity%get_mesh(), nodal_output_on_w3)
 
 end subroutine write_vorticity_diagnostic
+
+!-------------------------------------------------------------------------------
+!>  @brief    Handles potential vorticity diagnostic processing
+!!
+!!  @details  Handles potential vorticity diagnostic processing
+!!
+!!> @param[in] u_field   The wind field
+!!> @param[in] theta     The potential temperature field
+!!> @param[in] rho       The density field
+!!> @param[in] timestep  Model timestep to index the output file
+!-------------------------------------------------------------------------------
+
+subroutine write_pv_diagnostic(u_field, theta, rho, clock)
+  implicit none
+
+  type(field_type),        intent(in) :: u_field
+  type(field_type),        intent(in) :: theta
+  type(field_type),        intent(in) :: rho
+  class(model_clock_type), intent(in) :: clock
+
+  type(field_type) :: pv
+
+  call potential_vorticity_diagnostic_alg(pv, u_field, theta, rho)
+
+  call write_scalar_diagnostic('potential_vorticity', pv, clock, &
+                               pv%get_mesh(), .false.)
+
+end subroutine write_pv_diagnostic
 
 end module diagnostics_calc_mod

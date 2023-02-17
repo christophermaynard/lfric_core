@@ -16,6 +16,7 @@
     <field id="init_u_in_w2h" name="u_in_w2h" long_name="eastward_wind_at_cell_faces" standard_name="eastward_wind"  unit="m s-1" grid_ref="half_level_edge_grid" />
     <field id="init_v_in_w2h" name="v_in_w2h" long_name="northward_wind_at_cell_faces" standard_name="northward_wind" unit="m s-1" grid_ref="half_level_edge_grid" />
     <field id="init_w_in_wth" name="w_in_wth" long_name="upward_air_velocity_at_cell_interfaces" standard_name="upward_air_velocity" unit="m s-1" grid_ref="full_level_face_grid" />
+    <field id="init_potential_vorticity" name="potential_vorticity" long_name="potential_vorticity" standard_name="potential_vorticity" unit="m2 s-1 K kg-1" grid_ref="half_level_face_grid" />
     <field id="init_divergence" name="divergence" long_name="divergence_of_wind" standard_name="divergence_of_wind" unit="s-1" grid_ref="half_level_face_grid" />
     <field id="init_exner" name="exner" long_name="exner_pressure" unit="1" grid_ref="half_level_face_grid" />
     <field id="init_height_w3" name="height_w3" long_name="height_of_cell_centres_above_earth_radius" unit="m" grid_ref="half_level_face_grid" />

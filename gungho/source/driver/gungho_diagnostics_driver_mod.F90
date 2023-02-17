@@ -17,8 +17,9 @@ module gungho_diagnostics_driver_mod
   use diagnostics_io_mod,        only : write_scalar_diagnostic, &
                                         write_vector_diagnostic
   use diagnostics_calc_mod,      only : write_divergence_diagnostic, &
-                                        write_hydbal_diagnostic, &
-                                        write_vorticity_diagnostic
+                                        write_hydbal_diagnostic,     &
+                                        write_vorticity_diagnostic,  &
+                                        write_pv_diagnostic
   use field_collection_iterator_mod, &
                                  only : field_collection_iterator_type
   use field_collection_mod,      only : field_collection_type
@@ -194,6 +195,7 @@ contains
                                    model_clock, mesh, nodal_output_on_w3)
     end if
     call write_vorticity_diagnostic( u, model_clock )
+    call write_pv_diagnostic( u, theta, rho, model_clock )
 
     ! Moisture fields
     if ( moisture_formulation /= moisture_formulation_dry ) then

@@ -24,11 +24,52 @@ module get_unit_test_w3nodal_basis_mod
 
   public :: get_w0_w3nodal_diff_basis,     &
             get_wtheta_w3nodal_basis,      &
-            get_w0_w3nodal_basis
+            get_w1_w3nodal_basis,          &
+            get_w0_w3nodal_basis,          &
+            get_wchi_w3nodal_diff_basis
 
   contains
 
 !---------------------------------------------------------------------
+
+  subroutine get_w1_w3nodal_basis(basis_w1)
+    ! Return the basis function for a field on a W1 function space
+    implicit none
+    real(r_def), allocatable, intent(out) :: basis_w1(:,:,:)
+
+    allocate(basis_w1(3,12,1))
+
+    basis_w1(:,:,:) = reshape( [0.00_r_def, 0.25_r_def, 0.00_r_def, &
+                                0.25_r_def, 0.00_r_def, 0.00_r_def, &
+                                0.00_r_def, 0.25_r_def, 0.00_r_def, &
+                                0.25_r_def, 0.00_r_def, 0.00_r_def, &
+                                0.00_r_def, 0.00_r_def, 0.25_r_def, &
+                                0.00_r_def, 0.00_r_def, 0.25_r_def, &
+                                0.00_r_def, 0.00_r_def, 0.25_r_def, &
+                                0.00_r_def, 0.00_r_def, 0.25_r_def, &
+                                0.00_r_def, 0.25_r_def, 0.00_r_def, &
+                                0.25_r_def, 0.00_r_def, 0.00_r_def, &
+                                0.00_r_def, 0.25_r_def, 0.00_r_def, &
+                                0.25_r_def, 0.00_r_def, 0.00_r_def ], [3,12,1] )
+
+  end subroutine get_w1_w3nodal_basis
+
+  subroutine get_wchi_w3nodal_diff_basis(diff_basis_wchi)
+    ! Return the diff basis function for a field on a wchi function space
+    ! evaluated on w3 nodal points
+    implicit none
+    real(r_def), allocatable, intent(out) :: diff_basis_wchi(:,:,:)
+
+    allocate(diff_basis_wchi(3,8,1))
+    diff_basis_wchi = reshape( [-0.25_r_def, -0.25_r_def, -0.25_r_def, &
+                               0.25_r_def, -0.25_r_def, -0.25_r_def, &
+                              -0.25_r_def,  0.25_r_def, -0.25_r_def, &
+                               0.25_r_def,  0.25_r_def, -0.25_r_def, &
+                              -0.25_r_def, -0.25_r_def,  0.25_r_def, &
+                               0.25_r_def, -0.25_r_def,  0.25_r_def, &
+                              -0.25_r_def,  0.25_r_def,  0.25_r_def, &
+                               0.25_r_def,  0.25_r_def,  0.25_r_def  ], [3,8,1] )
+  end subroutine get_wchi_w3nodal_diff_basis
 
   subroutine get_w0_w3nodal_diff_basis(diff_basis_w0)
     ! Return the diff basis function for a field on a w0 function space

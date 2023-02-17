@@ -39,6 +39,7 @@ module diagnostic_alg_mod
   public :: vector_nodal_diagnostic_alg
   public :: scalar_ugrid_diagnostic_alg
   public :: vorticity_diagnostic_alg
+  public :: potential_vorticity_diagnostic_alg
   public :: extract_w2h_diagnostic_alg
   public :: column_total_diagnostics_alg
   public :: calc_wbig_diagnostic_alg
@@ -448,6 +449,47 @@ contains
     nullify( mesh )
 
   end subroutine vorticity_diagnostic_alg
+
+  !> @details Calculates the diagnostic potential vorticity from the wind
+  !> @param[in] potential_vorticity Potential Vorticity (curl(u) + 2*Omega) dot grad(theta)/rho
+  !> @param[in] u                   Wind
+  !> @param[in] theta               Potential temperature
+  !> @param[in] rho                 Density
+  !> @param[in] timestep            Model timestep number
+  subroutine potential_vorticity_diagnostic_alg(potential_vorticity, u, theta, rho)
+    use io_config_mod,                  only: use_xios_io
+    use fs_continuity_mod,              only: W3
+    use compute_pv_alg_mod,             only: compute_pv_alg
+    use finite_element_config_mod,      only: element_order
+    use function_space_collection_mod,  only: function_space_collection
+    use field_parent_mod,               only: write_interface
+    use lfric_xios_write_mod,           only: write_field_face
+    implicit none
+
+    type(field_type), intent(out) :: potential_vorticity
+    type(field_type), intent(in)  :: u
+    type(field_type), intent(in)  :: theta
+    type(field_type), intent(in)  :: rho
+
+    procedure(write_interface), pointer :: tmp_write_ptr => null()
+    type(mesh_type), pointer            :: mesh => null()
+
+    mesh => theta%get_mesh()
+
+    call potential_vorticity%initialise( vector_space = &
+         function_space_collection%get_fs(mesh, element_order, W3) )
+    call compute_pv_alg(potential_vorticity, u, theta, rho)
+
+    if ( use_xios_io ) then
+      tmp_write_ptr => write_field_face
+      ! Vector fields that are projected to scalar components
+      call potential_vorticity%set_write_behaviour(tmp_write_ptr)
+      nullify( tmp_write_ptr )
+    end if
+
+    nullify( mesh )
+
+  end subroutine potential_vorticity_diagnostic_alg
 
   subroutine extract_w2h_diagnostic_alg( h_wind, v_wind, wind)
     use split_w2_field_kernel_mod,        only: split_w2_field_kernel_type
