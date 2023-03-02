@@ -744,7 +744,10 @@ contains
     integer(i_um) :: asteps_since_triffid, ndry_dep_species
 
     real(r_um), dimension(seg_len,1) ::                                      &
-         bt, bq, bt_cld, bq_cld, a_qs, a_dqsdt, dqsdt, ustar_in, charnock_w
+         bt, bq, bt_cld, bq_cld, a_qs, a_dqsdt, dqsdt, charnock_w
+
+    ! This is an idealised fixed value for ustar.
+    real(r_um), parameter :: ustar_fixed_value = 0.1
 
     real(r_um), dimension(seg_len,1,nice_use) :: radnet_sice
 
@@ -1418,8 +1421,9 @@ contains
       ! explicit (time weight set to zero).
       if (flux_bc_opt == specified_fluxes_cd) then
         do i = 1, seg_len
-          ! Set rhokm using input ustar_in
-          uStarGBM(i,1) = ustar_in(i,1)
+          ! In the future we will set rhokm using input ustar_in.
+          ! For now, we set using a fixed value.
+          uStarGBM(i,1) = ustar_fixed_value
           rhokm(i,1) = rhostar(i,1)*uStarGBM(i,1)*uStarGBM(i,1)/vshr(i,1)
           if (flandg(i,1) > 0.0_r_um) then
             rhokm_land(i,1) = rhostar(i,1)*uStarGBM(i,1)*uStarGBM(i,1)/        &
