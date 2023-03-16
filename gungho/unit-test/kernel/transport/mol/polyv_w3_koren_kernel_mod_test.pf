@@ -45,18 +45,23 @@ contains
     integer(i_def), parameter :: ndf_md = 1
     integer(i_def), parameter :: ndf_w3 = 1
     integer(i_def), parameter :: ndf_c  = 1
+    integer(i_def), parameter :: ndf_wt = 2
+
     integer(i_def), parameter :: undf_md = 2*nlayers
     integer(i_def), parameter :: undf_w3 = ndf_w3*nlayers
     integer(i_def), parameter :: undf_c  = ndata*nlayers
+    integer(i_def), parameter :: undf_wt = nlayers+1
 
     integer(i_def), dimension(ndf_md) :: map_md
     integer(i_def), dimension(ndf_w3) :: map_w3
     integer(i_def), dimension(ndf_c)  :: map_c
+    integer(i_def), dimension(ndf_wt) :: map_wt
 
     real(r_tran), dimension(undf_md)   :: edge_values
     real(r_tran), dimension(undf_md)   :: edge_values_answer
     real(r_tran), dimension(undf_w3)   :: density
     real(r_tran), dimension(nlayers+1) :: edge_density
+    real(r_tran), dimension(undf_wt)   :: zw_height
     real(r_tran), dimension(3) :: kw=(/-1.0_r_tran,5.0_r_tran,2.0_r_tran/)/6.0_r_tran
 
     integer(i_def) :: df, k, p1, p2, p3
@@ -66,6 +71,7 @@ contains
     map_w3(1) = 1
     map_c(1) = 1
     map_md(1) = 1
+    map_wt(:) = (/ 1, 2 /)
 
     ! The density is constructed with constant r=slope ratio
     constant = 2.0_r_tran
@@ -74,6 +80,9 @@ contains
     density(2) = 1.2_r_tran*constant
     do k = 3,nlayers
       density(k) = density(k-1)+r*(density(k-1)-density(k-2))
+    end do
+    do k=1, nlayers+1
+      zw_height(k) = real(k-1, r_tran)
     end do
 
     ! Since r=0.5 => phi=(1+2r)/3, the Koren scheme reduces to a
@@ -90,7 +99,7 @@ contains
 
     edge_values_answer(:) = 0.0_r_tran
     do k = 0, nlayers
-       edge_values_answer(map_md(1) + k ) = edge_density(k+1)
+      edge_values_answer(map_md(1) + k ) = edge_density(k+1)
     end do
 
     ! Test subroutine with logspace = .false.
@@ -101,7 +110,7 @@ contains
     call polyv_w3_koren_code( nlayers,     &
                               edge_values, &
                               density,     &
-                              ndata,       &
+                              zw_height,   &
                               reversible,  &
                               logspace,    &
                               ndf_md,      &
@@ -109,7 +118,10 @@ contains
                               map_md,      &
                               ndf_w3,      &
                               undf_w3,     &
-                              map_w3 )
+                              map_w3,      &
+                              ndf_wt,      &
+                              undf_wt,     &
+                              map_wt       )
 
     if ( r_tran == real64 ) then
       use_tol = tol
@@ -130,14 +142,14 @@ contains
     edge_density(:) = exp(edge_density(:))
     edge_values_answer(:) =  0.0_r_tran
     do k = 0, nlayers
-       edge_values_answer(map_md(1)+k) = edge_density(k+1)
+      edge_values_answer(map_md(1)+k) = edge_density(k+1)
     end do
 
     edge_values(:) = 0.0_r_tran
     call polyv_w3_koren_code( nlayers,     &
                               edge_values, &
                               density,     &
-                              ndata,       &
+                              zw_height,   &
                               reversible,  &
                               logspace,    &
                               ndf_md,      &
@@ -145,7 +157,10 @@ contains
                               map_md,      &
                               ndf_w3,      &
                               undf_w3,     &
-                              map_w3 )
+                              map_w3,      &
+                              ndf_wt,      &
+                              undf_wt,     &
+                              map_wt       )
 
     if ( r_tran == real64 ) then
       use_tol = tol
@@ -168,7 +183,7 @@ contains
     call polyv_w3_koren_code( nlayers,     &
                               edge_values, &
                               density,     &
-                              ndata,       &
+                              zw_height,   &
                               reversible,  &
                               logspace,    &
                               ndf_md,      &
@@ -176,7 +191,10 @@ contains
                               map_md,      &
                               ndf_w3,      &
                               undf_w3,     &
-                              map_w3 )
+                              map_w3,      &
+                              ndf_wt,      &
+                              undf_wt,     &
+                              map_wt       )
 
     ! Now do reconstruction with tiny density as a control
     density(:) = EPS
@@ -184,7 +202,7 @@ contains
     call polyv_w3_koren_code( nlayers,            &
                               edge_values_answer, &
                               density,            &
-                              ndata,              &
+                              zw_height,          &
                               reversible,         &
                               logspace,           &
                               ndf_md,             &
@@ -192,7 +210,10 @@ contains
                               map_md,             &
                               ndf_w3,             &
                               undf_w3,            &
-                              map_w3 )
+                              map_w3,             &
+                              ndf_wt,             &
+                              undf_wt,            &
+                              map_wt              )
 
     @assertEqual(edge_values_answer, edge_values, use_tol )
 

@@ -25,7 +25,8 @@ module reconstruct_w3_field_alg_mod
                                             radians_to_degrees
   use geometric_constants_mod,        only: get_coordinates,          &
                                             get_extended_coordinates, &
-                                            get_panel_id
+                                            get_panel_id,             &
+                                            get_height
   use fem_constants_mod,              only: get_mass_matrix_diagonal
   use r_tran_field_mod,               only: r_tran_field_type
   use field_mod,                      only: field_type
@@ -152,7 +153,6 @@ contains
     use function_space_collection_mod, only: function_space_collection
     use reference_element_mod,         only: reference_element_type
     use mesh_mod,                      only: mesh_type
-    use geometric_constants_mod,       only: get_height
     use transport_config_mod,          only: reversible
 
     use compute_mass_matrix_kernel_w_scalar_mod, only: compute_mass_matrix_kernel_w_scalar_type
@@ -574,6 +574,7 @@ contains
     integer(kind=i_def)              :: mesh_index
     integer(kind=i_def),     pointer :: ndata_v => null()
     type(r_tran_field_type), pointer :: vert_flux_coeffs => null()
+    type(r_tran_field_type), pointer :: height_tr => null()
     integer(kind=i_def)              :: vertical_order
     logical(kind=l_def)              :: logspace
     logical(kind=l_def)              :: reversible
@@ -600,13 +601,14 @@ contains
     end if
 
     if ( monotonicity == vertical_monotone_koren ) then
+      height_tr => get_height( Wtheta, mesh%get_id() )
       call invoke(name="W3_vert_reconstruction_koren",                         &
                   polyv_w3_koren_kernel_type( field_new,                       &
                                               field_old,                       &
-                                              ndata_v,                         &
+                                              height_tr,                       &
                                               reversible,                      &
                                               logspace) )
-
+      nullify( height_tr )
     else
       ! Compute offset stencil used for vertical reconstruction
       call poly1d_vert_w3_reconstruction_init(vertical_order, &

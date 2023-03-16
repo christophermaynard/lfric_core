@@ -501,16 +501,6 @@ subroutine compute_cubic_coeffs(zi,zg,dz,sc,cc,cl,nzi,nzg)
      d3 = (z3-z1)*(z3-z2)*(z3-z4)
      d4 = (z4-z1)*(z4-z2)*(z4-z3)
 
-     if( abs(d1)<eps .or.  abs(d2)<eps .or. abs(d3)<eps .or. abs(d4)<eps ) then
-       print*,' moh C duplicate points z1:z4=',z1,z2,z3,z4
-       print*,' moh C duplicate points z2-z1=',z2-z1
-       print*,' moh C duplicate points z3-z2=',z3-z2
-       print*,' moh C duplicate points z4-z3=',z4-z3
-       print*,' moh C sc(k,:)/nzg = ',sc(k,:),nzg
-       print*,' moh C zg = ',zg
-       print*,' moh C zi/km = ',zi(k),km
-     end if
-
      n1 = (xi-z2)*(xi-z3)*(xi-z4)
      n2 = (xi-z1)*(xi-z3)*(xi-z4)
      n3 = (xi-z1)*(xi-z2)*(xi-z4)

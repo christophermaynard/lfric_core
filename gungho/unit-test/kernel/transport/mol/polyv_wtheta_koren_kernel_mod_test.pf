@@ -123,6 +123,7 @@ contains
     real(r_tran), dimension(undf_wt) :: wind
     real(r_tran), dimension(undf_wt) :: density
     real(r_tran), dimension(undf_wt) :: adv_inc_answer1, adv_inc_answer2
+    real(r_tran), dimension(undf_wt) :: zw_height
 
     integer(i_def) :: df, k, p1, p2, p3
     logical(l_def) :: logspace, reversible
@@ -141,24 +142,28 @@ contains
     do k = 3,nlayers+1
       density(k) = density(k-1)+r*(density(k-1)-density(k-2))
     end do
+    do k=1, nlayers+1
+      zw_height(k) = real(k-1, r_tran)
+    end do
     ! Since r=0.5 => phi=(1+2r)/3, the Koren scheme reduces to a
     ! quadratic scheme with the weights {-1/6, 5/6, 2/6}
     adv_inc_answer1(:) = 0.0_r_tran
     adv_inc_answer2(:) = 0.0_r_tran
     do k = 2,nlayers
-        p3 = k + 1
-        p2 = k
-        p1 = k-1
-        val_u = kw(1)*density(p1)+kw(2)*density(p2)+kw(3)*density(p3)
-        p3 = p3 - 1
-        p2 = p2 - 1
-        p1 = max(1, p1-1)
-        val_d = kw(1)*density(p1)+kw(2)*density(p2)+kw(3)*density(p3)
-        if ( k==2 ) then
-           val_d = density(1)
-        end if
-        adv_inc_answer1(k) = val_u - val_d
-        adv_inc_answer2(k) = exp(val_u) - exp(val_d)
+      p3 = k + 1
+      p2 = k
+      p1 = k-1
+      val_u = kw(1)*density(p1)+kw(2)*density(p2)+kw(3)*density(p3)
+      p3 = p3 - 1
+      p2 = p2 - 1
+      p1 = max(1, p1-1)
+      val_d = kw(1)*density(p1)+kw(2)*density(p2)+kw(3)*density(p3)
+      if ( k==2 ) then
+        r = 2.0_r_tran*density(1) - density(2)
+        val_d = kw(1)*r+kw(2)*density(1)+kw(3)*density(2)
+      end if
+      adv_inc_answer1(k) = val_u - val_d
+      adv_inc_answer2(k) = exp(val_u) - exp(val_d)
     end do
 
     ! Test subroutine with logspace = .false.
@@ -169,7 +174,7 @@ contains
                                   adv_inc,              &
                                   wind,                 &
                                   density,              &
-                                  ndata,                &
+                                  zw_height,            &
                                   reversible,           &
                                   logspace,             &
                                   ndf_wt,               &
@@ -192,12 +197,20 @@ contains
     logspace = .true.
     density(:) = exp(density(:))
 
+    ! Correct adv_inc_answer2(2) due to the assumption at the boundaries
+    ! inside the kernel polyv_wtheta_koren_code. The boundary assumption
+    ! is applied to density and not log(density) when logspace=T
+    val_u = kw(1)*log(density(1))+kw(2)*log(density(2))+kw(3)*log(density(3))
+    r = 2.0_r_tran*density(1) - density(2)
+    val_d = kw(1)*log(r)+kw(2)*log(density(1))+kw(3)*log(density(2))
+    adv_inc_answer2(2) = exp(val_u) - exp(val_d)
+
     adv_inc = 0.0_r_tran
     call polyv_wtheta_koren_code( nlayers,              &
                                   adv_inc,              &
                                   wind,                 &
                                   density,              &
-                                  ndata,                &
+                                  zw_height,            &
                                   reversible,           &
                                   logspace,             &
                                   ndf_wt,               &
@@ -227,7 +240,7 @@ contains
                                   adv_inc,              &
                                   wind,                 &
                                   density,              &
-                                  ndata,                &
+                                  zw_height,            &
                                   reversible,           &
                                   logspace,             &
                                   ndf_wt,               &
@@ -244,7 +257,7 @@ contains
                                   adv_inc_answer2,      &
                                   wind,                 &
                                   density,              &
-                                  ndata,                &
+                                  zw_height,            &
                                   reversible,           &
                                   logspace,             &
                                   ndf_wt,               &
