@@ -31,7 +31,8 @@ module linear_model_data_mod
                                              linear_init_pert_analytical
   use linear_config_mod,              only : pert_option,          &
                                              pert_option_analytic, &
-                                             pert_option_random
+                                             pert_option_random,   &
+                                             pert_option_file
   use linked_list_mod,                only : linked_list_type
   use log_mod,                        only : log_event,         &
                                              log_scratch_space, &
@@ -43,6 +44,7 @@ module linear_model_data_mod
   use moist_dyn_factors_alg_mod,      only : moist_dyn_factors_alg
   use mr_indices_mod,                 only : nummr, &
                                              mr_names
+  use linear_map_fd_alg_mod,          only : linear_map_fd_to_prognostics
 
   implicit none
 
@@ -162,15 +164,25 @@ contains
              ls_fields, depository, prognostics, "ls_u", W2,   &
              mesh, checkpoint_restart_flag )
 
-        do imr = 1, nummr
+
+        do imr = 1, nummr-2
 
           name = trim('ls_' // adjustl(mr_names(imr)) )
 
           call setup_field( &
              ls_fields, depository, prognostics, name, Wtheta,         &
-             mesh, checkpoint_restart_flag, time_axis=ls_time_axis, &
-             mr=ls_mr, imr=imr )
+             mesh, checkpoint_restart_flag, time_axis=ls_time_axis )
         enddo
+
+        ! m_g and m_s
+        do imr = nummr-1, nummr
+
+         name = trim('ls_' // adjustl(mr_names(imr)) )
+
+         call setup_field( &
+             ls_fields, depository, prognostics, name, Wtheta,         &
+             mesh, checkpoint_restart_flag, mr=ls_mr, imr=imr )
+        end do
 
         do imr = 1, num_moist_factors
 
@@ -250,6 +262,9 @@ contains
 
           call linear_init_reference_ls( model_data )
 
+        case( pert_option_file )
+          call log_event("This pert_option not available with ls_option_analytic ", LOG_LEVEL_ERROR)
+
         case default
 
           call log_event("This pert_option not available", LOG_LEVEL_ERROR)
@@ -315,6 +330,10 @@ contains
         call linear_init_pert_analytical( mesh,      &
                                           twod_mesh, &
                                           model_data )
+
+      case( pert_option_file )
+
+          call linear_map_fd_to_prognostics(model_data)
 
       case default
 

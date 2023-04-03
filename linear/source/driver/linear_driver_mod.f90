@@ -8,6 +8,7 @@ module linear_driver_mod
 
   use cli_mod,                    only : get_initial_filename
   use constants_mod,              only : i_def, i_native, imdi
+  use driver_io_mod,              only : get_io_context
   use field_mod,                  only : field_type
   use gungho_diagnostics_driver_mod, &
                                   only : gungho_diagnostics_driver
@@ -21,8 +22,12 @@ module linear_driver_mod
                                          output_model_data, &
                                          finalise_model_data
   use gungho_step_mod,            only : gungho_step
-  use initialization_config_mod,  only : ls_option, &
-                                         ls_option_file
+  use init_fd_prognostics_mod,    only : init_fd_prognostics_dump
+  use initial_output_mod,         only : write_initial_output
+  use initialization_config_mod,  only : ls_option,                &
+                                         ls_option_file,           &
+                                         init_option,              &
+                                         init_option_fd_start_dump
   use io_config_mod,              only : write_diag, &
                                          diagnostic_frequency, &
                                          nodal_output_on_w3
@@ -41,6 +46,7 @@ module linear_driver_mod
   use linear_data_algorithm_mod,  only : update_ls_file_alg
   use mesh_mod,                   only : mesh_type
   use model_clock_mod,            only : model_clock_type
+  use create_tl_prognostics_mod,  only : create_tl_prognostics
 
   implicit none
 
@@ -66,6 +72,8 @@ contains
 
     implicit none
 
+    class(io_context_type), pointer :: io_context => null()
+
     character(:),  allocatable :: filename
 
     call get_initial_filename( filename )
@@ -86,13 +94,25 @@ contains
                             twod_mesh,  &
                             model_clock )
 
+    ! Instantiate the fields required to read the initial
+    ! conditions from a file.
+    if ( init_option == init_option_fd_start_dump ) then
+      call create_tl_prognostics( mesh, twod_mesh,       &
+                                  model_data%fd_fields,  &
+                                  model_data%depository)
+    end if
+
     ! Instantiate the linearisation state
     call linear_create_ls( model_data, &
                            mesh,       &
                            twod_mesh )
 
     ! Initialise the fields stored in the model_data
-    call initialise_model_data( model_data, model_clock, mesh, twod_mesh )
+    if ( init_option == init_option_fd_start_dump ) then
+      call init_fd_prognostics_dump( model_data%fd_fields )
+    else
+      call initialise_model_data( model_data, model_clock, mesh, twod_mesh )
+    end if
 
     ! Model configuration initialisation
     call initialise_model( mesh,  &
@@ -109,26 +129,14 @@ contains
                            twod_mesh, &
                            model_data )
 
+    ! Initial output
+    io_context => get_io_context()
+    call write_initial_output( mesh, twod_mesh, model_data, model_clock, &
+                               io_context, nodal_output_on_w3 )
+
     ! Linear model configuration initialisation
     call initialise_linear_model( mesh,        &
                                   model_data )
-
-    ! Initial output
-    if ( model_clock%is_initialisation() .and. write_diag ) then
-        ! Calculation and output of diagnostics
-        call gungho_diagnostics_driver( mesh,        &
-                                        twod_mesh,   &
-                                        model_data,  &
-                                        model_clock, &
-                                        nodal_output_on_w3 )
-
-        call linear_diagnostics_driver( mesh,        &
-                                        model_data,  &
-                                        model_clock, &
-                                        nodal_output_on_w3 )
-    end if
-
-
 
   end subroutine initialise
 
