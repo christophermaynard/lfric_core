@@ -99,14 +99,6 @@ contains
       call mr_in(imr)%copy_field(mr_out(imr))
     end do
 
-    ! ------------------------------------------------------------------------ !
-    ! Clip fields to ensure they are not negative
-    ! ------------------------------------------------------------------------ !
-
-    do imr = 1, nummr
-      call invoke( enforce_lower_bound_kernel_type(mr_out(imr), 0.0_r_def) )
-    end do
-
     if ( subroutine_timers ) call timer('tl moist mixing ratio transport')
 
   end subroutine tl_moist_mr_transport_alg

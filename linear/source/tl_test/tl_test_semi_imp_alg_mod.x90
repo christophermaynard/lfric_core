@@ -248,7 +248,7 @@ module tl_test_semi_imp_alg_mod
 
     gamma_u = 1.e4_r_def
     gamma_theta = 1.e2_r_def
-    gamma_rho = 1.e0_r_def
+    gamma_rho = 8.0e-1_r_def
     gamma_exner = 6.5e-1_r_def
 
     if ( moisture_formulation == moisture_formulation_dry ) then

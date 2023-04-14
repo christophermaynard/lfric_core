@@ -362,14 +362,14 @@ contains
       end select
 
       ! If vector_invariant form, use the PV mass flux for the velocity advection
+      ! Mass flux already includes dt
       call constant_one%initialise( vector_space = w1_fs )
       call invoke( setval_c(constant_one, 1.0_r_def),                                &
                    setval_c(advection_inc%vector(isw_u), 0.0_r_def),                 &
                    vorticity_advection_kernel_type(advection_inc%vector(isw_u),      &
                                                    q_mass_flux,                      &
                                                    constant_one, chi, panel_id, qr), &
-                   enforce_bc_kernel_type(advection_inc%vector(isw_u)),              &
-                   inc_a_times_X(cast_dt,advection_inc%vector(isw_u)) )
+                   enforce_bc_kernel_type(advection_inc%vector(isw_u)) )
 
       nullify( w1_fs, w2v_fs, q_mass_flux_get, chi, panel_id )
 

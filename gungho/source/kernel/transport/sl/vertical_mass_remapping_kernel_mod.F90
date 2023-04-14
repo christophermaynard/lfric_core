@@ -40,15 +40,14 @@ private
 !>                                      by the PSy layer.
 type, public, extends(kernel_type) :: vertical_mass_remapping_kernel_type
   private
-  type(arg_type) :: meta_args(8) = (/                      &
+  type(arg_type) :: meta_args(7) = (/                      &
        arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W2),  & ! departure points
        arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, W3),  & ! mass
        arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     W2v), & ! mass flux
        arg_type(GH_SCALAR, GH_INTEGER, GH_READ),           & ! order of construction
        arg_type(GH_SCALAR, GH_INTEGER, GH_READ),           & ! monotone scheme
        arg_type(GH_SCALAR, GH_INTEGER, GH_READ),           & ! monotone order
-       arg_type(GH_SCALAR, GH_LOGICAL, GH_READ),           & ! enforce min-val
-       arg_type(GH_SCALAR, GH_REAL,    GH_READ)            & ! min-val to be enforced
+       arg_type(GH_SCALAR, GH_LOGICAL, GH_READ)            & ! enforce min-val
        /)
   integer :: operates_on = CELL_COLUMN
 contains
@@ -80,7 +79,6 @@ contains
   !> @param[in] vertical_monotone        The monotone scheme to be used
   !> @param[in] vertical_monotone_order  The order of monotone reconstruction option
   !> @param[in] enforce_min_value        Option to enforce a minimum value
-  !> @param[in]   min_value              The minimum value to be enforced
   !> @param[in]     ndf_w2       The number of degrees of freedom per cell
   !!                             on W2 space
   !> @param[in]     undf_w2      The number of unique degrees of freedom
@@ -108,7 +106,6 @@ contains
                                            vertical_monotone,           &
                                            vertical_monotone_order,     &
                                            enforce_min_value,           &
-                                           min_value,                   &
                                            ndf_w2, undf_w2, map_w2,     &
                                            ndf_w3, undf_w3, map_w3,     &
                                            ndf_w2v, undf_w2v, map_w2v   )
@@ -134,7 +131,6 @@ contains
   logical(kind=l_def), intent(in)  :: enforce_min_value
   integer(kind=i_def), intent(in)  :: vertical_monotone,       &
                                       vertical_monotone_order
-  real(kind=r_tran),  intent(in)    :: min_value
   ! Local variables
   integer(kind=i_def)                     :: k, nz, nzl
   real(kind=r_tran), dimension(nlayers+1) :: dist, zl, zd, m_flux
@@ -165,7 +161,7 @@ contains
 
   call piecewise_reconstruction(zl,dz,m0,a0,a1,a2,a3,order,1,nz,            &
                                 vertical_monotone, vertical_monotone_order, &
-                                enforce_min_value, min_value                )
+                                enforce_min_value                           )
   call remapp_mass(zd,zl,dz,m0,a0,a1,a2,a3,1,nz,mn,m_flux )
 
   ! Export the local new mass back to the global mass
@@ -199,18 +195,16 @@ contains
   !> @param[in] vertical_monotone        The monotone scheme option to be used
   !> @param[in] vertical_monotone_order  Order of sub-cell monotone reconstruction
   !> @param[in] enforce_min_value        Option to enforcce a minimum value
-  !> @param[in] min_value                The minimum value we want to enforce
   !-------------------------------------------------------------------------------
   subroutine piecewise_reconstruction(xl,dx,mass,a0,a1,a2,a3,order,ns,nf,          &
                                       vertical_monotone, vertical_monotone_order,  &
-                                      enforce_min_value, min_value                 )
+                                      enforce_min_value)
    implicit none
 
    integer(kind=i_def), intent(in)                  :: ns, nf, order
    integer(kind=i_def), intent(in)                  :: vertical_monotone,  &
                                                        vertical_monotone_order
    logical(kind=l_def), intent(in)                  :: enforce_min_value
-   real(kind=r_tran),    intent(in)                  :: min_value
    real(kind=r_tran), dimension(ns:nf+1), intent(in) :: xl
    real(kind=r_tran), dimension(ns:nf), intent(in)   :: dx, mass
    real(kind=r_tran), dimension(ns:nf), intent(out)  :: a0, a1, a2, a3

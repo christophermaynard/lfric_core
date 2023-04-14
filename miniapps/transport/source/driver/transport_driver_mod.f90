@@ -238,6 +238,12 @@ contains
 
 
     call mass_conservation( model_clock%get_step(), density, mr )
+    call density%log_minmax( LOG_LEVEL_INFO, 'rho' )
+    call theta%log_minmax( LOG_LEVEL_INFO, 'theta' )
+    call tracer_con%log_minmax( LOG_LEVEL_INFO, 'tracer_con' )
+    call tracer_adv%log_minmax( LOG_LEVEL_INFO, 'tracer_adv' )
+    call constant%log_minmax( LOG_LEVEL_INFO, 'constant' )
+    call mr(1)%log_minmax( LOG_LEVEL_INFO, 'm_v' )
 
     !--------------------------------------------------------------------------
     ! Model step

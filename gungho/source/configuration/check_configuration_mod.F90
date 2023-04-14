@@ -15,6 +15,7 @@ module check_configuration_mod
                                   outer_order
   use transport_config_mod, only: operators,                   &
                                   operators_fv,                &
+                                  operators_fem,               &
                                   consistent_metric,           &
                                   fv_horizontal_order,         &
                                   fv_vertical_order,           &
@@ -30,8 +31,8 @@ module check_configuration_mod
                                   extended_mesh,               &
                                   dry_field_name,              &
                                   field_names,                 &
-                                  advective_then_flux,         &
-                                  use_density_predictor
+                                  use_density_predictor,       &
+                                  enforce_min_value
   use transport_enumerated_types_mod,                          &
                             only: scheme_mol_3d,               &
                                   scheme_ffsl_3d,              &
@@ -276,11 +277,6 @@ contains
           call log_event( log_scratch_space, LOG_LEVEL_ERROR )
         end if
       end if
-      if (use_density_predictor .AND. .NOT. advective_then_flux) then
-        ! Check that advective_then_flux is true if using density predictor
-        write( log_scratch_space, '(A)' ) 'Density predictor requires advective_then_flux transport'
-        call log_event( log_scratch_space, LOG_LEVEL_ERROR )
-      end if
       ! Check some combinations of options, variable-by-variable
       do i = 1, profile_size
         if ( splitting(i) /= splitting_none .AND. scheme(i) /= scheme_split ) then
@@ -319,6 +315,13 @@ contains
           write( log_scratch_space, '(A)') trim(field_names(i)) // ' variable ' // &
             'is being transported with a reversible form of the FFSL scheme, ' // &
             'so it must also have the "reversible" option set to .true.'
+          call log_event(log_scratch_space, LOG_LEVEL_ERROR)
+        end if
+
+        if ( operators == operators_fem .and. enforce_min_value(i) ) then
+          write( log_scratch_space, '(A)') trim(field_names(i)) // ' variable ' // &
+            'is set to use the enforce_min_value option, but this cannot ' // &
+            'be used with the FEM operators'
           call log_event(log_scratch_space, LOG_LEVEL_ERROR)
         end if
       end do

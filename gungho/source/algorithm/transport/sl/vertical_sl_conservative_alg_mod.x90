@@ -11,6 +11,7 @@
 module vertical_sl_conservative_alg_mod
 
   use constants_mod,                      only: r_tran, i_def, l_def
+  use end_of_transport_step_alg_mod,      only: end_of_conservative_step_alg
   use finite_element_config_mod,          only: element_order
   use geometric_constants_mod,            only: get_height
   use io_config_mod,                      only: subroutine_timers
@@ -23,8 +24,7 @@ module vertical_sl_conservative_alg_mod
                                                 slice_order_parabola, &
                                                 slice_order_cubic,    &
                                                 vertical_sl_order,    &
-                                                dry_field_name,       &
-                                                advective_then_flux
+                                                dry_field_name
   use log_mod,                            only: log_event, LOG_LEVEL_ERROR
   use mesh_mod,                           only: mesh_type
   use transport_enumerated_types_mod,     only: splitting_strang_vhv
@@ -71,24 +71,20 @@ contains
     real(kind=r_tran),             intent(in)    :: dt
     type(transport_metadata_type), intent(in)    :: transport_metadata
 
-    integer(kind=i_def)                 :: step, mesh_id
+    integer(kind=i_def)                 :: mesh_id
     type(r_tran_field_type)             :: mass
     type(r_tran_field_type)             :: dep_pts_z
     type(r_tran_field_type)             :: flux
-    type(r_tran_field_type)             :: flux_inc
     type(r_tran_operator_type), pointer :: mm_w3_inv => null()
     type(r_tran_operator_type), pointer :: mm_w3 => null()
     type(r_tran_field_type),    pointer :: dep_pts_z_get => null()
     type(field_type),           pointer :: height_rdef => null()
     type(r_tran_field_type)             :: height
-    type(r_tran_field_type),    pointer :: field_start => null()
-    type(r_tran_field_type),    pointer :: old_flux_inc => null()
     type(mesh_type),            pointer :: mesh => null()
     type(function_space_type),    pointer :: w2v_fs => null()
     type(transport_runtime_type), pointer :: transport_runtime => null()
     integer(kind=i_def)  :: monotone, monotone_order
     logical(l_def)       :: enforce_min_value
-    real(kind=r_tran)    :: min_value
 
     if ( subroutine_timers ) call timer( 'vertical_sl_conservative_alg' )
 
@@ -105,7 +101,6 @@ contains
     monotone = transport_metadata%get_vertical_monotone()
     monotone_order = transport_metadata%get_vertical_monotone_order()
     enforce_min_value = transport_metadata%get_enforce_min_value()
-    min_value = transport_metadata%get_min_value()
 
     if ( monotone /= vertical_monotone_none    .and. &
          monotone /= vertical_monotone_strict  .and. &
@@ -143,43 +138,26 @@ contains
     call invoke( name="vertical remap",  &
        vertical_mass_remapping_kernel_type(dep_pts_z, mass, flux, slice_order, &
                                            monotone, monotone_order,           &
-                                           enforce_min_value, min_value) )
+                                           enforce_min_value) )
     call invoke_dg_matrix_vector_rtran(field_np1, mass, mm_w3_inv )
 
-    if (advective_then_flux) then
-      ! Calculate increment from this split step
-      call flux_inc%initialise( field_n%get_function_space() )
-      call invoke( X_minus_Y(flux_inc, field_np1, field_n) )
-      if (transport_runtime%get_tracer_step_ctr() /=  &
-          transport_runtime%get_num_dry_steps()) then
-        ! Not the last split step. Redo in advective form
-        height_rdef => get_height( Wtheta, mesh%get_id() )
-        call height%initialise( vector_space = height_rdef%get_function_space() )
-        call invoke_copy_to_rtran( height, height_rdef )
-        call invoke( setval_X(field_np1, field_n),                                   &
-                     vertical_sl_rho_kernel_type( dep_pts_z, field_np1, height,      &
-                                                  vertical_sl_order, monotone,       &
-                                                  monotone_order, enforce_min_value, &
-                                                  min_value ) )
-      else
-        ! Last split step. Add all the flux increments together
-        field_start => transport_runtime%get_field_n(mesh_id)
-        call invoke( X_plus_Y(field_np1, field_start, flux_inc) )
-        do step = 1, transport_runtime%get_num_dry_steps() - 1
-          old_flux_inc => transport_runtime%get_flux_inc(mesh_id, step)
-          call invoke( inc_X_plus_Y(field_np1, old_flux_inc) )
-        end do
-      end if
-      call transport_runtime%set_flux_inc(flux_inc)
+    if (transport_runtime%get_tracer_step_ctr() /=  &
+        transport_runtime%get_num_dry_steps()) then
+      ! Not the last split step. Redo in advective form
+      height_rdef => get_height( Wtheta, mesh%get_id() )
+      call height%initialise( vector_space = height_rdef%get_function_space() )
+      call invoke_copy_to_rtran( height, height_rdef )
+      call invoke( setval_X(field_np1, field_n),                                   &
+                   vertical_sl_rho_kernel_type( dep_pts_z, field_np1, height,      &
+                                                vertical_sl_order, monotone,       &
+                                                monotone_order ) )
     end if
 
-    ! Store field in transport_runtime for conservative transport
-    ! if this is the underlying dry field
-    if (trim(transport_metadata%get_name()) == trim(dry_field_name)) then
-      call transport_runtime%set_dry_fields(field_n, field_np1, flux)
-    end if
-
-    call transport_runtime%inc_tracer_step_ctr()
+    ! If this is the final step, field_np1 will be computed here from the fluxes
+    ! over the whole transport step
+    ! If this is not the final step, field_np1 already includes the *advective*
+    ! increment, and may be adjusted to enforce min value or in blending zone
+    call end_of_conservative_step_alg(field_np1, field_n, flux, transport_metadata)
 
     nullify( mm_w3, mm_w3_inv, dep_pts_z_get, mesh, transport_runtime, height_rdef, w2v_fs )
 

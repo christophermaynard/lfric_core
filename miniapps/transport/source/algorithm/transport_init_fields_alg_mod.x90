@@ -15,6 +15,7 @@ module transport_init_fields_alg_mod
   use constants_mod,                     only: r_def, i_def, radians_to_degrees
   use domain_mod,                        only: domain_type
   use divergence_alg_mod,                only: divergence_alg
+  use enforce_lower_bound_kernel_mod,    only: enforce_lower_bound_kernel_type
   use fem_constants_mod,                 only: get_qr
   use finite_element_config_mod,         only: element_order
   use field_mod,                         only: field_type
@@ -155,7 +156,8 @@ subroutine transport_init_fields_alg( mesh,       &
     ! Mixing ratios are set to zero for all but first value
     call set_bundle_scalar( 0.0_r_def, mr, nummr )
     call invoke( setval_X( tracer_adv, tracer_con ), &
-                 setval_X( mr(1), theta ) )
+                 setval_X( mr(1), theta ),           &
+                 enforce_lower_bound_kernel_type(mr(1), 0.0_r_def) )
 
     ! Set winds and divergence
     call init_u_field( wind, initial_time )

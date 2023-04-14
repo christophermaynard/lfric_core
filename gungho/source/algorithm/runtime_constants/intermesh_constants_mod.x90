@@ -36,8 +36,7 @@ module intermesh_constants_mod
   use io_config_mod,                     only: subroutine_timers
 
   ! Other algorithms
-  use check_configuration_mod,           only: check_any_eqn_consistent, &
-                                               check_any_wt_eqn_conservative
+  use check_configuration_mod,           only: check_any_wt_eqn_conservative
   use geometric_constants_mod,           only: get_coordinates, &
                                                get_panel_id
   use fem_constants_mod,                 only: get_qr, get_mass_matrix,    &
@@ -116,7 +115,6 @@ contains
     type(field_type)                    :: intermesh_weights_w2
     type(field_type)                    :: intermesh_weights_w3_rdef
     type(r_tran_field_type)             :: intermesh_weights_w3_rtran
-    logical(kind=l_def)                 :: any_eqn_consistent
     logical(kind=l_def)                 :: any_wt_eqn_conservative
     character(str_def), allocatable     :: all_mesh_names(:)
 
@@ -135,7 +133,6 @@ contains
     call intermesh_wghts_rtran_w3_inventory%initialise(name="intermesh_weights_w3_rtran", table_len=20)
 
     any_wt_eqn_conservative = check_any_wt_eqn_conservative()
-    any_eqn_consistent = check_any_eqn_consistent()
     qr => get_qr()
 
     ! ============================= Start loop ================================!
@@ -154,34 +151,31 @@ contains
         prime_extrusion_mesh => mesh_collection%get_mesh(target_mesh, PRIME_EXTRUSION)
         w3_fs => function_space_collection%get_fs(prime_extrusion_mesh, 0, W3)
 
-        if ( any_eqn_consistent ) then
+        ! ============= Operator for mapping W3 to shifted W3 ============== !
+        do k = 1, 2
+          call consist_w3_to_sh_w3_rdef(k)%initialise(vector_space = w3_fs)
+          call consist_w3_to_sh_w3_rtran(k)%initialise(vector_space = w3_fs)
+        end do
 
-          ! ============= Operator for mapping W3 to shifted W3 ============== !
-          do k = 1, 2
-            call consist_w3_to_sh_w3_rdef(k)%initialise(vector_space = w3_fs)
-            call consist_w3_to_sh_w3_rtran(k)%initialise(vector_space = w3_fs)
-          end do
+        mm_w3 => get_mass_matrix(W3, prime_extrusion_mesh%get_id())
+        mm_inv_sh_w3 => get_inverse_W3_mass_matrix(target_mesh%get_id())
 
-          mm_w3 => get_mass_matrix(W3, prime_extrusion_mesh%get_id())
-          mm_inv_sh_w3 => get_inverse_W3_mass_matrix(target_mesh%get_id())
+        call invoke( consist_w3_to_sh_w3_op_kernel_type(                  &
+                                                consist_w3_to_sh_w3_rdef, &
+                                                mm_inv_sh_w3,             &
+                                                mm_w3 ) )
+        do k = 1, 2
+          call invoke_copy_to_rtran(consist_w3_to_sh_w3_rtran(k), &
+                                    consist_w3_to_sh_w3_rdef(k))
+        end do
+        
+        call consist_w3_to_sh_w3_rdef_inventory%add_field_array(             &
+                              consist_w3_to_sh_w3_rdef, prime_extrusion_mesh)
+        call consist_w3_to_sh_w3_rtran_inventory%add_field_array(             &
+                              consist_w3_to_sh_w3_rtran, prime_extrusion_mesh)
 
-          call invoke( consist_w3_to_sh_w3_op_kernel_type(                  &
-                                                  consist_w3_to_sh_w3_rdef, &
-                                                  mm_inv_sh_w3,             &
-                                                  mm_w3 ) )
-          do k = 1, 2
-            call invoke_copy_to_rtran(consist_w3_to_sh_w3_rtran(k), &
-                                      consist_w3_to_sh_w3_rdef(k))
-          end do
-          
-          call consist_w3_to_sh_w3_rdef_inventory%add_field_array(             &
-                                consist_w3_to_sh_w3_rdef, prime_extrusion_mesh)
-          call consist_w3_to_sh_w3_rtran_inventory%add_field_array(             &
-                                consist_w3_to_sh_w3_rtran, prime_extrusion_mesh)
+        nullify( mm_w3, mm_inv_sh_w3 )
 
-          nullify( mm_w3, mm_inv_sh_w3 )
-
-        end if
 
         if ( any_wt_eqn_conservative ) then
 

@@ -46,15 +46,13 @@ private
 !>                                      by the PSy layer.
 type, public, extends(kernel_type) :: vertical_sl_rho_kernel_type
   private
-  type(arg_type) :: meta_args(8) = (/                     &
+  type(arg_type) :: meta_args(6) = (/                     &
        arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W2), & ! departure points
        arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, W3), & ! rho
        arg_type(GH_FIELD,  GH_REAL,    GH_READ,  Wtheta), & ! theta-height
        arg_type(GH_SCALAR, GH_INTEGER, GH_READ),          & ! sl-order
        arg_type(GH_SCALAR, GH_INTEGER, GH_READ),          & ! monotone scheme
-       arg_type(GH_SCALAR, GH_INTEGER, GH_READ),          & ! monotone order
-       arg_type(GH_SCALAR, GH_LOGICAL, GH_READ),          & ! enforce min-val
-       arg_type(GH_SCALAR, GH_REAL,    GH_READ)           & ! min-val to be enforced
+       arg_type(GH_SCALAR, GH_INTEGER, GH_READ)           & ! monotone order
        /)
   integer :: operates_on = CELL_COLUMN
 contains
@@ -78,8 +76,6 @@ contains
 !> @param[in]     theta_height            The height of theta-points
 !> @param[in]     sl_order                Order of the SL scheme
 !> @param[in]     vertical_monotone_order Order of the monotone scheme
-!> @param[in]     enforce_min_value       Enforce min-value option
-!> @param[in]     min_value               The min-value to be enforced
 !> @param[in]     ndf_w2       The number of degrees of freedom per cell
 !!                             on W2 space
 !> @param[in]     undf_w2      The number of unique degrees of freedom
@@ -101,8 +97,6 @@ subroutine vertical_sl_rho_code( nlayers,                            &
                                  sl_order,                           &
                                  vertical_monotone,                  &
                                  vertical_monotone_order,            &
-                                 enforce_min_value,                  &
-                                 min_value,                          &
                                  ndf_w2, undf_w2, map_w2,            &
                                  ndf_w3, undf_w3, map_w3,            &
                                  ndf_wtheta, undf_wtheta, map_wtheta )
@@ -123,10 +117,8 @@ subroutine vertical_sl_rho_code( nlayers,                            &
   real(kind=r_tran), dimension(undf_w2), intent(in)       :: dep_pts_z
   real(kind=r_tran), dimension(undf_w3), intent(inout)    :: rho
   real(kind=r_tran), dimension(undf_wtheta),   intent(in) :: theta_height
-  logical(kind=l_def), intent(in)  :: enforce_min_value
   integer(kind=i_def), intent(in)  :: sl_order, vertical_monotone,  &
                                       vertical_monotone_order
-  real(kind=r_tran), intent(in)    :: min_value
   !
   ! locals
   !
@@ -202,12 +194,6 @@ subroutine vertical_sl_rho_code( nlayers,                            &
       fd(k) = cc(k,1)*f0(sc(k,1)) + cc(k,2)*f0(sc(k,2)) + &
               cc(k,3)*f0(sc(k,3)) + cc(k,4)*f0(sc(k,4))
     end do
-
-    !Enforce min_value if required
-
-    if ( enforce_min_value ) then
-       fd(:)= max(fd(:), min_value )
-    end if
     !
     !Enforce monotonicity if required
     !
@@ -229,11 +215,6 @@ subroutine vertical_sl_rho_code( nlayers,                            &
               cc(k,3)*f0(sc(k,3)) + cc(k,4)*f0(sc(k,4))
     end do
 
-    !Enforce min_value if required
-
-    if ( enforce_min_value ) then
-       fd(:)= max(fd(:), min_value )
-    end if
     !
     !Enforce monotonicity if required
     !
@@ -255,12 +236,6 @@ subroutine vertical_sl_rho_code( nlayers,                            &
               cq(k,3)*f0(sq(k,3)) + cq(k,4)*f0(sq(k,4)) + &
               cq(k,5)*f0(sq(k,5)) + cq(k,6)*f0(sq(k,6))
     end do
-
-    !Enforce min_value if required
-
-    if ( enforce_min_value ) then
-       fd(:)= max(fd(:), min_value )
-    end if
 
     !Enforce monotonicity if required
 

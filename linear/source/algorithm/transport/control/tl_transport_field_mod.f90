@@ -19,6 +19,8 @@ module tl_transport_field_mod
                                               direction_3d,               &
                                               equation_form_conservative, &
                                               equation_form_advective
+  use transport_runtime_alg_mod,        only: transport_runtime_type
+  use transport_runtime_collection_mod, only: get_transport_runtime
   use tl_mol_conservative_alg_mod,      only: tl_mol_conservative_alg
   use tl_mol_advective_alg_mod,         only: tl_mol_advective_alg
   use tl_transport_runtime_collection_mod, &
@@ -53,7 +55,12 @@ contains
     real(kind=r_def),              intent(in)    :: model_dt
     type(transport_metadata_type), intent(in)    :: transport_metadata
 
+    type(transport_runtime_type),  pointer       :: transport_runtime => null()
+
     ! Reset the counter for tracer transport steps and store nth level field
+    transport_runtime => get_transport_runtime(field_np1%get_mesh())
+    call transport_runtime%reset_tracer_step_ctr()
+    call transport_runtime%set_field_n(ls_field_n)
     call tl_transport_runtime%reset_tracer_step_ctr()
     call tl_transport_runtime%set_field_n(field_n)
 
@@ -99,6 +106,8 @@ contains
                       LOG_LEVEL_ERROR)
 
     end select
+
+    nullify(transport_runtime)
 
   end subroutine tl_transport_field
 

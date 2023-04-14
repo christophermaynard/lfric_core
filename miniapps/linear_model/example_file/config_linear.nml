@@ -217,7 +217,6 @@ spinup_period=0,
 spinup_winds=.false.,
 /
 &transport
-advective_then_flux=.false.
 broken_w2_projection=.false.
 cap_density_predictor = 0.01
 profile_size=5
@@ -240,6 +239,8 @@ vertical_method=1,1,1,1,1,
 log_space=.false.,.false.,.false.,.false.,.false.,
 max_vert_cfl_calc='uniform'
 min_value=0.0,0.0,-99999999.0,0.0,0.0,
+min_val_abs_tol=-1.0e-12
+min_val_max_iterations=10
 oned_reconstruction=.false.
 operators='fv'
 reversible=.false.,.false.,.false.,.false.,.false.

@@ -21,6 +21,9 @@ module tl_mol_advective_alg_mod
   use tl_transport_runtime_collection_mod, &
                                       only: tl_transport_runtime
   use transport_config_mod,           only: runge_kutta_method
+  use end_of_transport_step_alg_mod,  only: end_of_advective_step_alg
+  use tl_end_of_transport_step_alg_mod,    &
+                                      only: tl_end_of_advective_step_alg
 
   implicit none
 
@@ -66,7 +69,6 @@ contains
 
     integer(i_def) :: number_substeps
     real(r_def)    :: dt_substep
-    logical(l_def) :: enforce_min_value
     logical(l_def) :: final_rk_stage
 
     ! Get transport_runtime
@@ -82,7 +84,6 @@ contains
     dt_substep      = transport_runtime%get_dt_substep( mesh%get_id(), &
                                                         direction,     &
                                                         transport_metadata%get_splitting() )
-    enforce_min_value = transport_metadata%get_enforce_min_value()
 
     call rhs%initialise(field%get_function_space())
     call field_n%initialise(field%get_function_space())
@@ -142,11 +143,8 @@ contains
 
     end do
 
-    ! Enforce a min value if required
-    if ( enforce_min_value ) then
-      call log_event('T.L.: enforcing min value in mol advective not ' // &
-                     'yet implemented', LOG_LEVEL_ERROR)
-    end if
+    ! End of step: if necessary enforce min val and overwrite in blending zone
+    call end_of_advective_step_alg(ls_field_np1, ls_field_n, transport_metadata)
 
     ! --------------------------------------------------------------------------
     !                    Perturbation
@@ -188,11 +186,8 @@ contains
 
     end do
 
-    ! Enforce a min value if required
-    if ( enforce_min_value ) then
-      call log_event('T.L.: enforcing min value in mol advective not ' // &
-                     'yet implemented', LOG_LEVEL_ERROR)
-    end if
+    ! End of step: if necessary enforce min val and overwrite in blending zone
+    call tl_end_of_advective_step_alg(field_np1, field_n, transport_metadata)
 
     if ( allocated(rk_field) ) deallocate(rk_field)
     if ( allocated(rk_weights) ) deallocate(rk_weights)

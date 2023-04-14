@@ -428,7 +428,6 @@ contains
     type(r_tran_field_type) :: half_increment_x
     type(r_tran_field_type) :: half_increment_y
 
-    ! Fluxes are included to be ready for #2997
     type(r_tran_field_type) :: flux_x
     type(r_tran_field_type) :: flux_y
 

@@ -1,15 +1,16 @@
 !-----------------------------------------------------------------------------
-! Copyright (c) 2017,  Met Office, on behalf of HMSO and Queen's Printer
-! For further details please refer to the file LICENCE.original which you
-! should have received as part of this distribution.
+! (C) Crown copyright 2021 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
 !-----------------------------------------------------------------------------
-!
+! TODO #3706: when r_tran operator types are supported by PSyclone, this
+! kernel should use that instead of an r_def div operator
 !-------------------------------------------------------------------------------
 
 module impose_min_flux_kernel_mod
 use argument_mod,            only : arg_type,                           &
                                     GH_FIELD, GH_OPERATOR, GH_READ,     &
-                                    CELL_COLUMN, GH_REAL, GH_INC,       &
+                                    CELL_COLUMN, GH_REAL, GH_READINC,   &
                                     GH_SCALAR
 use fs_continuity_mod,       only : W3, W2
 use constants_mod,           only : r_tran, i_def, EPS_R_TRAN
@@ -23,12 +24,12 @@ implicit none
 
 type, public, extends(kernel_type) :: impose_min_flux_kernel_type
   private
-  type(arg_type) :: meta_args(5) = (/                    &
-       arg_type(GH_FIELD,    GH_REAL, GH_READ,  W3),     &
-       arg_type(GH_FIELD,    GH_REAL, GH_INC,   W2),     &
-       arg_type(GH_OPERATOR, GH_REAL, GH_READ,  W3, W2), &
-       arg_type(GH_SCALAR,   GH_REAL, GH_READ),          &
-       arg_type(GH_SCALAR,   GH_REAL, GH_READ)           &
+  type(arg_type) :: meta_args(5) = (/                      &
+       arg_type(GH_FIELD,    GH_REAL, GH_READ,    W3),     &
+       arg_type(GH_FIELD,    GH_REAL, GH_READINC, W2),     &
+       arg_type(GH_OPERATOR, GH_REAL, GH_READ,    W3, W2), &
+       arg_type(GH_SCALAR,   GH_REAL, GH_READ),            &
+       arg_type(GH_SCALAR,   GH_REAL, GH_READ)             &
        /)
   integer :: operates_on = CELL_COLUMN
 contains
@@ -47,7 +48,7 @@ contains
 !! @param[in] cell Horizontal cell index
 !! @param[in] nlayers Number of layers
 !! @param[in] field Field at level time n
-!! @param[inout] flux Input/output
+!! @param[in,out] flux Input/output
 !! @param[in] ncell_3d1 Total number of cells related to div
 !! @param[in] div Divergence operator used in the update
 !! @param[in] field_min The minimum value we want to enfore for the updated field
@@ -102,7 +103,7 @@ subroutine impose_min_flux_code(cell,              &
        flux_change_id = 0_i_def
 
        do df2 = 1, ndf2
-         inc = - dts*div(df1,df2,ik)*cell_fluxes(df2)
+         inc = - dts*real(div(df1,df2,ik),r_tran)*cell_fluxes(df2)
          if ( inc < 0.0_r_tran ) then
              inc_n = inc_n - inc
              flux_change_id(df2) = 1_i_def

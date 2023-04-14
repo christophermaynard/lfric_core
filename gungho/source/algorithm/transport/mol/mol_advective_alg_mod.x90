@@ -7,6 +7,7 @@
 
 module mol_advective_alg_mod
 
+  use end_of_transport_step_alg_mod,  only: end_of_advective_step_alg
   use constants_mod,                  only: r_def, i_def, l_def, r_tran
   use r_tran_field_mod,               only: r_tran_field_type
   use field_mod,                      only: field_type
@@ -20,7 +21,6 @@ module mol_advective_alg_mod
   use transport_runtime_collection_mod, &
                                       only: get_transport_runtime
   use transport_config_mod,           only: runge_kutta_method
-  use enforce_lower_bound_kernel_mod, only: enforce_lower_bound_kernel_type
   use boundaries_config_mod,          only: limited_area, transport_boundary_depth
   use limited_area_lbc_alg_mod,       only: overwrite_blending_zone_rtran
   use base_mesh_config_mod,           only: topology, topology_non_periodic
@@ -63,9 +63,7 @@ contains
     type(transport_runtime_type), pointer :: transport_runtime => null()
 
     integer(i_def) :: number_substeps
-    real(r_tran)    :: dt_substep
-    logical(l_def) :: enforce_min_value
-    real(r_tran)    :: min_value
+    real(r_tran)   :: dt_substep
     logical(l_def) :: final_rk_stage
 
     if ( subroutine_timers ) call timer('mol_advective_alg')
@@ -80,8 +78,6 @@ contains
     number_substeps = transport_runtime%get_number_substeps(mesh_id,direction,transport_metadata%get_splitting())
     dt_substep      = transport_runtime%get_dt_substep(mesh_id,direction,transport_metadata%get_splitting())
     advecting_wind  => transport_runtime%get_directional_advecting_wind(mesh_id, direction)
-
-    enforce_min_value = transport_metadata%get_enforce_min_value()
 
     call rhs%initialise(field%get_function_space())
     call field_n%initialise(field%get_function_space())
@@ -139,22 +135,20 @@ contains
       if ( limited_area .and. topology == topology_non_periodic ) then
         ! This code is required while LAMs loop over cells right up to
         ! the edge of a limited area domain.  It can be removed if
-        ! we only loop over columns in the interior domain.
+        ! we only loop over columns in the interior domain. This call may not
+        ! be required in the substep loop.
 
         ! Don't update the field near the edge of the domain. A configurable depth of using
         ! the transport_boundary_depth is chosen here.  This will depend
         ! on the number of RK stages and spatial reconstruction order.
         ! Ticket #3112 will investigate further options.
-        call overwrite_blending_zone_rtran(field_np1, field_n, depth=transport_boundary_depth)
+        call overwrite_blending_zone_rtran(field_np1, field, depth=transport_boundary_depth)
       end if
 
     end do substep_loop
 
-    ! Enforce a min value if required
-    if ( enforce_min_value ) then
-       min_value = transport_metadata%get_min_value()
-       call invoke( enforce_lower_bound_kernel_type(field_np1, min_value) )
-    end if
+    ! End of step: if necessary enforce min val and overwrite in blending zone
+    call end_of_advective_step_alg(field_np1, field_n, transport_metadata)
 
     nullify( advecting_wind, mesh, transport_runtime )
     if ( allocated( rk_field ) ) deallocate( rk_field )

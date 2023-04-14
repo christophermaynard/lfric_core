@@ -19,6 +19,7 @@ module split_transport_mod
                                               splitting_vh,               &
                                               direction_h,                &
                                               direction_v,                &
+                                              direction_3d,               &
                                               split_method_null,          &
                                               split_method_mol,           &
                                               split_method_ffsl,          &
@@ -29,6 +30,8 @@ module split_transport_mod
   use mol_conservative_alg_mod,         only: mol_conservative_alg
   use mol_advective_alg_mod,            only: mol_advective_alg
   use mol_consistent_alg_mod,           only: mol_consistent_alg
+  use end_of_transport_step_alg_mod,    only: end_of_conservative_step_alg, &
+                                              end_of_consistent_step_alg
 
   implicit none
 
@@ -159,7 +162,7 @@ contains
     type(transport_metadata_type), intent(in)    :: transport_metadata
 
     ! Internal variables
-    integer(kind=i_def) :: method
+    integer(kind=i_def)     :: method
 
     ! -------------------------------------------------------------------------!
     ! Set up method based on direction
@@ -258,7 +261,6 @@ contains
 
   end subroutine split_transport_field
 
-
   !=============================================================================
   !> @brief Performs the null transport as part of the split transport scheme.
   !> @details No transport is performed in the selected direction. This routine is
@@ -272,15 +274,6 @@ contains
   !!                                   transporting these fields
   subroutine split_null_transport(field_np1, field_n, direction, transport_metadata)
 
-    use finite_element_config_mod,        only: element_order
-    use fs_continuity_mod,                only: W2h, W2v
-    use function_space_collection_mod,    only: function_space_collection
-    use function_space_mod,               only: function_space_type
-    use mesh_mod,                         only: mesh_type
-    use transport_config_mod,             only: advective_then_flux, dry_field_name
-    use transport_runtime_alg_mod,        only: transport_runtime_type
-    use transport_runtime_collection_mod, only: get_transport_runtime
-
     implicit none
 
     ! Arguments
@@ -290,64 +283,72 @@ contains
     type(transport_metadata_type), intent(in)    :: transport_metadata
 
     ! Internal variables
-    type(r_tran_field_type) :: mass_flux, flux_inc
-    integer(i_def)          :: step
-    integer(i_def)          :: mesh_id
-
-    ! Pointers
-    type(function_space_type),    pointer :: flux_fs => null()
-    type(mesh_type),              pointer :: mesh    => null()
-    type(transport_runtime_type), pointer :: transport_runtime => null()
-    type(r_tran_field_type),      pointer :: old_flux_inc => null()
-    type(r_tran_field_type),      pointer :: field_start  => null()
-
-    ! Get mesh and transport_runtime for use with dry field or advective_then_flux
-    mesh => field_n%get_mesh()
-    transport_runtime => get_transport_runtime(mesh)
+    type(r_tran_field_type) :: flux
 
     ! Null transport so set field_np1 equal to field_n
     call invoke( setval_X( field_np1, field_n ) )
 
-    ! If dry field then need to set dry fields in transport_runtime
-    if (trim(transport_metadata%get_name()) == trim(dry_field_name)) then
-      select case (direction)
-        case (direction_v)
-          flux_fs => function_space_collection%get_fs( mesh, element_order, W2v )
-        case (direction_h)
-          flux_fs => function_space_collection%get_fs( mesh, element_order, W2h )
-      end select
-      call mass_flux%initialise( flux_fs )
-      call invoke( setval_c(mass_flux, 0.0_r_tran) )
-      call transport_runtime%set_dry_fields(field_n, field_np1, mass_flux)
-      nullify( flux_fs )
-    end if
+    ! Information may need storing for later
+    select case ( transport_metadata%get_equation_form() )
+    case ( equation_form_conservative )
+      call calculate_null_flux(flux, field_np1, direction)
+      call end_of_conservative_step_alg(field_np1, field_n, flux, transport_metadata)
 
-    ! If advective_then_flux need to save the flux increment of zero and collect previous
-    ! increments if final split stage
-    if (advective_then_flux) then
-      ! Save the zero increment
-      call flux_inc%initialise( field_n%get_function_space() )
-      call invoke( setval_c(flux_inc, 0.0_r_tran) )
-      call transport_runtime%set_flux_inc(flux_inc)
-      ! If final split stage collect previous increments
-      if ( transport_runtime%get_tracer_step_ctr() == transport_runtime%get_num_dry_steps() ) then
-        ! Get final field at end of transport
-        ! field_np1 = field + sum(flux_inc)
-        mesh_id = field_n%get_mesh_id()
-        field_start => transport_runtime%get_field_n(mesh_id)
-        call invoke( X_plus_Y(field_np1, field_start, flux_inc))
-        do step = 1, transport_runtime%get_num_dry_steps() - 1
-          old_flux_inc => transport_runtime%get_flux_inc(mesh_id, step)
-          call invoke( inc_X_plus_Y(field_np1, old_flux_inc) )
-        end do
-      end if
-    end if
+    case ( equation_form_consistent )
+      call calculate_null_flux(flux, field_np1, direction)
+      call end_of_consistent_step_alg(field_np1, flux, transport_metadata)
 
-    ! Increment the splitting step counter
-    call transport_runtime%inc_tracer_step_ctr()
-
-    nullify( mesh, transport_runtime )
+    end select
 
   end subroutine split_null_transport
+
+  !> @brief Calculates a zero flux of the appropriate direction
+  !> @details The Null Transport option still needs to store a flux containing
+  !!          zero values. This small routine sets up this flux and ensures that
+  !!          it is of the correct direction.
+  !> @param[in,out] flux       The zero mass flux to be computed
+  !> @param[in]     field_np1  Field at the end of this step. Used to extract
+  !!                           the appropriate mesh for the transport.
+  !> @
+  subroutine calculate_null_flux(flux, field_np1, direction)
+
+    use mesh_mod,                      only: mesh_type
+    use function_space_mod,            only: function_space_type
+    use function_space_collection_mod, only: function_space_collection
+    use finite_element_config_mod,     only: element_order
+    use fs_continuity_mod,             only: W2, W2H, W2V
+
+    implicit none
+
+    ! Arguments
+    type(r_tran_field_type), intent(inout) :: flux
+    type(r_tran_field_type), intent(in)    :: field_np1
+    integer(kind=i_def),     intent(in)    :: direction
+
+    ! Internal variables
+    integer(kind=i_def)                :: fs_idx
+    type(mesh_type),           pointer :: mesh => null()
+    type(function_space_type), pointer :: w2_fs => null()
+
+    ! Turn direction into the appropriate function space
+    select case (direction)
+    case (direction_h)
+      fs_idx = W2H
+    case (direction_v)
+      fs_idx = W2V
+    case (direction_3d)
+      fs_idx = W2
+    case default
+      call log_event('Direction for flux is not recognised', LOG_LEVEL_ERROR)
+    end select
+
+    mesh => field_np1%get_mesh()
+    w2_fs => function_space_collection%get_fs(mesh, element_order, fs_idx)
+    call flux%initialise( w2_fs )
+    call invoke( setval_c(flux, 0.0_r_tran) )
+
+    nullify(mesh, w2_fs)
+  
+  end subroutine calculate_null_flux
 
 end module split_transport_mod

@@ -70,10 +70,8 @@ module transport_runtime_alg_mod
     type(r_tran_field_type),    allocatable, dimension(:)   :: field_n
     type(r_tran_field_type),    allocatable, dimension(:,:) :: rho_d_n
     type(r_tran_field_type),    allocatable, dimension(:,:) :: rho_d_np1
-    type(r_tran_field_type),    allocatable, dimension(:,:) :: flux_inc
+    type(r_tran_field_type),    allocatable, dimension(:,:) :: flux
     type(r_tran_field_type),    allocatable, dimension(:,:) :: dry_flux
-    type(r_tran_field_type),    allocatable, dimension(:,:) :: hori_dry_flux
-    type(r_tran_field_type),    allocatable, dimension(:,:) :: vert_dry_flux
     real(kind=r_tran),    allocatable, dimension(:)   :: horizontal_cfl_max
     real(kind=r_tran),    allocatable, dimension(:)   :: vertical_cfl_max
     real(kind=r_tran),    allocatable, dimension(:)   :: total_cfl_max
@@ -83,12 +81,12 @@ module transport_runtime_alg_mod
 
     procedure, private :: idx_from_mesh_id
     procedure, private :: compute_num_dry_steps
-    procedure, private :: direction_w2_fs
+    procedure, public  :: direction_w2_fs
     procedure, public  :: get_local_mesh_id
     procedure, public  :: get_prime_extrusion_mesh_id
     procedure, public  :: set_dry_fields
     procedure, public  :: set_field_n
-    procedure, public  :: set_flux_inc
+    procedure, public  :: set_flux
     procedure, public  :: copy_all_dry_fields
     procedure, public  :: get_number_substeps
     procedure, public  :: get_dt_substep
@@ -109,10 +107,9 @@ module transport_runtime_alg_mod
     procedure, public  :: get_field_n
     procedure, public  :: get_rho_d_n
     procedure, public  :: get_rho_d_np1
-    procedure, public  :: get_flux_inc
+    procedure, public  :: get_flux
     procedure, public  :: get_dry_flux
-    procedure, public  :: get_hori_dry_flux
-    procedure, public  :: get_vert_dry_flux
+    procedure, public  :: adjust_dry_flux
     procedure, public  :: get_num_dry_steps
     procedure, public  :: get_tracer_step_ctr
     procedure, public  :: inc_tracer_step_ctr
@@ -510,10 +507,8 @@ contains
     ! Allocate arrays for dry fields
     allocate( self%rho_d_n(self%n_meshes, self%num_dry_steps),       &
               self%rho_d_np1(self%n_meshes, self%num_dry_steps),     &
-              self%flux_inc(self%n_meshes, self%num_dry_steps),      &
-              self%dry_flux(self%n_meshes, self%num_dry_steps),      &
-              self%hori_dry_flux(self%n_meshes, self%num_dry_steps), &
-              self%vert_dry_flux(self%n_meshes, self%num_dry_steps) )
+              self%flux(self%n_meshes, self%num_dry_steps),          &
+              self%dry_flux(self%n_meshes, self%num_dry_steps) )
 
     ! Initialise these fields
     ! TODO: #3008 can we avoid initialised unused fields?
@@ -526,14 +521,14 @@ contains
       do i = 1, self%num_dry_steps
         call self%rho_d_n(mesh_idx, i)%initialise( vector_space = w3_fs )
         call self%rho_d_np1(mesh_idx, i)%initialise( vector_space = w3_fs )
-        call self%flux_inc(mesh_idx, i)%initialise( vector_space = w3_fs )
-        call self%hori_dry_flux(mesh_idx, i)%initialise( vector_space = w2h_fs )
-        call self%vert_dry_flux(mesh_idx, i)%initialise( vector_space = w2v_fs )
         ! Dry flux could be 3D, horizontal or vertical
         ! Determine what it is for this dry transport step
         fs_idx = self%direction_w2_fs(i)
         w2_fs => function_space_collection%get_fs(tmp_mesh, element_order, fs_idx)
         call self%dry_flux(mesh_idx, i)%initialise( vector_space = w2_fs )
+        ! this hard-codes that any conservative variable will have the
+        ! same splitting structure as the dry density
+        call self%flux(mesh_idx, i)%initialise( vector_space = w2_fs )
       end do
     end do
 
@@ -568,10 +563,8 @@ contains
     if ( allocated( self%field_n ) )                   deallocate( self%field_n )
     if ( allocated( self%rho_d_n ) )                   deallocate( self%rho_d_n )
     if ( allocated( self%rho_d_np1 ) )                 deallocate( self%rho_d_np1 )
-    if ( allocated( self%flux_inc ) )                  deallocate( self%flux_inc )
+    if ( allocated( self%flux ) )                      deallocate( self%flux )
     if ( allocated( self%dry_flux ) )                  deallocate( self%dry_flux )
-    if ( allocated( self%hori_dry_flux ) )             deallocate( self%hori_dry_flux )
-    if ( allocated( self%vert_dry_flux ) )             deallocate( self%vert_dry_flux )
     if ( allocated( self%horizontal_cfl_max ) )        deallocate( self%horizontal_cfl_max )
     if ( allocated( self%vertical_cfl_max ) )          deallocate( self%vertical_cfl_max )
     if ( allocated( self%total_cfl_max ) )             deallocate( self%total_cfl_max )
@@ -612,10 +605,8 @@ contains
     if (.not. allocated( dest%field_n ) )                   allocate( dest%field_n(dest%n_meshes) )
     if (.not. allocated( dest%rho_d_n ) )                   allocate( dest%rho_d_n(dest%n_meshes, dest%num_dry_steps) )
     if (.not. allocated( dest%rho_d_np1 ) )                 allocate( dest%rho_d_np1(dest%n_meshes, dest%num_dry_steps) )
-    if (.not. allocated( dest%flux_inc ) )                  allocate( dest%flux_inc(dest%n_meshes, dest%num_dry_steps) )
+    if (.not. allocated( dest%flux ) )                      allocate( dest%flux(dest%n_meshes, dest%num_dry_steps) )
     if (.not. allocated( dest%dry_flux ) )                  allocate( dest%dry_flux(dest%n_meshes, dest%num_dry_steps) )
-    if (.not. allocated( dest%hori_dry_flux ) )             allocate( dest%hori_dry_flux(dest%n_meshes, dest%num_dry_steps) )
-    if (.not. allocated( dest%vert_dry_flux ) )             allocate( dest%vert_dry_flux(dest%n_meshes, dest%num_dry_steps) )
     if (.not. allocated( dest%horizontal_cfl_max ) )        allocate( dest%horizontal_cfl_max(dest%n_meshes) )
     if (.not. allocated( dest%vertical_cfl_max ) )          allocate( dest%vertical_cfl_max(dest%n_meshes) )
     if (.not. allocated( dest%total_cfl_max ) )             allocate( dest%total_cfl_max(dest%n_meshes) )
@@ -638,10 +629,8 @@ contains
       do i = 1, source%num_dry_steps
         call source%rho_d_n(mesh_idx,i)%copy_field(dest%rho_d_n(mesh_idx,i))
         call source%rho_d_np1(mesh_idx,i)%copy_field(dest%rho_d_np1(mesh_idx,i))
-        call source%flux_inc(mesh_idx,i)%copy_field(dest%flux_inc(mesh_idx,i))
+        call source%flux(mesh_idx,i)%copy_field(dest%flux(mesh_idx,i))
         call source%dry_flux(mesh_idx,i)%copy_field(dest%dry_flux(mesh_idx,i))
-        call source%hori_dry_flux(mesh_idx,i)%copy_field(dest%hori_dry_flux(mesh_idx,i))
-        call source%vert_dry_flux(mesh_idx,i)%copy_field(dest%vert_dry_flux(mesh_idx,i))
       end do
     end do
 
@@ -669,8 +658,8 @@ contains
                                         only: consist_w2v_to_sh_w2v_kernel_type
     use fem_constants_mod,              only: get_rmultiplicity
     use intermesh_constants_mod,        only: get_consist_w3_to_sh_w3_rtran
-    use check_configuration_mod,        only: check_any_eqn_consistent
-    use split_w2_field_kernel_mod,      only: split_w2_field_kernel_type
+    use check_configuration_mod,        only: check_any_eqn_consistent, &
+                                              check_any_wt_eqn_conservative
 
     implicit none
 
@@ -680,7 +669,7 @@ contains
     type(r_tran_field_type),               intent(in)    :: dry_flux
 
     integer(kind=i_def)       :: fs_idx
-    logical(kind=i_def)       :: any_w3_consistent, any_eqn_consistent
+    logical(kind=l_def)       :: any_eqn_consistent, any_wt_eqn_conservative
     type(field_type), pointer :: rmultiplicity_w2 => null()
     type(mesh_type),  pointer :: prime_extrusion_mesh => null()
     type(mesh_type),  pointer :: shifted_mesh => null()
@@ -703,29 +692,13 @@ contains
     call dry_flux%copy_field(self%dry_flux(1,self%dry_step_ctr))
 
     ! ------------------------------------------------------------------------ !
-    ! Split dry flux on prime extrusion mesh
+    ! Shift variables if required
     ! ------------------------------------------------------------------------ !
 
-    ! TODO #XXXX: the dry flux only needs splitting if we are transporting a W3
-    ! tracer consistently (which is not currently done anywhere)
-    ! For now force this to be false
-    any_w3_consistent = .false.
-
-    if (any_w3_consistent) then
-      select case (fs_idx)
-      case (W2)
-        call invoke(                                                           &
-          setval_c(self%hori_dry_flux(1,self%dry_step_ctr), 0.0_r_tran),       &
-          setval_c(self%vert_dry_flux(1,self%dry_step_ctr), 0.0_r_tran),       &
-          split_w2_field_kernel_type(self%hori_dry_flux(1,self%dry_step_ctr),  &
-                                     self%vert_dry_flux(1,self%dry_step_ctr),  &
-                                     dry_flux) )
-      end select
-    end if
-
     any_eqn_consistent = check_any_eqn_consistent()
+    any_wt_eqn_conservative = check_any_wt_eqn_conservative()
 
-    if (self%n_meshes > 1 .and. any_eqn_consistent) then
+    if (self%n_meshes > 1 .and. (any_eqn_consistent .or. any_wt_eqn_conservative)) then
       ! Transform these densities and dry fluxes to the shifted mesh
       shifted_mesh => mesh_collection%get_mesh(prime_extrusion_mesh, SHIFTED)
       consist_w3_to_sh_w3_rtran => get_consist_w3_to_sh_w3_rtran(prime_extrusion_mesh)
@@ -745,16 +718,9 @@ contains
         rmultiplicity_w2 => get_rmultiplicity(W2, dry_flux%get_mesh_id())
         call invoke(                                                           &
           setval_c(self%dry_flux(2,self%dry_step_ctr), 0.0_r_tran),            &
-          setval_c(self%hori_dry_flux(2,self%dry_step_ctr), 0.0_r_tran),       &
-          setval_c(self%vert_dry_flux(2,self%dry_step_ctr), 0.0_r_tran),       &
           consist_w2_to_sh_w2_kernel_type(self%dry_flux(2,self%dry_step_ctr),  &
                                           self%dry_flux(1,self%dry_step_ctr),  &
                                           rmultiplicity_w2) )
-        ! The wrong information is extracted if these invokes are combined
-        call invoke(                                                           &
-          split_w2_field_kernel_type(self%hori_dry_flux(2,self%dry_step_ctr),  &
-                                     self%vert_dry_flux(2,self%dry_step_ctr),  &
-                                     self%dry_flux(2,self%dry_step_ctr)) )
       case (W2h)
         ! Flux is already horizontal so just shift
         rmultiplicity_w2 => get_rmultiplicity(W2h, dry_flux%get_mesh_id())
@@ -799,22 +765,22 @@ contains
 
   end subroutine set_field_n
 
-  !> @brief Sets flux increments for use in conservative transport
+  !> @brief Sets fluxes for use in conservative transport
   !> @param[in,out] self      The transport_runtime object
-  !> @param[in]     flux_inc  Flux increment for a particular split step
-  subroutine set_flux_inc(self, flux_inc)
+  !> @param[in]     flux      Mass flux for a particular split step
+  subroutine set_flux(self, flux)
 
     implicit none
 
     class(transport_runtime_type), target, intent(inout) :: self
-    type(r_tran_field_type),               intent(in)    :: flux_inc
+    type(r_tran_field_type),               intent(in)    :: flux
 
     integer(kind=i_def) :: idx
 
-    idx = self%idx_from_mesh_id(flux_inc%get_mesh_id())
-    call flux_inc%copy_field(self%flux_inc(idx,self%tracer_step_ctr))
+    idx = self%idx_from_mesh_id(flux%get_mesh_id())
+    call flux%copy_field(self%flux(idx,self%tracer_step_ctr))
 
-  end subroutine set_flux_inc
+  end subroutine set_flux
 
   !> @brief Copies across all the dry fields from one transport runtime to
   !!        another, restricting the fields if the target mesh is coarser
@@ -948,8 +914,10 @@ contains
   !> @param[in] mesh_id    Identifier of mesh
   !> @param[in] direction  A transport direction enumerator
   !> @param[in] splitting  A transport splitting enumerator
+  !> @param[in] cfl_arg    CFL to use. Optional, and if not provided defaults
+  !!                       to namelist options.
   !> @return number_substeps  Number of substeps
-  function get_number_substeps(self, mesh_id, direction, splitting) result(number_substeps)
+  function get_number_substeps(self, mesh_id, direction, splitting, cfl_arg) result(number_substeps)
     use transport_config_mod,           only: cfl_mol_3d_stab, &
                                               cfl_mol_2d_stab, &
                                               cfl_mol_1d_stab
@@ -964,36 +932,53 @@ contains
     integer(kind=i_def),           intent(in) :: mesh_id
     integer(kind=i_def),           intent(in) :: direction
     integer(kind=i_def),           intent(in) :: splitting
+    real(kind=r_def),   optional,  intent(in) :: cfl_arg
     integer(kind=i_def)                       :: number_substeps
     integer(kind=i_def)                       :: idx
+    real(kind=r_def)                          :: cfl_to_use
 
     idx = self%idx_from_mesh_id(mesh_id)
+
+    if (present(cfl_arg)) then
+      cfl_to_use = cfl_arg + tiny_eps
+    else
+      select case (direction)
+      case (direction_v)
+        cfl_to_use = cfl_mol_1d_stab + tiny_eps
+      case (direction_h)
+        cfl_to_use = cfl_mol_2d_stab+tiny_eps
+      case (direction_3d)
+        cfl_to_use = cfl_mol_3d_stab+tiny_eps
+      case default
+        call log_event('Direction not recognised', LOG_LEVEL_ERROR)
+      end select
+    end if
+
     select case (direction)
 
       case (direction_v)
-        number_substeps = int( self%vertical_cfl_max(idx)        &
-                              /(cfl_mol_1d_stab+tiny_eps),i_def) &
+        number_substeps = int( self%vertical_cfl_max(idx) / cfl_to_use, i_def) &
                          + 1_i_def
         ! Strang_vhv splitting uses half timestep for the vertical stage
         if ( splitting == splitting_strang_vhv ) then
           number_substeps = int( self%vertical_cfl_max(idx)        &
-                              /(2.0_r_tran*cfl_mol_1d_stab+tiny_eps),i_def) &
+                              /(2.0_r_tran*cfl_to_use),i_def) &
                           + 1_i_def
         end if
       case (direction_h)
         number_substeps = int( self%horizontal_cfl_max(idx)      &
-                              /(cfl_mol_2d_stab+tiny_eps),i_def) &
+                              / cfl_to_use, i_def) &
                         + 1_i_def
         ! Strang_hvh splitting uses half timestep for the horizontal stage
         if ( splitting == splitting_strang_hvh ) then
           number_substeps = int( self%horizontal_cfl_max(idx)        &
-                              /(2.0_r_tran*cfl_mol_2d_stab+tiny_eps),i_def) &
+                              /(2.0_r_tran*cfl_to_use),i_def) &
                           + 1_i_def
         end if
 
       case (direction_3d)
         number_substeps = int( self%total_cfl_max(idx)            &
-                              /(cfl_mol_3d_stab+tiny_eps),i_def)  &
+                              / cfl_to_use, i_def)  &
                          + 1_i_def
       case default
         number_substeps = 1_i_def
@@ -1396,26 +1381,26 @@ contains
 
   end function get_rho_d_np1
 
-  !> @brief Returns a pointer to a flux increment for a particular step
+  !> @brief Returns a pointer to a mass flux for a particular step
   !> @param[in] mesh_id The ID of the mesh to get the object for
-  !> @param[in] step The step from which to return the flux increment
-  !> @return The flux increment
-  function get_flux_inc(self, mesh_id, step) result(flux_inc)
+  !> @param[in] step The step from which to return the mass flux
+  !> @return The mass flux
+  function get_flux(self, mesh_id, step) result(flux)
 
     implicit none
 
     class(transport_runtime_type), target, intent(in) :: self
     integer(kind=i_def),                   intent(in) :: mesh_id
     integer(kind=i_def),                   intent(in) :: step
-    type(r_tran_field_type),               pointer    :: flux_inc
+    type(r_tran_field_type),               pointer    :: flux
 
-    flux_inc => self%flux_inc(self%idx_from_mesh_id(mesh_id), step)
+    flux => self%flux(self%idx_from_mesh_id(mesh_id), step)
 
-  end function get_flux_inc
+  end function get_flux
 
   !> @brief Returns a pointer to the flux from transporting dry density
   !> @param[in] mesh_id The ID of the mesh to get the object for
-  !> @param[in] step The step from which to return the density
+  !> @param[in] step The step from which to return the dry flux
   !> @return The dry density flux
   function get_dry_flux(self, mesh_id, step) result(dry_flux)
 
@@ -1433,45 +1418,69 @@ contains
 
   end function get_dry_flux
 
-  !> @brief Returns a pointer to the horizontal flux from transporting dry density
-  !> @param[in] mesh_id The ID of the mesh to get the object for
-  !> @param[in] step The step from which to return the density
-  !> @return The horizontal dry density flux
-  function get_hori_dry_flux(self, mesh_id, step) result(horizontal_flux)
+  !> @brief Adjusts an existing dry flux field stored in the transport runtime
+  !> @param[in] mesh_id   The ID of the mesh for the dry flux
+  !> @param[in] step      The step for which to adjust the flux
+  !> @param[in] new_flux  The new dry mass flux field to store
+  subroutine adjust_dry_flux(self, mesh_id, step, new_flux)
+
+    use consist_w2_to_sh_w2_kernel_mod, only: consist_w2_to_sh_w2_kernel_type
+    use consist_w2h_to_sh_w2h_kernel_mod, &
+                                        only: consist_w2h_to_sh_w2h_kernel_type
+    use consist_w2v_to_sh_w2v_kernel_mod, &
+                                        only: consist_w2v_to_sh_w2v_kernel_type
+    use fem_constants_mod,              only: get_rmultiplicity
+    use check_configuration_mod,        only: check_any_eqn_consistent
 
     implicit none
 
-    class(transport_runtime_type), target, intent(in) :: self
-    integer(kind=i_def),                   intent(in) :: mesh_id
-    integer(kind=i_def),                   intent(in) :: step
-    type(r_tran_field_type),               pointer    :: horizontal_flux
-    character(str_def)                                :: field_name
+    class(transport_runtime_type), intent(inout) :: self
+    integer(kind=i_def),           intent(in)    :: mesh_id
+    integer(kind=i_def),           intent(in)    :: step
+    type(r_tran_field_type),       intent(in)    :: new_flux
+    integer(kind=i_def)       :: idx, fs_idx
+    logical(kind=l_def)       :: any_eqn_consistent
+    type(field_type), pointer :: rmultiplicity_w2 => null()
 
-    field_name = 'horizontal_dry_flux'
-    horizontal_flux => self%hori_dry_flux(self%idx_from_mesh_id(mesh_id), step)
-    call check_initialised_field(horizontal_flux, field_name, mesh_id)
+    idx = self%idx_from_mesh_id(mesh_id)
+    call invoke( setval_X(self%dry_flux(idx, step), new_flux))
 
-  end function get_hori_dry_flux
+    ! ------------------------------------------------------------------------ !
+    ! May need to adjust the fluxes on the shifted mesh
+    ! ------------------------------------------------------------------------ !
 
-  !> @brief Returns a pointer to the vertical flux from transporting dry density
-  !> @param[in] mesh_id The ID of the mesh to get the object for
-  !> @param[in] step The step from which to return the density
-  !> @return The vertical dry density flux
-  function get_vert_dry_flux(self, mesh_id, step) result(vertical_flux)
+    any_eqn_consistent = check_any_eqn_consistent()
+    fs_idx = new_flux%which_function_space()
 
-    implicit none
+    if (self%n_meshes > 1 .and. idx == 1 .and. any_eqn_consistent) then
 
-    class(transport_runtime_type), target, intent(in) :: self
-    integer(kind=i_def),                   intent(in) :: mesh_id
-    integer(kind=i_def),                   intent(in) :: step
-    type(r_tran_field_type),               pointer    :: vertical_flux
-    character(str_def)                                :: field_name
+      ! Transform dry fluxes to the shifted mesh, with case depending on fs_idx
+      select case (fs_idx)
+      case (W2)
+        rmultiplicity_w2 => get_rmultiplicity(W2, new_flux%get_mesh_id())
+        call invoke(                                              &
+          setval_c(self%dry_flux(2,step), 0.0_r_tran),            &
+          consist_w2_to_sh_w2_kernel_type(self%dry_flux(2,step),  &
+                                          self%dry_flux(1,step),  &
+                                          rmultiplicity_w2) )
 
-    field_name = 'vertical_dry_flux'
-    vertical_flux => self%vert_dry_flux(self%idx_from_mesh_id(mesh_id), step)
-    call check_initialised_field(vertical_flux, field_name, mesh_id)
+      case (W2h)
+        rmultiplicity_w2 => get_rmultiplicity(W2h, new_flux%get_mesh_id())
+        call invoke(                                               &
+          setval_c(self%dry_flux(2,step), 0.0_r_tran),             &
+          consist_w2h_to_sh_w2h_kernel_type(self%dry_flux(2,step), &
+                                            self%dry_flux(1,step), &
+                                            rmultiplicity_w2) )
+      case (W2v)
+        call invoke(                                               &
+          consist_w2v_to_sh_w2v_kernel_type(self%dry_flux(2,step), &
+                                            self%dry_flux(1,step)) )
+      case default
+        call log_event( "Can only store dry flux for W2, W2h and W2v spaces", LOG_LEVEL_ERROR )
+      end select
+    end if
 
-  end function get_vert_dry_flux
+  end subroutine adjust_dry_flux
 
   !> @brief Returns the counter of tracer transport steps
   !> @return The tracer step counter
