@@ -65,7 +65,7 @@ module physical_op_constants_mod
 
 #ifdef UM_PHYSICS
   use get_Pnm_star_kernel_mod,            only: get_Pnm_star_kernel_type
-  use stochastic_physics_config_mod,      only: use_spt, spt_spectral_dim, spt_n_max
+  use stochastic_physics_config_mod,      only: use_spt, stph_spectral_dim, stph_n_max
 #endif
 
   implicit none
@@ -431,13 +431,13 @@ contains
           if (use_spt) then
 
             call Pnm_star_collection%initialise(name="Pnm_star", table_len=100)
-            w_Pnm_star_fs => function_space_collection%get_fs(twod_mesh, 0, W3, spt_spectral_dim)
+            w_Pnm_star_fs => function_space_collection%get_fs(twod_mesh, 0, W3, stph_spectral_dim)
             latitude  => get_latitude(twod_mesh%get_id())
             field_name = trim("Pnm_star_") // adjustl(mesh_number)
             call Pnm_star%initialise(vector_space= w_Pnm_star_fs, name=field_name)
 
             call invoke( setval_c(Pnm_star,  0.0_r_def),              &
-                        get_Pnm_star_kernel_type(Pnm_star, latitude, spt_n_max))
+                        get_Pnm_star_kernel_type(Pnm_star, latitude, stph_n_max))
 
             call Pnm_star_collection%add_field( Pnm_star )
 

@@ -34,7 +34,7 @@ module get_Pnm_star_kernel_mod
     type(arg_type) :: meta_args(3) = (/                                   &
         arg_type(GH_FIELD, GH_REAL, GH_WRITE, ANY_DISCONTINUOUS_SPACE_1), & ! Pnm_star
         arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_2), & ! latitude
-        arg_type(GH_SCALAR, GH_INTEGER, GH_READ)                          & ! spt_n_max
+        arg_type(GH_SCALAR, GH_INTEGER, GH_READ)                          & ! stph_n_max
         /)
         integer :: operates_on = CELL_COLUMN
 
@@ -52,7 +52,7 @@ contains
   !> @param[in]      nlayers     The number of layers
   !> @param[in,out]  Pnm_star    Legendre Polynomials x SH amplitude
   !> @param[in]      latitude    2D field of latitudes
-  !> @param[in]      spt_n_max   SPT maximum wavenumber
+  !> @param[in]      stph_n_max  Stochastic Physics maximum wavenumber
   !> @param[in]      ndf_sp      Number of degrees of freedom per cell for spectral space
   !> @param[in]      undf_sp     Number of unique degrees of freedom for spectral space
   !> @param[in]      map_sp      Dofmap for the cell at the base of the column for spectral space
@@ -63,7 +63,7 @@ contains
   subroutine  get_Pnm_star_code(nlayers,   &
                                 Pnm_star,  &
                                 latitude,  &
-                                spt_n_max, &
+                                stph_n_max,&
                                 ndf_sp,    &
                                 undf_sp,   &
                                 map_sp,    &
@@ -86,7 +86,7 @@ contains
     real(kind=r_def), intent(in),    dimension(undf_2d) :: latitude
 
     !SPT scalar
-    integer(kind=i_def), intent(in) :: spt_n_max
+    integer(kind=i_def), intent(in) :: stph_n_max
 
 
     ! Equivalent Spherical values
@@ -144,7 +144,7 @@ contains
     !         Pnm_star(n, n) -> n_row + n
 
     n_row=0
-    do n = 0,spt_n_max-1
+    do n = 0,stph_n_max-1
       n_row = n_row + n
       np1_row= n_row + n + 1
       coeff=(-1.0_r_def)*sqrt((2.0_r_def*n + 3.0_r_def)/(2.0_r_def*n + 2.0_r_def))
@@ -160,7 +160,7 @@ contains
     ! Indices Pnm_star(n+1, n) -> n_row + (n+1) + n; where n_row = Sum (n)
     !         Pnm_star(n,n) -> n_row + n
     n_row=0
-    do n = 0,spt_n_max-1
+    do n = 0,stph_n_max-1
       n_row = n_row + n
       np1_row= n_row + n + 1
       coeff=sqrt(2.0_r_def*n + 3.0_r_def)
@@ -188,7 +188,7 @@ contains
     !         Pnm_star(n-2, m) -> (n_row-n-(n-1)) + m
 
     n_row=1 ! starting at one as 0 n loop start at 2
-    do n=2,spt_n_max
+    do n=2,stph_n_max
       n_row = n_row + n
       do m=0,n-2
         fact_1st= sqrt((4.0_r_def*n*n - 1)/(n*n - m*m))
@@ -203,7 +203,7 @@ contains
     ! Normalization factor for Spherical Harmonics for n != 0
     ! Indices Pnm_star(n,m) -> n_row + m; where n_row = Sum (n)
     n_row=0
-    do n=1, spt_n_max
+    do n=1, stph_n_max
       n_row = n_row + n
       do m=1, n
         Pnm_star(map_sp(1)+ n_row + m) = Pnm_star(map_sp(1)+ n_row +m)*sqrt(2.0)

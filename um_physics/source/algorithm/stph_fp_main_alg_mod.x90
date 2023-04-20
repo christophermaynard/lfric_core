@@ -8,47 +8,54 @@
 
 module stph_fp_main_alg_mod
 
-
-    use constants_mod,                  only: r_def, i_def, l_def, str_def
-    use field_mod,                      only: field_type
-    use field_collection_mod,           only: field_collection_type
-    use function_space_mod,             only: function_space_type
-    use function_space_collection_mod,  only: function_space_collection
-    use fs_continuity_mod,              only: Wtheta
-    use geometric_constants_mod,        only: get_longitude, get_height
-    use physical_op_constants_mod,      only: get_Pnm_star
-    use io_config_mod,                  only: write_diag, use_xios_io
+    use constants_mod,       only: r_def, i_def, str_def
+    use extrusion_mod,       only: TWOD
+    use field_mod,           only: field_type
+    use mesh_mod,            only: mesh_type
+    use mesh_collection_mod, only: mesh_collection
+    use io_config_mod,       only: subroutine_timers
+    use timer_mod,           only: timer
 
     implicit none
 
     private
 
-    ! Logical controlling whether spectral coeffs need calculating
-    logical(kind=l_def), save :: calculate_spectral_coeffs = .true.
-
     private random_seed_gen
     public stph_fp_main_alg
 
  contains
-  !>@brief Run the UM Stochastic Forcing pattern code
+  !>@brief Run the Stochastic Forcing pattern code
   !>@details This code creates the forcing pattern for stochastic physics schemes.
-  !>         It calls loads the matrix Pnm_star with spherical harmonic coefficients
-  !>         using [get_Pnm_star??] and calls the kernel spectral_2_cs_kernel_mod
-  !>         to evolve the spectral coefficients (apply first autoregressive
-  !>         process) and then performs the spectral to cubed-sphere transformation
-  !>         to obtain the FP acroos the SPT levels.
-  !>@param[in,out]     fp_spt     SPT Forcing pattern
-  !>@param[in]         microphysics_fields     Fields from microphysics scheme
+  !>         The forcing pattern comes from the spherical harmonic spectral transformation
+  !>         of spectral coefficients, which are updated every timestep
+  !>         following a first auto-regressive process.
+  !>
+  !>         Steps:
+  !>            1) Apply the First Auto-regressive process (1AR). NOT THERE YET!!
+  !>            2) Apply the spect_2_cubedsphere transformation:
+  !>               Does meshes and run the get_longitude and get_Pnm_star operators,
+  !>               the latter contains the Legendre Polynomials for the spectral
+  !>               transformation. Then it calls the kernel
+  !>               spectral_2_cs_kernel_mod to perform the the spectral
+  !>               to cubed-sphere transformation.
 
-  subroutine stph_fp_main_alg(fp_spt, microphysics_fields)
+  !>@param[in]         level_bottom            Bottom level of the stochastic scheme
+  !>@param[in]         level_top               Top level of the stochastic scheme
+  !>@param[in]         wavenumber_min          Minimum wavenumber applied to build the FP
+  !>@param[in]         wavenumber_max          Maximum wavenumber applied to build the FP
+  !>@param[in]         spectral_dim            Dimension of spectral coeffients arrays
+  !>@param[in]         alpha                   exp. decorrelation time for stoch physics
+  !>@param[in]         power_law               Spectral power law
+  !>@param[in,out]     spectral_coeffc         Real Spectral coefficients
+  !>@param[in,out]     spectral_coeffs         Imaginary Spectral coefficients
+  !>@param[i,out]      fp                      Forcing pattern
 
-  use io_config_mod,  only: subroutine_timers
-  use timer_mod,      only: timer
+  subroutine stph_fp_main_alg(level_bottom, level_top,          &
+                              wavenumber_min, wavenumber_max,   &
+                              spectral_dim, alpha, power_law,   &
+                              spectral_coeffc, spectral_coeffs, &
+                              fp)
 
-  use stochastic_physics_config_mod,    only: spt_level_bottom, &
-                                              spt_level_top,    &
-                                              spt_n_max,        &
-                                              spt_spectral_dim
   ! TO DO after PSyclone ticket 1312
   ! at https://github.com/stfc/PSyclone/issues/1312
   ! Uncomment line below, the kernel employing the ARRAYS, and remove
@@ -58,171 +65,187 @@ module stph_fp_main_alg_mod
 
   use psykal_lite_phys_mod, only: invoke_spectral_2_cs_kernel_type
 
-  implicit none
-  !intents
-  type( field_type ), intent(inout) :: fp_spt
-  type( field_collection_type ), intent(in) :: microphysics_fields
+  ! Get operators
+  use geometric_constants_mod,   only: get_longitude, get_height
+  use physical_op_constants_mod,      only: get_Pnm_star
 
-  !Internal variables
-  integer(kind=i_def) :: twod_mesh_id, mesh_id
-  ! Get longitude
+  implicit none
+
+  !!!! Arguments
+  ! Scalars with scheme levels, wavenumbers and spectral dimensions
+  integer(kind=i_def), intent(in) :: level_bottom, level_top,          &
+                                     wavenumber_min, wavenumber_max,   &
+                                     spectral_dim
+
+  ! spectral coefficients power law and decorrelation
+  real(kind=r_def), intent(in) :: alpha
+  real(kind=r_def), intent(in) :: power_law(spectral_dim)
+
+  ! spectral coefficients arrays
+  real(kind=r_def), intent(inout) :: spectral_coeffc(spectral_dim)
+  real(kind=r_def), intent(inout) :: spectral_coeffs(spectral_dim)
+
+  ! LFRIC fields
+  type( field_type ), intent(inout) :: fp
+
+  !!!! Internal variables
+  ! Operators for longitude, height and Pnm_star
   type( field_type ), pointer :: longitude => null()
-  ! Get Pnm_star
+  type( field_type ), pointer :: height => null()
   type( field_type ), pointer :: Pnm_star => null()
 
-  ! Use ls rain as template for the 2D fields
-  type( field_type ), pointer :: ls_rain   => null()
+  ! random numbers fields
+  real(kind=r_def) :: random_numbers_cos(spectral_dim)
+  real(kind=r_def) :: random_numbers_sin(spectral_dim)
 
-  ! Height of wtheta points
-  type( field_type ), pointer :: height_wth => null()
+  ! meshes
+  type( mesh_type ),  pointer :: mesh => null()
+  type( mesh_type ),  pointer :: twod_mesh => null()
 
-  real(kind=r_def), allocatable, save :: stph_spectral_coeffc(:)
-  real(kind=r_def), allocatable, save :: stph_spectral_coeffs(:)
-
-
+  integer(i_def)     :: fs_id
+  ! iterators in for loops
+  integer(kind=i_def) :: n
   if ( subroutine_timers ) call timer("stph_fp_main_alg")
 
-  ! Get LS rain as a 2D field to build a field with lats and lons
-  call microphysics_fields%get_field('ls_rain', ls_rain)
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!  1)  Apply the First Auto-regressive process (1AR) !!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Initialize fields
+  random_numbers_cos=0.0_r_def
+  random_numbers_sin=0.0_r_def
 
-  ! Get latitudes and longitudes over the cubedsphere
-  ! with the FP mesh_id
-  twod_mesh_id = ls_rain%get_mesh_id()
-  longitude => get_longitude(twod_mesh_id)
+  ! Get new set of random numbers
+  call random_number(random_numbers_cos)
+  call random_number(random_numbers_sin)
+
+  ! 1st Auto-regressive process to update spectral coefficients
+  ! Substract 1/2 to the random numbers to have a mean of 0.0
+  do n=1,spectral_dim
+    spectral_coeffc(n)=(1-alpha)*spectral_coeffc(n) + sqrt(alpha)*power_law(n)*(random_numbers_cos(n)-0.5_r_def)
+    spectral_coeffs(n)=(1-alpha)*spectral_coeffs(n) + sqrt(alpha)*power_law(n)*(random_numbers_sin(n)-0.5_r_def)
+  end do
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!  2)  Apply the spect_2_cubedsphere transformation !!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+ ! Create 2D mesh from the FP field
+  mesh => fp%get_mesh()
+  twod_mesh => mesh_collection%get_mesh(mesh, TWOD)
+
+  ! Get longitude
+  longitude => get_longitude(twod_mesh%get_id())
+
+  ! Get height
+  fs_id = fp%which_function_space()
+  height => get_height(fs_id, mesh%get_id())
 
   ! Get Matrix of Legendre Polynomials (scaled) Pnm_star
-  Pnm_star => get_Pnm_star(twod_mesh_id)
-
-  ! Compute height of theta points for vertical phasing of the FP
-  mesh_id = fp_spt%get_mesh_id()
-  height_wth => get_height(Wtheta, mesh_id)
-
-  ! Calculate spectral coefficient for the forcing pattern
-  if (calculate_spectral_coeffs) then
-    if (.not. allocated(stph_spectral_coeffc)) &
-      allocate(stph_spectral_coeffc(spt_spectral_dim))
-    if (.not. allocated(stph_spectral_coeffs)) &
-      allocate(stph_spectral_coeffs(spt_spectral_dim))
-
-    ! setup random seeds
-    call random_seed_gen()
-
-    calculate_spectral_coeffs = .false.
-  end if
-
-  ! Set coefficients with random values between 0-1
-  call random_number(stph_spectral_coeffc)
-  call random_number(stph_spectral_coeffs)
-
-  ! Intialize forcing pattern field to 0.0
-  call invoke(setval_c(fp_spt,  0.0_r_def))
-
-  ! Apply the spect_2_cubedsphere transformation
+  Pnm_star => get_Pnm_star(twod_mesh%get_id())
 
   ! TO DO after PSyclone ticket 1312
   ! at https://github.com/stfc/PSyclone/issues/1312
   ! Uncomment lines below (invoke to spectral_2_cs_kernel_type), an remove
   ! call to invoke_spectral_2_cs_kernel_type
 
-  ! call invoke(spectral_2_cs_kernel_type(fp_spt, longitude,    &
-  !                                       Pnm_star, height_wth, &
-  !                                       stph_spectral_coeffc, &
-  !                                       stph_spectral_coeffs, &
-  !                                       spt_level_bottom,     &
-  !                                       spt_level_top,        &
-  !                                       spt_n_max,            &
-  !                                       spt_spectral_dim      &
+  ! call invoke(spectral_2_cs_kernel_type(fp, longitude,    &
+  !                                       Pnm_star, height, &
+  !                                       spectral_coeffc,  &
+  !                                       spectral_coeffs,  &
+  !                                       level_bottom,     &
+  !                                       level_top,        &
+  !                                       wavenumber_min,   &
+  !                                       wavenumber_max,   &
+  !                                       spectral_dim      &
   !                                       ))
 
-  call invoke_spectral_2_cs_kernel_type(fp_spt, longitude, pnm_star, height_wth,    &
-                                          stph_spectral_coeffc, stph_spectral_coeffs, &
-                                          spt_level_bottom, spt_level_top, spt_n_max, &
-                                          spt_spectral_dim)
-
-  ! Add diagnostics to iodef
-  if (write_diag .and. use_xios_io) then
-      call fp_spt%write_field('stochastic__fp_spt')
-  end if
+  call invoke_spectral_2_cs_kernel_type(fp, longitude, pnm_star, height,  &
+                                        spectral_coeffc, spectral_coeffs, &
+                                        level_bottom, level_top,          &
+                                        wavenumber_min, wavenumber_max,   &
+                                        spectral_dim)
 
   if ( subroutine_timers ) call timer("stph_fp_main_alg")
 
   end subroutine stph_fp_main_alg
 
- !>@brief Generation of a reproducible random seed for use by stochastic physics.
- !>@details Use full model date in randomising seed to reduce chance of
- !> recycling from one run to the next. The formula calculates the days since
- !> ~2000AD and adds in time suitably inflated to fully change the seed.
- !> Only use last two digits of year to prevent numerical overflow at some date
- !> in the future. A random number generated from this seed is used to
- !> multiply the seed again.
- subroutine random_seed_gen()
-   use xios, only: xios_date, xios_get_current_date, &
-     xios_date_get_day_of_year, xios_date_get_second_of_day
-   use log_mod, only: log_event, log_scratch_space, LOG_LEVEL_DEBUG
+  !>@brief Generation of a reproducible random seed for use by stochastic physics.
+  !>@details Use full model date in randomising seed to reduce chance of
+  !> recycling from one run to the next. The formula calculates the days since
+  !> ~2000AD and adds in time suitably inflated to fully change the seed.
+  !> Only use last two digits of year to prevent numerical overflow at some date
+  !> in the future. A random number generated from this seed is used to
+  !> multiply the seed again.
+  subroutine random_seed_gen()
+    use xios, only: xios_date, xios_get_current_date, &
+                    xios_date_get_day_of_year, xios_date_get_second_of_day
+    use log_mod, only: log_event, log_scratch_space, LOG_LEVEL_DEBUG
 
-   implicit none
+    implicit none
 
-   type(xios_date) :: datetime
-   integer(i_def) :: year, month, day, utc_shift, hour, minute, &
-     ensemble_number, milli_ensemble_number
-   integer(i_def) :: random_seed_size, iarg, max_iarg, i
-   integer(i_def), allocatable :: iranseed(:), prevseed(:)
-   real(r_def), allocatable :: rnum(:)
-   character(str_def) :: string
+    type(xios_date) :: datetime
+    integer(i_def) :: year, month, day, utc_shift, hour, minute, &
+                      ensemble_number, milli_ensemble_number
+    integer(i_def) :: random_seed_size, iarg, max_iarg, i
+    integer(i_def), allocatable :: iranseed(:), prevseed(:)
+    real(r_def), allocatable :: rnum(:)
+    character(str_def) :: string
 
-   ! Use the datetime from the XIOS clock, should eventually be replaced by
-   ! calls to the model clock.
-   call xios_get_current_date(datetime)
+    ! Use the datetime from the XIOS clock, should eventually be replaced by
+    ! calls to the model clock.
+    call xios_get_current_date(datetime)
 
-   ! Values required for the random seed function.
-   year = int(datetime%year, i_def)
-   month = int(datetime%month, i_def)
-   hour = int(datetime%hour, i_def) + 1
-   minute = int(datetime%minute, i_def)
-   ensemble_number = 0
-   milli_ensemble_number = ensemble_number + 100
+    ! Values required for the random seed function.
+    year = int(datetime%year, i_def)
+    month = int(datetime%month, i_def)
+    hour = int(datetime%hour, i_def) + 1
+    minute = int(datetime%minute, i_def)
+    ensemble_number = 0
+    milli_ensemble_number = ensemble_number + 100
 
-   ! Fetch random seed array size from intrinsic and allocate arrays.
-   call random_seed(size = random_seed_size)
-   if(.not. allocated(iranseed)) allocate(iranseed(random_seed_size))
-   if(.not. allocated(prevseed)) allocate(prevseed(random_seed_size))
-   if(.not. allocated(rnum)) allocate(rnum(random_seed_size))
+    ! Fetch random seed array size from intrinsic and allocate arrays.
+    call random_seed(size = random_seed_size)
+    if(.not. allocated(iranseed)) allocate(iranseed(random_seed_size))
+    if(.not. allocated(prevseed)) allocate(prevseed(random_seed_size))
+    if(.not. allocated(rnum)) allocate(rnum(random_seed_size))
 
-   ! Take only the last 2 digits of the year.
-   year = year - 100 * nint(0.01_r_def * year)
+    ! Take only the last 2 digits of the year.
+    year = year - 100 * nint(0.01_r_def * year)
 
-   ! Random seed function that is both reproducible and can be recycled between
-   ! runs. The formulation and values used here are ported directly from the UM
-   ! code and appear to be arbitrary - or their provenance is lost to time.
-   iarg = int((day - 32075 + 1461*(year + 4800 + (month - 14)/12)/4        &
-     + 367 * (month - 2 - (month - 14)/12*12)/12 - 3*((year + 4900         &
-     + (month - 14)/12)/100)/4)*1000 + milli_ensemble_number**2.86_r_def   &
-     + ensemble_number**3.79_r_def + hour**5.12_r_def + minute**3.24_r_def)
+    ! Random seed function that is both reproducible and can be recycled between
+    ! runs. The formulation used here is ported directly from the UM code and
+    ! calculates the date in Julian calendar form
+    ! (Crossref DOI link: https://doi.org/10.1145/364096.364097) then adds some
+    ! additional variation based on the ensemble number, hours, and minutes.
+    iarg = int((day - 32075 + 1461*(year + 4800 + (month - 14)/12)/4             &
+           + 367 * (month - 2 - (month - 14)/12*12)/12 - 3*((year + 4900         &
+           + (month - 14)/12)/100)/4)*1000 + milli_ensemble_number**2.86_r_def   &
+           + ensemble_number**3.79_r_def + hour**5.12_r_def + minute**3.24_r_def)
 
-   ! Constrain iarg in a range to prevent numerical overflow.
-   max_iarg = floor(sqrt(real(huge(iarg), r_def)))
-   iarg = mod(iarg, max_iarg)
-   iarg = max(iarg, 256)
-   prevseed = iarg
-   ! Generate initial random number set to use.
-   call random_seed(put = prevseed(1:random_seed_size))
-   call random_number(rnum)
+    ! Constrain iarg in a range to prevent numerical overflow.
+    max_iarg = floor(sqrt(real(huge(iarg), r_def)))
+    iarg = mod(iarg, max_iarg)
+    iarg = max(iarg, 256)
+    prevseed = iarg
+    ! Generate initial random number set to use.
+    call random_seed(put = prevseed(1:random_seed_size))
+    call random_number(rnum)
 
-   ! Range of seed from 0 to 2**31 (32-bit Int).
-   iranseed = int(iarg*rnum)
+    ! Range of seed from 0 to 2**31 (32-bit Int).
+    iranseed = int(iarg*rnum)
 
-   ! Set final random seed
-   call random_seed(put = iranseed(1:random_seed_size))
+    ! Set final random seed
+    call random_seed(put = iranseed(1:random_seed_size))
 
-   ! Log number of seeds and their values in debug output.
-   write( log_scratch_space, &
-     '(": Stochastic Physics: Size of random seed: ", I6)' ) &
-     random_seed_size
-   call log_event( log_scratch_space, LOG_LEVEL_DEBUG )
-   write(string, '("(",A23, I3, "(I5))" )') '"Random Seed Values: ",', random_seed_size
-   write( log_scratch_space, trim(string) ) (iranseed(i), i=1,random_seed_size)
-   call log_event(log_scratch_space, LOG_LEVEL_DEBUG)
+    ! Log number of seeds and their values in debug output.
+    write( log_scratch_space, &
+           '(": Stochastic Physics: Size of random seed: ", I6)' ) &
+           random_seed_size
+    call log_event( log_scratch_space, LOG_LEVEL_DEBUG )
+    write(string, '("(",A23, I3, "(I5))" )') '"Random Seed Values: ",', random_seed_size
+    write( log_scratch_space, trim(string) ) (iranseed(i), i=1,random_seed_size)
+    call log_event(log_scratch_space, LOG_LEVEL_DEBUG)
 
- end subroutine random_seed_gen
+  end subroutine random_seed_gen
 
 end module stph_fp_main_alg_mod

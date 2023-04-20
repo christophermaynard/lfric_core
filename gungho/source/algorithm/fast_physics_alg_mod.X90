@@ -247,7 +247,7 @@ contains
       call stph_main_alg( dtheta_stph, dmv_stph,                           &
                           dtheta_bl, mr(imr_v), convection_fields,         &
                           microphysics_fields, radiation_fields,           &
-                          derived_fields, orography_fields)
+                          derived_fields, orography_fields, clock)
       stph_done=.true. ! Collect this increment later on
     end if
 

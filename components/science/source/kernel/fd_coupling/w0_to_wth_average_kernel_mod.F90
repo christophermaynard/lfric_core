@@ -30,9 +30,8 @@ module w0_to_wth_average_kernel_mod
   !>
   type, public, extends(kernel_type) :: w0_to_wth_average_kernel_type
     private
-    type(arg_type) :: meta_args(3) = (/                     &
+    type(arg_type) :: meta_args(2) = (/                     &
          arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA), &
-         arg_type(GH_FIELD, GH_REAL, GH_READ,      W0),     &
          arg_type(GH_FIELD, GH_REAL, GH_READ,      W0)      &
          /)
     integer :: iterates_over = CELL_COLUMN
@@ -50,8 +49,7 @@ module w0_to_wth_average_kernel_mod
   !> @brief Computes a 1-2-1 Filter from W0 to WTHETA space.
   !> @param[in]     nlayers         Number of layers
   !> @param[in,out] field_wth       Output field from Filter on WTHETA space
-  !> @param[in]     field_w0        Input field for filter on W0 space
-  !> @param[in]     rmultiplicity   Reciprocal of how many times the dof has been visited in total
+  !> @param[in]     field_w0        Input field for filter on W0 spaceal
   !> @param[in]     ndf_wtheta      Number of degrees of freedom per cell for WTHETA
   !> @param[in]     undf_wtheta     Number of unique degrees of freedom for WTHETA
   !> @param[in]     map_wtheta      Dofmap for the cell at the base of the column for WTHETA
@@ -59,7 +57,7 @@ module w0_to_wth_average_kernel_mod
   !> @param[in]     undf_w0         Number of unique degrees of freedom for W0
   !> @param[in]     map_w0          Dofmap for the cell at the base of the column for W0
   subroutine w0_to_wth_average_code(nlayers,                               &
-                                    field_wth, field_w0, rmultiplicity_w0, &
+                                    field_wth, field_w0,                   &
                                     ndf_wtheta, undf_wtheta, map_wtheta,   &
                                     ndf_w0, undf_w0, map_w0)
     implicit none
@@ -73,7 +71,7 @@ module w0_to_wth_average_kernel_mod
     integer(kind=i_def), intent(in), dimension(ndf_w0)     :: map_w0
 
     real(kind=r_def), intent(inout), dimension(undf_wtheta) :: field_wth
-    real(kind=r_def), intent(in),    dimension(undf_w0)     :: field_w0, rmultiplicity_w0
+    real(kind=r_def), intent(in),    dimension(undf_w0)     :: field_w0
 
     ! Internal variables
     integer(kind=i_def) :: df, k
@@ -82,7 +80,7 @@ module w0_to_wth_average_kernel_mod
       field_wth(map_wtheta(1) + k) = 0.0_r_def
       do df = 1,4 ! Loop at the Bottom
         field_wth(map_wtheta(1) + k) = field_wth(map_wtheta(1) + k) + &
-                    field_w0(map_w0(df) + k)*rmultiplicity_w0(map_w0(df) + k)
+                    field_w0(map_w0(df) + k)/4.0_r_def
       end do
     end do
 
