@@ -34,7 +34,6 @@ module tl_test_advect_theta_field_mod
   use transport_metadata_mod,         only: transport_metadata_type
   use transport_metadata_collection_mod,   &
                                       only: transport_metadata_collection
-  use transport_runtime_alg_mod,      only: transport_runtime_type
   use transport_runtime_collection_mod,    &
                                       only: set_transport_runtime
   use tl_transport_runtime_collection_mod, &
@@ -71,7 +70,6 @@ module tl_test_advect_theta_field_mod
     type(field_collection_type),   pointer :: prognostic_fields => null()
     type(field_collection_type),   pointer :: ls_fields => null()
     type(transport_metadata_type), pointer :: transport_metadata
-    type(transport_runtime_type)           :: transport_runtime
 
     ! Input
     type(field_type), pointer :: n_u => null()
@@ -141,8 +139,7 @@ module tl_test_advect_theta_field_mod
 
     ! Init stuff
     call gungho_transport_control_alg_init( mesh )
-    transport_runtime = transport_runtime_type(ls_u, ls_u, model_clock, 1_i_def, cheap_update = .false.)
-    call set_transport_runtime(transport_runtime)
+    call set_transport_runtime( ls_u, ls_u, model_clock, 1_i_def, cheap_update = .false. )
     transport_metadata => transport_metadata_collection%get_transport_metadata('potential_temperature')
 
     cast_dt = real(model_clock%get_seconds_per_step(), r_def)
@@ -170,15 +167,14 @@ module tl_test_advect_theta_field_mod
                    inc_X_plus_Y( n_u, p_u ),                  &
                    inc_X_plus_Y( n_theta, p_theta ) )
 
-      transport_runtime = transport_runtime_type(n_u, n_u, model_clock, 1_i_def, cheap_update = .false.)
-      call set_transport_runtime(transport_runtime)
+      call set_transport_runtime(n_u, n_u, model_clock, 1_i_def, cheap_update = .false.)
 
       call transport_field( n_theta_np1, n_theta, cast_dt, transport_metadata )
       call invoke( X_minus_Y( n2_advection_inc, n_theta_np1, n_theta ) )
 
-      transport_runtime = transport_runtime_type(ls_u, ls_u, model_clock, 1_i_def, cheap_update = .false.)
-      call set_transport_runtime(transport_runtime)
-      tl_transport_runtime = transport_runtime_type(p_u, p_u, model_clock, 1_i_def, cheap_update = .false.)
+      call set_transport_runtime(ls_u, ls_u, model_clock, 1_i_def, cheap_update = .false.)
+      call tl_transport_runtime%initialise(p_u, p_u, model_clock, 1_i_def, cheap_update = .false.)
+
 
       call tl_transport_field( p_theta_np1, p_theta, ls_theta, &
                                cast_dt, transport_metadata )

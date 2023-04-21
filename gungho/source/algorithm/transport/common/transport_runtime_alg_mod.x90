@@ -114,9 +114,7 @@ module transport_runtime_alg_mod
     procedure, public  :: get_tracer_step_ctr
     procedure, public  :: inc_tracer_step_ctr
     procedure, public  :: reset_tracer_step_ctr
-    procedure, public  :: transport_runtime_assign
-    !> Override default assignment for transport_runtime_type pairs.
-    generic            :: assignment(=) => transport_runtime_assign
+    procedure, public  :: initialise => transport_runtime_initialiser
     final              :: destroy_transport_runtime
 
   end type transport_runtime_type
@@ -124,29 +122,27 @@ module transport_runtime_alg_mod
   !-----------------------------------------------------------------------------
   ! Constructors
   !-----------------------------------------------------------------------------
-  !> Function to construct a transport_runtime object
-  interface transport_runtime_type
-    module procedure transport_runtime_constructor
-  end interface
 
 contains
 
   !> @brief Constructs the transport_runtime object
-  !> @param[in] primal_wind_n_rdef    Wind field at start of current time step on the
-  !!                             prime extrusion
-  !> @param[in] primal_wind_np1_rdef  Predictor of wind field at next time step on
-  !!                             the prime extrusion
-  !> @param[in] model_clock      Time within the model
-  !> @param[in] outer            Outer (advection) iteration number
-  !> @param[in] cheap_update     Logical flag for cheap transport update
-  !> @param[in] shifted_mesh     (Optional) Shifted mesh
+  !> @param[in,out] self                  Transport runtime object to set
+  !> @param[in]     primal_wind_n_rdef    Wind field at start of current time step on the
+  !!                                      prime extrusion
+  !> @param[in]     primal_wind_np1_rdef  Predictor of wind field at next time step on
+  !!                                      the prime extrusion
+  !> @param[in]     model_clock           Time within the model
+  !> @param[in]     outer                 Outer (advection) iteration number
+  !> @param[in]     cheap_update          Logical flag for cheap transport update
+  !> @param[in]     shifted_mesh          (Optional) Shifted mesh
   !>
-  function transport_runtime_constructor( primal_wind_n_rdef,   &
-                                          primal_wind_np1_rdef, &
-                                          model_clock,          &
-                                          outer,                &
-                                          cheap_update,         &
-                                          shifted_mesh) result(self)
+  subroutine transport_runtime_initialiser( self,                 &
+                                            primal_wind_n_rdef,   &
+                                            primal_wind_np1_rdef, &
+                                            model_clock,          &
+                                            outer,                &
+                                            cheap_update,         &
+                                            shifted_mesh)
 
     use calc_dep_pts_alg_mod,          only: calc_vert_dep_pts, &
                                              calc_hori_dep_pts, &
@@ -166,6 +162,8 @@ contains
 
     implicit none
 
+    class(transport_runtime_type), intent(inout) :: self
+
     type(field_type),        target, intent(in) :: primal_wind_n_rdef
     type(field_type),        target, intent(in) :: primal_wind_np1_rdef
     class(model_clock_type), target, intent(in) :: model_clock
@@ -174,7 +172,6 @@ contains
 
     type(mesh_type),  pointer, intent(in), optional :: shifted_mesh
 
-    type(transport_runtime_type)     :: self
     type(r_tran_field_type)          :: cfl, vertical_cfl, horizontal_cfl, cfl_dep
     type(r_tran_field_type)          :: sum_cfl, sum_horizontal_cfl, hori_cfl_dep
     type(r_tran_field_type)          :: dep_pt_wind_n, dep_pt_wind_np1
@@ -251,25 +248,26 @@ contains
     local_mesh => mesh%get_local_mesh()
     self%local_mesh_id = local_mesh%get_id()
 
-    allocate( self%mesh_ids(self%n_meshes),                  &
-              self%advecting_wind(self%n_meshes),            &
-              self%horizontal_advecting_wind(self%n_meshes), &
-              self%vertical_advecting_wind(self%n_meshes),   &
-              self%detj_at_w2_transport(self%n_meshes),      &
-              self%departure_points_x_w2(self%n_meshes),     &
-              self%departure_points_y_w2(self%n_meshes),     &
-              self%departure_points_z_w2(self%n_meshes),     &
-              self%adv_unity_x(self%n_meshes),               &
-              self%adv_unity_y(self%n_meshes),               &
-              self%adv_unity_z(self%n_meshes),               &
-              self%adv_unity_half_x(self%n_meshes),          &
-              self%adv_unity_half_y(self%n_meshes),          &
-              self%adv_unity_half_z(self%n_meshes),          &
-              self%horizontal_cfl_max(self%n_meshes),        &
-              self%vertical_cfl_max(self%n_meshes),          &
-              self%total_cfl_max(self%n_meshes),             &
-              self%field_n(self%n_meshes) )
-
+    if (.not. allocated( self%mesh_ids ) ) then
+      allocate( self%mesh_ids(self%n_meshes),                  &
+                self%advecting_wind(self%n_meshes),            &
+                self%horizontal_advecting_wind(self%n_meshes), &
+                self%vertical_advecting_wind(self%n_meshes),   &
+                self%detj_at_w2_transport(self%n_meshes),      &
+                self%departure_points_x_w2(self%n_meshes),     &
+                self%departure_points_y_w2(self%n_meshes),     &
+                self%departure_points_z_w2(self%n_meshes),     &
+                self%adv_unity_x(self%n_meshes),               &
+                self%adv_unity_y(self%n_meshes),               &
+                self%adv_unity_z(self%n_meshes),               &
+                self%adv_unity_half_x(self%n_meshes),          &
+                self%adv_unity_half_y(self%n_meshes),          &
+                self%adv_unity_half_z(self%n_meshes),          &
+                self%horizontal_cfl_max(self%n_meshes),        &
+                self%vertical_cfl_max(self%n_meshes),          &
+                self%total_cfl_max(self%n_meshes),             &
+                self%field_n(self%n_meshes) )
+    end if
     ! Get mesh ID and element order
     self%mesh_ids(1) = primal_wind_n_rdef%get_mesh_id()
 
@@ -505,10 +503,11 @@ contains
     self%num_dry_steps = self%compute_num_dry_steps()
 
     ! Allocate arrays for dry fields
-    allocate( self%rho_d_n(self%n_meshes, self%num_dry_steps),       &
-              self%rho_d_np1(self%n_meshes, self%num_dry_steps),     &
-              self%flux(self%n_meshes, self%num_dry_steps),          &
-              self%dry_flux(self%n_meshes, self%num_dry_steps) )
+    if ( .not. allocated( self%rho_d_n ) )                             &
+      allocate( self%rho_d_n(self%n_meshes, self%num_dry_steps),       &
+                self%rho_d_np1(self%n_meshes, self%num_dry_steps),     &
+                self%flux(self%n_meshes, self%num_dry_steps),          &
+                self%dry_flux(self%n_meshes, self%num_dry_steps) )
 
     ! Initialise these fields
     ! TODO: #3008 can we avoid initialised unused fields?
@@ -538,7 +537,7 @@ contains
 
     nullify(mesh, local_mesh, w2_fs, w3_fs, tmp_mesh, w2h_fs, w2v_fs)
 
-  end function transport_runtime_constructor
+  end subroutine transport_runtime_initialiser
 
   !> Finalizer for the transport runtime
   !> @param [in,out] self The transport runtime object
@@ -570,77 +569,6 @@ contains
     if ( allocated( self%total_cfl_max ) )             deallocate( self%total_cfl_max )
 
   end subroutine destroy_transport_runtime
-
-  !> @brief Overload the default assign (=) to correctly copy fields
-  !> @param[out] dest    The destination transport_runtime object
-  !> @param[in]  source  The source transport_runtime object
-  subroutine transport_runtime_assign(dest, source)
-
-    implicit none
-    class(transport_runtime_type), intent(in)  :: source
-    class(transport_runtime_type), intent(out) :: dest
-    integer(kind=i_def)                        :: mesh_idx, i
-
-    ! Deep copy of the contents of the transport_runtime_type
-    dest%n_meshes = source%n_meshes
-    dest%local_mesh_id = source%local_mesh_id
-    dest%dry_step_ctr = source%dry_step_ctr
-    dest%tracer_step_ctr = source%tracer_step_ctr
-    dest%num_dry_steps = source%num_dry_steps
-
-    if (.not. allocated( dest%mesh_ids ) )                  allocate( dest%mesh_ids(dest%n_meshes) )
-    if (.not. allocated( dest%advecting_wind ) )            allocate( dest%advecting_wind(dest%n_meshes) )
-    if (.not. allocated( dest%horizontal_advecting_wind ) ) allocate( dest%horizontal_advecting_wind(dest%n_meshes) )
-    if (.not. allocated( dest%vertical_advecting_wind ) )   allocate( dest%vertical_advecting_wind(dest%n_meshes) )
-    if (.not. allocated( dest%detj_at_w2_transport ) )      allocate( dest%detj_at_w2_transport(dest%n_meshes) )
-    if (.not. allocated( dest%departure_points_y_w2 ) )     allocate( dest%departure_points_y_w2(dest%n_meshes) )
-    if (.not. allocated( dest%departure_points_x_w2 ) )     allocate( dest%departure_points_x_w2(dest%n_meshes) )
-    if (.not. allocated( dest%departure_points_z_w2 ) )     allocate( dest%departure_points_z_w2(dest%n_meshes) )
-    if (.not. allocated( dest%adv_unity_x ) )               allocate( dest%adv_unity_x(dest%n_meshes) )
-    if (.not. allocated( dest%adv_unity_y ) )               allocate( dest%adv_unity_y(dest%n_meshes) )
-    if (.not. allocated( dest%adv_unity_z ) )               allocate( dest%adv_unity_z(dest%n_meshes) )
-    if (.not. allocated( dest%adv_unity_half_x ) )          allocate( dest%adv_unity_half_x(dest%n_meshes) )
-    if (.not. allocated( dest%adv_unity_half_y ) )          allocate( dest%adv_unity_half_y(dest%n_meshes) )
-    if (.not. allocated( dest%adv_unity_half_z ) )          allocate( dest%adv_unity_half_z(dest%n_meshes) )
-    if (.not. allocated( dest%field_n ) )                   allocate( dest%field_n(dest%n_meshes) )
-    if (.not. allocated( dest%rho_d_n ) )                   allocate( dest%rho_d_n(dest%n_meshes, dest%num_dry_steps) )
-    if (.not. allocated( dest%rho_d_np1 ) )                 allocate( dest%rho_d_np1(dest%n_meshes, dest%num_dry_steps) )
-    if (.not. allocated( dest%flux ) )                      allocate( dest%flux(dest%n_meshes, dest%num_dry_steps) )
-    if (.not. allocated( dest%dry_flux ) )                  allocate( dest%dry_flux(dest%n_meshes, dest%num_dry_steps) )
-    if (.not. allocated( dest%horizontal_cfl_max ) )        allocate( dest%horizontal_cfl_max(dest%n_meshes) )
-    if (.not. allocated( dest%vertical_cfl_max ) )          allocate( dest%vertical_cfl_max(dest%n_meshes) )
-    if (.not. allocated( dest%total_cfl_max ) )             allocate( dest%total_cfl_max(dest%n_meshes) )
-
-    do mesh_idx = 1, source%n_meshes
-      call source%advecting_wind(mesh_idx)%copy_field(dest%advecting_wind(mesh_idx))
-      call source%horizontal_advecting_wind(mesh_idx)%copy_field(dest%horizontal_advecting_wind(mesh_idx))
-      call source%vertical_advecting_wind(mesh_idx)%copy_field(dest%vertical_advecting_wind(mesh_idx))
-      call source%detj_at_w2_transport(mesh_idx)%copy_field(dest%detj_at_w2_transport(mesh_idx))
-      call source%departure_points_x_w2(mesh_idx)%copy_field(dest%departure_points_x_w2(mesh_idx))
-      call source%departure_points_y_w2(mesh_idx)%copy_field(dest%departure_points_y_w2(mesh_idx))
-      call source%departure_points_z_w2(mesh_idx)%copy_field(dest%departure_points_z_w2(mesh_idx))
-      call source%adv_unity_x(mesh_idx)%copy_field(dest%adv_unity_x(mesh_idx))
-      call source%adv_unity_y(mesh_idx)%copy_field(dest%adv_unity_y(mesh_idx))
-      call source%adv_unity_z(mesh_idx)%copy_field(dest%adv_unity_z(mesh_idx))
-      call source%adv_unity_half_x(mesh_idx)%copy_field(dest%adv_unity_half_x(mesh_idx))
-      call source%adv_unity_half_y(mesh_idx)%copy_field(dest%adv_unity_half_y(mesh_idx))
-      call source%adv_unity_half_z(mesh_idx)%copy_field(dest%adv_unity_half_z(mesh_idx))
-      call source%field_n(mesh_idx)%copy_field(dest%field_n(mesh_idx))
-      do i = 1, source%num_dry_steps
-        call source%rho_d_n(mesh_idx,i)%copy_field(dest%rho_d_n(mesh_idx,i))
-        call source%rho_d_np1(mesh_idx,i)%copy_field(dest%rho_d_np1(mesh_idx,i))
-        call source%flux(mesh_idx,i)%copy_field(dest%flux(mesh_idx,i))
-        call source%dry_flux(mesh_idx,i)%copy_field(dest%dry_flux(mesh_idx,i))
-      end do
-    end do
-
-    dest%mesh_ids(:) = source%mesh_ids(:)
-    dest%horizontal_cfl_max(:) = source%horizontal_cfl_max(:)
-    dest%vertical_cfl_max(:)   = source%vertical_cfl_max(:)
-    dest%total_cfl_max(:)      = source%total_cfl_max(:)
-    dest%model_clock => source%model_clock
-
-  end subroutine transport_runtime_assign
 
   !> @brief Sets dry fields for use in conservative mixing ratio transport
   !> @pre Fields passed to this routine must be on the prime extrusion mesh

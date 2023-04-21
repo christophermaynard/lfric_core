@@ -15,12 +15,14 @@
 !!          transport runtimes
 module transport_runtime_collection_mod
 
-  use constants_mod,              only : i_def, imdi
+  use constants_mod,              only : i_def, l_def, imdi
   use local_mesh_mod,             only : local_mesh_type
   use log_mod,                    only : log_event, log_scratch_space,    &
                                          LOG_LEVEL_ERROR
   use mesh_mod,                   only : mesh_type
   use transport_runtime_alg_mod,  only : transport_runtime_type
+  use field_mod,                  only : field_type
+  use model_clock_mod,            only : model_clock_type
 
   implicit none
 
@@ -90,18 +92,54 @@ contains
   ! Set a runtime object
   !-----------------------------------------------------------------------------
   !> Function to set an instance of a transport_runtime type
-  !> @param[in] transport_runtime Transport runtime object to set
-  subroutine set_transport_runtime(transport_runtime)
+  !> @param[in] primal_wind_n_rdef    Wind field at start of current time step on the
+  !!                                  prime extrusion
+  !> @param[in] primal_wind_np1_rdef  Predictor of wind field at next time step on
+  !!                                  the prime extrusion
+  !> @param[in] model_clock           Time within the model
+  !> @param[in] outer                 Outer (advection) iteration number
+  !> @param[in] cheap_update          Logical flag for cheap transport update
+  !> @param[in] shifted_mesh          (Optional) Shifted mesh
+  subroutine set_transport_runtime(primal_wind_n_rdef,   &
+                                   primal_wind_np1_rdef, &
+                                   model_clock,          &
+                                   outer,                &
+                                   cheap_update,         &
+                                   shifted_mesh)
 
     implicit none
 
-    type(transport_runtime_type), intent(in) :: transport_runtime
-    integer(kind=i_def)                      :: local_mesh_id, idx
+    type(field_type),        target, intent(in) :: primal_wind_n_rdef
+    type(field_type),        target, intent(in) :: primal_wind_np1_rdef
+    class(model_clock_type), target, intent(in) :: model_clock
+    integer(kind=i_def),             intent(in) :: outer
+    logical(kind=l_def),             intent(in) :: cheap_update
 
-    local_mesh_id = transport_runtime%get_local_mesh_id()
+    type(mesh_type),  pointer, intent(in), optional :: shifted_mesh
+
+    integer(kind=i_def)            :: local_mesh_id, idx
+    type(mesh_type),       pointer :: mesh => null()
+    type(local_mesh_type), pointer :: local_mesh => null()
+
+    mesh => primal_wind_n_rdef%get_mesh()
+    local_mesh => mesh%get_local_mesh()
+    local_mesh_id = local_mesh%get_id()
     idx = idx_from_local_mesh_id(local_mesh_id)
 
-    transport_runtime_list(idx) = transport_runtime
+    if ( present( shifted_mesh ) ) then
+      call transport_runtime_list(idx)%initialise(primal_wind_n_rdef,   &
+                                                  primal_wind_np1_rdef, &
+                                                  model_clock,          &
+                                                  outer,                &
+                                                  cheap_update,         &
+                                                  shifted_mesh)
+    else
+      call transport_runtime_list(idx)%initialise(primal_wind_n_rdef,   &
+                                                  primal_wind_np1_rdef, &
+                                                  model_clock,          &
+                                                  outer,                &
+                                                  cheap_update )
+    end if
 
   end subroutine set_transport_runtime
 

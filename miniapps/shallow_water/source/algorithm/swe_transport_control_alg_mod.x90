@@ -196,7 +196,6 @@ contains
 
     ! Internal variables
     logical(kind=l_def) :: cheap_update_flag
-    type(transport_runtime_type) :: transport_runtime
     type(transport_runtime_type), pointer :: transport_runtime_get => null()
     type(transport_metadata_type), pointer :: transport_metadata => null()
 
@@ -249,8 +248,7 @@ contains
     prev_inc = advection_inc
 
     ! Create transport_runtime object (advecting wind etc)
-    transport_runtime = transport_runtime_type(wind_for_adv, wind_np1, model_clock, outer, cheap_update_flag)
-    call set_transport_runtime(transport_runtime)
+    call set_transport_runtime(wind_for_adv, wind_np1, model_clock, outer, cheap_update_flag)
 
     ! Initialise geopotential variables
     call geopot_np1%initialise(vector_space = geopot%get_function_space())
