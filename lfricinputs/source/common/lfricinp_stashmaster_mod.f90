@@ -475,8 +475,88 @@ INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_frac_irr          = 631
 ! New
 INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_qt                = 16207
 
+! Chemistry fields
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_o3                = 34001
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_no                = 34002
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_no3               = 34003
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_n2o5              = 34005
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_ho2no2            = 34006
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_hono2             = 34007
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_h2o2              = 34008
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_ch4               = 34009
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_co                = 34010
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_hcho              = 34011
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_meooh             = 34012
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_hono              = 34013
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_c2h6              = 34014
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_etooh             = 34015
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_mecho             = 34016
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_pan               = 34017
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_c3h8              = 34018
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_n_prooh           = 34019
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_i_prooh           = 34020
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_etcho             = 34021
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_me2co             = 34022
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_mecoch2ooh        = 34023
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_ppan              = 34024
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_meono2            = 34025
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_c5h8              = 34027
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_isooh             = 34028
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_ison              = 34029
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_macr              = 34030
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_macrooh           = 34031
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_mpan              = 34032
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_hacet             = 34033
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_mgly              = 34034
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_nald              = 34035
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_hcooh             = 34036
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_meco3h            = 34037
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_meco2h            = 34038
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_cl                = 34041
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_clo               = 34042
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_cl2o2             = 34043
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_oclo              = 34044
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_br                = 34045
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_brcl              = 34047
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_brono2            = 34048
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_n2o               = 34049
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_hocl              = 34051
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_hbr               = 34052
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_hobr              = 34053
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_clono2            = 34054
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_cfcl3             = 34055
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_cf2cl2            = 34056
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_mebr              = 34057
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_n                 = 34058
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_o3p               = 34059
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_h2                = 34070
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_msa               = 34074
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_nh3               = 34076
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_cs2               = 34077
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_csul              = 34078
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_h2s               = 34079
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_h                 = 34080
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_oh                = 34081
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_ho2               = 34082
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_meoo              = 34083
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_etoo              = 34084
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_meco3             = 34085
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_n_proo            = 34086
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_i_proo            = 34087
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_etco3             = 34088
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_mecoch2oo         = 34089
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_meoh              = 34090
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_so3               = 34094
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_lumped_n          = 34098
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_lumped_br         = 34099
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_lumped_cl         = 34100
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_passive_o3        = 34149
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_age_of_air        = 34150
 
-
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_hcl               = 34992
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_bro               = 34994
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_no2               = 34996
+INTEGER(KIND=int64), PUBLIC, PARAMETER :: stashcode_o1d               = 34997
 
 
 ! STASHmaster element codes

@@ -46,6 +46,18 @@
                                "lfric_mesh"         : {"file":"$CANNED_MESH_DIR/mesh_"~C_NUM~".nc", "name":"dynamics"},
                              },
 
+"protogal_chem_N96L70_"~C_NUM~"L70" : {
+                               "app"                : "um2lfric",
+                               "opt_config"         : "protogal_chem",
+                               "source_grid_res"    : "N96",
+                               "source_grid_levs"   : "70",
+                               "source_grid_type"   : "global",
+                               "target_grid_res"    : C_NUM,
+                               "target_grid_levs"   : "70",
+                               "target_grid_type"   : "global",
+                               "source_dump"        : "$UMDIR/standard_jobs/lfricinputs/inputs/ga7_chem_N48eL70.astart",
+                               "lfric_mesh"         : {"file":"$CANNED_MESH_DIR/mesh_"~C_NUM~".nc", "name":"dynamics"},
+                             },
 }) %}
 {% endfor %}
 
