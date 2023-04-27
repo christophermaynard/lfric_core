@@ -20,6 +20,7 @@ OPERATE_ON ?= lfric_atm                                  \
               gungho                                     \
               infrastructure                             \
               components/science                         \
+              components/driver                          \
               components/lfric-xios                      \
               components/lfric-da                        \
               components/coupler-oasis                   \
