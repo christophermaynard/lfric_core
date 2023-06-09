@@ -104,7 +104,8 @@ module swe_timestep_alg_mod
   public :: swe_timestep_alg_final
   public :: swe_timestep_alg_si
   public :: swe_timestep_alg_euler
-  public :: swe_timestep_alg_rk
+  public :: swe_timestep_alg_ssprk3
+  public :: swe_timestep_alg_rk4
 
 contains
 
@@ -651,12 +652,12 @@ contains
   !> @param[in,out] q           The potential vorticity field
   !> @param[in]     s_geopot    The surface geopotential field
   !>
-  subroutine swe_timestep_alg_rk( model_clock, &
-                                  wind,        &
-                                  geopot,      &
-                                  buoyancy,    &
-                                  q,           &
-                                  s_geopot )
+  subroutine swe_timestep_alg_ssprk3( model_clock, &
+                                      wind,        &
+                                      geopot,      &
+                                      buoyancy,    &
+                                      q,           &
+                                      s_geopot )
 
     implicit none
 
@@ -680,7 +681,7 @@ contains
     type( field_type ) :: wind_fe1, geopot_fe1, buoyancy_fe1, q_fe1
     type( field_type ) :: wind_fe2, geopot_fe2, buoyancy_fe2, q_fe2
 
-    if ( subroutine_timers ) call timer('swe_timestep_alg_rk')
+    if ( subroutine_timers ) call timer('swe_timestep_alg_ssprk3')
     !--- Do a single timestep --------------------------------------------------
 
     ! Initialise variables
@@ -767,8 +768,214 @@ contains
                  aX_plus_bY( buoyancy, onethird, buoyancy_n, twothird, buoyancy_fe2 ) )
     call swe_init_vorticity_alg(wind, geopot, q)
 
-    if ( subroutine_timers ) call timer('swe_timestep_alg_rk')
+    if ( subroutine_timers ) call timer('swe_timestep_alg_ssprk3')
 
-  end subroutine swe_timestep_alg_rk
+  end subroutine swe_timestep_alg_ssprk3
+
+!=============================================================================!
+  !> @brief   Shallow water model explicit RK4 timestepping algorithm.
+  !> @details An algorithm for timestepping the shallow water equations
+  !!          using a fourth order explicit Runge-Kutta method (RK4)
+  !!          and multiple calls to a forward Euler step.
+  !!          RK4 uses intermediate gradients to make the final step
+  !!          \f[ f0 = f(y^n) \f]
+  !!          \f[ f1 = f(y^n + 0.5*dt*f0) \f]
+  !!          \f[ f2 = f(y^n + 0.5*dt*f1) \f]
+  !!          \f[ f3 = f(y^n + dt*f2) \f]
+  !!          \f[ y^{n+1} = y^n + (dt/6)*(f0+2f1+2f2+f3) \f]
+  !!          This can be written in terms of forward Euler steps F() as
+  !!          \f[ y_1 = (1/2)*y^n + (1/2)*F(y^n) \f]
+  !!          \f[ y_2 = (3/4)*y_n - (1/4)*F(y^n) + (1/2)*F(y_1) \f]
+  !!          \f[ y_3 = (1/4)*y_n + (1/4)*F(y^n) - (1/2)*F(y_1) + F(y_2) \f]
+  !!          \f[ y^{n+1} = (3/8)*y^n + (1/24)*F(y^n) + (1/4)*F(y_1)
+  !!            + (1/6)*F(y_2) + (1/6)*F(y_3) \f]
+  !!
+  !> @param[in]     model_clock Time within the model
+  !> @param[in,out] wind        The wind field
+  !> @param[in,out] geopot      The geopotential field
+  !> @param[in,out] buoyancy    The buoyancy field
+  !> @param[in,out] q           The potential vorticity field
+  !> @param[in]     s_geopot    The surface geopotential field
+
+  subroutine swe_timestep_alg_rk4(  model_clock, &
+                                    wind,        &
+                                    geopot,      &
+                                    buoyancy,    &
+                                    q,           &
+                                    s_geopot )
+
+  implicit none
+
+  class(model_clock_type), intent(in) :: model_clock
+  ! Prognostic fields, potential vorticity, and surface geopotential
+  type( field_type ), intent( inout ) :: wind
+  type( field_type ), intent( inout ) :: geopot
+  type( field_type ), intent( inout ) :: buoyancy
+  type( field_type ), intent( inout ) :: q
+  type( field_type ), intent( in )    :: s_geopot
+
+  ! Variables at four different stages of RK algorithm
+  type( field_type ) :: wind_n, geopot_n, buoyancy_n, q_n
+  type( field_type ) :: wind_1, geopot_1, buoyancy_1, q_1
+  type( field_type ) :: wind_2, geopot_2, buoyancy_2, q_2
+  type( field_type ) :: wind_3, geopot_3, buoyancy_3, q_3
+
+  ! Variables after forward Euler steps
+  type( field_type ) :: wind_fen, geopot_fen, buoyancy_fen, q_fen
+  type( field_type ) :: wind_fe1, geopot_fe1, buoyancy_fe1, q_fe1
+  type( field_type ) :: wind_fe2, geopot_fe2, buoyancy_fe2, q_fe2
+  type( field_type ) :: wind_fe3, geopot_fe3, buoyancy_fe3, q_fe3
+
+  ! Useful constants:
+  real(kind=r_def), parameter :: one_sixth = 1.0_r_def/6.0_r_def
+  real(kind=r_def), parameter :: one_twenty_fourth = 1.0_r_def/24.0_r_def
+  real(kind=r_def), parameter :: three_eighths = 3.0_r_def/8.0_r_def
+
+  if ( subroutine_timers ) call timer('swe_timestep_alg_rk4')
+  !--- Do a single timestep --------------------------------------------------
+
+  ! Initialise all the variables
+  call wind_n%initialise( wind%get_function_space() )
+  call wind_1%initialise( wind%get_function_space() )
+  call wind_2%initialise( wind%get_function_space() )
+  call wind_3%initialise( wind%get_function_space() )
+  call wind_fen%initialise( wind%get_function_space() )
+  call wind_fe1%initialise( wind%get_function_space() )
+  call wind_fe2%initialise( wind%get_function_space() )
+  call wind_fe3%initialise( wind%get_function_space() )
+
+  call geopot_n%initialise( geopot%get_function_space() )
+  call geopot_1%initialise( geopot%get_function_space() )
+  call geopot_2%initialise( geopot%get_function_space() )
+  call geopot_3%initialise( geopot%get_function_space() )
+  call geopot_fen%initialise( geopot%get_function_space() )
+  call geopot_fe1%initialise( geopot%get_function_space() )
+  call geopot_fe2%initialise( geopot%get_function_space() )
+  call geopot_fe3%initialise( geopot%get_function_space() )
+
+  call buoyancy_n%initialise( buoyancy%get_function_space() )
+  call buoyancy_1%initialise( buoyancy%get_function_space() )
+  call buoyancy_2%initialise( buoyancy%get_function_space() )
+  call buoyancy_3%initialise( buoyancy%get_function_space() )
+  call buoyancy_fen%initialise( buoyancy%get_function_space() )
+  call buoyancy_fe1%initialise( buoyancy%get_function_space() )
+  call buoyancy_fe2%initialise( buoyancy%get_function_space() )
+  call buoyancy_fe3%initialise( buoyancy%get_function_space() )
+
+  call q_n%initialise( q%get_function_space() )
+  call q_1%initialise( q%get_function_space() )
+  call q_2%initialise( q%get_function_space() )
+  call q_3%initialise( q%get_function_space() )
+  call q_fen%initialise( q%get_function_space() )
+  call q_fe1%initialise( q%get_function_space() )
+  call q_fe2%initialise( q%get_function_space() )
+  call q_fe3%initialise( q%get_function_space() )
+
+  ! Save time level n and set up FE_n step variables
+  call invoke( setval_X(wind_n,wind),           &
+               setval_X(wind_fen,wind),         &
+               setval_X(geopot_n,geopot),       &
+               setval_X(geopot_fen,geopot),     &
+               setval_X(buoyancy_n,buoyancy),   &
+               setval_X(buoyancy_fen,buoyancy), &
+               setval_X(q_n,q),                 &
+               setval_X(q_fen,q))
+
+  ! Forward Euler call, F(y^n)
+  call swe_timestep_alg_euler( model_clock,  &
+                               wind_fen,     &
+                               geopot_fen,   &
+                               buoyancy_fen, &
+                               q_fen,        &
+                               s_geopot)
+
+  ! Compute the y1 variables:
+  call invoke( aX_plus_bY( wind_1, 0.5_r_def, wind_n, 0.5_r_def, wind_fen ),       &
+               aX_plus_bY( geopot_1, 0.5_r_def, geopot_n, 0.5_r_def, geopot_fen ), &
+               aX_plus_bY( buoyancy_1, 0.5_r_def, buoyancy_n, 0.5_r_def, buoyancy_fen ) )
+  call swe_init_vorticity_alg(wind_1, geopot_1, q_1)
+
+  ! Set up FE_1 step variables
+  call invoke( setval_X(wind_fe1,wind_1),         &
+               setval_X(geopot_fe1,geopot_1),     &
+               setval_X(buoyancy_fe1,buoyancy_1), &
+               setval_X(q_fe1,q_1))
+
+  ! Forward Euler call, F(y1)
+  call swe_timestep_alg_euler( model_clock,  &
+                               wind_fe1,     &
+                               geopot_fe1,   &
+                               buoyancy_fe1, &
+                               q_fe1,        &
+                               s_geopot)
+
+  ! Compute the y2 variables:
+  call invoke( aX_minus_bY( wind_2, 0.75_r_def, wind_n, 0.25_r_def, wind_fen ),             &
+               aX_minus_bY( geopot_2, 0.75_r_def, geopot_n, 0.25_r_def, geopot_fen ),       &
+               aX_minus_bY( buoyancy_2, 0.75_r_def, buoyancy_n, 0.25_r_def, buoyancy_fen ), &
+               inc_X_plus_bY( wind_2, 0.5_r_def, wind_fe1 ),                                &
+               inc_X_plus_bY( geopot_2, 0.5_r_def, geopot_fe1 ),                            &
+               inc_X_plus_bY( buoyancy_2, 0.5_r_def, buoyancy_fe1 ) )
+  call swe_init_vorticity_alg(wind_2, geopot_2, q_2)
+
+
+  ! Set up FE_2 step variables
+  call invoke( setval_X(wind_fe2,wind_2),         &
+               setval_X(geopot_fe2,geopot_2),     &
+               setval_X(buoyancy_fe2,buoyancy_2), &
+               setval_X(q_fe2,q_2))
+
+  ! Forward Euler call, F(y2)
+  call swe_timestep_alg_euler( model_clock,  &
+                               wind_fe2,     &
+                               geopot_fe2,   &
+                               buoyancy_fe2, &
+                               q_fe2,        &
+                               s_geopot)
+
+  ! Compute the y3 variables:
+  call invoke( aX_plus_bY( wind_3, 0.25_r_def, wind_n, 0.25_r_def, wind_fen ),             &
+               aX_plus_bY( geopot_3, 0.25_r_def, geopot_n, 0.25_r_def, geopot_fen ),       &
+               aX_plus_bY( buoyancy_3, 0.25_r_def, buoyancy_n, 0.25_r_def, buoyancy_fen ), &
+               inc_X_minus_bY( wind_3, 0.5_r_def, wind_fe1 ),                              &
+               inc_X_minus_bY( geopot_3, 0.5_r_def, geopot_fe1 ),                          &
+               inc_X_minus_bY( buoyancy_3, 0.5_r_def, buoyancy_fe1 ),                      &
+               inc_X_plus_bY( wind_3, 1.0_r_def, wind_fe2 ),                               &
+               inc_X_plus_bY( geopot_3, 1.0_r_def, geopot_fe2 ),                           &
+               inc_X_plus_bY( buoyancy_3, 1.0_r_def, buoyancy_fe2 ) )
+  call swe_init_vorticity_alg(wind_3, geopot_3, q_3)
+
+  ! Set up FE_3 step variables
+  call invoke( setval_X(wind_fe3,wind_3),         &
+               setval_X(geopot_fe3,geopot_3),     &
+               setval_X(buoyancy_fe3,buoyancy_3), &
+               setval_X(q_fe3,q_3))
+
+  ! Forward Euler call, F(y3)
+  call swe_timestep_alg_euler( model_clock,  &
+                               wind_fe3,     &
+                               geopot_fe3,   &
+                               buoyancy_fe3, &
+                               q_fe3,        &
+                               s_geopot)
+
+  ! Compute the y^{n+1} variables:
+  call invoke( aX_plus_bY( wind, three_eighths, wind_n, one_twenty_fourth,  wind_fen ),            &
+               aX_plus_bY( geopot, three_eighths, geopot_n, one_twenty_fourth, geopot_fen ),       &
+               aX_plus_bY( buoyancy, three_eighths, buoyancy_n, one_twenty_fourth, buoyancy_fen ), &
+               inc_X_plus_bY( wind, 0.25_r_def, wind_fe1 ),                                        &
+               inc_X_plus_bY( geopot, 0.25_r_def, geopot_fe1 ),                                    &
+               inc_X_plus_bY( buoyancy, 0.25_r_def, buoyancy_fe1 ),                                &
+               inc_X_plus_bY( wind, one_sixth, wind_fe2 ),                                         &
+               inc_X_plus_bY( geopot, one_sixth, geopot_fe2 ),                                     &
+               inc_X_plus_bY( buoyancy, one_sixth, buoyancy_fe2 ),                                 &
+               inc_X_plus_bY( wind, one_sixth, wind_fe3 ),                                         &
+               inc_X_plus_bY( geopot, one_sixth, geopot_fe3 ),                                     &
+               inc_X_plus_bY( buoyancy, one_sixth, buoyancy_fe3 ) )
+  call swe_init_vorticity_alg(wind, geopot, q)
+
+  if ( subroutine_timers ) call timer('swe_timestep_alg_rk4')
+
+  end subroutine swe_timestep_alg_rk4
 
 end module swe_timestep_alg_mod

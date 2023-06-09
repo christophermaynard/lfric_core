@@ -106,7 +106,8 @@ thermal_swe     = .false.
 momentum_form   = 'vector_invariant'
                  ! Choose between 'vector_invariant' or 'momentum'
 time_scheme='semi_implicit'
-                 ! Choose between 'semi_implicit' (standard SI) or 'explicit' (RK-SSP3)
+                 ! Choose between 'semi_implicit' (standard SI), 'ssprk3'
+		 ! (explicit RK-SSP3), or 'rk4' (Explicit RK4)
                  ! Note that for 'explicit you must change runge_kutta_method='forward_euler'
                  ! in the transport namelist.
 swe_test        = 'swe_gaussian_hill'

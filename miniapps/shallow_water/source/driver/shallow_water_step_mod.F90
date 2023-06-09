@@ -20,13 +20,15 @@ module shallow_water_step_mod
                                             LOG_LEVEL_INFO,    &
                                             LOG_LEVEL_ERROR
   use model_clock_mod,                only: model_clock_type
-  use swe_timestep_alg_mod,           only: swe_timestep_alg_si, &
-                                            swe_timestep_alg_rk
+  use swe_timestep_alg_mod,           only: swe_timestep_alg_si,     &
+                                            swe_timestep_alg_ssprk3, &
+                                            swe_timestep_alg_rk4
   use shallow_water_model_data_mod,   only: model_data_type
   use shallow_water_settings_config_mod, &
                                       only: time_scheme,               &
                                             time_scheme_semi_implicit, &
-                                            time_scheme_explicit
+                                            time_scheme_ssprk3,        &
+                                            time_scheme_rk4
 
   implicit none
 
@@ -74,10 +76,14 @@ module shallow_water_step_mod
       call swe_timestep_alg_si( model_clock, &
                                 wind,        &
                                 geopot, buoyancy, q, model_data%s_geopot )
-    case ( time_scheme_explicit )
-      call swe_timestep_alg_rk( model_clock, &
-                                wind,         &
-                                geopot, buoyancy, q, model_data%s_geopot )
+    case ( time_scheme_ssprk3 )
+      call swe_timestep_alg_ssprk3( model_clock,  &
+                                    wind,         &
+                                    geopot, buoyancy, q, model_data%s_geopot )
+    case ( time_scheme_rk4 )
+      call swe_timestep_alg_rk4( model_clock,  &
+                                 wind,         &
+                                 geopot, buoyancy, q, model_data%s_geopot )
     case default
       call log_event("No valid time stepping scheme selected", LOG_LEVEL_ERROR)
 
