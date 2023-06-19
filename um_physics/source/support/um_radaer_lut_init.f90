@@ -30,8 +30,10 @@ module um_radaer_lut_init_mod
                                         n_sw_band,           &
                                         n_lw_band
   use ukca_radaer_lut,           only : ip_ukca_lut_accum, ip_ukca_lut_coarse, &
-                                        ip_ukca_lut_accnarrow, ip_ukca_lut_sw, &
-                                        ip_ukca_lut_lw
+                                        ip_ukca_lut_accnarrow,                 &
+                                        ip_ukca_lut_cornarrow,                 &
+                                        ip_ukca_lut_supercoarse,               &
+                                        ip_ukca_lut_sw, ip_ukca_lut_lw
   use ukca_radaer_read_precalc_mod, &
                                  only : ukca_radaer_read_precalc
   use um_read_radaer_lut_mod,    only : um_read_radaer_lut
@@ -49,7 +51,16 @@ contains
 
   subroutine um_radaer_lut_init()
 
+    use filenamelength_mod,           only:                                    &
+        filenamelength
+
     implicit none
+
+    ! Local variables
+
+    character(len=filenamelength) :: dummy_file
+
+    dummy_file = 'unset'
 
     if ( aerosol == aerosol_um ) then
 
@@ -78,6 +89,18 @@ contains
 
             call um_read_radaer_lut ( crsw_file, &
                                       ip_ukca_lut_coarse, ip_ukca_lut_sw )
+
+            call um_read_radaer_lut ( dummy_file, &
+                                      ip_ukca_lut_cornarrow, ip_ukca_lut_lw )
+
+            call um_read_radaer_lut ( dummy_file, &
+                                      ip_ukca_lut_cornarrow, ip_ukca_lut_sw )
+
+            call um_read_radaer_lut ( dummy_file, &
+                                      ip_ukca_lut_supercoarse, ip_ukca_lut_lw )
+
+            call um_read_radaer_lut ( dummy_file, &
+                                      ip_ukca_lut_supercoarse, ip_ukca_lut_sw )
 
             call ukca_radaer_read_precalc( prec_file,           &
                                            sw_wavelength_short, &
