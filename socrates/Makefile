@@ -69,7 +69,7 @@ document-api: api-documentation
 # Unit tests
 #
 unit-tests/%: export ADDITIONAL_EXTRACTION = $(ROOT_DIR)/infrastructure/source \
-											 $(ROOT_DIR)/gungho/unit-test/support
+                                             $(ROOT_DIR)/components/science/unit-test/support
 unit-tests/%: export BIN_DIR ?= $(PROJECT_DIR)/test
 unit-tests/%: export FFLAGS += -D UNIT_TEST
 unit-tests/%: export META_FILE_DIR = rose-meta/socrates-radiation/HEAD

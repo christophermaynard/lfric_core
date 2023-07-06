@@ -163,13 +163,13 @@ build: ALWAYS
 ##############################################################################
 # Unit tests
 #
-unit-tests/%: export ADDITIONAL_EXTRACTION                  \
-                  = $(ROOT_DIR)/infrastructure/source       \
-                    $(ROOT_DIR)/components/driver/source    \
-                    $(ROOT_DIR)/components/science/source   \
-                    $(ROOT_DIR)/components/inventory/source \
-                    $(ROOT_DIR)/gungho/source               \
-                    $(ROOT_DIR)/gungho/unit-test/support    \
+unit-tests/%: export ADDITIONAL_EXTRACTION                           \
+                  = $(ROOT_DIR)/infrastructure/source                \
+                    $(ROOT_DIR)/components/driver/source             \
+                    $(ROOT_DIR)/components/science/source            \
+                    $(ROOT_DIR)/components/inventory/source          \
+                    $(ROOT_DIR)/gungho/source                        \
+                    $(ROOT_DIR)/components/science/unit-test/support \
                     $(ROOT_DIR)/components/lfric-xios/source
 unit-tests/%: export BIN_DIR ?= $(PROJECT_DIR)/test
 unit-tests/%: export META_FILE_DIR = rose-meta/lfric-gravity_wave/HEAD
