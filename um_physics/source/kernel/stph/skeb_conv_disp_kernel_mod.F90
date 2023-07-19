@@ -120,7 +120,7 @@
     do k=skeb_level_bottom, skeb_level_top
 
       cdisp(map_w3(1) + k)=ABS(diff_flux(map_wth(1) + k) - diff_flux(map_wth(1) + k-1) ) *cape_kk &
-                          /(rdz_w3(map_w3(1) + k - 1) * gravity * rho(map_w3(1) + k) )
+                          *rdz_w3(map_w3(1) + k - 1) /( gravity * rho(map_w3(1) + k) )
     end do
 
     end subroutine skeb_conv_disp_code

@@ -107,8 +107,12 @@ contains
     do cell = 1,9
       diff_flux(map_wth(1, cell)) = 0.0_r_def
       do k = 0,2
-        diff_flux(map_wth(1, cell) + k + 1 ) = real(k+1, r_def)  ! = 0,1,2,3
-        rdz_w3(map_w3(1, cell) + k ) = (k+1)**2* 10_r_def  ! = 10, 40, 90
+        ! Set some arbitrarily chosen fluxes: 1,2,3
+        ! (lowest level flux remains 0)
+        diff_flux(map_wth(1, cell) + k + 1 ) = real(k+1, r_def)
+        ! Set 1/dz: 1/10, 1/40, 1/90
+        rdz_w3(map_w3(1, cell) + k ) = 1./((k+1)**2 * 10_r_def)
+        ! Set density to 1
         rho(map_w3(1, cell) + k ) = 1.0_r_def
       end do
     end do
