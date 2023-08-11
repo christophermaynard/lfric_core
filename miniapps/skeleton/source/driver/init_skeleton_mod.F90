@@ -12,6 +12,8 @@
 module init_skeleton_mod
 
   use constants_mod,                  only : i_def, r_def
+  use driver_modeldb_mod,             only : modeldb_type
+  use field_collection_mod,           only : field_collection_type
   use field_mod,                      only : field_type
   use field_parent_mod,               only : write_interface
   use finite_element_config_mod,      only : element_order
@@ -30,17 +32,23 @@ module init_skeleton_mod
 
   contains
 
-  subroutine init_skeleton( mesh, chi, panel_id, dt, field_1)
+  !> @details Initialises everything needed to run the skeleton miniapp
+  !> @param[in]     mesh Representation of the mesh the code will run on
+  !> @param[in,out] chi The co-ordinate field
+  !> @param[in,out] panel_id 2d field giving the id for cubed sphere panels
+  !> @param[in,out] modeldb The structure that holds model state
+  subroutine init_skeleton( mesh, chi, panel_id, modeldb)
 
     implicit none
 
     type(mesh_type), intent(in), pointer     :: mesh
-    real(r_def),    intent(in)               :: dt
-    ! Prognostic fields
-    type( field_type ), intent(inout)        :: field_1
     ! Coordinate field
     type( field_type ), intent(inout)        :: chi(:)
     type( field_type ), intent(inout)        :: panel_id
+    type(modeldb_type), intent(inout)        :: modeldb
+
+    type( field_type )                     :: field_1
+    type( field_collection_type ), pointer :: depository
 
     procedure(write_interface), pointer :: tmp_ptr
 
@@ -49,7 +57,8 @@ module init_skeleton_mod
     ! Create prognostic fields
     ! Creates a field in the W3 function space (fully discontinuous field)
     call field_1%initialise( vector_space = &
-                      function_space_collection%get_fs(mesh, element_order, W3) )
+                    function_space_collection%get_fs(mesh, element_order, W3), &
+                             name="field_1")
 
     ! Set up field with an IO behaviour (XIOS only at present)
     if (write_diag .and. use_xios_io) then
@@ -57,6 +66,10 @@ module init_skeleton_mod
        call field_1%set_write_behaviour(tmp_ptr)
 
     end if
+
+    ! Add field to modeldb
+    depository => modeldb%model_data%get_field_collection("depository")
+    call depository%add_field(field_1)
 
     ! Create skeleton runtime constants. This creates various things
     ! needed by the fem algorithms such as mass matrix operators, mass
