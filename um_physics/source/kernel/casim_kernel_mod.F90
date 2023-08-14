@@ -268,8 +268,8 @@ subroutine casim_code( nlayers,                     &
          accum_dust_number, act_sol_number_casim,                              &
          act_insol_number_casim, aitken_sol_bk, accum_sol_bk,                  &
          coarse_sol_bk, pii_casim, p_casim,                                    &
-         rho_casim, w_casim, tke_casim, height_rho,                            &
-         height, dz_casim,                                                     &
+         rho_casim, w_casim, tke_casim,                                        &
+         dz_casim,                                                             &
          cfliq_casim, cfice_casim, cfsnow_casim,                               &
          cfrain_casim, cfgr_casim,                                             &
          dqv_casim, dqc_casim,  dqr_casim, dnc_casim,                          &
@@ -393,8 +393,6 @@ subroutine casim_code( nlayers,                     &
       rho_casim(k,1,1) = rhodz_dry(1,1,k) / dz_casim(k,1,1)
       w_casim(k,1,1) = w_phys(map_wth(1) + k)
       tke_casim(k,1,1) = 0.1_wp
-      height_rho(k,1,1) = 0.0_wp
-      height(k,1,1) =  0.0_wp
       cfliq_casim(k,1,1) = cfl_wth(map_wth(1) + k)
       cfsnow_casim(k,1,1) = cff_wth(map_wth(1) + k)
       cfice_casim(k,1,1) = cfsnow_casim(k,1,1)
@@ -472,8 +470,8 @@ subroutine casim_code( nlayers,                     &
                             act_insol_number_casim, aitken_sol_bk,            &
                             accum_sol_bk,                                     &
                             coarse_sol_bk, pii_casim, p_casim,                &
-                            rho_casim, w_casim, tke_casim, height_rho,        &
-                            height, dz_casim,                                 &
+                            rho_casim, w_casim, tke_casim,                    &
+                            dz_casim,                                         &
                             cfliq_casim, cfice_casim, cfsnow_casim,           &
                             cfrain_casim, cfgr_casim,                         &
     !!                input variables above  || in/out variables below

@@ -15,7 +15,7 @@
 # dependent changes should be updated to the revision at which those
 # changes were committed to the project's trunk
 
-export casim_rev=um13.3
+export casim_rev=10515
 export casim_sources=
 #******************************************************************************
 # Please ensure that JULES_SOURCE_VN in the Rivers build
@@ -30,7 +30,7 @@ export socrates_rev=um13.3
 export socrates_sources=
 export ukca_rev=um13.3
 export ukca_sources=
-export um_rev=vn13.3
+export um_rev=119527
 export um_sources=
 
 #### Do not edit the definitions below this line without
