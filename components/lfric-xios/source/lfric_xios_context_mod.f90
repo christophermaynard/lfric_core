@@ -230,6 +230,9 @@ contains
           loop => loop%next
         end do
       end if
+    class default
+      call log_event( "Can not advance a non lfric xios type context.", &
+                      log_level_error )
     end select
 
     nullify(loop)

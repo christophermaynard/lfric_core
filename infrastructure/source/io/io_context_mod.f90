@@ -8,10 +8,7 @@
 module io_context_mod
 
   use clock_mod,       only : clock_type
-  use model_clock_mod, only : model_clock_type
-  use constants_mod,   only : i_native, r_second
   use event_mod,       only : event_actor_type
-  use field_mod,       only : field_type
   use linked_list_mod, only : linked_list_type
 
   implicit none
@@ -24,7 +21,7 @@ module io_context_mod
     private
   contains
     private
-    procedure(get_filelist_if),    public, deferred :: get_filelist
+    procedure(get_filelist_if), public, deferred :: get_filelist
     procedure(set_current_if) , public, deferred :: set_current
   end type io_context_type
 
