@@ -12,13 +12,15 @@
 {%- set mesh_compiler = "intel" %}
 {%- set MAXRUNAHEAD     = 1 %}
 
-{%- set groups = {'developer': ['check_compilers("fast-debug", publish=True)',
-                                'api_documentation_graph(publish=True)',
-                                'uml_documentation_graph(publish=True)',
+{%- set groups = {'developer': ['check_compilers("fast-debug", publish=False)',
+                                'api_documentation_graph(publish=False)',
+                                'uml_documentation_graph(publish=False)',
                                 'check_style_graph()',
                                 'check_globals_graph()',
                                 'build_system'],
                   'nightly':   ['check_compilers("full-debug", publish=True)',
+                                'api_documentation_graph(publish=True)',
+                                'uml_documentation_graph(publish=True)',
                                 'build_system',
                                 'publish_commit']} %}
 

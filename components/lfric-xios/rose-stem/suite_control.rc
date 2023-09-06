@@ -15,12 +15,14 @@
 {%- set mesh_compiler = "intel" %}
 {%- set MAXRUNAHEAD     = 1 %}
 
-{%- set groups = {'developer': ['api_documentation_graph(publish=True)',
-                                'uml_documentation_graph(publish=True)',
+{%- set groups = {'developer': ['api_documentation_graph(publish=False)',
+                                'uml_documentation_graph(publish=False)',
                                 'check_style_graph()',
                                 'check_globals_graph()',
                                 'check_unit_tests()'],
-                  'nightly'  : ['null_task_graph()']
+                  'nightly'  : ['api_documentation_graph(publish=True)',
+                                'uml_documentation_graph(publish=True)',
+                                'publish_commit']
                  }
 %}
 

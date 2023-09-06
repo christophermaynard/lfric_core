@@ -15,12 +15,13 @@
 {%- set mesh_compiler = "intel" %}
 {%- set MAXRUNAHEAD     = 1 %}
 
-{%- set groups = {'developer': ['api_documentation_graph(publish=True)',
+{%- set groups = {'developer': ['api_documentation_graph(publish=False)',
                                 'check_style_graph()',
                                 'check_globals_graph()',
                                 'unit_tests_graph("intel", "64")',
                                 'unit_tests_graph("gnu", "64")'],
-                  'nightly'  : ['null_task_graph()']
+                  'nightly'  : ['api_documentation_graph(publish=True)',
+                                'publish_commit']
                  }
 %}
 
