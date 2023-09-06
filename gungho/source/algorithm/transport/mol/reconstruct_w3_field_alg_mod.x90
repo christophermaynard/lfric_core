@@ -522,7 +522,9 @@ contains
     ndata_h => get_flux_ndata_h(mesh_id)
     flux_coeffs => get_flux_coeffs(mesh_id)
 
-    if ( extended_mesh ) then
+    if ( extended_mesh .and.                                                        &
+         (transport_metadata%get_horizontal_monotone() == horizontal_monotone_koren &
+          .or. oned_reconstruction) ) then
       call remap_on_extended_mesh_alg(remap_field, field_old)
       field_ptr => remap_field
     else

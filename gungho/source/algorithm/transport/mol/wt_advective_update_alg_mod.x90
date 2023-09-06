@@ -460,7 +460,9 @@ contains
     multidata_fs => &
       function_space_collection%get_fs( mesh, element_order, Wtheta, 4 )
     call h_reconstruction%initialise( multidata_fs, ndata_first=.false. )
-    if ( extended_mesh ) then
+    if ( extended_mesh .and.                                                        &
+         (transport_metadata%get_horizontal_monotone() == horizontal_monotone_koren &
+          .or. oned_reconstruction) ) then
       call remap_on_extended_mesh_alg(remap_field, field)
       field_ptr => remap_field
     else
