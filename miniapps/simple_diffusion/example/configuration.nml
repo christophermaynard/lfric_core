@@ -24,7 +24,7 @@ coord_system='alphabetaz'
 
 &io
   use_xios_io           = .true.
-  write_diag            = .false.
+  write_diag            = .true.
   diagnostic_frequency  = 1
   subroutine_timers     = .false.
   timer_output_path     = 'timer.txt'
@@ -42,7 +42,7 @@ coord_system='alphabetaz'
 &time
   calendar = 'timestep'
   timestep_start = '1'
-  timestep_end = '10'
+  timestep_end = '1000'
   calendar_type='gregorian'
   calendar_start='2016-01-01 15:00:00'
   calendar_origin='2016-01-01 15:00:00'

@@ -7,4 +7,4 @@
 # This file is for any project specific build settings to be applied
 # via the Makefile.
 
-$(info Mangux miniapp project specials)
+$(info simple_diffusion miniapp project specials)

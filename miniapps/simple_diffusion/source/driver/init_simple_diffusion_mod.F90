@@ -46,7 +46,7 @@ module init_simple_diffusion_mod
     type( field_type ), intent(inout)        :: chi(:)
     type( field_type ), intent(inout)        :: panel_id
     type(modeldb_type), intent(inout)        :: modeldb
-    type( field_type )                       :: field_1
+    type( field_type )                       :: diffusion_field
     type( field_collection_type ), pointer   :: depository
     procedure(write_interface), pointer      :: tmp_ptr
     real(kind=r_def), parameter              :: min_val = 280.0_r_def
@@ -55,23 +55,23 @@ module init_simple_diffusion_mod
     call log_event( 'simple_diffusion: Initialising miniapp ...', LOG_LEVEL_TRACE )
     ! Create prognostic fields
     ! Creates a field in the Wtheta function space
-    call field_1%initialise( vector_space = &
+    call diffusion_field%initialise( vector_space = &
                     function_space_collection%get_fs(mesh, element_order, Wtheta), &
-                             name="field_1")
+                             name="diffusion_field")
 
     ! Set up field with an IO behaviour (XIOS only at present)
     if (write_diag .and. use_xios_io) then
        tmp_ptr => write_field_face
-       call field_1%set_write_behaviour(tmp_ptr)
+       call diffusion_field%set_write_behaviour(tmp_ptr)
     end if
 
     ! Add field to modeldb
     depository => modeldb%fields%get_field_collection("depository")
 
     ! Initialising field
-    call assign_field_random_range( field_1, min_val, max_val )
+    call assign_field_random_range( diffusion_field, min_val, max_val )
 
-    call depository%add_field(field_1)
+    call depository%add_field(diffusion_field)
 
     ! Create simple_diffusion runtime constants. This creates various things
     ! needed by the fem algorithms such as mass matrix operators, mass

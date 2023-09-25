@@ -33,13 +33,10 @@
    <field_definition prec="8" >
 
      <!-- Main diagnostic group -->
-     <field_group id="diagnostic_fields" freq_op="1ts" enabled=".TRUE." operation="once" >
-       <field id="simple_diffusion_field" name="simple_diffusion_field" long_name="simple_diffusion_field" unit="1" grid_ref="half_level_face_grid" />
+     <field_group id="diagnostic_fields" freq_op="1ts" enabled=".TRUE." operation="instant" >
+       <field id="diffusion_field" name="diffusion_field" long_name="diffusion_field" unit="1" grid_ref="full_level_face_grid" />
      </field_group>
-     <!-- Initial conditions group -->
-     <field_group id="initial_fields" freq_op="1ts" enabled=".TRUE." operation="once" >
-       <field id="init_simple_diffusion_field" name="simple_diffusion_field" long_name="simple_diffusion_field" unit="1" grid_ref="half_level_face_grid" />
-     </field_group>
+
 
    </field_definition>
 
@@ -48,8 +45,8 @@
       par_access="collective"
       time_counter="none">
 
-     <file id="lfric_diag" name="simple_diffusion_diag" output_freq="1ts" convention="UGRID" enabled=".TRUE.">
-       <field field_ref="simple_diffusion_field"/>
+     <file id="lfric_diag" name="diffusion_diag" output_freq="1ts" convention="UGRID" enabled=".TRUE.">
+        <field_group group_ref="diagnostic_fields"/>
      </file>
 
     </file_definition>

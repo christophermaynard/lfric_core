@@ -99,14 +99,20 @@ contains
     character(*),       intent(in)    :: program_name
     type(modeldb_type), intent(inout) :: modeldb
     type( field_collection_type ), pointer :: depository
-    type( field_type ),            pointer :: field_1
+    type( field_type ),            pointer :: diffusion_field
 
     depository => modeldb%fields%get_field_collection("depository")
-    call depository%get_field("field_1", field_1)
+    call depository%get_field("diffusion_field", diffusion_field)
 
     ! Call an algorithm
     call log_event(program_name//": Calculating diffusion", LOG_LEVEL_INFO)
-    call simple_diffusion_alg(field_1)
+    call simple_diffusion_alg(diffusion_field)
+
+    if (write_diag ) then
+        ! Write out output file
+        call log_event(program_name//": Writing diagnostic output", LOG_LEVEL_INFO)
+        call diffusion_field%write_field('diffusion_field')
+    end if
 
   end subroutine step
 
@@ -121,16 +127,16 @@ contains
     character(*),       intent(in)    :: program_name
     type(modeldb_type), intent(inout) :: modeldb
     type( field_collection_type ), pointer :: depository
-    type( field_type ),            pointer :: field_1
+    type( field_type ),            pointer :: diffusion_field
 
     depository => modeldb%fields%get_field_collection("depository")
-    call depository%get_field("field_1", field_1)
+    call depository%get_field("diffusion_field", diffusion_field)
 
     !--------------------------------------------------------------------------
     ! Model finalise
     !--------------------------------------------------------------------------
     ! Write checksums to file
-    call checksum_alg(program_name, field_1, 'simple_diffusion_field_1')
+    call checksum_alg(program_name, diffusion_field, 'simple_diffusion_field_1')
     call log_event( program_name//': Miniapp completed', LOG_LEVEL_TRACE )
 
     !-------------------------------------------------------------------------

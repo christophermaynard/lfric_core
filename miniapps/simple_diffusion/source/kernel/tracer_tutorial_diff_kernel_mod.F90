@@ -126,6 +126,7 @@ subroutine tracer_tutorial_diff_code( nlayers,                              &
     return
   end if
 
+
   ! Compute horizontal grid spacing - average of cell face values
   ! N.B. not accounting for difference between w3 and wtheta heights
   do k = 1, nlayers - 1
@@ -145,6 +146,7 @@ subroutine tracer_tutorial_diff_code( nlayers,                              &
             theta_n(map_wt_stencil(1,5) + k) ) * idy2(k)
     theta_inc(map_wt(1) + k) = visc_h(map_wt(1) + k) * (d2dx + d2dy)
   end do
+
 
   k = nlayers
   theta_inc(map_wt(1) + k) = 0.0_r_def
