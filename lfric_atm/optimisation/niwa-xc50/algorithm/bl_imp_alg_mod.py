@@ -28,7 +28,7 @@ def trans(psy):
     # Loop over all of the Invokes in the PSy object
     for invoke in psy.invokes.invoke_list:
 
-        print("Transforming invoke '{0}' ...".format(invoke.name))
+        print(f"Transforming invoke '{invoke.name}' ...")
         schedule = invoke.schedule
 
         # Make setval_c compute redundantly to the level 1 halo if it
@@ -37,8 +37,8 @@ def trans(psy):
             if loop.iteration_space == "dof":
                 if len(loop.kernels()) != 1:
                     raise Exception(
-                        "Expecting loop to contain 1 call but found '{0}'".
-                        format(len(loop.kernels())))
+                        f"Expecting loop to contain 1 call but found "
+                        f"'{len(loop.kernels())}'")
                 if loop.kernels()[0].name in ["setval_c"]:
                     setval_count += 1
                     rtrans.apply(loop, options={"depth": 1})
@@ -55,7 +55,7 @@ def trans(psy):
 # loops for this algorithm
 
         # Take a look at what we've done
-        print("Found {0} setval calls".format(setval_count))
-        schedule.view()
+        print(f"Found {setval_count} setval calls")
+        print(schedule.view())
 
     return psy
