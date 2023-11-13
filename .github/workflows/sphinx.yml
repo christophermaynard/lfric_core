@@ -20,6 +20,8 @@ jobs:
     steps:
     - id: extract
       uses: actions/checkout@v4
+      with:
+        ref: main
     - id: setup_environment
       uses: actions/setup-python@v4
       with:
