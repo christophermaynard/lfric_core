@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  pages: write
 
 jobs:
   pages:
@@ -17,6 +18,8 @@ jobs:
       pages: write
       id-token: write
     steps:
+    - id: extract
+      uses: actions/checkout@v4
     - id: setup_environment
       uses: actions/setup-python@v4
       with:
@@ -25,8 +28,6 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         python3 -m pip install sphinx
-    - id: extract
-      uses: actions/checkout@v4
     - id: sphinx
       run: |
         cd documentation
