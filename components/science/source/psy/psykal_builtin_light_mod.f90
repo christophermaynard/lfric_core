@@ -24,7 +24,7 @@ contains
     type(field_proxy_type) :: f_p(3), x_p(3)
 
     integer :: i, df, undf
-    real(kind=r_def) :: vector_in(3), vector_out(3), xyz(3)
+    real(kind=r_def) :: vector_out(3)
 
     do i = 1,3
       f_p(i) = field(i)%get_proxy()
@@ -33,14 +33,21 @@ contains
 
     undf = f_p(1)%vspace%get_last_dof_annexed()
 
+!Please see PSyclone issues #1351 regarding this implementation
+!$omp parallel default(none)                                                   &
+!$omp private(df,vector_out)                                                   &
+!$omp shared(undf,f_p,x_p)
+!$omp do schedule(static)
     do df = 1, undf
-      vector_in(:)  = (/ f_p(1)%data(df), f_p(2)%data(df), f_p(3)%data(df) /)
-      xyz(:)        = (/ x_p(1)%data(df), x_p(2)%data(df), x_p(3)%data(df) /)
-      vector_out(:) = cart2sphere_vector(xyz, vector_in)
+      vector_out(:) = cart2sphere_vector(                                      &
+                      (/ x_p(1)%data(df), x_p(2)%data(df), x_p(3)%data(df) /), &
+                      (/ f_p(1)%data(df), f_p(2)%data(df), f_p(3)%data(df) /))
       f_p(1)%data(df) = vector_out(1)
       f_p(2)%data(df) = vector_out(2)
       f_p(3)%data(df) = vector_out(3)
     end do
+!$OMP end do
+!$OMP end parallel
 
     call f_p(1)%set_dirty()
     call f_p(2)%set_dirty()
