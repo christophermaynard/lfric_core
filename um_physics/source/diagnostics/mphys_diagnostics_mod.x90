@@ -88,7 +88,7 @@ contains
                                     superc_liq, superc_rain,                  &
                                     ls_rain, ls_snow, ls_graup, lsca_2d,      &
                                     ls_rain_3d, ls_snow_3d, autoconv,         &
-                                    accretion, rim_cry, rim_agg,              &
+                                    accretion, rim_cry, rim_agg, tnuc,        &
                                     sfwater, sfrain, sfsnow,                  &
                                     refl_tot, refl_1km )
 
@@ -117,6 +117,7 @@ contains
                                         accretion,                            &
                                         rim_cry,                              &
                                         rim_agg,                              &
+                                        tnuc,                                 &
                                         sfwater,                              &
                                         sfrain,                               &
                                         sfsnow,                               &
@@ -190,6 +191,8 @@ contains
     call rim_cry%write_field('microphysics__rim_cry')
 
     call rim_agg%write_field('microphysics__rim_agg')
+
+    call tnuc%write_field('microphysics__tnuc')
 
     if ( subroutine_timers ) call timer ("mphys_diagnostics")
 

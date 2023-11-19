@@ -24,7 +24,7 @@ module bl_exp_kernel_mod
   use cloud_config_mod,       only : rh_crit_opt, rh_crit_opt_tke, scheme,    &
                                      scheme_bimodal, scheme_pc2,              &
                                      pc2ini, pc2ini_bimodal
-  use microphysics_config_mod, only: turb_gen_mixph
+  use microphysics_config_mod, only: turb_gen_mixph, prog_tnuc
   use mixing_config_mod,       only: smagorinsky
   use jules_surface_config_mod, only : formdrag, formdrag_dist_drag
 
@@ -39,7 +39,7 @@ module bl_exp_kernel_mod
   !>
   type, public, extends(kernel_type) :: bl_exp_kernel_type
     private
-    type(arg_type) :: meta_args(89) = (/                                       &
+    type(arg_type) :: meta_args(91) = (/                                       &
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! theta_in_wth
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      W3),                       &! rho_in_w3
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! rho_in_wth
@@ -81,6 +81,8 @@ module bl_exp_kernel_mod
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! cf_bulk
          arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! cf_liquid
          arg_type(GH_FIELD, GH_REAL,  GH_READWRITE, WTHETA),                   &! rh_crit
+         arg_type(GH_FIELD, GH_REAL,  GH_READ,      WTHETA),                   &! tnuc
+         arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     ANY_DISCONTINuOUS_SPACE_1),&! tnuc_nlcl
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     WTHETA),                   &! dsldzm
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     WTHETA),                   &! wvar
          arg_type(GH_FIELD, GH_REAL,  GH_WRITE,     WTHETA),                   &! visc_m_blend
@@ -185,6 +187,8 @@ contains
   !> @param[in]     cf_bulk                Bulk cloud fraction
   !> @param[in]     cf_liquid              Liquid cloud fraction
   !> @param[in,out] rh_crit                Critical rel humidity
+  !> @param[in]     tnuc                   Temperature of nucleation (K)
+  !> @param[in,out] tnuc_nlcl              Temperature of nucleation (K) (2D)
   !> @param[in,out] dsldzm                 Liquid potential temperature gradient in wth
   !> @param[in,out] wvar                   Vertical velocity variance in wth
   !> @param[in,out] visc_m_blend           Blended BL-Smag diffusion coefficient for momentum
@@ -296,6 +300,8 @@ contains
                          cf_bulk,                               &
                          cf_liquid,                             &
                          rh_crit,                               &
+                         tnuc,                                  &
+                         tnuc_nlcl,                             &
                          dsldzm,                                &
                          wvar,                                  &
                          visc_m_blend,                          &
@@ -438,7 +444,8 @@ contains
                                                            dtl_mphys,dmt_mphys,&
                                                            sw_heating_rate,    &
                                                            lw_heating_rate,    &
-                                                           cf_bulk, cf_liquid
+                                                           cf_bulk, cf_liquid, &
+                                                           tnuc
     real(kind=r_def), dimension(undf_2d), intent(inout) :: zh_2d,              &
                                                            zhsc_2d,            &
                                                            z0m_eff,            &
@@ -455,7 +462,8 @@ contains
                                                            thv_flux,           &
                                                            parcel_buoyancy,    &
                                                            qsat_at_lcl,        &
-                                                           bl_weight_1dbl
+                                                           bl_weight_1dbl,     &
+                                                           tnuc_nlcl
     integer(kind=i_def), dimension(undf_2d), intent(inout) :: ntml_2d,         &
                                                               cumulus_2d,      &
                                                               shallow_flag,    &
@@ -498,13 +506,15 @@ contains
     real(r_bl), dimension(seg_len,1,nlayers) :: rho_dry, z_rho, z_theta,     &
          bulk_cloud_fraction, rho_wet_tq, u_p, v_p, rhcpt, theta,            &
          p_rho_levels, exner_rho_levels, tgrad_bm, exner_theta_levels,       &
-         bulk_cf_conv, qcf_conv, r_rho_levels, visc_h, visc_m, rneutml_sq
+         bulk_cf_conv, qcf_conv, r_rho_levels, visc_h, visc_m, rneutml_sq,    &
+         tnuc_new
 
     ! profile field on boundary layer levels
     real(r_bl), dimension(seg_len,1,bl_levels) :: fqw, ftl, rhokh, bq_gb,    &
          bt_gb, dtrdz_charney_grid, rdz_charney_grid, rhokm_mix,             &
          temperature, rho_mix_tq, dzl_charney, qw, tl, bt, bq,               &
          bt_cld, bq_cld, a_qs, a_dqsdt, dqsdt, rhokm, tau_fd_x, tau_fd_y, rdz
+
     real(r_um), dimension(seg_len,1,bl_levels) :: w_mixed, w_flux
 
     ! profile fields from level 2 upwards
@@ -526,7 +536,7 @@ contains
          bl_type_7, uw0, vw0, zhnl, rhostar,                                 &
          h_blend_orog, recip_l_mo_sea, flandg, t1_sd, q1_sd, qcl_inv_top,    &
          fb_surf, rib_gb, z0m_eff_gb, zhsc, ustargbm, cos_theta_latitude,    &
-         max_diff, delta_smag
+         max_diff, delta_smag, tnuc_nlcl_um
     real(r_um), dimension(seg_len,1) :: surf_dep_flux, zeroes
 
     real(r_bl), dimension(seg_len,1,3) :: t_frac, t_frac_dsc, we_lim, &
@@ -551,13 +561,13 @@ contains
     integer(i_um), parameter :: nscmdpkgs=15
     logical,       parameter :: l_scmdiags(nscmdpkgs)=.false.
 
-    real(r_bl), dimension(seg_len,1,nlayers) :: tnuc_new, rho_wet
+    real(r_bl), dimension(seg_len,1,nlayers) :: rho_wet
 
     real(r_bl), dimension(seg_len,1,0:nlayers) :: conv_prog_precip
 
     real(r_bl), dimension(seg_len,1) :: z0h_scm, z0m_scm, w_max, ql_ad,      &
          cin_undilute, cape_undilute, entrain_coef, ustar_in, g_ccp, h_ccp,  &
-         ccp_strength, cu_over_orog, shallowc, tnuc_nlcl, flux_e, flux_h,    &
+         ccp_strength, cu_over_orog, shallowc, flux_e, flux_h,               &
          z0msea, tstar_sea, tstar_land, ice_fract, tstar_sice
 
     integer(i_um), dimension(seg_len,1) :: nlcl, conv_type, nbdsc, ntdsc
@@ -639,6 +649,15 @@ contains
       t1_sd(i,1) = t1_sd_2d(map_2d(1,i))
       q1_sd(i,1) = q1_sd_2d(map_2d(1,i))
     end do
+
+    if (prog_tnuc) then
+      ! Use tnuc from LFRic and map onto tnuc_new for UM to be passed to conv_diag_6a
+      do k = 1, nlayers
+        do i = 1, seg_len
+          tnuc_new(i,1,k) = real(tnuc(map_wth(1,i) + k),kind=r_bl)
+        end do ! i
+      end do ! k
+    end if
 
     !-----------------------------------------------------------------------
     ! assuming map_wth(1,i) points to level 0
@@ -828,7 +847,7 @@ contains
           , zh,zhpar,dzh,qcl_inv_top,zlcl,zlcl_uv,delthvu,ql_ad, ntml   &
           , ntpar,nlcl, cumulus,l_shallow,l_congestus,l_congestus2      &
           , conv_type, CIN_undilute,CAPE_undilute, wstar, wthvs         &
-          , entrain_coef, qsat_lcl, Error_code, tnuc_new, tnuc_nlcl  )
+          , entrain_coef, qsat_lcl, Error_code, tnuc_new, tnuc_nlcl_um )
 
     call bdy_expl2 (                                                           &
     ! IN values defining vertical grid of model atmosphere :
@@ -864,6 +883,14 @@ contains
     ! OUT data required elsewhere in UM system :
       zhsc,ntdsc,nbdsc,wstar,wthvs,uw0,vw0,rhcpt, tgrad_bm                     &
       )
+
+    if (prog_tnuc) then
+      ! Use tnuc_nlcl_um from conv_diag_6a (UM) and map onto tnuc_nlcl for
+      ! LFRic to then be passed out to
+      do i = 1, seg_len
+        tnuc_nlcl(map_2d(1,i)) = real(tnuc_nlcl_um(i,1),kind=r_def)
+      end do
+    end if
 
     if (bl_mix_w) then
 

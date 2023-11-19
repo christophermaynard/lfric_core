@@ -177,6 +177,8 @@ contains
     type( field_type ), pointer :: rh_crit          => null()
 
     type( field_type ), pointer :: dtheta_mphys => null()
+    type( field_type ), pointer :: tnuc  => null()
+    type( field_type ), pointer :: tnuc_nlcl => null()
 
     type( field_type ), pointer :: z0msea              => null()
     type( field_type ), pointer :: z0m                 => null()
@@ -358,6 +360,8 @@ contains
 
     ! Unpack the microphysics fields
     call microphysics_fields%get_field('dtheta_mphys', dtheta_mphys)
+    call microphysics_fields%get_field('tnuc', tnuc)
+    call microphysics_fields%get_field('tnuc_nlcl', tnuc_nlcl)
 
     ! Orography fields
     call orography_fields%get_field('sd_orog', sd_orog)
@@ -556,7 +560,8 @@ contains
                                     h_blend_orog, t1_sd_2d, q1_sd_2d,          &
                                     dtl_mphys, dmt_mphys, sw_heating_rate,     &
                                     lw_heating_rate, cf_bulk, cf_liquid,       &
-                                    rh_crit, dsldzm, wvar, visc_m, visc_h,     &
+                                    rh_crit, tnuc, tnuc_nlcl, dsldzm,          &
+                                    wvar, visc_m, visc_h,                      &
                                     dw_bl, rhokm_bl, surf_interp, rhokh_bl,    &
                                     tke_bl, ngstress_bl, bq_bl, bt_bl,         &
                                     moist_flux_bl, heat_flux_bl, dtrdz_tq_bl,  &

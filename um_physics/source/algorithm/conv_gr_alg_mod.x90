@@ -38,21 +38,22 @@ contains
   !>@details The UM Gregory Rowntree convection scheme does:
   !>             vertical mixing of heat, momentum and moisture,
   !>             as documented in UMDP27
-  !>@param[in,out] mr                Mixing ratios
-  !>@param[in]     rho               Dry density in its native (w3) space
-  !>@param[in]     exner             Exner Pressure in the w3 space
-  !>@param[in]     derived_fields    Group of derived fields
-  !>@param[in]     turbulence_fields Fields for turbulence scheme
-  !>@param[in]     convection_fields Fields for convection scheme
-  !>@param[in]     cloud_fields      Fields for cloud scheme
-  !>@param[in]     surface_fields    Fields for surface scheme
-  !>@param[in]     chemistry_fields  Fields for chemistry scheme
-  !>@param[in]     aerosol_fields    Fields for aerosol scheme
+  !>@param[in,out] mr                  Mixing ratios
+  !>@param[in]     rho                 Dry density in its native (w3) space
+  !>@param[in]     exner               Exner Pressure in the w3 space
+  !>@param[in]     derived_fields      Group of derived fields
+  !>@param[in]     turbulence_fields   Fields for turbulence scheme
+  !>@param[in]     convection_fields   Fields for convection scheme
+  !>@param[in]     cloud_fields        Fields for cloud scheme
+  !>@param[in]     surface_fields      Fields for surface scheme
+  !>@param[in]     chemistry_fields    Fields for chemistry scheme
+  !>@param[in]     aerosol_fields      Fields for aerosol scheme
+  !>@param[in]     microphysics_fields Fields for microphysics scheme
   !>@param[in]     outer             Outer loop counter
   subroutine conv_gr_alg(mr, rho, exner, derived_fields,                  &
                          turbulence_fields, convection_fields,            &
                          cloud_fields, surface_fields, chemistry_fields,  &
-                         aerosol_fields, outer)
+                         aerosol_fields, microphysics_fields, outer)
 
     use conv_gr_kernel_mod, only: conv_gr_kernel_type
 
@@ -68,6 +69,7 @@ contains
     type( field_collection_type ), intent(in) :: surface_fields
     type( field_collection_type ), intent(in) :: chemistry_fields
     type( field_collection_type ), intent(in) :: aerosol_fields
+    type( field_collection_type ), intent(in) :: microphysics_fields
 
     integer(kind=i_def), intent(in)         :: outer
 
@@ -160,6 +162,8 @@ contains
     type( field_type ), pointer :: acc_ins_du => null()
     type( field_type ), pointer :: n_cor_ins => null()
     type( field_type ), pointer :: cor_ins_du => null()
+    type( field_type ), pointer :: tnuc  => null()
+    type( field_type ), pointer :: tnuc_nlcl => null()
 
     type( field_type ), pointer :: height_w3 => null()
     type( field_type ), pointer :: height_wth => null()
@@ -284,6 +288,8 @@ contains
     call aerosol_fields%get_field('acc_ins_du', acc_ins_du)
     call aerosol_fields%get_field('n_cor_ins', n_cor_ins)
     call aerosol_fields%get_field('cor_ins_du', cor_ins_du)
+    call microphysics_fields%get_field('tnuc', tnuc)
+    call microphysics_fields%get_field('tnuc_nlcl', tnuc_nlcl)
 
     height_wth => get_height(Wtheta, mesh%get_id())
     height_w3  => get_height(W3, mesh%get_id())
@@ -409,6 +415,8 @@ contains
                           acc_ins_du,                                         &
                           n_cor_ins,                                          &
                           cor_ins_du,                                         &
+                          tnuc,                                               &
+                          tnuc_nlcl,                                          &
                           deep_in_col,                                        &    ! 2-D local variables
                           shallow_in_col,                                     &
                           mid_in_col,                                         &

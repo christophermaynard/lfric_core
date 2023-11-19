@@ -200,7 +200,7 @@ contains
         call conv_gr_alg(mr, rho, exner, derived_fields,                  &
                          turbulence_fields, convection_fields,            &
                          cloud_fields, surface_fields, chemistry_fields,  &
-                         aerosol_fields, outer)
+                         aerosol_fields, microphysics_fields, outer)
       end if
 
       if ( cloud == cloud_um .and. scheme == scheme_pc2 ) then

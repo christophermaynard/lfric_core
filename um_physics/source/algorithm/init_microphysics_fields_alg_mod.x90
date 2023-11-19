@@ -48,6 +48,8 @@ contains
     type( field_type ), pointer :: n_ci         => null()
     type( field_type ), pointer :: n_s          => null()
     type( field_type ), pointer :: n_g          => null()
+    type( field_type ), pointer :: tnuc         => null()
+    type( field_type ), pointer :: tnuc_nlcl    => null()
 
     call microphysics_fields%get_field('dtheta_mphys', dtheta_mphys)
     call microphysics_fields%get_field('dmv_mphys', dmv_mphys)
@@ -61,6 +63,8 @@ contains
     call microphysics_fields%get_field('accretion', accretion)
     call microphysics_fields%get_field('rim_cry', rim_cry)
     call microphysics_fields%get_field('rim_agg', rim_agg)
+    call microphysics_fields%get_field('tnuc', tnuc)
+    call microphysics_fields%get_field('tnuc_nlcl', tnuc_nlcl)
 
     call microphysics_fields%get_field('nl_mphys', n_cl)
     call microphysics_fields%get_field('nr_mphys', n_r)
@@ -85,7 +89,9 @@ contains
                  setval_c(autoconv,     0.0_r_def), &
                  setval_c(accretion,    0.0_r_def), &
                  setval_c(rim_cry,      0.0_r_def), &
-                 setval_c(rim_agg,      0.0_r_def) )
+                 setval_c(rim_agg,      0.0_r_def), &
+                 setval_c(tnuc,         0.0_r_def), &
+                 setval_c(tnuc_nlcl,    0.0_r_def) )
 
   end subroutine init_microphysics_fields_alg
 

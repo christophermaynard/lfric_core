@@ -94,7 +94,7 @@ module um_physics_init_mod
                                         z_surf_in => z_surf,                 &
                                         turb_gen_mixph,                      &
                                         orog_rain, orog_rime,                &
-                                        orog_block,                          &
+                                        prog_tnuc, orog_block,               &
                                         fcrit_in => fcrit,                   &
                                         nsigmasf_in => nsigmasf,             &
                                         nscalesf_in => nscalesf,             &
@@ -277,7 +277,7 @@ contains
         l_separate_process_rain, l_mcr_qcf2,                                 &
         l_mcr_qgraup, casim_max_sed_length, fixed_number, wvarfac,           &
         l_orograin, l_orogrime, l_orograin_block,                            &
-        fcrit, nsigmasf, nscalesf
+        fcrit, nsigmasf, nscalesf, l_progn_tnuc
     use mphys_psd_mod, only: x1g, x2g, x4g, x1gl, x2gl, x4gl
     use mphys_switches, only: set_mphys_switches,            &
         max_step_length, max_sed_length,                     &
@@ -316,7 +316,7 @@ contains
         glomap_clim_mode_setup_interface
     use ukca_config_specification_mod, only: i_sussbcocdu_7mode
     use ukca_option_mod, only: l_ukca, l_ukca_plume_scav, mode_aitsol_cvscav, &
-         l_ukca_aie2
+         l_ukca_aie2, l_ukca_dust
     use ukca_scavenging_mod, only: ukca_mode_scavcoeff
 
     implicit none
@@ -867,6 +867,12 @@ contains
 
       ! Options only relevent to old microphysics scheme
       if (.not. microphysics_casim) then
+
+        ! Set l_ukca_dust=true as only one dust option and
+        ! prog_tnuc so lsp_prognostic_tnuc_kernel can interface
+        !  with UM code. prog_tnuc is set from namelist
+        l_ukca_dust  = .true.
+        l_progn_tnuc = prog_tnuc
 
         ! These need to be set so that the cdnc value from ukca or glomap_clim
         ! is used by the microphysics scheme. No other option is available

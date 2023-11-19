@@ -101,6 +101,7 @@
     <field field_ref="aerosol__acc_ins_du" />
     <field field_ref="aerosol__cor_ins_du" />
     <field field_ref="aerosol__cloud_drop_no_conc" />
+    <field field_ref="microphysics__tnuc" />
   </file>
 
 </file_definition>

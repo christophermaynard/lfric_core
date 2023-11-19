@@ -418,6 +418,7 @@ contains
     call processor%apply(make_spec('lsca_2d', main%microphysics, W3, twod=.true.))
 
     call processor%apply(make_spec('ls_graup', main%microphysics, W3, twod=.true.))
+    call processor%apply(make_spec('tnuc_nlcl', main%microphysics, W3, twod=.true.))
 
     ! 3D fields, don't need checkpointing
     call processor%apply(make_spec('dtheta_mphys', main%microphysics, Wtheta))
@@ -428,7 +429,7 @@ contains
     call processor%apply(make_spec('accretion', main%microphysics, Wtheta))
     call processor%apply(make_spec('rim_cry', main%microphysics, Wtheta))
     call processor%apply(make_spec('rim_agg', main%microphysics, Wtheta))
-
+    call processor%apply(make_spec('tnuc', main%microphysics, Wtheta))
     !========================================================================
     ! Fields owned by the electric scheme
     !========================================================================

@@ -20,6 +20,7 @@ module conv_gr_kernel_mod
   use kernel_mod,              only : kernel_type
   use mixing_config_mod,       only : smagorinsky
   use timestepping_config_mod, only : outer_iterations
+  use microphysics_config_mod, only : prog_tnuc
 
   implicit none
 
@@ -32,7 +33,7 @@ module conv_gr_kernel_mod
   !>
   type, public, extends(kernel_type) :: conv_gr_kernel_type
     private
-    type(arg_type) :: meta_args(134) = (/                                         &
+    type(arg_type) :: meta_args(136) = (/                                         &
          arg_type(GH_SCALAR, GH_INTEGER, GH_READ),                                &! outer
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      W3),                       &! rho_in_w3
          arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! rho_in_wth
@@ -126,6 +127,8 @@ module conv_gr_kernel_mod
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! acc_ins_du
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! n_cor_ins
          arg_type(GH_FIELD,  GH_REAL,    GH_READWRITE, WTHETA),                   &! cor_ins_du
+         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      WTHETA),                   &! tnuc
+         arg_type(GH_FIELD,  GH_REAL,    GH_READ,      ANY_DISCONTINUOUS_SPACE_1),&! tnuc_nlcl
          arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! deep_in_col
          arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! shallow_in_col
          arg_type(GH_FIELD,  GH_REAL,    GH_WRITE,     ANY_DISCONTINUOUS_SPACE_1),&! mid_in_col
@@ -275,6 +278,8 @@ contains
   !> @param[in,out] acc_ins_du           Aerosol field: m.m.r. of dust in insoluble accumulation mode
   !> @param[in,out] n_cor_ins            Aerosol field: n.m.r. of insoluble coarse mode
   !> @param[in,out] cor_ins_du           Aerosol field: m.m.r. of dust in insoluble coarse mode
+  !> @param[in]     tnuc                 Temperature of nucleation (K)
+  !> @param[in]     tnuc_nlcl            Temperature of nucleation (K) (2D)
   !> @param[in,out] deep_in_col          Indicator of deep in column
   !> @param[in,out] shallow_in_col       Indicator of shallow in column
   !> @param[in,out] mid_in_col           Indicator of mid in column
@@ -422,6 +427,8 @@ contains
                           acc_ins_du,                        &
                           n_cor_ins,                         &
                           cor_ins_du,                        &
+                          tnuc,                              &
+                          tnuc_nlcl,                         &
                           deep_in_col,                       &
                           shallow_in_col,                    &
                           mid_in_col,                        &
@@ -606,7 +613,8 @@ contains
                                                         wstar_2d,             &
                                                         thv_flux,             &
                                                         parcel_buoyancy,      &
-                                                        qsat_at_lcl
+                                                        qsat_at_lcl,          &
+                                                        tnuc_nlcl
 
     real(kind=r_def), dimension(undf_2d), intent(inout) :: cape_diluted,  &
                                    conv_rain, conv_snow, cca_2d, dd_mf_cb
@@ -644,6 +652,7 @@ contains
     real(kind=r_def), intent(in out), dimension(undf_wth) :: acc_ins_du
     real(kind=r_def), intent(in out), dimension(undf_wth) :: n_cor_ins
     real(kind=r_def), intent(in out), dimension(undf_wth) :: cor_ins_du
+    real(kind=r_def), intent(in),     dimension(undf_wth) :: tnuc
 
     real(kind=r_def), pointer, intent(inout) :: deep_in_col(:),            &
                                                 shallow_in_col(:),         &
@@ -728,7 +737,7 @@ contains
          it_dq_deep, it_dq_shall, it_dq_midlev,                              &
          it_du_deep, it_du_shall, it_du_midlev,                              &
          it_dv_deep, it_dv_shall, it_dv_midlev,                              &
-         it_dt_dd, it_dq_dd
+         it_dt_dd, it_dq_dd, tnuc_new
 
     ! profile fields from level 0 upwards
     real(r_um), dimension(row_length,rows,0:nlayers) ::                      &
@@ -743,7 +752,7 @@ contains
          it_precip_md, it_cape_diluted, it_dp_cfl_limited,                   &
          it_md_cfl_limited, cape_ts_used, it_ind_deep, it_ind_shall,         &
          it_precip_cg, it_wstar_up, it_mb1, it_mb2, tot_conv_precip_2d,      &
-         delta_smag
+         delta_smag, tnuc_nlcl_um
 
     ! single level integer fields
     integer(i_um), dimension(row_length,rows) :: ntml, ntpar, lcbase,        &
@@ -781,11 +790,9 @@ contains
 
     real(r_um), dimension(row_length,rows,nlayers) :: conv_prog_precip_conv
 
-    real(r_um), dimension(row_length,rows,nlayers) :: tnuc_new
-
     real(r_um), dimension(row_length,rows) :: zlcl, t1_sd, q1_sd, w_max,     &
          deep_flag, past_conv_ht, ql_ad, ind_cape_reduced,                   &
-         it_wstar_dn, g_ccp, h_ccp, ccp_strength, tnuc_nlcl
+         it_wstar_dn, g_ccp, h_ccp, ccp_strength
 
     integer(i_um), dimension(row_length,rows) :: conv_type
 
@@ -1196,6 +1203,16 @@ contains
       it_mb2(1,1) = 0.0_r_um
       it_cg_term(1,1) = 0
 
+      if (prog_tnuc) then
+        ! Use tnuc from LFRic and map onto tnuc_new for UM to be passed to glue_conv_6a
+        do k = 1, nlayers
+          tnuc_new(1,1,k) = real(tnuc(map_wth(1) + k),kind=r_um)
+        end do ! k
+
+        ! Use tnuc_nlcl from LFRic and map onto tnuc_nlcl_um for UM to the be passed to glue_conv_6a
+        tnuc_nlcl_um(1,1) = real(tnuc_nlcl(map_2d(1)),kind=r_um)
+      end if
+
       call glue_conv_6a                                                     &
         ( rows*row_length, segments, n_conv_levels, n_wtrac, bl_levels      &
         , call_number, seg_num, theta_conv, q_conv, qcl_conv, qcf_conv      &
@@ -1218,7 +1235,7 @@ contains
         , it_wstar_dn,  it_wstar_up                                         &
         , it_mb1, it_mb2, it_cg_term                                        &
         , uw0, vw0, w_max                                                   &
-        , zlcl, zlcl_uv, tnuc_new, tnuc_nlcl, zhpar, entrain_coef           &
+        , zlcl, zlcl_uv, tnuc_new, tnuc_nlcl_um, zhpar, entrain_coef        &
         , conv_prog_precip_conv, conv_prog_flx, deep_flag                   &
         , past_conv_ht, it_cape_diluted, n_deep, n_congestus, n_shallow     &
         , n_mid, r_rho_levels, r_theta_levels                               &

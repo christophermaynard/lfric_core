@@ -59,11 +59,12 @@ contains
                         dcfl_mphys, dcff_mphys, dbcf_mphys, dt )
 
     use pc2_conv_coupling_kernel_mod, only: pc2_conv_coupling_kernel_type
+    use lsp_prognostic_tnuc_kernel_mod, only: lsp_prognostic_tnuc_kernel_type
     use mphys_kernel_mod, only: mphys_kernel_type
     use mphys_turb_gen_kernel_mod, only: mphys_turb_gen_kernel_type
     use mr_indices_mod,   only: imr_v, imr_cl, imr_r, imr_ci, imr_s, imr_g, nummr
     use cloud_config_mod, only: mphys_erosion
-    use microphysics_config_mod, only: turb_gen_mixph
+    use microphysics_config_mod, only: turb_gen_mixph, prog_tnuc
 
     use io_config_mod,             only: subroutine_timers
     use timer_mod,                 only: timer
@@ -108,8 +109,11 @@ contains
     type( field_type ), pointer :: accretion           => null()
     type( field_type ), pointer :: rim_cry             => null()
     type( field_type ), pointer :: rim_agg             => null()
+    type( field_type ), pointer :: tnuc                => null()
 
     type( field_type ), pointer :: cloud_drop_no_conc  => null()
+    type( field_type ), pointer :: n_acc_ins           => null()
+    type( field_type ), pointer :: n_cor_ins           => null()
 
     type( field_type ), pointer :: wvar   => null()
 
@@ -169,8 +173,11 @@ contains
     call microphysics_fields%get_field('accretion', accretion)
     call microphysics_fields%get_field('rim_cry', rim_cry)
     call microphysics_fields%get_field('rim_agg', rim_agg)
+    call microphysics_fields%get_field('tnuc', tnuc)
 
     call aerosol_fields%get_field('cloud_drop_no_conc', cloud_drop_no_conc)
+    call aerosol_fields%get_field('n_acc_ins', n_acc_ins)
+    call aerosol_fields%get_field('n_cor_ins', n_cor_ins)
 
     call turbulence_fields%get_field('wvar', wvar)
 
@@ -191,6 +198,14 @@ contains
                                                  dbcf_mphys, dt) )
     end if
 
+    if (prog_tnuc) then
+      call invoke ( lsp_prognostic_tnuc_kernel_type (n_acc_ins,           &
+                                                     n_cor_ins,           &
+                                                     theta,               &
+                                                     exner_in_wth,        &
+                                                     tnuc)  )
+    end if
+
     call invoke( mphys_kernel_type ( mr_n(imr_v), mr_n(imr_cl), mr_n(imr_ci),  &
                                      mr_n(imr_r), mr_n(imr_g),                 &
                                      bcf_in, cfl_in, cff_in,                   &
@@ -208,7 +223,7 @@ contains
                                      autoconv, accretion,                      &
                                      rim_cry, rim_agg,                         &
                                      dtheta_mphys, dcfl_mphys, dcff_mphys,     &
-                                     dbcf_mphys, f_arr, superc_liq,            &
+                                     dbcf_mphys, f_arr, tnuc, superc_liq,      &
                                      superc_rain,                              &
                                      sfwater, sfrain, sfsnow,                  &
                                      refl_tot, refl_1km ) )
@@ -253,7 +268,7 @@ contains
                                      lsca_2d,                      &
                                      ls_rain_3d, ls_snow_3d,       &
                                      autoconv, accretion,          &
-                                     rim_cry, rim_agg,             &
+                                     rim_cry, rim_agg, tnuc,       &
                                      sfwater, sfrain, sfsnow,      &
                                      refl_tot, refl_1km )
 

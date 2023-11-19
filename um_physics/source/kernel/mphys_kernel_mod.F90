@@ -7,16 +7,17 @@
 
 module mphys_kernel_mod
 
-use argument_mod,      only: arg_type,                  &
-                             GH_FIELD, GH_REAL,         &
-                             GH_READ, GH_WRITE,         &
-                             GH_READWRITE,              &
-                             ANY_DISCONTINUOUS_SPACE_1, &
-                             ANY_DISCONTINUOUS_SPACE_2, &
-                             DOMAIN
-use fs_continuity_mod, only: WTHETA, W3
-use kernel_mod,        only: kernel_type
-use empty_data_mod,    only: empty_real_data
+use argument_mod,            only: arg_type,                  &
+                                   GH_FIELD, GH_REAL,         &
+                                   GH_READ, GH_WRITE,         &
+                                   GH_READWRITE,              &
+                                   ANY_DISCONTINUOUS_SPACE_1, &
+                                   ANY_DISCONTINUOUS_SPACE_2, &
+                                   DOMAIN
+use fs_continuity_mod,       only: WTHETA, W3
+use kernel_mod,              only: kernel_type
+use empty_data_mod,          only: empty_real_data
+use microphysics_config_mod, only: prog_tnuc
 
 implicit none
 
@@ -30,7 +31,7 @@ private
 
 type, public, extends(kernel_type) :: mphys_kernel_type
   private
-  type(arg_type) :: meta_args(45) = (/                                      &
+  type(arg_type) :: meta_args(46) = (/                                      &
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                       & ! mv_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                       & ! ml_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  WTHETA),                       & ! mi_wth
@@ -69,6 +70,7 @@ type, public, extends(kernel_type) :: mphys_kernel_type
        arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                   & ! dcff_wth
        arg_type(GH_FIELD, GH_REAL, GH_READWRITE, WTHETA),                   & ! dbcf_wth
        arg_type(GH_FIELD, GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_2),    & ! f_arr_wth
+       arg_type(GH_FIELD, GH_REAL, GH_READ, WTHETA),                        & ! tnuc
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                       & ! superc_liq_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                       & ! superc_rain_wth
        arg_type(GH_FIELD, GH_REAL, GH_WRITE, WTHETA),                       & ! sfwater
@@ -129,6 +131,7 @@ contains
 !> @param[in,out] dbcf_wth            Increment to bulk cloud fraction
 !> @param[in]     f_arr_wth           Parameters related to fractional standard
 !!                                     deviation of condensate
+!> @param[in]     tnuc                Temperature of nucleation (K)
 !> @param[in,out] superc_liq_wth      Supercooled cloud liquid water content
 !> @param[in,out] superc_rain_wth     Supercooled rain water content
 !> @param[in,out] sfwater             Sub-grid orographic water produced by Seeder Feeder scheme
@@ -175,7 +178,7 @@ subroutine mphys_code( nlayers, seg_len,            &
                        rim_cry, rim_agg,            &
                        dtheta,                      &
                        dcfl_wth, dcff_wth, dbcf_wth,&
-                       f_arr_wth,                   &
+                       f_arr_wth, tnuc,             &
                        superc_liq_wth,              &
                        superc_rain_wth,             &
                        sfwater, sfrain, sfsnow,     &
@@ -257,6 +260,7 @@ subroutine mphys_code( nlayers, seg_len,            &
     real(kind=r_def), intent(in),  dimension(undf_wth) :: cloud_drop_no_conc
     real(kind=r_def), intent(in),  dimension(undf_2d)  :: sd_orog
     real(kind=r_def), intent(in),  dimension(undf_farr):: f_arr_wth
+    real(kind=r_def), intent(in),  dimension(undf_wth) :: tnuc
 
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dmv_wth
     real(kind=r_def), intent(inout), dimension(undf_wth) :: dml_wth
@@ -406,7 +410,14 @@ subroutine mphys_code( nlayers, seg_len,            &
     snow_depth = 0.0_r_um
     land_frac  = 0.0_r_um
 
-    tnuc_new = 0.0_r_um
+    if (prog_tnuc) then
+      j = 1
+      do k = 1, nlayers
+        do i = 1, seg_len
+          tnuc_new(i,j,k) = real(tnuc(map_wth(1,i) + k),kind=r_um)
+        end do ! i
+      end do ! k
+    end if
 
     do i = 1, npd_arcl_compnts
       i_arcl_compnts(i) = i
