@@ -40,4 +40,7 @@
                       'london_model',
                       'nzlam4',
                       'polar',
-                      'lam'] %}
+                      'lam',
+                      'planar_stretch_centres',
+                      'planar_stretch_nodes',
+                      'planar_stretch_points'] %}

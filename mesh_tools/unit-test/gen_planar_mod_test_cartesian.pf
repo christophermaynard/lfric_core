@@ -1269,16 +1269,18 @@ contains
     type(reference_cube_type) :: cube_element
     cube_element = reference_cube_type()
 
-    mesh_gen = gen_planar_type( reference_element=cube_element,   &
-                                mesh_name=mesh_name,              &
-                                geometry=geometry_planar,         &
-                                topology=this%topology,           &
-                                coord_sys=this%coord_sys,         &
-                                edge_cells_x=this%x_size,         &
-                                edge_cells_y=this%y_size,         &
-                                periodic_x=this%x_periodic,       &
-                                periodic_y=this%y_periodic,       &
-                                domain_size=this%domain_size,     &
+    mesh_gen = gen_planar_type( reference_element=cube_element,     &
+                                mesh_name=mesh_name,                &
+                                geometry=geometry_planar,           &
+                                topology=this%topology,             &
+                                coord_sys=this%coord_sys,           &
+                                edge_cells_x=this%x_size,           &
+                                edge_cells_y=this%y_size,           &
+                                fine_mesh_edge_cells_x=this%x_size, &
+                                fine_mesh_edge_cells_y=this%y_size, &
+                                periodic_x=this%x_periodic,         &
+                                periodic_y=this%y_periodic,         &
+                                domain_size=this%domain_size,       &
                                 domain_centre=this%domain_centre )
 
     ! Test metadata retrieval

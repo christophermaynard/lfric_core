@@ -29,6 +29,7 @@ module gen_planar_mod
                                             coord_sys_ll, coord_sys_xyz, &
                                             topology_non_periodic,       &
                                             geometry_spherical
+  use planar_mesh_config_mod,         only: apply_stretch_transform
   use reference_element_mod,          only: reference_element_type, &
                                             reference_cube_type,    &
                                             W, S, E, N,             &
@@ -38,6 +39,9 @@ module gen_planar_mod
   use rotation_mod,                   only: rotate_mesh_coords, &
                                             TRUE_NORTH_POLE_LL, &
                                             TRUE_NULL_ISLAND_LL
+  use stretch_transform_mod,          only: stretch_transform,  &
+                                            calculate_settings
+
   implicit none
 
   private
@@ -84,6 +88,8 @@ module gen_planar_mod
     character(str_def) :: coord_units_y
     integer(i_def)     :: edge_cells_x
     integer(i_def)     :: edge_cells_y
+    integer(i_def)     :: fine_mesh_edge_cells_x
+    integer(i_def)     :: fine_mesh_edge_cells_y
     integer(i_def)     :: npanels = NPANELS
     real(r_def)        :: domain_size(2)
     real(r_def)        :: domain_centre(2) = [0.0_r_def,0.0_r_def]
@@ -171,6 +177,8 @@ contains
 !> @param[in] mesh_name       Name of this mesh topology.
 !> @param[in] edge_cells_x    Number of cells in planar mesh x-axis.
 !> @param[in] edge_cells_y    Number of cells in planar mesh y-axis.
+!> @param[in] fine_mesh_edge_cells_x Number of cells in planar mesh x-axis.
+!> @param[in] fine_mesh_edge_cells_y Number of cells in planar mesh y-axis.
 !> @param[in] periodic_x      Logical for specifying periodicity in x-axis.
 !> @param[in] periodic_y      Logical for specifying periodicity in y-axis.
 !> @param[in] domain_size     Size of domain in x/y axes
@@ -199,6 +207,8 @@ function gen_planar_constructor( reference_element,          &
                                  topology,                   &
                                  coord_sys,                  &
                                  edge_cells_x, edge_cells_y, &
+                                 fine_mesh_edge_cells_x,     &
+                                 fine_mesh_edge_cells_y,     &
                                  periodic_x, periodic_y,     &
                                  domain_size, domain_centre, &
                                  target_mesh_names,          &
@@ -218,6 +228,8 @@ function gen_planar_constructor( reference_element,          &
   integer(i_def),     intent(in) :: topology
   integer(i_def),     intent(in) :: coord_sys
   integer(i_def),     intent(in) :: edge_cells_x, edge_cells_y
+  integer(i_def),     intent(in) :: fine_mesh_edge_cells_x
+  integer(i_def),     intent(in) :: fine_mesh_edge_cells_y
   logical(l_def),     intent(in) :: periodic_x, periodic_y
   real(r_def),        intent(in) :: domain_size(2)
   real(r_def),        intent(in) :: domain_centre(2)
@@ -297,6 +309,8 @@ function gen_planar_constructor( reference_element,          &
   self%topology     = topology
   self%edge_cells_x = edge_cells_x
   self%edge_cells_y = edge_cells_y
+  self%fine_mesh_edge_cells_x = fine_mesh_edge_cells_x
+  self%fine_mesh_edge_cells_y = fine_mesh_edge_cells_y
 
   self%nmaps          = 0_i_def
   self%periodic_xy(1) = periodic_x
@@ -1318,6 +1332,236 @@ subroutine calc_edges(self)
   return
 end subroutine calc_edges
 
+!-------------------------------------------------------------------------------
+!> @brief  Define the cooordinates using a stretching function.
+!> @details Assigns an (x,y) coordinate to vertices of the mesh. If the mesh is
+!>         a support mesh then the coordinate calculation is based on the
+!>         transform_mesh (i.e. For multigrid, the coordinates of the coarse
+!>         level mesh are defined using the fine-level mesh).
+!>
+!-------------------------------------------------------------------------------
+subroutine assign_stretched_mesh_coords(self)
+
+  implicit none
+
+  class(gen_planar_type), intent(inout)  :: self
+
+  real(r_def), allocatable :: vert_coords(:,:)
+
+  integer(i_def) :: cell, astat, row, column
+  integer(i_def) :: x_ratio, y_ratio
+
+  real(r_def) :: node_coord, stretch_coord
+  real(r_def) :: reverse_node_coord
+  real(r_def) :: reverse_node_coord_bottom, reverse_node_coord_top
+
+  ! Stretch transform settings
+  integer(i_def) :: axis_direction
+  integer(i_def) :: n_inner, n_stretch
+  real(r_def) :: outer_ends_l, outer_ends_r, inner_ends_l, inner_ends_r
+  real(r_def) :: inflation
+
+  allocate(vert_coords(2, self%n_nodes), stat=astat)
+  if (astat /= 0) then
+    call log_event( PREFIX//"Failure to allocate vert_coords.", &
+                    LOG_LEVEL_ERROR )
+  end if
+
+  self%domain_extents(:,1) = [           0.0_r_def, -1.0_r_def*self%domain_size(2) ]
+  self%domain_extents(:,2) = [ self%domain_size(1), -1.0_r_def*self%domain_size(2) ]
+  self%domain_extents(:,3) = [ self%domain_size(1),            0.0_r_def ]
+  self%domain_extents(:,4) = [           0.0_r_def,            0.0_r_def ]
+
+  ! Set the ratio between the edge cells for the fine level mesh
+  ! and the current multigrid mesh. This takes the value 1 if the
+  ! current mesh is the fine level mesh.
+
+  x_ratio = self%fine_mesh_edge_cells_x/self%edge_cells_x
+  y_ratio = self%fine_mesh_edge_cells_y/self%edge_cells_y
+
+  ! Loop over cells and assign coordinates based on the stretching
+  ! function. The cells begin numbering in rows from NW corner of panel.
+  ! Extra coordinates are assigned if it the first or last row/column to
+  ! cover both the East and West (North and South) sides of the cell.
+
+  ! --------- Longitude coordinates node_coord--------------------------------
+
+  axis_direction = 1 ! Longitude
+
+  call calculate_settings(axis_direction, self%fine_mesh_edge_cells_x, &
+                          n_inner, n_stretch, inflation,               &
+                          outer_ends_l, outer_ends_r,                  &
+                          inner_ends_l, inner_ends_r)
+
+  cell=1
+
+  ! Loop over the fine resolution mesh rows
+  do row=1, self%fine_mesh_edge_cells_y
+
+    ! Set the longitude associated with NW corner (column = 0)
+    call stretch_transform(0, node_coord, stretch_coord,  &
+                           axis_direction,                &
+                           n_inner, n_stretch, inflation, &
+                           outer_ends_l, outer_ends_r,    &
+                           inner_ends_l, inner_ends_r)
+
+    ! Assign coordinates if this coincides with the multigrid mesh
+    if (mod(row, y_ratio) == 0) then
+      vert_coords(1, self%verts_on_cell(NW, cell)) &
+        = node_coord
+
+      if (row == self%fine_mesh_edge_cells_y) then
+
+        vert_coords(1, self%verts_on_cell(SW, cell)) &
+          = node_coord
+
+      end if
+
+      ! Loop over the fine resolution mesh columns
+      do column=1, self%fine_mesh_edge_cells_x
+
+        call stretch_transform(column,                        &
+                               node_coord, stretch_coord,     &
+                               axis_direction,                &
+                               n_inner, n_stretch, inflation, &
+                               outer_ends_l, outer_ends_r,    &
+                               inner_ends_l, inner_ends_r)
+
+        if (mod(column, x_ratio) == 0) then
+
+          vert_coords(1, self%verts_on_cell(NE, cell)) &
+            = node_coord
+
+          if (row == self%fine_mesh_edge_cells_y) then
+
+            vert_coords(1, self%verts_on_cell(SE, cell)) &
+              = node_coord
+
+          end if
+
+          ! Increment the cell counter
+
+          cell = cell + 1
+
+        end if
+
+      end do
+
+    end if
+  end do
+
+  ! --------- Latitudes coordinates ---------------------------------------
+  !
+  ! Latitudes are a little more complicated than longitude, because the
+  ! stretching function increments from bottom to top, but we need
+  ! to define from top to bottom. Therefore, we take advantage of the fact
+  ! that it is a symmetrical function and define the coordinates in reverse.
+
+  axis_direction = 2 ! Latitude
+
+  call calculate_settings(axis_direction, self%fine_mesh_edge_cells_y, &
+                          n_inner, n_stretch, inflation,               &
+                          outer_ends_l, outer_ends_r,                  &
+                          inner_ends_l, inner_ends_r)
+
+  ! Set the latitude of the NW corner of the last cell (column = edge_cells_y)
+  call stretch_transform(self%fine_mesh_edge_cells_y,           &
+                         reverse_node_coord_top, stretch_coord, &
+                         axis_direction,                        &
+                         n_inner, n_stretch, inflation,         &
+                         outer_ends_l, outer_ends_r,            &
+                         inner_ends_l, inner_ends_r)
+
+  ! Set the latitude of the SW corner (column = 0)
+  call stretch_transform(0, reverse_node_coord_bottom,  &
+                         stretch_coord,                 &
+                         axis_direction,                &
+                         n_inner, n_stretch, inflation, &
+                         outer_ends_l, outer_ends_r,    &
+                         inner_ends_l, inner_ends_r)
+
+  cell=1
+
+  !Start the stretching function at the bottom (South)
+  reverse_node_coord = reverse_node_coord_bottom
+
+  ! Loop over the fine resolution mesh rows
+  do row=1, self%fine_mesh_edge_cells_y
+
+    ! Assign coordinates if this coincides with the multigrid mesh
+    if (mod((row-1), y_ratio) == 0) then
+
+      vert_coords(2, self%verts_on_cell(NW, cell) ) &
+        = (reverse_node_coord_top &
+        + (reverse_node_coord_bottom - reverse_node_coord))
+
+      if ((row-1) == (self%fine_mesh_edge_cells_y - y_ratio)) then
+
+        vert_coords(2, self%verts_on_cell(SW, cell)) &
+          = (reverse_node_coord_top &
+          + (reverse_node_coord_bottom - reverse_node_coord_top))
+
+      end if
+
+      ! Loop over the fine resolution mesh columns
+      do column=1, self%fine_mesh_edge_cells_x
+
+        if (mod((column-1), x_ratio) == 0) then
+
+          vert_coords(2, self%verts_on_cell(NE, cell)) &
+            = (reverse_node_coord_top &
+            + (reverse_node_coord_bottom - reverse_node_coord))
+
+          if ((row-1) == (self%fine_mesh_edge_cells_y - y_ratio)) then
+
+            vert_coords(2, self%verts_on_cell(SE, cell)) &
+              = (reverse_node_coord_top &
+              + (reverse_node_coord_bottom - reverse_node_coord_top))
+
+          end if
+
+          ! Increment the cell counter
+
+          cell = cell + 1
+
+        end if
+
+      end do
+
+    end if
+
+    call stretch_transform(row,                               &
+                           reverse_node_coord, stretch_coord, &
+                           axis_direction,                    &
+                           n_inner, n_stretch, inflation,     &
+                           outer_ends_l, outer_ends_r,        &
+                           inner_ends_l, inner_ends_r)
+  end do
+
+  select case (self%coord_sys)
+
+  case(coord_sys_xyz)
+    self%coord_units_x = 'm'
+    self%coord_units_y = 'm'
+
+  case(coord_sys_ll)
+    self%coord_units_x = 'radians'
+    self%coord_units_y = 'radians'
+
+    vert_coords = vert_coords * degrees_to_radians
+
+  case default
+    write(log_scratch_space,'(A,I0)') &
+        'Unset coordinate system enumeration: ', self%coord_sys
+    call log_event( log_scratch_space, LOG_LEVEL_ERROR )
+
+  end select
+
+  call move_alloc(vert_coords, self%vert_coords)
+
+  return
+end subroutine assign_stretched_mesh_coords
+
 
 !-------------------------------------------------------------------------------
 !> @brief   Calculates the coordinates of vertices in the mesh.(private subroutine)
@@ -1682,7 +1926,11 @@ subroutine generate(self)
 
   if (self%nmaps > 0) call calc_global_mesh_maps(self)
 
-  call calc_coords(self)
+  if (apply_stretch_transform) then
+    call assign_stretched_mesh_coords(self)
+  else
+    call calc_coords(self)
+  end if
 
   ! NOTE that due to the way cell centres are calculated for periodic meshes
   ! this calculation must be done before rotation.

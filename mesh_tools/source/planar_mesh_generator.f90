@@ -114,6 +114,7 @@ program planar_mesh_generator
   character(str_def) :: second_mesh
   character(str_def) :: tmp_str
   character(str_def) :: check_mesh(2)
+  integer(i_def)     :: fine_mesh_edge_cells_x, fine_mesh_edge_cells_y
   integer(i_def)     :: first_mesh_edge_cells_x,  first_mesh_edge_cells_y
   integer(i_def)     :: second_mesh_edge_cells_x, second_mesh_edge_cells_y
   real(r_def)        :: set_north_pole(2)
@@ -165,6 +166,10 @@ program planar_mesh_generator
   integer(i_def) :: lbc_rim_depth
 
   character(str_def) :: lbc_parent_mesh
+
+  logical :: apply_stretch_transform
+
+  character(str_def) :: transform_mesh
 
   !===================================================================
   ! 1.0 Set the logging level for the run, should really be able
@@ -234,6 +239,12 @@ program planar_mesh_generator
     call nml_obj%get_value( 'create_lbc_mesh', create_lbc_mesh )
     call nml_obj%get_value( 'lbc_rim_depth', lbc_rim_depth )
     call nml_obj%get_value( 'lbc_parent_mesh', lbc_parent_mesh )
+    call nml_obj%get_value( 'apply_stretch_transform', apply_stretch_transform )
+  end if
+
+  if (configuration%namelist_exists('stretch_transform')) then
+    nml_obj => configuration%get_namelist('stretch_transform')
+    call nml_obj%get_value( 'transform_mesh', transform_mesh )
   end if
 
   ! The number of mesh maps in the namelist array is unbounded
@@ -384,6 +395,17 @@ program planar_mesh_generator
         'Duplicate mesh requests found, '// &
         'please remove duplicate requests.'
     call log_event( log_scratch_space, LOG_LEVEL_ERROR )
+  end if
+
+  if (apply_stretch_transform) then
+    ! This enables support meshes to be created with a variable
+    ! resolution stretching function.
+    do j=1, n_meshes
+      if (trim(mesh_names(j)) == trim(transform_mesh)) then
+        fine_mesh_edge_cells_x = edge_cells_x(j)
+        fine_mesh_edge_cells_y = edge_cells_y(j)
+      end if
+    end do
   end if
 
   ! 4.7 Perform a number of checks related to mesh map
@@ -685,20 +707,24 @@ program planar_mesh_generator
     ! 6.4 Call generation strategy.
     if (n_targets == 0 .or. n_meshes == 1 ) then
 
-      mesh_gen(i) = gen_planar_type(                          &
-                        reference_element  = cube_element,    &
-                        mesh_name          = mesh_names(i),   &
-                        geometry           = geometry,        &
-                        topology           = topology,        &
-                        coord_sys          = coord_sys,       &
-                        edge_cells_x       = edge_cells_x(i), &
-                        edge_cells_y       = edge_cells_y(i), &
-                        periodic_x         = periodic_x,      &
-                        periodic_y         = periodic_y,      &
-                        domain_size        = domain_size,     &
-                        domain_centre      = domain_centre,   &
-                        rotate_mesh        = rotate_mesh,     &
-                        target_north_pole  = set_north_pole,  &
+      mesh_gen(i) = gen_planar_type(                                 &
+                        reference_element  = cube_element,           &
+                        mesh_name          = mesh_names(i),          &
+                        geometry           = geometry,               &
+                        topology           = topology,               &
+                        coord_sys          = coord_sys,              &
+                        edge_cells_x       = edge_cells_x(i),        &
+                        edge_cells_y       = edge_cells_y(i),        &
+                        fine_mesh_edge_cells_x                       &
+                                           = fine_mesh_edge_cells_x, &
+                        fine_mesh_edge_cells_y                       &
+                                           = fine_mesh_edge_cells_y, &
+                        periodic_x         = periodic_x,             &
+                        periodic_y         = periodic_y,             &
+                        domain_size        = domain_size,            &
+                        domain_centre      = domain_centre,          &
+                        rotate_mesh        = rotate_mesh,            &
+                        target_north_pole  = set_north_pole,         &
                         target_null_island = set_null_island )
 
     else if (n_meshes > 1) then
@@ -729,6 +755,8 @@ program planar_mesh_generator
                         cube_element, mesh_names(i),               &
                         geometry, topology, coord_sys,             &
                         edge_cells_x(i), edge_cells_y(i),          &
+                        fine_mesh_edge_cells_x,                    &
+                        fine_mesh_edge_cells_y,                    &
                         periodic_x, periodic_y,                    &
                         domain_size, domain_centre,                &
                         target_mesh_names   = target_mesh_names,   &

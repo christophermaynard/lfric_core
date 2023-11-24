@@ -199,6 +199,10 @@ contains
                              topology     = topology_periodic,      &
                              edge_cells_x = this%coarse_ncells_x,   &
                              edge_cells_y = this%coarse_ncells_y,   &
+                             fine_mesh_edge_cells_x =               &
+                                            this%coarse_ncells_x,   &
+                             fine_mesh_edge_cells_y =               &
+                                            this%coarse_ncells_y,   &
                              periodic_x   = .true.,                 &
                              periodic_y   = .true.,                 &
                              domain_size  = this%domain_size,       &
@@ -213,6 +217,10 @@ contains
                              topology     = topology_periodic,      &
                              edge_cells_x = this%fine_ncells_x,     &
                              edge_cells_y = this%fine_ncells_y,     &
+                             fine_mesh_edge_cells_x =               &
+                                            this%fine_ncells_x,     &
+                             fine_mesh_edge_cells_y =               &
+                                            this%fine_ncells_y,     &
                              periodic_x   = .true.,                 &
                              periodic_y   = .true.,                 &
                              domain_size  = this%domain_size,       &
@@ -229,6 +237,10 @@ contains
                              topology     = topology_channel,     &
                              edge_cells_x = this%coarse_ncells_x, &
                              edge_cells_y = this%coarse_ncells_y, &
+                             fine_mesh_edge_cells_x =             &
+                                            this%coarse_ncells_x, &
+                             fine_mesh_edge_cells_y =             &
+                                            this%coarse_ncells_y, &
                              periodic_x   = .true.,               &
                              periodic_y   = .false.,              &
                              domain_size  = this%domain_size,     &
@@ -244,6 +256,10 @@ contains
                              topology     = topology_channel,   &
                              edge_cells_x = this%fine_ncells_x, &
                              edge_cells_y = this%fine_ncells_y, &
+                             fine_mesh_edge_cells_x =           &
+                                            this%fine_ncells_x, &
+                             fine_mesh_edge_cells_y =           &
+                                            this%fine_ncells_y, &
                              periodic_x   = .true.,             &
                              periodic_y   = .false.,            &
                              domain_size  = this%domain_size,   &
@@ -258,6 +274,10 @@ contains
                              topology     = topology_channel,     &
                              edge_cells_x = this%coarse_ncells_x, &
                              edge_cells_y = this%coarse_ncells_y, &
+                             fine_mesh_edge_cells_x =             &
+                                            this%coarse_ncells_x, &
+                             fine_mesh_edge_cells_y =             &
+                                            this%coarse_ncells_y, &
                              periodic_x   = .false.,              &
                              periodic_y   = .true.,               &
                              domain_size  = this%domain_size,     &
@@ -273,6 +293,10 @@ contains
                              topology     = topology_channel,   &
                              edge_cells_x = this%fine_ncells_x, &
                              edge_cells_y = this%fine_ncells_y, &
+                             fine_mesh_edge_cells_x =           &
+                                            this%fine_ncells_x, &
+                             fine_mesh_edge_cells_y =           &
+                                            this%fine_ncells_y, &
                              periodic_x   = .false.,            &
                              periodic_y   = .true.,             &
                              domain_size  = this%domain_size,   &

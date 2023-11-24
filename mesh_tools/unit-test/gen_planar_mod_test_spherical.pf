@@ -322,6 +322,8 @@ contains
                                 coord_sys=this%coord_sys,                 &
                                 edge_cells_x=this%x_size,                 &
                                 edge_cells_y=this%y_size,                 &
+                                fine_mesh_edge_cells_x=this%x_size,       &
+                                fine_mesh_edge_cells_y=this%y_size,       &
                                 periodic_x=this%x_periodic,               &
                                 periodic_y=this%y_periodic,               &
                                 domain_size=this%domain_size,             &
