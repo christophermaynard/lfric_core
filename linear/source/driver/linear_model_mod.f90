@@ -66,15 +66,19 @@ contains
 
     type(field_collection_type), pointer :: moisture_fields => null()
     type(field_array_type), pointer      :: mr_array => null()
+    type(field_array_type), pointer      :: ls_mr_array => null()
+    type(field_array_type), pointer      :: ls_moist_dyn_array => null()
 
     ! Get pointers to field collections for use downstream
     prognostic_fields => modeldb%model_data%prognostic_fields
     moisture_fields => modeldb%fields%get_field_collection("moisture_fields")
     call moisture_fields%get_field("mr", mr_array)
     mr => mr_array%bundle
+    call moisture_fields%get_field("ls_mr", ls_mr_array)
+    ls_mr => ls_mr_array%bundle
+    call moisture_fields%get_field("ls_moist_dyn", ls_moist_dyn_array)
+    ls_moist_dyn => ls_moist_dyn_array%bundle
     ls_fields => modeldb%model_data%ls_fields
-    ls_mr => modeldb%model_data%ls_mr
-    ls_moist_dyn => modeldb%model_data%ls_moist_dyn
 
     ! Get pointers to fields in the prognostic/diagnostic field collections
     ! for use downstream

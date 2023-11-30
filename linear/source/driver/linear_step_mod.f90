@@ -86,6 +86,8 @@ module linear_step_mod
     type(field_collection_type), pointer :: moisture_fields => null()
     type(field_array_type), pointer      :: mr_array => null()
     type(field_array_type), pointer      :: moist_dyn_array => null()
+    type(field_array_type), pointer      :: ls_mr_array => null()
+    type(field_array_type), pointer      :: ls_moist_dyn_array => null()
 
     write( log_scratch_space, '("/", A, "\ ")' ) repeat( "*", 76 )
     call log_event( log_scratch_space, LOG_LEVEL_TRACE )
@@ -104,8 +106,10 @@ module linear_step_mod
     derived_fields => modeldb%model_data%derived_fields
 
     ls_fields => modeldb%model_data%ls_fields
-    ls_mr => modeldb%model_data%ls_mr
-    ls_moist_dyn => modeldb%model_data%ls_moist_dyn
+    call moisture_fields%get_field("ls_mr", ls_mr_array)
+    call moisture_fields%get_field("ls_moist_dyn", ls_moist_dyn_array)
+    ls_mr => ls_mr_array%bundle
+    ls_moist_dyn => ls_moist_dyn_array%bundle
 
     ! Get pointers to fields in the prognostic/diagnostic field collections
     ! for use downstream

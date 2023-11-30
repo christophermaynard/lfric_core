@@ -9,6 +9,7 @@ module linear_model_data_mod
 
   use constants_mod,                  only : i_def, r_def, l_def, str_def
   use pure_abstract_field_mod,        only : pure_abstract_field_type
+  use field_array_mod,                only : field_array_type
   use field_mod,                      only : field_type
   use field_collection_mod,           only : field_collection_type
   use finite_element_config_mod,      only : element_order
@@ -75,6 +76,10 @@ contains
     type( field_type ),            pointer :: ls_moist_dyn(:) => null()
     type( linked_list_type ),      pointer :: ls_times_list => null()
 
+    type(field_collection_type), pointer :: moisture_fields => null()
+    type(field_array_type), pointer      :: ls_mr_array => null()
+    type(field_array_type), pointer      :: ls_moist_dyn_array => null()
+
     integer(i_def)     :: imr
     character(str_def) :: name
     character(str_def) :: moist_dyn_name
@@ -89,8 +94,12 @@ contains
     prognostics => modeldb%model_data%prognostic_fields
     ls_times_list => modeldb%model_axes%ls_times_list
     ls_fields => modeldb%model_data%ls_fields
-    ls_mr => modeldb%model_data%ls_mr
-    ls_moist_dyn => modeldb%model_data%ls_moist_dyn
+
+    moisture_fields => modeldb%fields%get_field_collection("moisture_fields")
+    call moisture_fields%get_field("ls_mr",ls_mr_array)
+    call moisture_fields%get_field("ls_moist_dyn", ls_moist_dyn_array)
+    ls_mr => ls_mr_array%bundle
+    ls_moist_dyn => ls_moist_dyn_array%bundle
 
     write(log_scratch_space,'(A,A)') "Create ls fields: "// &
           "Setting up ls field collection"
@@ -225,6 +234,14 @@ contains
     type( field_type ), pointer :: ls_field => null()
     integer(i_def), parameter   :: number_steps = 10
 
+    type(field_collection_type), pointer :: moisture_fields => null()
+    type(field_array_type), pointer      :: ls_mr_array => null()
+    type(field_array_type), pointer      :: ls_moist_dyn_array => null()
+
+    moisture_fields => modeldb%fields%get_field_collection("moisture_fields")
+    call moisture_fields%get_field("ls_mr", ls_mr_array)
+    call moisture_fields%get_field("ls_moist_dyn", ls_moist_dyn_array)
+
     select case( ls_option )
 
       case( ls_option_analytic )
@@ -255,7 +272,7 @@ contains
 
         case( pert_option_analytic )
 
-          call linear_init_reference_ls( modeldb%model_data )
+          call linear_init_reference_ls( modeldb )
 
         case( pert_option_file )
           call log_event("This pert_option not available with ls_option_analytic ", LOG_LEVEL_ERROR)
@@ -271,8 +288,8 @@ contains
         call init_ls_file_alg( modeldb%model_axes%ls_times_list, &
                                modeldb%clock,                    &
                                modeldb%model_data%ls_fields,     &
-                               modeldb%model_data%ls_mr,         &
-                               modeldb%model_data%ls_moist_dyn )
+                               ls_mr_array%bundle,               &
+                               ls_moist_dyn_array%bundle )
 
       case default
 
@@ -293,7 +310,7 @@ contains
     call modeldb%model_data%ls_fields%get_field("ls_theta", ls_field)
     call ls_field%log_minmax(LOG_LEVEL_INFO,'ls_theta')
 
-    ls_field => modeldb%model_data%ls_mr(1)
+    ls_field => ls_mr_array%bundle(1)
     call ls_field%log_minmax(LOG_LEVEL_INFO,'ls_mr')
 
   end subroutine linear_init_ls

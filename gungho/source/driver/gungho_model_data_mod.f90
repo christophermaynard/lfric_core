@@ -80,10 +80,6 @@ module gungho_model_data_mod
 
     !> Fields for the tangent linear linearisation state
     type( field_collection_type ), public   :: ls_fields
-    !> Array of linearisation fields containing the moisture mixing ratios
-    type( field_type ), allocatable, public :: ls_mr(:)
-    !> Array of linearisation fields containing the moist dynamics
-    type( field_type ), allocatable, public :: ls_moist_dyn(:)
 
     contains
 

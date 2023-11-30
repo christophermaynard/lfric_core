@@ -11,7 +11,9 @@ module linear_driver_mod
   use constants_mod,              only : i_def, r_def, imdi
   use driver_io_mod,              only : get_io_context
   use extrusion_mod,              only : TWOD
+  use field_array_mod,            only : field_array_type
   use field_mod,                  only : field_type
+  use field_collection_mod,       only : field_collection_type
   use gungho_diagnostics_driver_mod, &
                                   only : gungho_diagnostics_driver
   use gungho_model_mod,           only : initialise_infrastructure, &
@@ -168,12 +170,20 @@ contains
 
     type(modeldb_type), intent(inout) :: modeldb
 
+    type(field_collection_type), pointer :: moisture_fields => null()
+    type(field_array_type), pointer      :: ls_mr_array => null()
+    type(field_array_type), pointer      :: ls_moist_dyn_array => null()
+
+    moisture_fields => modeldb%fields%get_field_collection("moisture_fields")
+    call moisture_fields%get_field("ls_mr", ls_mr_array)
+    call moisture_fields%get_field("ls_moist_dyn", ls_moist_dyn_array)
+
     if ( ls_option == ls_option_file ) then
       call update_ls_file_alg( modeldb%model_axes%ls_times_list, &
                                modeldb%clock,                    &
                                modeldb%model_data%ls_fields,     &
-                               modeldb%model_data%ls_mr,         &
-                               modeldb%model_data%ls_moist_dyn )
+                               ls_mr_array%bundle,               &
+                               ls_moist_dyn_array%bundle )
     end if
 
     call linear_step( mesh, twod_mesh, &
@@ -186,9 +196,8 @@ contains
       call gungho_diagnostics_driver( modeldb, mesh, twod_mesh, &
                                       nodal_output_on_w3 )
 
-      call linear_diagnostics_driver( mesh,               &
-                                      modeldb%model_data, &
-                                      modeldb%clock,      &
+      call linear_diagnostics_driver( mesh,    &
+                                      modeldb, &
                                       nodal_output_on_w3 )
     end if
 

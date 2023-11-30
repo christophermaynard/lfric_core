@@ -118,6 +118,8 @@ module tl_test_semi_imp_alg_mod
     type(field_collection_type), pointer :: moisture_fields => null()
     type(field_array_type), pointer      :: mr_array => null()
     type(field_array_type), pointer      :: moist_dyn_array => null()
+    type(field_array_type), pointer      :: ls_mr_array => null()
+    type(field_array_type), pointer      :: ls_moist_dyn_array => null()
 
     real(r_def) :: gamma_u, gamma_rho, gamma_exner, gamma_theta
     real(r_def) :: gamma_mr
@@ -135,8 +137,6 @@ module tl_test_semi_imp_alg_mod
 
 
     ls_fields         => modeldb%model_data%ls_fields
-    ls_moist_dyn      => modeldb%model_data%ls_moist_dyn
-    ls_mr             => modeldb%model_data%ls_mr
     prognostic_fields => modeldb%model_data%prognostic_fields
     diagnostic_fields => modeldb%model_data%diagnostic_fields
 
@@ -145,6 +145,10 @@ module tl_test_semi_imp_alg_mod
     call moisture_fields%get_field("moist_dyn", moist_dyn_array)
     mr => mr_array%bundle
     moist_dyn => moist_dyn_array%bundle
+    call moisture_fields%get_field("ls_mr", ls_mr_array)
+    call moisture_fields%get_field("ls_moist_dyn", ls_moist_dyn_array)
+    ls_mr => ls_mr_array%bundle
+    ls_moist_dyn => ls_moist_dyn_array%bundle
     adv_tracer_all_outer => modeldb%model_data%adv_tracer_all_outer
     adv_tracer_last_outer => modeldb%model_data%adv_tracer_last_outer
     con_tracer_all_outer => modeldb%model_data%con_tracer_all_outer

@@ -82,6 +82,7 @@ module tl_test_sample_eos_pressure_mod
 
     type(field_collection_type), pointer :: moisture_fields => null()
     type(field_array_type), pointer      :: moist_dyn_array => null()
+    type(field_array_type), pointer      :: ls_moist_dyn_array => null()
 
     real(r_def) :: norm_diff, norm_diff_prev
     real(r_def) :: gamma
@@ -107,7 +108,8 @@ module tl_test_sample_eos_pressure_mod
     moisture_fields => modeldb%fields%get_field_collection("moisture_fields")
     call moisture_fields%get_field("moist_dyn", moist_dyn_array)
     n_moist_dyn => moist_dyn_array%bundle
-    ls_moist_dyn => modeldb%model_data%ls_moist_dyn
+    call moisture_fields%get_field("ls_moist_dyn", ls_moist_dyn_array)
+    ls_moist_dyn => ls_moist_dyn_array%bundle
     call clone_bundle(n_moist_dyn, p_moist_dyn, num_moist_factors)
 
     ! Output fields
