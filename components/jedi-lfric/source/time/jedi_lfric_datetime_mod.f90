@@ -21,7 +21,6 @@ module jedi_lfric_datetime_mod
                                                 log_scratch_space, &
                                                 LOG_LEVEL_INFO,    &
                                                 LOG_LEVEL_ERROR
-  use time_config_mod,                   only : calendar_start
 
   implicit none
   private
@@ -38,7 +37,6 @@ module jedi_lfric_datetime_mod
 
   contains
 
-    procedure, public  :: init_lfric_calendar_start
     procedure, private :: init_iso_string
     procedure, private :: init_string
     procedure, private :: init_YYMMDD_hhmmss
@@ -70,26 +68,6 @@ module jedi_lfric_datetime_mod
   end type jedi_datetime_type
 
 contains
-
-  !> @brief Initialise a datetime using the lfric
-  !!        calendar_start namelist variable
-  subroutine init_lfric_calendar_start( self )
-
-    implicit none
-
-    class( jedi_datetime_type ), intent(inout) :: self
-
-    call log_event( 'Creating JEDI datetime using LFRic calendar_start', LOG_LEVEL_INFO )
-
-    if ( calendar_start == 'unset' ) then
-      write ( log_scratch_space, '(A)' ) 'Creating JEDI datetime FAIL: &
-                                        & calendar_start has not been loaded'
-      call log_event( log_scratch_space, LOG_LEVEL_ERROR )
-    end if
-
-    call self%init_string( calendar_start )
-
-  end subroutine init_lfric_calendar_start
 
   !> @brief   Initialise a datetime using an iso string (UTC)
   !> @details Initialise a jedi datetime using an iso string

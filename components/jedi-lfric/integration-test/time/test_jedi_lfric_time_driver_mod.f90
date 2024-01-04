@@ -12,11 +12,9 @@ module test_jedi_lfric_time_driver_mod
                                                      test_hhmmss_to_seconds,       &
                                                      test_seconds_to_hhmmss_large, &
                                                      test_seconds_to_hhmmss_neg
-  use test_jedi_lfric_datetime_mod,           only : test_init_lfric_calendar_start,     &
-                                                     test_init_lfric_calendar_start_err, &
-                                                     test_init_string_err,               &
-                                                     test_copy_from_jedi_datetime_err,   &
-                                                     test_add_duration_to_datetime,      &
+  use test_jedi_lfric_datetime_mod,           only : test_init_string_err,             &
+                                                     test_copy_from_jedi_datetime_err, &
+                                                     test_add_duration_to_datetime,    &
                                                      test_duration_from_datetimes
   use test_jedi_lfric_duration_mod,           only : test_duration_init_bad_string_err,     &
                                                      test_duration_divide_zero_err,         &
@@ -29,8 +27,6 @@ module test_jedi_lfric_time_driver_mod
   private
   public test_jedi_interface_init,             &
          test_jedi_interface_final,            &
-         run_init_lfric_calendar_start,        &
-         run_init_lfric_calendar_start_err,    &
          run_init_string_err,                  &
          run_copy_from_jedi_datetime_err,      &
          run_add_duration_to_datetime,         &
@@ -61,25 +57,6 @@ contains
     implicit none
 
   end subroutine test_jedi_interface_final
-
-  !> @brief Runs the init_lfric_calendar_start test
-  subroutine run_init_lfric_calendar_start()
-
-    implicit none
-
-    call test_init_lfric_calendar_start()
-
-  end subroutine run_init_lfric_calendar_start
-
-  !> @brief Tests logging an error by init_lfric_calendar_start
-  !!        if the calendar_start namelist variable isn't loaded
-  subroutine run_init_lfric_calendar_start_err()
-
-    implicit none
-
-    call test_init_lfric_calendar_start_err()
-
-  end subroutine run_init_lfric_calendar_start_err
 
   !> @brief Tests logging an error when initialising a datetime
   !!        with a bad string

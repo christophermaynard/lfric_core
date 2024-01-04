@@ -130,28 +130,6 @@ class ErrorSerialTest(MpiTest):  # pylint: disable=too-few-public-methods
         return success
 
 
-class init_lfric_calendar_start(LFRicTimeTest):
-    '''
-    Test initialising a datetime with the lfric
-    calendar_start namelist variable
-    '''
-
-    def __init__(self):
-        flag = "init_lfric_calendar_start"
-        super().__init__(flag)
-
-
-class init_lfric_calendar_start_err(ErrorSerialTest):
-    '''
-    Test logging an error if the calendar_start
-    namelist variable isn't loaded
-    '''
-
-    def __init__(self):
-        flag = "init_lfric_calendar_start_err"
-        super().__init__(flag)
-
-
 class init_string_err(ErrorSerialTest):
     '''
     Tests logging an error when initialising a datetime
@@ -310,8 +288,6 @@ class duration_divide_int_remainder_err(ErrorSerialTest):
 
 
 if __name__ == '__main__':
-    TestEngine.run(init_lfric_calendar_start())
-    TestEngine.run(init_lfric_calendar_start_err())
     TestEngine.run(init_string_err())
     TestEngine.run(copy_from_jedi_datetime_err())
     TestEngine.run(add_duration_to_datetime())

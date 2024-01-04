@@ -58,7 +58,7 @@ subroutine initialise( self )
   type( jedi_datetime_type ) :: next_datetime
   type( jedi_duration_type ) :: time_step
 
-  call next_datetime%init_lfric_calendar_start()
+  call next_datetime%init( '2018-04-14T21:00:00' )
   call time_step%init( 'P0DT1H0M0S' )
 
   datetime_entries = 9_i_def

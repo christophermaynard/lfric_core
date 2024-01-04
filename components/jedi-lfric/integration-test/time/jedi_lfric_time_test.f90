@@ -17,8 +17,6 @@ program jedi_lfric_time_test
                                               finalise_halo_comms
   use test_jedi_lfric_time_driver_mod, only : test_jedi_interface_init,             &
                                               test_jedi_interface_final,            &
-                                              run_init_lfric_calendar_start,        &
-                                              run_init_lfric_calendar_start_err,    &
                                               run_init_string_err,                  &
                                               run_copy_from_jedi_datetime_err,      &
                                               run_add_duration_to_datetime,         &
@@ -62,8 +60,6 @@ program jedi_lfric_time_test
   character(len=:), allocatable :: optional_arg
 
   ! Flags which determine the tests that will be carried out
-  logical(l_def) :: do_test_init_lfric_calendar_start = .false.
-  logical(l_def) :: do_test_init_lfric_calendar_start_err = .false.
   logical(l_def) :: do_test_init_string_err = .false.
   logical(l_def) :: do_test_copy_from_jedi_datetime_err = .false.
   logical(l_def) :: do_test_add_duration_to_datetime = .false.
@@ -113,8 +109,6 @@ program jedi_lfric_time_test
       " test_XXX "                           // &
       " optional_test__arg "                 // &
       " with XXX in { "                      // &
-      " init_lfric_calendar_start, "         // &
-      " init_lfric_calendar_start_err, "     // &
       " init_string_err, "                   // &
       " copy_from_jedi_datetime_err, "       // &
       " add_duration_to_datetime, "          // &
@@ -144,10 +138,6 @@ program jedi_lfric_time_test
   ! Choose test case depending on flag provided in the first command
   ! line argument
   select case (trim(test_flag))
-  case ("test_init_lfric_calendar_start")
-    do_test_init_lfric_calendar_start = .true.
-  case ("test_init_lfric_calendar_start_err")
-    do_test_init_lfric_calendar_start_err = .true.
   case ("test_init_string_err")
     do_test_init_string_err = .true.
   case ("test_copy_from_jedi_datetime_err")
@@ -180,19 +170,11 @@ program jedi_lfric_time_test
     call log_event( "Unknown test", LOG_LEVEL_ERROR )
   end select
 
-  ! must be before load_configuration call
-  if ( do_test_init_lfric_calendar_start_err ) then
-    call run_init_lfric_calendar_start_err()
-  end if
-
   ! Setup configuration, and initialise tests
   call configuration%initialise( program_name, table_len=10 )
   call read_configuration( filename, configuration )
   call test_jedi_interface_init()
 
-  if ( do_test_init_lfric_calendar_start ) then
-    call run_init_lfric_calendar_start()
-  end if
   if ( do_test_init_string_err ) then
     call run_init_string_err()
   end if

@@ -66,7 +66,7 @@ subroutine initialise( self )
   logical( kind=l_def )            :: variable_is_2d(nvars)
 
   ! Configuration inputs
-  call self%inc_time%init_lfric_calendar_start()
+  call self%inc_time%init( '2018-04-14T21:00:00' )
   self%read_file_prefix = "read_"
 
   ! Setup arrays required for field_meta_data
