@@ -201,18 +201,18 @@ contains
     call ffsl_hori_final_alg( flux_x, flux_y,                                  &
                               half_increment_xy, half_increment_yx,            &
                               dummy_np1, field_n, field_x, field_y, step_dt,   &
-                              transport_metadata, inner_order,                 &
+                              transport_metadata, outer_order,                 &
                               compute_adv_inc=.true., compute_field_np1=.false.)
     call ffsl_hori_first_alg( half_increment_xz, half_increment_yz, field_z,   &
                               step_dt, transport_metadata )
 
     call ffsl_vert_transport_alg( flux_z, half_increment_zx, dummy_np1,        &
                                   field_x, step_dt, transport_metadata,        &
-                                  inner_order, compute_adv_inc=.true.,         &
+                                  vertical_order, compute_adv_inc=.true.,      &
                                   compute_field_np1=.false. )
     call ffsl_vert_transport_alg( flux_z, half_increment_zy, dummy_np1,        &
                                   field_y, step_dt, transport_metadata,        &
-                                  inner_order, compute_adv_inc=.true.,         &
+                                  vertical_order, compute_adv_inc=.true.,      &
                                   compute_field_np1=.false. )
 
     call invoke( X_minus_bY(field_f, field_n, half_dt, half_increment_yz),     &
