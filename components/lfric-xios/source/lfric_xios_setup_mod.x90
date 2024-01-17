@@ -167,7 +167,7 @@ contains
     ! Initialise additional meshes
     if (present(alt_coords) .and. present(alt_panel_ids)) then
       do i = 1, size(alt_panel_ids)
-        call init_xios_mesh( alt_coords(:,i), alt_panel_ids(i), prime_mesh=.false. )
+        call init_xios_mesh( alt_coords(i,:), alt_panel_ids(i), prime_mesh=.false. )
       end do
     end if
 
@@ -203,12 +203,10 @@ contains
     integer(kind=i_def) :: i
 
     ! Node domain (W0)
-    integer(kind=i_def)           :: coord_dim_full
+    integer(kind=i_def)           :: coord_dim_annexed
     integer(kind=i_def)           :: coord_dim_owned
-    real(kind=r_def), allocatable :: nodes_lon_full(:)
-    real(kind=r_def), allocatable :: nodes_lat_full(:)
-    real(dp_xios),    allocatable :: nodes_lon(:)
-    real(dp_xios),    allocatable :: nodes_lat(:)
+    real(kind=r_def), allocatable :: nodes_lon_local(:)
+    real(kind=r_def), allocatable :: nodes_lat_local(:)
     real(dp_xios),    allocatable :: bnd_nodes_lon(:,:)
     real(dp_xios),    allocatable :: bnd_nodes_lat(:,:)
 
@@ -240,16 +238,14 @@ contains
     integer(kind=i_def)      :: num_face_local
     integer(kind=i_def)      :: nodes_per_edge
     integer(kind=i_def)      :: nodes_per_face
-    integer(kind=i_def)      :: num_edge_local
+    integer(kind=i_def)      :: num_edge_owned
     type(mesh_type), pointer :: mesh => null()
     type(mesh_type), pointer :: twod_mesh => null()
 
     type(function_space_type), pointer :: output_field_fs   => null()
     type(function_space_type), pointer :: w2h_fs   => null()
 
-    ! Variables for the gather to determine global domain sizes
-    ! from the local partitioned ones
-    integer(kind=i_def), allocatable :: local_undf(:)
+    ! Identify discontinuous spaces
     integer(kind=i_def) :: use_i_index(2) = (/ W3, Wtheta /)
 
     ! Factor to convert coords from radians to degrees if needed
@@ -275,9 +271,6 @@ contains
      r2d = 1.0_r_def
     endif
 
-    ! Set up array to hold number of dofs for local domains
-    allocate(local_undf(1))
-
     ! Set up fields to hold the output coordinates
     output_field_fs => function_space_collection%get_fs( mesh, element_order, W0 )
     do i = 1,3
@@ -299,17 +292,14 @@ contains
     ! Calculate the local size of a W2H fs in order to determine
     ! how many edge dofs for the current partition
     w2h_fs => function_space_collection%get_fs( twod_mesh, element_order, W2H )
-    num_edge_local = w2h_fs%get_last_dof_owned()/size(w2h_fs%get_levels())
-
-    ! Get the local value for last owned dof
-    local_undf(1) = proxy_coord_output(1)%vspace%get_last_dof_owned()
+    num_edge_owned = w2h_fs%get_last_dof_owned()/size(w2h_fs%get_levels())
 
     ! Get the unique fractional levels to set up vertical output domain
     nfull_levels = size( proxy_coord_output(1)%vspace%get_levels() )
 
-    ! Get sizes of full nodal coordinate field as well as local partition size
-    coord_dim_full = size(proxy_coord_output(1)%data) / nfull_levels
-    coord_dim_owned = local_undf(1) / nfull_levels
+    ! Get sizes the nodal coordinate: all local dofs and owned dofs
+    coord_dim_annexed = proxy_coord_output(1)%vspace%get_last_dof_annexed() / nfull_levels
+    coord_dim_owned = proxy_coord_output(1)%vspace%get_last_dof_owned() / nfull_levels
 
     ! Obtain sample_chi, which will be used for setting up XIOS coordinates
     if ( mesh%is_geometry_spherical() ) then
@@ -329,31 +319,32 @@ contains
     end if
 
     ! Allocate coordinate arrays
-    allocate(nodes_lon_full(coord_dim_full))
-    allocate(nodes_lat_full(coord_dim_full))
+    ! The coordinates are computed by cell, so need space for annexed dofs
+    allocate(nodes_lon_local(coord_dim_annexed))
+    allocate(nodes_lat_local(coord_dim_annexed))
 
-    allocate(nodes_lon( coord_dim_owned ))
-    allocate(nodes_lat( coord_dim_owned ))
+    ! Eventually only needs owned dofs
+    allocate(bnd_nodes_lon( 1, coord_dim_owned ))
+    allocate(bnd_nodes_lat( 1, coord_dim_owned ))
 
-    allocate(bnd_nodes_lon(1,size(nodes_lon_full)))
-    allocate(bnd_nodes_lat(1,size(nodes_lat_full)))
-
+    ! No concept of owned and annexed for face dofs
     allocate(bnd_faces_lon(nodes_per_face,num_face_local))
     allocate(bnd_faces_lat(nodes_per_face,num_face_local))
 
-    allocate(bnd_edges_lon(nodes_per_edge,num_edge_local))
-    allocate(bnd_edges_lat(nodes_per_edge,num_edge_local))
+    ! Unlike above, calc_xios_domain_coords avoids computing annexed edges
+    allocate(bnd_edges_lon(nodes_per_edge,num_edge_owned))
+    allocate(bnd_edges_lat(nodes_per_edge,num_edge_owned))
 
     ! Calculate the node coords arrays and also the face and edge bounds
     call calc_xios_domain_coords( twod_mesh, coord_output, sample_chi, &
                                   nfull_levels, num_face_local,        &
-                                  nodes_lon_full, nodes_lat_full,      &
+                                  nodes_lon_local, nodes_lat_local,    &
                                   bnd_faces_lon, bnd_faces_lat,        &
                                   bnd_edges_lon, bnd_edges_lat )
 
-    ! Construct node bounds arrays
-    bnd_nodes_lon=(reshape(nodes_lon_full, (/1, size(nodes_lon_full)/) ) )
-    bnd_nodes_lat=(reshape(nodes_lat_full, (/1, size(nodes_lat_full)/) ) )
+    ! Construct and initialise node bounds arrays - ignore the annexed dofs
+    bnd_nodes_lon=(reshape(nodes_lon_local(1:coord_dim_owned), (/1, coord_dim_owned/) ) )
+    bnd_nodes_lat=(reshape(nodes_lat_local(1:coord_dim_owned), (/1, coord_dim_owned/) ) )
 
     ! Initialise XIOS UGRID domains
     if (mesh_is_prime_mesh) then
@@ -403,10 +394,8 @@ contains
     end if
 
     ! Clean up things that are not needed after dimension setup
-    if ( allocated(nodes_lon) )      deallocate(nodes_lon)
-    if ( allocated(nodes_lat) )      deallocate(nodes_lat)
-    if ( allocated(nodes_lon_full) ) deallocate(nodes_lon_full)
-    if ( allocated(nodes_lat_full) ) deallocate(nodes_lat_full)
+    if ( allocated(nodes_lon_local) ) deallocate(nodes_lon_local)
+    if ( allocated(nodes_lat_local) ) deallocate(nodes_lat_local)
     if ( allocated(bnd_nodes_lon) )  deallocate(bnd_nodes_lon)
     if ( allocated(bnd_nodes_lat) )  deallocate(bnd_nodes_lat)
     if ( allocated(bnd_edges_lon) )  deallocate(bnd_edges_lon)
@@ -479,7 +468,12 @@ contains
 
   !> @brief   Compute the node domain coords for this partition
   !> @details Samples the chi field at nodal points, calculates cartesian coordinates.
-  !!          For spherical geometry, converts to lat-lon in degrees for specified layer.
+  !>          For spherical geometry, converts to lat-lon in degrees for specified layer.
+  !>          Note that the node and edge arrays are treated differently for practical reasons:
+  !>          lon_coords and lat_coords of the nodes include owned and annexed nodes because the computation
+  !>          is done by looping over faces, and because while a node may be annexed, the face
+  !>          is owned, and the face bound needs the node coordinate. Conversely, the routine
+  !>          computes coordinates only for the owned edges and not the annexed ones.
   !>
   !> @param[in]     twod_mesh             The 2D partitioned mesh
   !> @param[in]     nodal_coords          Input field
