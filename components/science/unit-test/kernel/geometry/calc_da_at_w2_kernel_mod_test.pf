@@ -181,31 +181,33 @@ contains
                              map_pid(:,cell) )
 
     ! dx = 4, dy = 7, dz = 13, dzdx=.75, hence areas are
-    ! N,S: 7*13 = 91
-    ! E,W: 4*13 = 52
-    ! T,B: 5*7  = 35
+
+    ! Face 1 = dx2 * dx3 = dy * dz (E,W): 7*13 = 91
+    ! Face 2 = dx1 * dx3 = dx * dz (N,S): 4*13 = 52
+    ! Face 3 = dx1 * dx2 = dx * dy (T,B): 5*7  = 35
+
     if ( r_def == real64 ) then
        use_tol = tol
-       @assertEqual(91.0_r_def, dA_w2( map_w2( N, cell) ), use_tol)
-       @assertEqual(91.0_r_def, dA_w2( map_w2( S, cell) ), use_tol)
-       @assertEqual(52.0_r_def, dA_w2( map_w2( E, cell) ), use_tol)
-       @assertEqual(52.0_r_def, dA_w2( map_w2( W, cell) ), use_tol)
+       @assertEqual(91.0_r_def, dA_w2( map_w2( W, cell) ), use_tol)
+       @assertEqual(91.0_r_def, dA_w2( map_w2( E, cell) ), use_tol)
+       @assertEqual(52.0_r_def, dA_w2( map_w2( N, cell) ), use_tol)
+       @assertEqual(52.0_r_def, dA_w2( map_w2( S, cell) ), use_tol)
        @assertEqual(35.0_r_def, dA_w2( map_w2( T, cell) ), use_tol)
        @assertEqual(35.0_r_def, dA_w2( map_w2( B, cell) ), use_tol)
     else
-       tst     = dA_w2( map_w2( N, cell) )
-       use_tol = 10.0_r_def*spacing( tst )
-       @assertEqual(91.0_r_def, tst, use_tol)
-
-       tst     = dA_w2( map_w2( S, cell) )
+       tst     = dA_w2( map_w2( W, cell) )
        use_tol = 10.0_r_def*spacing( tst )
        @assertEqual(91.0_r_def, tst, use_tol)
 
        tst     = dA_w2( map_w2( E, cell) )
        use_tol = 10.0_r_def*spacing( tst )
+       @assertEqual(91.0_r_def, tst, use_tol)
+
+       tst     = dA_w2( map_w2( N, cell) )
+       use_tol = 10.0_r_def*spacing( tst )
        @assertEqual(52.0_r_def, tst, use_tol)
 
-       tst     = dA_w2( map_w2( W, cell) )
+       tst     = dA_w2( map_w2( S, cell) )
        use_tol = 10.0_r_def*spacing( tst )
        @assertEqual(52.0_r_def, tst, use_tol)
 
