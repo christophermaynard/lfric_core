@@ -14,6 +14,7 @@ use function_space_collection_mod, only: function_space_collection
 use function_space_mod,      only: function_space_type
 use fs_continuity_mod,       only: W3, Wtheta
 use mr_indices_mod,          only: nummr, imr_v, imr_cl, imr_ci, imr_s
+use moist_dyn_mod,           only: num_moist_factors, total_mass
 use constants_mod,           only: r_def, i_def, l_def
 use timestepping_config_mod, only: dt
 use io_config_mod,           only: write_diag, use_xios_io
@@ -49,6 +50,7 @@ contains
 !> @param[in,out] dtheta_rad               Potential temperature increment
 !> @param[in]     theta                    Potential temperature field
 !> @param[in]     exner                    Exner pressure field in density space
+!> @param[in]     moist_dyn                Moist dynamics factors
 !> @param[in]     mr                       Mixing ratios
 !> @param[in]     pressure_in_wth          Pressure field
 !> @param[in]     temperature_in_wth       Temperature field
@@ -75,7 +77,7 @@ contains
 !> @param[in]     conv_liquid_mmr          Convective liquid gridbox MMR
 !> @param[in]     conv_frozen_mmr          Convective frozen gridbox MMR
 
-subroutine radiation_alg(dtheta_rad, theta, exner, mr,                        &
+subroutine radiation_alg(dtheta_rad, theta, exner, mr, moist_dyn,             &
                          pressure_in_wth, temperature_in_wth,                 &
                          derived_fields, radiation_fields, cloud_fields,      &
                          microphysics_fields, aerosol_fields, surface_fields, &
@@ -92,6 +94,7 @@ subroutine radiation_alg(dtheta_rad, theta, exner, mr,                        &
 
   type( field_type ), intent( inout ) :: dtheta_rad
   type( field_type ), intent( in ) :: theta, exner, mr(nummr)
+  type( field_type ), intent( in ) :: moist_dyn(num_moist_factors)
   type( field_type ), intent( in ) :: pressure_in_wth, temperature_in_wth
   type( field_type ), intent( in ) :: tile_sw_direct_albedo
   type( field_type ), intent( in ) :: tile_sw_diffuse_albedo
@@ -350,7 +353,8 @@ subroutine radiation_alg(dtheta_rad, theta, exner, mr,                        &
 
     call invoke( set_thermodynamic_kernel_type( &
                    exner, exner_in_wth, theta, theta_in_w3, rho_in_wth, &
-                   dz_in_wth, temperature_in_wth, d_mass, layer_heat_capacity, &
+                   dz_in_wth, temperature_in_wth, moist_dyn(total_mass), &
+                   d_mass, layer_heat_capacity, &
                    t_layer_boundaries, p_zero, kappa, gravity, cp ), &
                  name="set_thermodynamics_fields" )
 

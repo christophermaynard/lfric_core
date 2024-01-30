@@ -59,6 +59,7 @@ module slow_physics_alg_mod
   use function_space_mod,            only: function_space_type
   ! Moisture species
   use mr_indices_mod,            only: nummr, imr_v, imr_cl, imr_ci
+  use moist_dyn_mod,             only: num_moist_factors
   use enforce_lower_bound_kernel_mod, only: enforce_lower_bound_kernel_type
   use moisture_conservation_alg_mod,  only: moisture_conservation_alg
   use fs_continuity_mod,         only: W3, Wtheta
@@ -133,6 +134,7 @@ contains
   !> @param[in]     u                      3D wind field at start of timestep
   !> @param[in]     rho                    Rho on w3 space
   !> @param[in]     exner                  Exner pressure on w3 space
+  !> @param[in]     moist_dyn              Moist dynamics factors
   !> @param[in]     mr_n                   Mixing ratios at start of timestep
   !> @param[in]     derived_fields         Group of derived fields
   !> @param[in,out] radiation_fields       Fields for radiation scheme
@@ -153,7 +155,8 @@ contains
   !> @param[in]     mesh                   Current mesh
   !> @param[in]     twod_mesh              2d mesh
   subroutine slow_physics(du, dtheta, mr, visc_m, visc_h,                      &
-                          theta, u, rho, exner, mr_n, derived_fields,          &
+                          theta, u, rho, exner, moist_dyn, mr_n,               &
+                          derived_fields,                                      &
                           radiation_fields, microphysics_fields,               &
                           electric_fields,                                     &
                           orography_fields, turbulence_fields,                 &
@@ -171,6 +174,7 @@ contains
     type( field_type ), intent( inout ) :: mr(nummr)   ! Latest value, to update
     type( field_type ), intent( in )    :: mr_n(nummr) ! Start of timestep
                                                        ! Do not alter
+    type( field_type ), intent( in ) :: moist_dyn(num_moist_factors)
 
     ! Field groups
     type( field_collection_type ), intent(inout) :: derived_fields
@@ -545,7 +549,7 @@ contains
       !--------------------------------------------------------------------
       call radiation_fields%get_field('dtheta_rad', dtheta_rad)
       call radiation_fields%get_field('dmv_pc2_rad', dmv_pc2_rad)
-      call radiation_alg( dtheta_rad, theta, exner, mr_n,                      &
+      call radiation_alg( dtheta_rad, theta, exner, mr_n, moist_dyn,           &
                           pressure_in_wth, temperature_in_wth,                 &
                           derived_fields, radiation_fields, cloud_fields,      &
                           microphysics_fields, aerosol_fields, surface_fields, &
