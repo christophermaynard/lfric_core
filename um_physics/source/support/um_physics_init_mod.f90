@@ -244,7 +244,8 @@ contains
          l_conv_prog_precip, l_conv_prog_dtheta, l_conv_prog_dq,           &
          adv_conv_prog_dtheta, adv_conv_prog_dq,                           &
          tau_conv_prog_precip, tau_conv_prog_dtheta, tau_conv_prog_dq,     &
-         prog_ent_grad, prog_ent_int, prog_ent_max, prog_ent_min
+         prog_ent_grad, prog_ent_int, prog_ent_max, prog_ent_min,          &
+         ent_fac_sh, c_mass_sh, orig_mdet_fac
     use cv_param_mod, only: mtrig_ntml, md_pert_efrac
     use cv_stash_flg_mod, only: set_convection_output_flags
     use cv_set_dependent_switches_mod, only: cv_set_dependent_switches
@@ -666,6 +667,9 @@ contains
         prog_ent_int        = -2.9_r_um
         prog_ent_min        = 0.5_r_um
         prog_ent_max        = 2.5_r_um
+        ent_fac_sh          = 1.0_r_um
+        c_mass_sh           = 0.03_r_um
+        orig_mdet_fac       = 1.0_r_um
 
         ! Derived switches and parameters are set here based on the options
         ! above
