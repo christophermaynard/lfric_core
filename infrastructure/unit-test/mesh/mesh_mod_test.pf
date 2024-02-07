@@ -16,7 +16,6 @@ module mesh_mod_test
   use global_mesh_mod,      only: global_mesh_type
   use halo_comms_mod,       only: initialise_halo_comms, &
                                   finalise_halo_comms
-  use partition_mod,        only: partition_type
   use local_mesh_collection_mod, &
                             only: local_mesh_collection_type, &
                                   local_mesh_collection
@@ -50,7 +49,6 @@ module mesh_mod_test
   type, extends( MPITestCase ) :: mesh_test_type
     private
     type(global_mesh_type), pointer :: global_mesh => null()
-    type(partition_type)            :: partition
     type(local_mesh_type)           :: local_mesh
     type(uniform_extrusion_type)    :: extrusion
   contains
@@ -173,8 +171,9 @@ contains
 
     class( mesh_test_type ), intent( inout ) :: this
 
-    integer(i_def) :: global_mesh_id
-    real(r_def)    :: scaled_radius
+    type(partition_type) :: partition
+    integer(i_def)       :: global_mesh_id
+    real(r_def)          :: scaled_radius
 
     !Store the MPI communicator for later use
     call global_mpi%initialise(this%getMpiCommunicator())
@@ -186,9 +185,9 @@ contains
     global_mesh_id = global_mesh_collection%add_unit_test_global_mesh()
 
     this%global_mesh => global_mesh_collection%get_global_mesh(global_mesh_id)
-    this%partition   =  partition_type()
+    partition   =  partition_type()
 
-    call this%local_mesh%initialise( this%global_mesh, this%partition )
+    call this%local_mesh%initialise( this%global_mesh, partition )
     call this%local_mesh%init_cell_owner()
 
     scaled_radius = radius/scaling

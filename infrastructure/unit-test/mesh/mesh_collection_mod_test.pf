@@ -33,7 +33,6 @@ module mesh_collection_mod_test
   type, extends(MPITestCase), public ::mesh_collection_test_type
     private
     type(global_mesh_type), pointer :: global_mesh => null()
-    type(partition_type)            :: partition
     type(local_mesh_type)           :: local_mesh
     type(uniform_extrusion_type)    :: extrusion
   contains
@@ -56,7 +55,8 @@ contains
 
     class(mesh_collection_test_type), intent(inout) :: this
 
-    integer(i_def) :: global_test_mesh_id
+    type(partition_type) :: partition
+    integer(i_def)       :: global_test_mesh_id
 
     !Store the MPI communicator for later use
     call global_mpi%initialise(this%getMpiCommunicator())
@@ -68,8 +68,8 @@ contains
 
     global_test_mesh_id = global_mesh_collection%add_unit_test_global_mesh()
     this%global_mesh => global_mesh_collection%get_global_mesh( global_test_mesh_id )
-    this%partition   = partition_type()
-    call this%local_mesh%initialise( this%global_mesh, this%partition )
+    partition   = partition_type()
+    call this%local_mesh%initialise( this%global_mesh, partition )
     call this%local_mesh%init_cell_owner()
     this%extrusion   = uniform_extrusion_type( domain_bottom, &
                                                domain_top,    &

@@ -47,7 +47,6 @@ module field_collection_iterator_mod_test
     type(function_space_type), pointer :: w2_fs => null()
     type(function_space_type), pointer :: w3_fs => null()
     type(local_mesh_type)              :: unit_test_local_mesh
-    type(field_collection_type)        :: collection
   contains
     procedure setUp
     procedure tearDown
@@ -108,9 +107,6 @@ contains
                                                     W3 )
     nullify( mesh )
 
-    call this%collection%initialise( name="field_collection", &
-                                     table_len=5 )
-
   end subroutine setUp
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -160,6 +156,7 @@ contains
     type(field_proxy_type)              :: returned_field1_p
     type(integer_field_proxy_type)      :: returned_field2_p
 
+    type(field_collection_type)                    :: collection
     type(field_collection_iterator_type)           :: iter
     type(field_collection_real_iterator_type)      :: iter_real
     type(field_collection_integer_iterator_type)   :: iter_integer
@@ -184,8 +181,9 @@ contains
     !----------------- Create field collection 'A' & test extracts -------------------!
     ! Put test_field1 and test_field2 in to a collection.
     !
-    call this%collection%add_field(test_field1)  ! a real field
-    call this%collection%add_field(test_field2)  ! an integer field
+    call collection%initialise( name="field_collection", table_len=5 )
+    call collection%add_field(test_field1)  ! a real field
+    call collection%add_field(test_field2)  ! an integer field
 
     !----------------------Iterating over the 'A' Collection --------------------------!
 
@@ -195,7 +193,7 @@ contains
     ! 1. The real field with a first data item of 99.0
     ! 2. The integer field with 33 as the first data item
     !    - so check for that:
-    call iter%initialise(this%collection)
+    call iter%initialise(collection)
     do i=1,10
       if(.not.iter%has_next())exit
       fld=>iter%next()
@@ -219,7 +217,7 @@ contains
     ! ------- real ---------
     ! Check the real field iterator sees just the real field:
 
-    call iter_real%initialise(this%collection)
+    call iter_real%initialise(collection)
     do i=1,10
       if(.not.iter_real%has_next())exit
       returned_field1=>iter_real%next()
@@ -232,7 +230,7 @@ contains
 
     ! ------- integer ---------
     ! Check the integer field iterator sees just the integer field:
-    call iter_integer%initialise(this%collection)
+    call iter_integer%initialise(collection)
     do i=1,10
       if(.not.iter_integer%has_next())exit
       returned_field2=>iter_integer%next()
@@ -255,9 +253,11 @@ contains
 
     class(field_parent_type), pointer :: field => null()
 
+    type(field_collection_type)          :: collection
     type(field_collection_iterator_type) :: test_unit
 
-    call test_unit%initialise(this%collection)
+    call collection%initialise( name="field_collection", table_len=5 )
+    call test_unit%initialise(collection)
     @assertFalse( test_unit%has_next(), message="Empty list iterator didn't signal completion." )
 
     field=>test_unit%next()
@@ -275,9 +275,11 @@ contains
 
     class(field_parent_type), pointer :: field => null()
 
+    type(field_collection_type)               :: collection
     type(field_collection_real_iterator_type) :: test_unit
 
-    call test_unit%initialise(this%collection)
+    call collection%initialise( name="field_collection", table_len=5 )
+    call test_unit%initialise(collection)
     @assertFalse( test_unit%has_next(), message="Empty list real iterator didn't signal completion." )
 
     field=>test_unit%next()
@@ -295,9 +297,11 @@ contains
 
     class(field_parent_type), pointer :: field => null()
 
+    type(field_collection_type)                  :: collection
     type(field_collection_integer_iterator_type) :: test_unit
 
-    call test_unit%initialise(this%collection)
+    call collection%initialise( name="field_collection", table_len=5 )
+    call test_unit%initialise(collection)
     @assertFalse( test_unit%has_next(), message="Empty list integer iterator didn't signal completion." )
 
     field=>test_unit%next()
