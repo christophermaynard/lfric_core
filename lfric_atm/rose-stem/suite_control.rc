@@ -585,6 +585,21 @@
                      plotstr="plot_map.py $NODAL_DATA_DIR/lfric_gal_diagnostics.nc  $PLOT_DIR"
                      )',
   ],
+  'c896-test': [
+    'run_application("lfric_atm", "nwp_gal9_c896", checkkgo=False,
+                     resolutions=[("C896_MG", 240.0)],
+                     env={"crun":1, "nrun":720,
+                          "directives":{
+                                        "C896_MG":{"mpi_parts":4704,
+                                               "threads":1,
+                                               "xios_nodes":22,
+                                               "mpi_parts_xios":392,
+                                               "wallclock":"3:00:00"},
+					       },
+                         },
+                     plotstr="plot_map.py $NODAL_DATA_DIR/lfric_gal_diagnostics.nc  $PLOT_DIR"
+                     )',
+  ],
 } %}
 {# Include exoplanet groups #}
 %include inc/exoplanets.rc
