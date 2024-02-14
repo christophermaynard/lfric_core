@@ -6,10 +6,11 @@
 !>@brief Prepares the surface fields
 module init_surface_fields_alg_mod
 
-  use constants_mod,                   only: r_def
+  use constants_mod,                   only: r_def, i_def
 
   ! Derived Types
   use field_mod,                 only: field_type
+  use integer_field_mod,         only: integer_field_type
   use field_collection_mod,      only: field_collection_type
   use c_kappai,                  only: kappai, de
 
@@ -79,6 +80,7 @@ contains
     type( field_type ), pointer :: sea_u_current       => null()
     type( field_type ), pointer :: sea_v_current       => null()
     type( field_type ), pointer :: sea_current_w2      => null()
+    type( integer_field_type ), pointer :: ocn_cpl_point  => null()
 
     ! Local variables
     real(kind=r_def)            :: default_conductivity
@@ -108,6 +110,7 @@ contains
     call surface_fields%get_field('sea_u_current',sea_u_current)
     call surface_fields%get_field('sea_v_current',sea_v_current)
     call surface_fields%get_field('sea_current_w2',sea_current_w2)
+    call surface_fields%get_field('ocn_cpl_point',ocn_cpl_point)
 
     call invoke(                                                              &
                  ! Need initialising for aquaplanet
@@ -139,7 +142,8 @@ contains
                  ! Initialise sea surface current components to zero
                  setval_c(sea_u_current, 0.0_r_def ),                         &
                  setval_c(sea_v_current, 0.0_r_def ),                         &
-                 setval_c(sea_current_w2, 0.0_r_def ) )
+                 setval_c(sea_current_w2, 0.0_r_def ),                        &
+                 int_setval_c(ocn_cpl_point, 0_i_def )  )
 
     if (init_option == init_option_analytic .or. &
          ancil_option == ancil_option_none) then
