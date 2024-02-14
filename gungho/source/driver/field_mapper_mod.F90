@@ -182,6 +182,7 @@ contains
     self%stph => stph_fields
 
     call self%derived%initialise(name='derived_fields', table_len=100)
+    call self%cloud%initialise(name='cloud_fields', table_len=100)
 #ifdef UM_PHYSICS
     call self%radiation%initialise(name='radiation_fields', table_len=100)
     call self%microphysics%initialise(name='microphysics_fields', table_len=100)
@@ -189,7 +190,6 @@ contains
     call self%orography%initialise(name='orography_fields', table_len=100)
     call self%turbulence%initialise(name='turbulence_fields', table_len=100)
     call self%convection%initialise(name='convection_fields', table_len=100)
-    call self%cloud%initialise(name='cloud_fields', table_len=100)
     call self%surface%initialise(name='surface_fields', table_len=100)
     call self%soil%initialise(name='soil_fields', table_len=100)
     call self%snow%initialise(name='snow_fields', table_len=100)

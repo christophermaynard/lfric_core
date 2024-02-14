@@ -556,6 +556,11 @@ function get_length(self) result(length)
   integer(kind=i_def) :: i
 
   length = 0
+  if ( .not. allocated(self%field_list) ) then
+    call log_event("field_collection: get_length called for uninitialised collection", &
+                    LOG_LEVEL_ERROR)
+  end if
+
   do i = 0, self%table_len-1
     length = length + self%field_list(i)%get_length()
   end do
