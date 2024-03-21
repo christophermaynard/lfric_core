@@ -12,7 +12,7 @@ module intermesh_mappings_alg_mod
   use check_configuration_mod,        only : check_moisture_advective
   use constants_mod,                  only : i_def, r_def, l_def
   use enforce_lower_bound_kernel_mod, only : enforce_lower_bound_kernel_type
-  use extrusion_mod,                  only : SHIFTED
+  use extrusion_mod,                  only : SHIFTED, TWOD
   use field_collection_mod,           only : field_collection_type
   use finite_element_config_mod,      only : element_order
   use field_mod,                      only : field_type
@@ -41,7 +41,9 @@ module intermesh_mappings_alg_mod
 
   public  :: obtain_shifted_rho        ! Shifts rho from prime extrusion to shifted extrusion
   private :: restrict_scalar           ! Non-conservative restriction of W3/Wtheta field
+  private :: restrict_multidata        ! Non-conservative restriction of W3/Wtheta multidata field
   private :: prolong_scalar_simple     ! Injection/recovery of W3/Wtheta field
+  private :: prolong_multidata_simple  ! Injection/recovery of W3/Wtheta multidata field
   private :: prolong_scalar_reversible ! Reversible prolongation of non-conservative W3/Wtheta field
   public  :: map_scalar_intermesh      ! Public routine for non-conservative W3/Wtheta fields
   public  :: map_scalar_field          ! Simple interface to map_scalar_intermesh
@@ -116,6 +118,31 @@ contains
 
   end subroutine restrict_scalar
 
+  !> @brief Non-conservative restriction of a W3/Wtheta multidata field
+  !> @param[in,out] target_field  Target field, on a coarse mesh
+  !> @param[in]     source_field  Source field, on a fine mesh
+  subroutine restrict_multidata( target_field, source_field )
+
+    use psykal_lite_mod, only: invoke_restrict_multidata_scalar_kernel_type
+
+    implicit none
+
+    type(field_type),           intent(in)    :: source_field
+    type(field_type),           intent(inout) :: target_field
+    type(function_space_type), pointer :: fs_type => null()
+    integer(kind=i_def) :: ndata
+
+    fs_type => source_field%get_function_space()
+    ndata = fs_type%get_ndata()
+
+    if (fs_type%is_ndata_first()) then
+      call log_event('Multidata restriction has only been implemented for column first multidata fields', LOG_LEVEL_ERROR)
+    end if
+
+    call invoke_restrict_multidata_scalar_kernel_type(target_field, source_field, ndata)
+
+  end subroutine restrict_multidata
+
   !> @brief Non-conservative, irreversible prolongation of a W3/Wtheta field
   !> @details This is used for non-conservative reconstruction of a W3/Wtheta
   !!          field on a finer mesh, to be used for instance for a pressure or
@@ -151,6 +178,51 @@ contains
     end select
 
   end subroutine prolong_scalar_simple
+
+  !> @brief Non-conservative, irreversible prolongation of a W3/Wtheta multidata field
+  !> @details This is used for non-conservative reconstruction of a W3/Wtheta multidata
+  !!          field on a finer mesh, to be used for instance for a pressure or
+  !!          potential temperature field. The recovery order argument
+  !!          determines what order of reconstruction to use -- a zeroth-order
+  !!          recovery is equivalent to injection.
+  !> @param[in,out] target_field        Target field, on a fine mesh
+  !> @param[in]     source_field        Source field, on a coarse mesh
+  !> @param[in]     source_mask         Source mask, on a coarse mesh
+  !> @param[in]     recovery_order_arg  Order of reconstruction to use
+  subroutine prolong_multidata_simple( target_field, source_field, source_mask, recovery_order_arg )
+
+    use psykal_lite_mod,          only: invoke_prolong_multidata_linear_kernel_type, &
+                                        invoke_prolong_multidata_scalar_kernel_type
+
+    implicit none
+
+    type(field_type),           intent(in)    :: source_field
+    type(field_type),           intent(in)    :: source_mask
+    type(field_type),           intent(inout) :: target_field
+    integer(kind=i_def),        intent(in)    :: recovery_order_arg
+    integer(kind=i_def)                       :: ndata, stencil_extent
+    type(function_space_type), pointer :: fs_type => null()
+
+    fs_type => source_field%get_function_space()
+    ndata = fs_type%get_ndata()
+
+    if (fs_type%is_ndata_first()) then
+      call log_event('Multidata prolongation has only been implemented for column first multidata fields', LOG_LEVEL_ERROR)
+    end if
+
+    select case ( recovery_order_arg )
+    case ( recovery_order_constant )
+      call invoke( setval_c(target_field, 0.0_r_def ) )
+      call invoke_prolong_multidata_scalar_kernel_type(target_field, source_field, ndata)
+    case ( recovery_order_linear )
+      stencil_extent = 1_i_def
+      call invoke( setval_c(target_field, 0.0_r_def ) )
+      call invoke_prolong_multidata_linear_kernel_type(target_field, source_field, source_mask, stencil_extent, ndata)
+    case default
+      call log_event('Recovery order invalid or not implemented', LOG_LEVEL_ERROR)
+    end select
+
+  end subroutine prolong_multidata_simple
 
   !> @brief Non-conservative, reversible prolongation of a W3/Wtheta field
   !> @param[in,out] target_field  Target field, on a fine mesh
@@ -196,27 +268,39 @@ contains
   !!          appropriate restriction / prolongation routines.
   !> @param[in,out] target_field       Target field
   !> @param[in]     source_field       Source field
+  !> @param[in]     source_mask        Optional source mask
   !> @param[in]     lowest_order_flag  Optional logical argument to force any
   !!                                   recovery to be lowest-order
-  subroutine map_scalar_intermesh( target_field, source_field, lowest_order_flag )
+  subroutine map_scalar_intermesh( target_field, source_field, source_mask, lowest_order_flag )
+
 
     implicit none
 
     type(field_type),              intent(in)    :: source_field
     type(field_type),              intent(inout) :: target_field
+    type(field_type), optional,    intent(in)    :: source_mask
     logical(kind=l_def), optional, intent(in)    :: lowest_order_flag
 
+
     type(mesh_type), pointer  :: source_mesh => null()
+    type(mesh_type), pointer  :: source_mesh_2d => null()
     type(mesh_type), pointer  :: target_mesh => null()
+    type(field_type)          :: source_mask_temp
     integer(kind=i_def)       :: source_ncells
     integer(kind=i_def)       :: target_ncells
     integer(kind=i_def)       :: recovery_order_arg
-    integer(kind=i_def)       :: ndata
+    integer(kind=i_def)       :: ndata, nlayers
     type(function_space_type), pointer :: fs_type => null()
+    type(function_space_type), pointer :: fs_source_2d => null()
 
     ! Get source and target mesh ids and meshes
     source_mesh => source_field%get_mesh()
     target_mesh => target_field%get_mesh()
+    source_mesh_2d => mesh_collection%get_mesh(source_mesh, TWOD)
+
+    fs_source_2d => function_space_collection%get_fs(source_mesh_2d, element_order, W3)
+
+    nlayers = source_mesh%get_nlayers()
 
     fs_type => source_field%get_function_space()
     ndata = fs_type%get_ndata()
@@ -226,36 +310,45 @@ contains
     target_ncells = target_mesh%get_ncells()
 
     if ( source_ncells == target_ncells ) then
+
       call invoke( setval_X(target_field, source_field))
 
     else if ( source_ncells > target_ncells ) then
       if (ndata > 1) then
-        call log_event('Restriction not available for multidata field', LOG_LEVEL_ERROR)
+        call restrict_multidata(target_field, source_field)
+      else
+        call restrict_scalar(target_field, source_field)
       end if
-      call restrict_scalar(target_field, source_field)
 
     else
-      if (ndata > 1) then
-        call log_event('Prolongation not available for multidata field', LOG_LEVEL_ERROR)
-      end if
       if ( present(lowest_order_flag) .and. lowest_order_flag ) then
         recovery_order_arg = recovery_order_constant
       else
         recovery_order_arg = recovery_order
       end if
-
-      if ( recovery_order_arg == recovery_order_constant &
-           .or. reconstruction == reconstruction_simple ) then
-        call prolong_scalar_simple(target_field, source_field, recovery_order_arg)
-
+      if (ndata > 1) then
+        if (present(source_mask)) then
+          call prolong_multidata_simple(target_field, source_field, source_mask, recovery_order_arg)
+        else
+          call source_mask_temp%initialise( vector_space = fs_source_2d )
+          call invoke( setval_c(source_mask_temp, 1.0_r_def))
+          call prolong_multidata_simple(target_field, source_field, source_mask_temp, recovery_order_arg)
+        end if
       else
-        ! Reversible reconstruction
-        call prolong_scalar_reversible(target_field, source_field)
 
+        if ( recovery_order_arg == recovery_order_constant &
+            .or. reconstruction == reconstruction_simple ) then
+          call prolong_scalar_simple(target_field, source_field, recovery_order_arg)
+
+        else
+          ! Reversible reconstruction
+          call prolong_scalar_reversible(target_field, source_field)
+
+        end if
       end if
     end if
 
-    nullify(source_mesh, target_mesh, fs_type)
+    nullify(source_mesh, target_mesh, fs_type, fs_source_2d)
 
   end subroutine map_scalar_intermesh
 

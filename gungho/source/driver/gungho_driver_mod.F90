@@ -10,10 +10,11 @@
 module gungho_driver_mod
 
   use base_mesh_config_mod,       only : prime_mesh_name
-  use constants_mod,              only : r_def
+  use constants_mod,              only : r_def, l_def
   use derived_config_mod,         only : l_esm_couple
   use extrusion_mod,              only : TWOD
   use field_collection_mod,       only : field_collection_type
+  use formulation_config_mod,     only : use_multires_coupling
   use gungho_diagnostics_driver_mod, &
                                   only : gungho_diagnostics_driver
   use iau_time_control_mod,       only : calc_iau_ts_end
@@ -56,9 +57,11 @@ module gungho_driver_mod
 #ifdef UM_PHYSICS
   use variable_fields_mod,        only : update_variable_fields
   use lfric_xios_time_axis_mod,   only : regridder
-  use intermesh_mappings_alg_mod, only : map_scalar_field
+  use intermesh_mappings_alg_mod, only : map_scalar_intermesh
   use update_ancils_alg_mod,      only : update_ancils_alg
   use gas_calc_all_mod,           only : gas_calc_all
+  use multires_coupling_config_mod, &
+                                  only : lowest_order_aero_flag
   use update_iau_inc_alg_mod,     only : update_iau_alg
   use update_iau_surf_alg_mod,    only : add_surf_inc_alg
   use iau_config_mod,             only : iau_mode, &
@@ -125,8 +128,6 @@ contains
       ! For now use the coarsest mesh
       aerosol_mesh => mesh_collection%get_mesh(aerosol_mesh_name)
       aerosol_twod_mesh => mesh_collection%get_mesh(aerosol_mesh, TWOD)
-      write( log_scratch_space,'(A,A)' ) "aerosol mesh name:", aerosol_mesh%get_mesh_name()
-      call log_event( log_scratch_space, LOG_LEVEL_INFO )
     else
       aerosol_mesh => mesh
       aerosol_twod_mesh => twod_mesh
@@ -220,11 +221,17 @@ contains
 
 #ifdef UM_PHYSICS
     procedure(regridder), pointer :: regrid_operation => null()
+    logical(l_def)                :: regrid_lowest_order
 
     ! For clearing IAU fields after use
     type( field_collection_type ), pointer :: field_collection_ptr => null()
 
-    regrid_operation => map_scalar_field
+    regrid_operation => map_scalar_intermesh
+    if (use_multires_coupling) then
+      regrid_lowest_order = lowest_order_aero_flag
+    else
+      regrid_lowest_order = .false.
+    end if
 #endif
     ! Get model_axes out of modeldb
     model_axes => get_time_axes_from_collection(modeldb%values, "model_axes" )
@@ -315,7 +322,8 @@ contains
       call update_variable_fields( model_axes%ancil_times_list, &
                                    modeldb%clock,                       &
                                    modeldb%model_data%ancil_fields,     &
-                                   regrid_operation )
+                                   regrid_operation,                    &
+                                   regrid_lowest_order )
       call update_ancils_alg( model_axes%ancil_times_list, &
                               modeldb%clock,                       &
                               modeldb%model_data%ancil_fields,     &

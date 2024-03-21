@@ -78,8 +78,7 @@ contains
                                    init_exner_bt         = .true.,               &
                                    dlayer_on             = .false.,              &
                                    si_momentum_equation  = .true.,               &
-                                   vector_invariant      = .true.                &
-                                 )
+                                   vector_invariant=.true.)
 
     call feign_initial_wind_config( profile=profile_none,                  &
                                     profile_data_u = (/ 0.0_r_def /),      &

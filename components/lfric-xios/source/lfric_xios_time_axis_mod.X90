@@ -108,15 +108,19 @@ module lfric_xios_time_axis_mod
   abstract interface
 
     !> @brief Interface for optionally regridding a field
-    !> @param[in,out]   target_field  Name of the field to be updated
-    !> @param[in]       source_field  Name of the original field
+    !> @param[in,out]   target_field       Name of the field to be updated
+    !> @param[in]       source_field       Name of the original field
+    !> @param[in]       source_mask        Optional mask for mapping of multidata fields
+    !> @param[in]       lowest_order_flag  Optional flag for using low-order mappings
     !>
-    subroutine regridder(target_field, source_field)
-      import :: field_type
+    subroutine regridder(target_field, source_field, source_mask, lowest_order_flag)
+      import :: field_type, l_def
       implicit none
 
       type(field_type),              intent(inout) :: target_field
       type(field_type),              intent(in)    :: source_field
+      type(field_type), optional,    intent(in)    :: source_mask
+      logical(kind=l_def), optional, intent(in)    :: lowest_order_flag
     end subroutine regridder
   end interface
 
@@ -569,14 +573,16 @@ contains
   end subroutine update_fields
 
   !> @brief Populates model fields using time axis data fields.
-  !> @param[in] model_fields Field collection to populate from data fields
-  !> @param[in] regrid_proc  Optional procedure to regrid the field
-  subroutine populate_model_fields(self, model_fields, regrid_proc)
+  !> @param[in] model_fields         Field collection to populate from data fields
+  !> @param[in] regrid_proc          Procedure to regrid the field
+  !> @param[in] regrid_lowest_order  Flag for regrid_operation to regrid using low-order mappings
+  subroutine populate_model_fields(self, model_fields, regrid_proc, regrid_lowest_order)
 
     implicit none
 
     class(time_axis_type),       intent(inout) :: self
     type(field_collection_type), intent(in)    :: model_fields
+    logical(l_def), optional                   :: regrid_lowest_order
     procedure(regridder), pointer, optional    :: regrid_proc
 
     class(field_parent_type),  pointer :: field_next => null()
@@ -645,7 +651,7 @@ contains
         ! Otherwise this algorithm does a copy of data from interpolating_field
         ! to model_field
         if ( present(regrid_proc) ) then
-          call regrid_proc(model_field, interpolating_field)
+          call regrid_proc(model_field, interpolating_field, lowest_order_flag=regrid_lowest_order)
         else
           model_proxy%data(:) = interpolating_proxy%data(:)
         end if

@@ -59,7 +59,6 @@ contains
     use finite_element_config_mod, only : cellshape_quadrilateral, &
                                           coord_system_xyz
     use feign_config_mod,          only : feign_finite_element_config, &
-                                          feign_formulation_config, &
                                           feign_base_mesh_config, &
                                           feign_planet_config
     implicit none

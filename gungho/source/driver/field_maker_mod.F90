@@ -56,6 +56,8 @@ module field_maker_mod
   type, extends(processor_type) :: field_maker_type
     type(mesh_type), pointer :: mesh
     type(mesh_type), pointer :: twod_mesh
+    type(mesh_type), pointer :: coarse_mesh
+    type(mesh_type), pointer :: coarse_twod_mesh
     type(field_mapper_type), pointer :: mapper
   contains
     private
@@ -88,22 +90,29 @@ function has_xios_io(space, legacy) result(flag)
 end function has_xios_io
 
   !> @brief Initialise field maker object
-  !> @param[inout] self       Field maker object
-  !> @param[in]    mesh       Mesh for spatial fields
-  !> @param[in]    twod_mesh  Mesh for planar fields
-  !> @param[in]    mapper     Provides access to field collections
-  !> @param[in]    clock      Model clock
-  subroutine field_maker_init(self, mesh, twod_mesh, mapper, clock)
+  !> @param[inout] self             Field maker object
+  !> @param[in]    mesh             Mesh for spatial fields
+  !> @param[in]    twod_mesh        Mesh for planar fields
+  !> @param[in]    coarse_mesh      Coarse mesh for spatial fields
+  !> @param[in]    coarse_twod_mesh Coarse mesh for planar fields
+  !> @param[in]    mapper           Provides access to field collections
+  !> @param[in]    clock            Model clock
+  subroutine field_maker_init(self, mesh, twod_mesh, coarse_mesh, coarse_twod_mesh, &
+                              mapper, clock)
     implicit none
     class(field_maker_type), intent(inout) :: self
 
     type(mesh_type), intent(in), pointer :: mesh
     type(mesh_type), intent(in), pointer :: twod_mesh
+    type(mesh_type), intent(in), pointer :: coarse_mesh
+    type(mesh_type), intent(in), pointer :: coarse_twod_mesh
     type(field_mapper_type), target, intent(in) :: mapper
     class(clock_type), intent(in) :: clock
 
     self%mesh => mesh
     self%twod_mesh => twod_mesh
+    self%coarse_mesh => coarse_mesh
+    self%coarse_twod_mesh => coarse_twod_mesh
     self%mapper => mapper
     call self%set_clock(clock)
   end subroutine field_maker_init
@@ -153,10 +162,18 @@ end function has_xios_io
           // trim(spec%name) // ' requires use_xios_io to be true', log_level_error)
       end if
     else
-      if (spec%twod) then
-        space => function_space_collection%get_fs(self%twod_mesh, spec%order, spec%space, ndata)
+      if (spec%coarse) then
+        if (spec%twod) then
+          space => function_space_collection%get_fs(self%coarse_twod_mesh, spec%order, spec%space, ndata)
+        else
+          space => function_space_collection%get_fs(self%coarse_mesh, spec%order, spec%space, ndata)
+        end if
       else
-        space => function_space_collection%get_fs(self%mesh, spec%order, spec%space, ndata)
+        if (spec%twod) then
+          space => function_space_collection%get_fs(self%twod_mesh, spec%order, spec%space, ndata)
+        else
+          space => function_space_collection%get_fs(self%mesh, spec%order, spec%space, ndata)
+        end if
       end if
     end if
 

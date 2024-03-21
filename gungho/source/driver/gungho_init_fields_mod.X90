@@ -86,7 +86,7 @@ module gungho_init_fields_mod
   use update_tstar_alg_mod,               only : update_tstar_alg
   use variable_fields_mod,                only : init_variable_fields
   use lfric_xios_time_axis_mod,           only : regridder
-  use intermesh_mappings_alg_mod,         only : map_scalar_field
+  use intermesh_mappings_alg_mod,         only : map_scalar_intermesh
 #endif
   use linked_list_mod,                    only : linked_list_type, &
                                                  linked_list_item_type
@@ -366,12 +366,14 @@ subroutine create_model_data( modeldb,      &
     ! Create gungho prognostics and auxiliary (diagnostic) fields
     call create_gungho_prognostics( mesh,                             &
                                     twod_mesh,                        &
+                                    aerosol_mesh,                     &
+                                    aerosol_twod_mesh,                &
                                     field_mapper,                     &
                                     modeldb%clock )
 
     if (limited_area) then
-      call create_lbc_fields( mesh, twod_mesh, field_mapper,          &
-        modeldb%clock )
+      call create_lbc_fields( mesh, twod_mesh,  aerosol_mesh, aerosol_twod_mesh, &
+                              field_mapper, modeldb%clock )
     end if
 
     if ( iau ) call create_iau_fields( mesh, twod_mesh,                      &
@@ -381,7 +383,7 @@ subroutine create_model_data( modeldb,      &
 
     ! Create prognostics used by physics
     if (use_physics) then
-      call create_physics_prognostics( mesh, twod_mesh, field_mapper, &
+      call create_physics_prognostics( mesh, twod_mesh, aerosol_mesh, aerosol_twod_mesh, field_mapper, &
                                        modeldb%clock )
 
 #ifdef UM_PHYSICS
@@ -447,7 +449,7 @@ subroutine create_model_data( modeldb,      &
 #ifdef UM_PHYSICS
     procedure(regridder), pointer :: regrid_operation => null()
 
-    regrid_operation => map_scalar_field
+    regrid_operation => map_scalar_intermesh
 #endif
 
     depository => modeldb%fields%get_field_collection("depository")

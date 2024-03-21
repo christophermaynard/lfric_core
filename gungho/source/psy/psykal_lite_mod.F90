@@ -1884,4 +1884,288 @@ stencil_dofmap(:,:,cell), ndf_adspc1_target_field, &
     !
   END SUBROUTINE invoke_extended_detj_at_w3_kernel_type
 
+!-------------------------------------------------------------------------------
+!> Routine to perform injection of a multidata field on a fine mesh to
+!> a coarse mesh. Intermesh kernels cannot currently take in integer arguments,
+!> this has been raised as an issue https://github.com/stfc/PSyclone/issues/2504
+  subroutine invoke_prolong_multidata_scalar_kernel_type(target_field, source_field, ndata)
+
+    use prolong_multidata_scalar_kernel_mod, only: prolong_multidata_scalar_kernel_code
+    use mesh_map_mod,                        only: mesh_map_type
+    use mesh_mod,                            only: mesh_type
+
+    implicit none
+
+    type(field_type),    intent(in) :: target_field, source_field
+    integer(kind=i_def), intent(in) :: ndata
+
+    integer(kind=i_def) :: cell
+    integer(kind=i_def) :: nlayers
+    type(field_proxy_type) :: target_field_proxy, source_field_proxy
+    integer(kind=i_def), pointer :: map_adspc1_target_field(:,:) => null(), map_adspc2_source_field(:,:) => null()
+    integer(kind=i_def) :: ndf_adspc1_target_field, undf_adspc1_target_field, ndf_adspc2_source_field, undf_adspc2_source_field
+    integer(kind=i_def) :: ncell_target_field, ncpc_target_field_source_field_x, ncpc_target_field_source_field_y
+    integer(kind=i_def), pointer :: cell_map_source_field(:,:,:) => null()
+    type(mesh_map_type), pointer :: mmap_target_field_source_field => null()
+    type(mesh_type),     pointer :: mesh_target_field => null()
+    type(mesh_type),     pointer :: mesh_source_field => null()
+
+    !
+    ! Initialise field and/or operator proxies
+    !
+    target_field_proxy = target_field%get_proxy()
+    source_field_proxy = source_field%get_proxy()
+    !
+    ! Initialise number of layers
+    !
+    nlayers = target_field_proxy%vspace%get_nlayers()
+    !
+    ! Look-up mesh objects and loop limits for inter-grid kernels
+    !
+    mesh_target_field => target_field_proxy%vspace%get_mesh()
+    mesh_source_field => source_field_proxy%vspace%get_mesh()
+    mmap_target_field_source_field => mesh_source_field%get_mesh_map(mesh_target_field)
+    cell_map_source_field => mmap_target_field_source_field%get_whole_cell_map()
+    ncell_target_field = mesh_target_field%get_last_halo_cell(depth=2)
+    ncpc_target_field_source_field_x = mmap_target_field_source_field%get_ntarget_cells_per_source_x()
+    ncpc_target_field_source_field_y = mmap_target_field_source_field%get_ntarget_cells_per_source_y()
+    !
+    ! Look-up dofmaps for each function space
+    !
+    map_adspc1_target_field => target_field_proxy%vspace%get_whole_dofmap()
+    map_adspc2_source_field => source_field_proxy%vspace%get_whole_dofmap()
+    !
+    ! Initialise number of doFs for adspc1_target_field
+    !
+    ndf_adspc1_target_field = target_field_proxy%vspace%get_ndf()
+    undf_adspc1_target_field = target_field_proxy%vspace%get_undf()
+    !
+    ! Initialise number of doFs for adspc2_source_field
+    !
+    ndf_adspc2_source_field = source_field_proxy%vspace%get_ndf()
+    undf_adspc2_source_field = source_field_proxy%vspace%get_undf()
+    !
+    ! call kernels and communication routines
+    !
+    ! if (source_field_proxy%is_dirty(depth=1)) then
+    !   call source_field_proxy%halo_exchange(depth=1)
+    ! end if
+    !
+    do cell=1,mesh_source_field%get_last_edge_cell()
+      !
+      call prolong_multidata_scalar_kernel_code(nlayers, cell_map_source_field(:,:,cell), ncpc_target_field_source_field_x, &
+&ncpc_target_field_source_field_y, ncell_target_field, &
+&target_field_proxy%data, source_field_proxy%data, ndata, ndf_adspc1_target_field, &
+&undf_adspc1_target_field, map_adspc1_target_field, undf_adspc2_source_field, map_adspc2_source_field(:,cell))
+    end do
+    !
+    ! Set halos dirty/clean for fields modified in the above loop
+    !
+    call target_field_proxy%set_dirty()
+    !
+    !
+  end subroutine invoke_prolong_multidata_scalar_kernel_type
+
+!==============================================================================
+
+!-------------------------------------------------------------------------------
+!> Routine to perform averaging of a multidata field on a coarse mesh to
+!> a fine mesh. Intermesh kernels cannot currently take in integer arguments,
+!> this has been raised as an issue https://github.com/stfc/PSyclone/issues/2504
+  subroutine invoke_restrict_multidata_scalar_kernel_type(target_field, source_field, ndata)
+    use restrict_multidata_scalar_kernel_mod, only: restrict_multidata_scalar_kernel_code
+    use mesh_map_mod, only: mesh_map_type
+    use mesh_mod, only: mesh_type
+    type(field_type),    intent(in) :: target_field, source_field
+    integer(kind=i_def), intent(in) :: ndata
+    integer(kind=i_def) cell
+    integer(kind=i_def) loop0_start, loop0_stop
+    integer(kind=i_def) nlayers
+    type(field_proxy_type) target_field_proxy, source_field_proxy
+    integer(kind=i_def), pointer :: map_adspc1_target_field(:,:) => null(), map_adspc2_source_field(:,:) => null()
+    integer(kind=i_def) ndf_adspc1_target_field, undf_adspc1_target_field, ndf_adspc2_source_field, undf_adspc2_source_field
+    integer(kind=i_def) ncell_source_field, ncpc_source_field_target_field_x, ncpc_source_field_target_field_y
+    integer(kind=i_def), pointer :: cell_map_target_field(:,:,:) => null()
+    type(mesh_map_type), pointer :: mmap_source_field_target_field => null()
+    integer(kind=i_def) max_halo_depth_mesh_target_field
+    type(mesh_type), pointer :: mesh_target_field => null()
+    integer(kind=i_def) max_halo_depth_mesh_source_field
+    type(mesh_type), pointer :: mesh_source_field => null()
+    !
+    ! Initialise field and/or operator proxies
+    !
+    target_field_proxy = target_field%get_proxy()
+    source_field_proxy = source_field%get_proxy()
+    !
+    ! Initialise number of layers
+    !
+    nlayers = target_field_proxy%vspace%get_nlayers()
+    !
+    ! Look-up mesh objects and loop limits for inter-grid kernels
+    !
+    mesh_source_field => source_field_proxy%vspace%get_mesh()
+    max_halo_depth_mesh_source_field = mesh_source_field%get_halo_depth()
+    mesh_target_field => target_field_proxy%vspace%get_mesh()
+    max_halo_depth_mesh_target_field = mesh_target_field%get_halo_depth()
+    mmap_source_field_target_field => mesh_target_field%get_mesh_map(mesh_source_field)
+    cell_map_target_field => mmap_source_field_target_field%get_whole_cell_map()
+    ncell_source_field = mesh_source_field%get_last_halo_cell(depth=2)
+    ncpc_source_field_target_field_x = mmap_source_field_target_field%get_ntarget_cells_per_source_x()
+    ncpc_source_field_target_field_y = mmap_source_field_target_field%get_ntarget_cells_per_source_y()
+    !
+    ! Look-up dofmaps for each function space
+    !
+    map_adspc1_target_field => target_field_proxy%vspace%get_whole_dofmap()
+    map_adspc2_source_field => source_field_proxy%vspace%get_whole_dofmap()
+    !
+    ! Initialise number of doFs for adspc1_target_field
+    !
+    ndf_adspc1_target_field = target_field_proxy%vspace%get_ndf()
+    undf_adspc1_target_field = target_field_proxy%vspace%get_undf()
+    !
+    ! Initialise number of doFs for adspc2_source_field
+    !
+    ndf_adspc2_source_field = source_field_proxy%vspace%get_ndf()
+    undf_adspc2_source_field = source_field_proxy%vspace%get_undf()
+    !
+    ! Set-up all of the loop bounds
+    !
+    loop0_start = 1
+    loop0_stop = mesh_target_field%get_last_edge_cell()
+    !
+    ! call kernels and communication routines
+    !
+    do cell=loop0_start,loop0_stop
+      !
+      call restrict_multidata_scalar_kernel_code(nlayers, cell_map_target_field(:,:,cell), ncpc_source_field_target_field_x, &
+&ncpc_source_field_target_field_y, ncell_source_field, target_field_proxy%data, &
+&source_field_proxy%data, ndata, undf_adspc1_target_field, &
+&map_adspc1_target_field(:,cell), ndf_adspc2_source_field, undf_adspc2_source_field, map_adspc2_source_field)
+    end do
+    !
+    ! Set halos dirty/clean for fields modified in the above loop
+    !
+    call target_field_proxy%set_dirty()
+    !
+    !
+  end subroutine invoke_restrict_multidata_scalar_kernel_type
+
+  !-------------------------------------------------------------------------------
+!> Routine to perform higher-order reconstruction of a multidata field on a fine mesh to
+!> a coarse mesh. Intermesh kernels cannot currently take in integer arguments,
+!> this has been raised as an issue https://github.com/stfc/PSyclone/issues/2504
+  subroutine invoke_prolong_multidata_linear_kernel_type(target_field, source_field, source_mask, stencil_extent, ndata)
+
+    use prolong_multidata_linear_kernel_mod, only: prolong_multidata_linear_kernel_code
+    use mesh_map_mod,                     only: mesh_map_type
+    use mesh_mod,                         only: mesh_type
+    use stencil_dofmap_mod,               only: STENCIL_CROSS
+    use stencil_dofmap_mod,               only: stencil_dofmap_type
+
+    implicit none
+
+    type(field_type),    intent(in) :: target_field, source_field, source_mask
+    integer(kind=i_def), intent(in) :: stencil_extent
+    integer(kind=i_def), intent(in) :: ndata
+
+    integer(kind=i_def) :: cell
+    integer(kind=i_def) :: nlayers
+    type(field_proxy_type) :: target_field_proxy, source_field_proxy, source_mask_proxy
+    integer(kind=i_def), pointer :: map_adspc1_target_field(:,:) => null(), map_adspc2_source_field(:,:) => null(), &
+                                    map_adspc3_source_mask(:,:) => null()
+    integer(kind=i_def) :: ndf_adspc1_target_field, undf_adspc1_target_field, ndf_adspc2_source_field, undf_adspc2_source_field, &
+                           ndf_adspc3_source_mask, undf_adspc3_source_mask
+    integer(kind=i_def) :: ncell_target_field, ncpc_target_field_source_field_x, ncpc_target_field_source_field_y
+    integer(kind=i_def), pointer :: cell_map_source_field(:,:,:) => null()
+    type(mesh_map_type), pointer :: mmap_target_field_source_field => null()
+    type(mesh_type),     pointer :: mesh_target_field => null()
+    type(mesh_type),     pointer :: mesh_source_field => null()
+    integer(kind=i_def), pointer :: stencil_size(:) => null()
+    integer(kind=i_def), pointer :: stencil_dofmap(:,:,:) => null()
+    type(stencil_dofmap_type), pointer :: stencil_map => null()
+    integer(kind=i_def), pointer :: stencil_size_mask(:) => null()
+    integer(kind=i_def), pointer :: stencil_dofmap_mask(:,:,:) => null()
+    type(stencil_dofmap_type), pointer :: stencil_map_mask => null()
+
+    !
+    ! Initialise field and/or operator proxies
+    !
+    target_field_proxy = target_field%get_proxy()
+    source_field_proxy = source_field%get_proxy()
+    source_mask_proxy = source_mask%get_proxy()
+    !
+    ! Initialise number of layers
+    !
+    nlayers = target_field_proxy%vspace%get_nlayers()
+    !
+    ! Look-up mesh objects and loop limits for inter-grid kernels
+    !
+    mesh_target_field => target_field_proxy%vspace%get_mesh()
+    mesh_source_field => source_field_proxy%vspace%get_mesh()
+    mmap_target_field_source_field => mesh_source_field%get_mesh_map(mesh_target_field)
+    cell_map_source_field => mmap_target_field_source_field%get_whole_cell_map()
+    ncell_target_field = mesh_target_field%get_last_halo_cell(depth=2)
+    ncpc_target_field_source_field_x = mmap_target_field_source_field%get_ntarget_cells_per_source_x()
+    ncpc_target_field_source_field_y = mmap_target_field_source_field%get_ntarget_cells_per_source_y()
+    !
+    ! Initialise stencil dofmaps
+    !
+    stencil_map => source_field_proxy%vspace%get_stencil_dofmap(STENCIL_CROSS,stencil_extent)
+    stencil_dofmap => stencil_map%get_whole_dofmap()
+    stencil_size => stencil_map%get_stencil_sizes()
+    stencil_map_mask => source_mask_proxy%vspace%get_stencil_dofmap(STENCIL_CROSS,stencil_extent)
+    stencil_size_mask => stencil_map_mask%get_stencil_sizes()
+    stencil_dofmap_mask => stencil_map_mask%get_whole_dofmap()
+    !
+    ! Look-up dofmaps for each function space
+    !
+    map_adspc1_target_field => target_field_proxy%vspace%get_whole_dofmap()
+    map_adspc2_source_field => source_field_proxy%vspace%get_whole_dofmap()
+    map_adspc3_source_mask => source_mask_proxy%vspace%get_whole_dofmap()
+    !
+    ! Initialise number of doFs for adspc1_target_field
+    !
+    ndf_adspc1_target_field = target_field_proxy%vspace%get_ndf()
+    undf_adspc1_target_field = target_field_proxy%vspace%get_undf()
+    !
+    ! Initialise number of doFs for adspc2_source_field
+    !
+    ndf_adspc2_source_field = source_field_proxy%vspace%get_ndf()
+    undf_adspc2_source_field = source_field_proxy%vspace%get_undf()
+    !
+    ! Initialise number of doFs for adspc2_source_field
+    !
+    ndf_adspc3_source_mask = source_mask_proxy%vspace%get_ndf()
+    undf_adspc3_source_mask = source_mask_proxy%vspace%get_undf()
+    ! call kernels and communication routines
+    !
+    if (source_field_proxy%is_dirty(depth=stencil_extent)) then
+      call source_field_proxy%halo_exchange(depth=stencil_extent)
+    end if
+    !
+    if (source_mask_proxy%is_dirty(depth=stencil_extent)) then
+      call source_mask_proxy%halo_exchange(depth=stencil_extent)
+    end if
+    !
+    do cell=1,mesh_source_field%get_last_edge_cell()
+      !
+      call prolong_multidata_linear_kernel_code(nlayers, cell_map_source_field(:,:,cell), &
+ncpc_target_field_source_field_x, &
+&ncpc_target_field_source_field_y, ncell_target_field, target_field_proxy%data, &
+source_field_proxy%data, stencil_size(cell), &
+stencil_dofmap(:,:,cell), source_mask_proxy%data, &
+stencil_size_mask(cell), stencil_dofmap_mask(:,:,cell), &
+ndata, ndf_adspc1_target_field, &
+&undf_adspc1_target_field, map_adspc1_target_field, undf_adspc2_source_field, &
+map_adspc2_source_field(:,cell), ndf_adspc3_source_mask, &
+&undf_adspc3_source_mask, map_adspc3_source_mask)
+    end do
+    !
+    ! Set halos dirty/clean for fields modified in the above loop
+    !
+    call target_field_proxy%set_dirty()
+    !
+    !
+  end subroutine invoke_prolong_multidata_linear_kernel_type
+
 end module psykal_lite_mod

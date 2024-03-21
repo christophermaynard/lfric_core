@@ -600,7 +600,8 @@ contains
                                                    halo_depth=mesh%get_halo_depth())
         call invoke( setval_c(detj_at_w3_r_def, 0.0_r_def),           &
                      mm_diagonal_kernel_type(detj_at_w3_r_def, mm_w3) )
-        if (extended_mesh) then
+        if (extended_mesh .and.              &
+            label_list(i) /= extra_mesh_label) then
           extended_chi => get_extended_coordinates(mesh%get_id())
           call invoke_extended_detj_at_w3_kernel_type(detj_at_w3_r_tran, &
                                                       extended_chi,      &
@@ -716,7 +717,7 @@ contains
 
       !======================== Diagonal mass matrices ========================!
 
-      if ( label_list(i) == primary_mesh_label .or. &
+      if ( label_list(i) == primary_mesh_label   .or. &
            label_list(i) == extra_mesh_label) then
         ! Initialise fields
         call mm2_diag_inventory%add_field(mm2_diag, w2_fs, mesh)

@@ -122,8 +122,7 @@ contains
                                   dlayer_on=.false.,                        &
                                   init_exner_bt        = .true.,            &
                                   si_momentum_equation=.true.,              &
-                                  vector_invariant=.true.                   &
-                                 )
+                                  vector_invariant=.true.)
   end subroutine setUp
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

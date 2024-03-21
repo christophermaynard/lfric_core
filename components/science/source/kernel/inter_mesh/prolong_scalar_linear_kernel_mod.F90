@@ -51,13 +51,14 @@ contains
   !!                                         cells lie in the coarse grid cell
   !> @param[in]     ncell_fine_per_coarse_x  Number of fine cells per coarse
   !!                                         cell in the horizontal x-direction
-  !> @param[in]     ncell_fine_per_coarse_x  Number of fine cells per coarse
+  !> @param[in]     ncell_fine_per_coarse_y  Number of fine cells per coarse
   !!                                         cell in the horizontal y-direction
   !> @param[in]     ncell_fine               Number of cells in the partition
   !!                                         for the fine grid
   !> @param[in,out] fine_field               The fine grid field to write to
   !> @param[in]     coarse_field             Coarse grid field to prolong
   !> @param[in]     stencil_size             Number of cells covered by the stencil
+  !> @param[in]     stencil_map              Stencil map
   !> @param[in]     ndf                      Num of DoFs per cell on both grids
   !> @param[in]     undf_fine                Total num of DoFs on the fine grid
   !!                                         for this mesh partition
@@ -97,7 +98,8 @@ contains
     real(kind=r_def),    intent(inout) :: fine_field(undf_fine)
 
     real(kind=r_def)    :: nx, ny, x_fine, y_fine, coeff_a, coeff_b, coeff_c
-    integer(kind=i_def) :: df, k, x_idx, y_idx, top_df
+    integer(kind=i_def) :: k, x_idx, y_idx, top_df
+    integer(kind=i_def), parameter :: df = 1 ! Lowest order function space
 
     ! Strategy is to approximate the field as:
     ! A*x + B*y + C
@@ -113,10 +115,10 @@ contains
     ! A = -(fc - f1) / x1, B = -(fc - f2) / y2, C = fc
     ! These are then used to determine the value at a fine cell centre
 
-    df = 1
     nx = real(ncell_fine_per_coarse_x, r_def)
     ny = real(ncell_fine_per_coarse_y, r_def)
 
+    ! Assume lowest order W3 or Wtheta space
     ! Loop is 0 -> nlayers-1 for W3 fields, but 0 -> nlayers for Wtheta fields
     top_df = nlayers - 2 + ndf
 

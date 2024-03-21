@@ -819,6 +819,6 @@
   <field id="convection__lowest_cv_top" name="lowest_cv_top" long_name="model_level_number_at_lowest_conv_cloud_top" unit="1" domain_ref="face" />
   <field id="convection__cv_base" name="cv_base" long_name="model_level_number_at_conv_cloud_base" unit="1" domain_ref="face" />
   <field id="convection__cv_top" name="cv_top" long_name="model_level_number_at_conv_cloud_top" unit="1" domain_ref="face" />
-  <field id="processed__trop_level" name="trop_level" long_name="tropopause_level" unit="1" domain_ref="face" />
+  <field id="processed__trop_level" name="trop_level" long_name="tropopause_level" unit="1" grid_ref="var_face" />
 </field_group>
 </field_definition>

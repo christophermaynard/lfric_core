@@ -93,6 +93,7 @@ module field_spec_mod
     logical(l_def) :: ckp             ! Is it a checkpoint (prognostic) field?
     logical(l_def) :: twod            ! Is it two-dimensional?
     logical(l_def) :: empty           ! Is it empty (with an empty data array)?
+    logical(l_def) :: coarse          ! Is it coarse?
     logical(l_def) :: is_int          ! Is it an integer field?
     logical(l_def) :: legacy          ! Is it a field with legacy checkpointing?
   end type field_spec_type
@@ -201,6 +202,7 @@ contains
     self%ckp = .false.
     self%twod = .false.
     self%empty = .false.
+    self%coarse = .false.
     self%is_int = .false.
     self%legacy = .false.
   end function field_spec_constructror
@@ -218,12 +220,13 @@ contains
   !> @param[in, optional] ckp      Is it a checkpoint (prognostic) field?
   !> @param[in, optional] twod     Is it two-dimensional?
   !> @param[in, optional] empty    Is it empty (with empty data array)?
+  !> @param[in, optional] coarse   Is it on a coarse mesh?
   !> @param[in, optional] is_int   Is it an integer field?
   !> @param[in, optional] legacy   Is it a field with legacy checkpointing?
   !> @return                       Specifier returned
   function make_spec(name, main_coll, space, order, adv_coll, &
     moist_arr, moist_idx, time_axis, &
-    mult, ckp, twod, empty, is_int, legacy) result(field_spec)
+    mult, ckp, twod, empty, coarse, is_int, legacy) result(field_spec)
     implicit none
     character(*), intent(in) :: name
     integer(i_def), intent(in) :: main_coll
@@ -237,6 +240,7 @@ contains
     logical(l_def), optional, intent(in) :: ckp
     logical(l_def), optional, intent(in) :: twod
     logical(l_def), optional, intent(in) :: empty
+    logical(l_def), optional, intent(in) :: coarse
     logical(l_def), optional, intent(in) :: is_int
     logical(l_def), optional, intent(in) :: legacy
     type(field_spec_type) :: field_spec
@@ -254,6 +258,7 @@ contains
     if (present(ckp)) field_spec%ckp=ckp
     if (present(twod)) field_spec%twod=twod
     if (present(empty)) field_spec%empty=empty
+    if (present(coarse)) field_spec%coarse=coarse
     if (present(is_int)) field_spec%is_int=is_int
     if (present(legacy)) field_spec%legacy=legacy
 

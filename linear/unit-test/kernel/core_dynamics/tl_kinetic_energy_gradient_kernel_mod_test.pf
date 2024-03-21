@@ -83,7 +83,7 @@ contains
                                    use_wavedynamics = .false.,     &
                                    use_multires_coupling=.false.,  &
                                    si_momentum_equation = .true.,  &
-                                   vector_invariant = .false. )
+                                   vector_invariant=.false.)
   end subroutine setUp
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

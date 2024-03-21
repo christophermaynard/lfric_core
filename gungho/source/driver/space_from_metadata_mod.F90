@@ -50,6 +50,8 @@ module space_from_metadata_mod
   ! grid names
   character(str_def), parameter :: full_level_face_grid                        &
     = 'full_level_face_grid'
+  character(str_def), parameter :: var_full_face_grid                          &
+    = 'var_full_face_grid'
   character(str_def), parameter :: half_level_face_grid                        &
     = 'half_level_face_grid'
   character(str_def), parameter :: half_level_edge_grid                        &
@@ -89,6 +91,8 @@ contains
     character(*), intent(out) :: axis_ref
     if (try_split(grid_ref, axis_ref, full_level_face_grid)) then
       ! noop
+    else if (try_split(grid_ref, axis_ref, var_full_face_grid)) then
+      ! noop
     else if (try_split(grid_ref, axis_ref, half_level_face_grid)) then
       ! noop
     else if (try_split(grid_ref, axis_ref, half_level_edge_grid)) then
@@ -111,7 +115,8 @@ contains
     integer(i_def) :: fsenum
 
     ! from RB's python metadata generator
-    if (grid_ref == full_level_face_grid) then
+    if (grid_ref == full_level_face_grid .or. &
+        grid_ref == var_full_face_grid) then
       fsenum = Wtheta
     else if (grid_ref == half_level_face_grid                                 &
       .or. domain_ref == 'face') then

@@ -256,8 +256,7 @@ contains
                                   eos_method=eos_method_sampled,            &
                                   init_exner_bt        = .true.,            &
                                   si_momentum_equation=.true.,              &
-                                  vector_invariant=.true.                   &
-                                 )
+                                  vector_invariant=.true.)
 
     call feign_initial_pressure_config( method=method_balanced,             &
                                         surface_pressure=1000.0e2_r_def)
@@ -328,8 +327,7 @@ contains
                                   eos_method=eos_method_sampled,             &
                                   init_exner_bt        = .false.,            &
                                   si_momentum_equation=.true.,               &
-                                  vector_invariant=.true.                    &
-                                 )
+                                  vector_invariant=.true.)
 
 
     call feign_initial_pressure_config( method=method_balanced,             &
