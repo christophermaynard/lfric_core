@@ -3,49 +3,16 @@
 
   <context id = "simple_diffusion">
 
-   <axis_definition>
-    <axis id="vert_axis_half_levels" name="half_levels"/>
-    <axis id="vert_axis_full_levels" name="full_levels"/>
-    <axis id="radiation_levels" name="radiation_levels"/>
-   </axis_definition>
-
-
-
-   <grid_definition>
-    <grid id="node_grid">
-      <domain domain_ref="node"/>
-      <axis axis_ref="vert_axis_full_levels"/>
-    </grid>
-    <grid id="half_level_face_grid">
-      <domain domain_ref="face"/>
-      <axis axis_ref="vert_axis_half_levels"/>
-    </grid>
-    <grid id="full_level_face_grid">
-      <domain domain_ref="face"/>
-      <axis axis_ref="vert_axis_full_levels"/>
-    </grid>
-        <grid id="half_level_edge_grid">
-      <domain domain_ref="edge"/>
-      <axis axis_ref="vert_axis_half_levels"/>
-    </grid>
-   </grid_definition>
-
-   <field_definition prec="8" >
-
-     <!-- Main diagnostic group -->
-     <field_group id="diagnostic_fields" freq_op="1ts" enabled=".TRUE." operation="instant" >
-       <field id="diffusion_field" name="diffusion_field" long_name="diffusion_field" unit="1" grid_ref="full_level_face_grid" />
-     </field_group>
-
-
-   </field_definition>
+   <axis_definition src="../metadata/axis_dictionary.xml"/>
+   <grid_definition src="../metadata/grid_dictionary.xml"/>
+   <field_definition src="../metadata/field_dictionary.xml"/>
 
    <file_definition
       type="one_file"
       time_counter="none">
 
      <file id="lfric_diag" name="diffusion_diag" output_freq="1ts" convention="UGRID" enabled=".TRUE.">
-        <field_group group_ref="diagnostic_fields"/>
+      <field field_ref="diffusion_field" />
      </file>
 
     </file_definition>
