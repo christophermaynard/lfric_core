@@ -11,7 +11,7 @@ module sci_diagonal_preconditioner_alg_mod
   use field_mod,     only: field_type
   use log_mod,       only: log_event,       &
                            LOG_LEVEL_ERROR, &
-                           LOG_LEVEL_INFO,  &
+                           LOG_LEVEL_DEBUG, &
                            log_scratch_space
   use sci_field_vector_mod, &
                      only: field_vector_type
@@ -60,9 +60,8 @@ contains
     type(diagonal_preconditioner_type)  :: self
     type(field_vector_type), intent(in) :: mass_matrix_diagonal
 
-    call log_event( 'Constructing diagonal preconditioner...', LOG_LEVEL_INFO )
     self%mass_matrix_diagonal = mass_matrix_diagonal
-    call log_event( 'done', LOG_LEVEL_INFO )
+    call log_event( 'Created diagonal pre-conditioner', LOG_LEVEL_DEBUG )
 
   end function diagonal_preconditioner_constructor
 

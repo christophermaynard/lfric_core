@@ -1599,7 +1599,7 @@ contains
     class(abstract_vector_type), allocatable     :: Ax
 
 
-    call log_event("Precondition only starting", LOG_LEVEL_INFO)
+    call log_event("Precondition only starting", LOG_LEVEL_DEBUG)
     call self%prec%apply(b,x)         ! x = P^{-1}.b
 
     if( self%monitor_convergence ) then
@@ -1617,7 +1617,7 @@ contains
             "Precondition only error,init, relative: = ", e,e0,e/e0
        call log_event(log_scratch_space,LOG_LEVEL_INFO)
     else
-       call log_event("Precondition only: ... finished", LOG_LEVEL_INFO)
+       call log_event("Precondition only: ... finished", LOG_LEVEL_DEBUG)
     end if
 
   end subroutine precondition_only_solve
