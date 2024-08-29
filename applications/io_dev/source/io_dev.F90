@@ -25,7 +25,6 @@ program io_dev
   use log_mod,                only: log_event,       &
                                     log_level_trace, &
                                     log_scratch_space
-  use model_clock_mod,        only: model_clock_type
   use mpi_mod,                only: global_mpi
 
   use namelist_collection_mod, only: namelist_collection_type

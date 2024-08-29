@@ -33,7 +33,6 @@ module skeleton_driver_mod
                                          LOG_LEVEL_INFO
   use mesh_mod,                   only : mesh_type
   use mesh_collection_mod,        only : mesh_collection
-  use model_clock_mod,            only : model_clock_type
   use mpi_mod,                    only : mpi_type
   use namelist_mod,               only : namelist_type
 

@@ -97,7 +97,8 @@ contains
     allocate( modeldb%clock,                              &
               source = model_clock_type( first, last,     &
                                          timestep_length, &
-                                         spinup_period ), stat=rc )
+                                         max(spinup_period, 0.0_r_second) ), &
+                                         stat=rc )
     if (rc /= 0) then
       call log_event( "Unable to allocate model clock", LOG_LEVEL_ERROR )
     end if
@@ -169,7 +170,8 @@ contains
     allocate( clock, source=model_clock_type(                                  &
                                       calendar%parse_instance(timestep_start), &
                                       calendar%parse_instance(timestep_end),   &
-                                      dt, spinup_period ), stat=rc )
+                                      dt, max(spinup_period, 0.0_r_second) ),  &
+                                      stat=rc )
     if (rc /= 0) then
       call log_event( "Unable to allocate model clock", LOG_LEVEL_ERROR )
     end if

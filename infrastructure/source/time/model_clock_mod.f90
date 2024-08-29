@@ -100,10 +100,15 @@ contains
       new_clock%seconds_per_step = seconds_per_step
     end if
 
+    if (spinup_period < 0.0_r_second) then
+      call log_event( 'spinup period must not be negative', log_level_error )
+    else
+      new_clock%last_spinup_step = ceiling( spinup_period                      &
+                                            / new_clock%seconds_per_step )
+      new_clock%spinup_fraction = new_clock%calculate_spinup_fraction()
+    end if
+
     new_clock%current_step = new_clock%first_step
-    new_clock%last_spinup_step = ceiling( spinup_period &
-                                          / new_clock%seconds_per_step )
-    new_clock%spinup_fraction = new_clock%calculate_spinup_fraction()
     new_clock%initialisation_phase = (new_clock%current_step == 1_i_timestep)
     new_clock%starting = .true.
 
