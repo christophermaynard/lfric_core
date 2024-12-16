@@ -32,6 +32,26 @@
     ]
     }) %}
 
+{# Azspice Groups #}
+{% do site_groups.update({
+    "skeleton_azspice_developer": [
+        "skeleton_azspice_canned",
+        "skeleton_default-C24_azspice_gnu_full-debug-64bit",
+    ],
+    "skeleton_azspice": [
+        "skeleton_azspice_developer"
+    ],
+    "skeleton_azspice_unit_tests": [
+        "skeleton_unit_tests_azspice_gnu_64bit"
+    ],
+    "skeleton_azspice_canned": [
+        "skeleton_canned_azspice_gnu_fast-debug-64bit",
+    ],
+    "skeleton_azspice_build": [
+        "build_skeleton_azspice_gnu_fast-debug-64bit",
+        "build_skeleton_azspice_gnu_full-debug-64bit",
+    ]
+    }) %}
 
 {# XC40 Groups #}
 {% do site_groups.update({
@@ -79,31 +99,58 @@
     }) %}
 
 {# Platform Generic Groups #}
-{% do site_groups.update({
-    "skeleton_developer": [
-        "scripts",
-        "skeleton_spice_developer",
-        "skeleton_xc40_developer",
-        "skeleton_unit_tests",
-    ],
-    "skeleton": [
-        "skeleton_developer",
-        "skeleton_spice",
-        "skeleton_xc40",
-    ],
-    "skeleton_unit_tests": [
-        "skeleton_spice_unit_tests",
-        "skeleton_xc40_unit_tests",
-    ],
-    "skeleton_build": [
-        "skeleton_spice_build",
-        "skeleton_xc40_build",
-    ],
-    "skeleton_canned": [
-        "skeleton_spice_canned",
-        "skeleton_xc40_canned",
-    ],
-    }) %}
+{% if site_vars.launch_platform == "spice" %}
+    {% do site_groups.update({
+        "skeleton_developer": [
+            "scripts",
+            "skeleton_spice_developer",
+            "skeleton_xc40_developer",
+            "skeleton_unit_tests",
+        ],
+        "skeleton": [
+            "skeleton_developer",
+            "skeleton_spice",
+            "skeleton_xc40",
+        ],
+        "skeleton_unit_tests": [
+            "skeleton_spice_unit_tests",
+            "skeleton_xc40_unit_tests",
+        ],
+        "skeleton_build": [
+            "skeleton_spice_build",
+            "skeleton_xc40_build",
+        ],
+        "skeleton_canned": [
+            "skeleton_spice_canned",
+            "skeleton_xc40_canned",
+        ],
+        }) %}
+{% else %}
+    {% do site_groups.update({
+        "skeleton_developer": [
+            "scripts",
+            "skeleton_azspice_developer",
+            "skeleton_ex1a_developer",
+        ],
+        "skeleton": [
+            "skeleton_developer",
+            "skeleton_azspice",
+            "skeleton_ex1a",
+        ],
+        "skeleton_unit_tests": [
+            "skeleton_azspice_unit_tests",
+            "skeleton_ex1a_unit_tests",
+        ],
+        "skeleton_build": [
+            "skeleton_azspice_build",
+            "skeleton_ex1a_build",
+        ],
+        "skeleton_canned": [
+            "skeleton_azspice_canned",
+            "skeleton_ex1a_canned",
+        ],
+        }) %}
+{% endif %}
 
 {# Platform Generic Extends #}
 {% do site_groups.developer.extend(site_groups.skeleton_developer) %}
@@ -116,6 +163,12 @@
 {% do site_groups.spice.extend(site_groups.skeleton_spice) %}
 {% do site_groups.spice_unit_tests.extend(site_groups.skeleton_spice_unit_tests) %}
 {% do site_groups.spice_build.extend(site_groups.skeleton_spice_build) %}
+
+{# Azspice Extends #}
+{% do site_groups.azspice_developer.extend(site_groups.skeleton_azspice_developer) %}
+{% do site_groups.azspice.extend(site_groups.skeleton_azspice) %}
+{% do site_groups.azspice_unit_tests.extend(site_groups.skeleton_azspice_unit_tests) %}
+{% do site_groups.azspice_build.extend(site_groups.skeleton_azspice_build) %}
 
 {# XC40 Extends #}
 {% do site_groups.xc40_developer.extend(site_groups.skeleton_xc40_developer) %}

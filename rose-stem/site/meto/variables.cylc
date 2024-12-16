@@ -18,14 +18,24 @@
 
 {% do site_vars.update({"site_platforms": ["spice",
                                            "xc40",
-                                           "ex1a"]}) %}
+                                           "ex1a",
+                                           "azspice"]}) %}
 
-{% do site_vars.update({"scripts_platform": "spice"}) %}
+{% from "socket" import gethostname %}
+{% set hostname = gethostname() %}
+{% if hostname.startswith("caz") %}
+    {% do site_vars.update({"launch_platform": "azspice"}) %}
+    {% do site_vars.update({"scripts_platform": "azspice"}) %}
+{% else %}
+    {% do site_vars.update({"launch_platform": "spice"}) %}
+    {% do site_vars.update({"scripts_platform": "spice"}) %}
+{% endif %}
 
 {# Note intel unavailable on ex1a hence using gnu #}
 {% do site_vars.update({"mesh_build": {"spice": "intel_fast-debug-64bit",
                                        "xc40": "intel_fast-debug-64bit",
-                                       "ex1a": "gnu_fast-debug-64bit"} }) %}
+                                       "ex1a": "gnu_fast-debug-64bit",
+                                       "azspice": "gnu_fast-debug-64bit"} }) %}
 
 {# If running on Monsoon TRUSTZONE will be collaboration #}
 {% if "TRUSTZONE" in environ %}
@@ -70,7 +80,7 @@
 {% elif USE_EXAB is defined and USE_EXAB %}
     {% do site_vars.update({"host_ex": "exab"}) %}
 {% else %}
-    {# Currently default to the EXZ #}
+    {# Currently default to the EXAB #}
     {% do site_vars.update({"host_ex" : "exab"}) %}
 {% endif %}
 

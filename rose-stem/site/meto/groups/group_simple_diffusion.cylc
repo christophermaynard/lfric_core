@@ -32,6 +32,26 @@
     ]
     }) %}
 
+{# Azspice Groups #}
+{% do site_groups.update({
+    "simple_diffusion_azspice_developer": [
+        "simple_diffusion_azspice_canned",
+        "simple_diffusion_default-C24_azspice_gnu_full-debug-64bit",
+    ],
+    "simple_diffusion_azspice": [
+        "simple_diffusion_azspice_developer"
+    ],
+    "simple_diffusion_azspice_unit_tests": [
+        "simple_diffusion_unit_tests_azspice_gnu_64bit"
+    ],
+    "simple_diffusion_azspice_canned": [
+        "simple_diffusion_canned_azspice_gnu_fast-debug-64bit",
+    ],
+    "simple_diffusion_azspice_build": [
+        "build_simple_diffusion_azspice_gnu_fast-debug-64-bit",
+        "build_simple_diffusion_azspice_gnu_full-debug-64-bit",
+    ]
+    }) %}
 
 {# XC40 Groups #}
 {% do site_groups.update({
@@ -79,28 +99,53 @@
     }) %}
 
 {# Platform Generic Groups #}
-{% do site_groups.update({
-    "simple_diffusion_developer": [
-        "scripts",
-        "simple_diffusion_spice_developer",
-        "simple_diffusion_xc40_developer",
-    ],
-    "simple_diffusion": [
-        "simple_diffusion_developer",
-    ],
-    "simple_diffusion_unit_tests": [
-        "simple_diffusion_spice_unit_tests",
-        "simple_diffusion_xc40_unit_tests",
-    ],
-    "simple_diffusion_build": [
-        "simple_diffusion_spice_build",
-        "simple_diffusion_xc40_build",
-    ],
-    "simple_diffusion_canned": [
-        "simple_diffusion_spice_canned",
-        "simple_diffusion_xc40_canned",
-    ],
-    }) %}
+{% if site_vars.launch_platform == "spice" %}
+    {% do site_groups.update({
+        "simple_diffusion_developer": [
+            "scripts",
+            "simple_diffusion_spice_developer",
+            "simple_diffusion_xc40_developer",
+        ],
+        "simple_diffusion": [
+            "simple_diffusion_developer",
+        ],
+        "simple_diffusion_unit_tests": [
+            "simple_diffusion_spice_unit_tests",
+            "simple_diffusion_xc40_unit_tests",
+        ],
+        "simple_diffusion_build": [
+            "simple_diffusion_spice_build",
+            "simple_diffusion_xc40_build",
+        ],
+        "simple_diffusion_canned": [
+            "simple_diffusion_spice_canned",
+            "simple_diffusion_xc40_canned",
+        ],
+        }) %}
+{% else %}
+    {% do site_groups.update({
+        "simple_diffusion_developer": [
+            "scripts",
+            "simple_diffusion_azspice_developer",
+            "simple_diffusion_ex1a_developer",
+        ],
+        "simple_diffusion": [
+            "simple_diffusion_developer",
+        ],
+        "simple_diffusion_unit_tests": [
+            "simple_diffusion_azspice_unit_tests",
+            "simple_diffusion_ex1a_unit_tests",
+        ],
+        "simple_diffusion_build": [
+            "simple_diffusion_azspice_build",
+            "simple_diffusion_ex1a_build",
+        ],
+        "simple_diffusion_canned": [
+            "simple_diffusion_azspice_canned",
+            "simple_diffusion_ex1a_canned",
+        ],
+        }) %}
+{% endif %}
 
 {# Platform Generic Extends #}
 {% do site_groups.developer.extend(site_groups.simple_diffusion_developer) %}
@@ -113,6 +158,12 @@
 {% do site_groups.spice.extend(site_groups.simple_diffusion_spice) %}
 {% do site_groups.spice_unit_tests.extend(site_groups.simple_diffusion_spice_unit_tests) %}
 {% do site_groups.spice_build.extend(site_groups.simple_diffusion_spice_build) %}
+
+{# Azspice Extends #}
+{% do site_groups.azspice_developer.extend(site_groups.simple_diffusion_azspice_developer) %}
+{% do site_groups.azspice.extend(site_groups.simple_diffusion_azspice) %}
+{% do site_groups.azspice_unit_tests.extend(site_groups.simple_diffusion_azspice_unit_tests) %}
+{% do site_groups.azspice_build.extend(site_groups.simple_diffusion_azspice_build) %}
 
 {# XC40 Extends #}
 {% do site_groups.xc40_developer.extend(site_groups.simple_diffusion_xc40_developer) %}

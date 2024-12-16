@@ -21,6 +21,18 @@
     ]
     }) %}
 
+{# Azspice Groups #}
+{% do site_groups.update({
+    "coupling_azspice_developer": [
+    ],
+    "coupling_azspice": [
+        "coupling_azspice_developer"
+    ],
+    "coupling_azspice_unit_tests": [
+        "coupling_unit_tests_azspice_gnu_32bit",
+        "coupling_unit_tests_azspice_gnu_64bit"
+    ]
+    }) %}
 
 {# XC40 Groups #}
 {% do site_groups.update({
@@ -37,23 +49,39 @@
     }) %}
 
 {# Platform Generic Groups #}
-{% do site_groups.update({
-    "coupling_developer": [
-        "scripts",
-        "coupling_spice_developer",
-        "coupling_xc40_developer",
-        "coupling_unit_tests"
-    ],
-    "coupling": [
-        "coupling_developer",
-        "coupling_spice",
-        "coupling_xc40"
-    ],
-    "coupling_unit_tests": [
-        "coupling_spice_unit_tests",
-        "coupling_xc40_unit_tests"
-    ]
-    }) %}
+{% if site_vars.launch_platform == "spice" %}
+    {% do site_groups.update({
+        "coupling_developer": [
+            "scripts",
+            "coupling_spice_developer",
+            "coupling_xc40_developer",
+            "coupling_unit_tests"
+        ],
+        "coupling": [
+            "coupling_developer",
+            "coupling_spice",
+            "coupling_xc40"
+        ],
+        "coupling_unit_tests": [
+            "coupling_spice_unit_tests",
+            "coupling_xc40_unit_tests"
+        ]
+        }) %}
+{% else %}
+    {% do site_groups.update({
+        "coupling_developer": [
+            "scripts",
+            "coupling_azspice_developer",
+        ],
+        "coupling": [
+            "coupling_developer",
+            "coupling_azspice",
+        ],
+        "coupling_unit_tests": [
+            "coupling_azspice_unit_tests",
+        ]
+        }) %}
+{% endif %}
 
 {# Platform Generic Extends #}
 {% do site_groups.developer.extend(site_groups.coupling_developer) %}
@@ -64,6 +92,11 @@
 {% do site_groups.spice_developer.extend(site_groups.coupling_spice_developer) %}
 {% do site_groups.spice.extend(site_groups.coupling_spice) %}
 {% do site_groups.spice_unit_tests.extend(site_groups.coupling_spice_unit_tests) %}
+
+{# Azspice Extends #}
+{% do site_groups.azspice_developer.extend(site_groups.coupling_azspice_developer) %}
+{% do site_groups.azspice.extend(site_groups.coupling_azspice) %}
+{% do site_groups.azspice_unit_tests.extend(site_groups.coupling_azspice_unit_tests) %}
 
 {# XC40 Extends #}
 {% do site_groups.xc40_developer.extend(site_groups.coupling_xc40_developer) %}

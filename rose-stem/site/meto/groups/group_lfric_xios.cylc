@@ -19,6 +19,17 @@
     ]
     }) %}
 
+{# Azspice Groups #}
+{% do site_groups.update({
+    "lfric_xios_azspice_developer": [
+    ],
+    "lfric_xios_azspice": [
+        "lfric_xios_azspice_developer"
+    ],
+    "lfric_xios_azspice_unit_tests": [
+        "lfric_xios_unit_tests_azspice_gnu_64bit"
+    ]
+    }) %}
 
 {# XC40 Groups #}
 {% do site_groups.update({
@@ -34,20 +45,35 @@
     }) %}
 
 {# Platform Generic Groups #}
-{% do site_groups.update({
-    "lfric_xios_developer": [
-        "scripts",
-        "lfric_xios_spice_developer",
-        "lfric_xios_xc40_developer"
-    ],
-    "lfric_xios": [
-        "lfric_xios_developer"
-    ],
-    "lfric_xios_unit_tests": [
-        "lfric_xios_spice_unit_tests",
-        "lfric_xios_xc40_unit_tests"
-    ]
-    }) %}
+{% if site_vars.launch_platform == "spice" %}
+    {% do site_groups.update({
+        "lfric_xios_developer": [
+            "scripts",
+            "lfric_xios_spice_developer",
+            "lfric_xios_xc40_developer"
+        ],
+        "lfric_xios": [
+            "lfric_xios_developer"
+        ],
+        "lfric_xios_unit_tests": [
+            "lfric_xios_spice_unit_tests",
+            "lfric_xios_xc40_unit_tests"
+        ]
+        }) %}
+{% else %}
+    {% do site_groups.update({
+        "lfric_xios_developer": [
+            "scripts",
+            "lfric_xios_azspice_developer",
+        ],
+        "lfric_xios": [
+            "lfric_xios_developer"
+        ],
+        "lfric_xios_unit_tests": [
+            "lfric_xios_azspice_unit_tests",
+        ]
+        }) %}
+{% endif %}
 
 {# Platform Generic Extends #}
 {% do site_groups.developer.extend(site_groups.lfric_xios_developer) %}
@@ -58,6 +84,11 @@
 {% do site_groups.spice_developer.extend(site_groups.lfric_xios_spice_developer) %}
 {% do site_groups.spice.extend(site_groups.lfric_xios_spice) %}
 {% do site_groups.spice_unit_tests.extend(site_groups.lfric_xios_spice_unit_tests) %}
+
+{# Azspice Extends #}
+{% do site_groups.azspice_developer.extend(site_groups.lfric_xios_azspice_developer) %}
+{% do site_groups.azspice.extend(site_groups.lfric_xios_azspice) %}
+{% do site_groups.azspice_unit_tests.extend(site_groups.lfric_xios_azspice_unit_tests) %}
 
 {# XC40 Extends #}
 {% do site_groups.xc40_developer.extend(site_groups.lfric_xios_xc40_developer) %}

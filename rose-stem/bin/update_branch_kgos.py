@@ -15,9 +15,8 @@ import argparse
 
 PLATFORMS = {
     "meto": {
-        "spice": {
-            "copy_command": "cp ",
-        },
+        "spice": {"copy_command": "cp "},
+        "azspice": {"copy_command": "cp "},
         "xc40": {"copy_command": "scp xcel00:"},
         "ex1a": {"copy_command": "scp login.exa.sc:"},
     }
@@ -207,6 +206,9 @@ if __name__ == "__main__":
     failed_jobs = find_failed_tasks(log_file)
 
     for failed_job in failed_jobs:
+        if "mesh_tools" in failed_job:
+            # Need to update to work with mesh tools
+            continue
         print(f"[INFO]: Copying kgo for {failed_job}")
         stored_kgo_dir, suite_kgo_dir = get_kgo_dirs(failed_job, flow_file)
         copy_checksums(
