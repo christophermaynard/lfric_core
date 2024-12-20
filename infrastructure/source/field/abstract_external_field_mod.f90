@@ -23,8 +23,6 @@ type, extends(linked_list_data_type), public, abstract :: &
   private
   !> The lfric field that the external data will be associated with
   type(field_type), pointer      :: lfric_field
-  !> Dummy allocatable - workaround for gcc bug (ref:61767)
-  integer(i_def), allocatable :: dummy_for_gnu
 contains
   !> Initialises data held in the abstract
   procedure, public :: abstract_external_field_initialiser

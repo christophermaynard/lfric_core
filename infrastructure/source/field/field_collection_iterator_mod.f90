@@ -40,8 +40,6 @@ module field_collection_iterator_mod
   !-----------------------------------------------------------------------------
   type, public :: field_collection_iterator_type
     private
-    !> Dummy allocatable - workaround for gcc bug (ref:61767)
-    integer(i_def), allocatable :: dummy_for_gnu
     !> A pointer to the field collection being iterated over
     type(field_collection_type), pointer :: collection
     !> A pointer to the linked list item within the collection that will

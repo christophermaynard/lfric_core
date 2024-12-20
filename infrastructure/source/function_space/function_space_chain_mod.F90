@@ -43,9 +43,6 @@ module function_space_chain_mod
     !> Linked list of function_space_pointer_type objects
     type(linked_list_type) :: function_space_chain_list
 
-    ! Despite not having a user finaliser this still seems to be necessary.
-    integer(i_def), allocatable :: dummy_for_gnu
-
   contains
 
     !> @brief Adds a given function space to the next location in this chain.
@@ -368,8 +365,6 @@ contains ! Module procedures
     class(function_space_chain_type), intent(inout) :: self
 
     call self%function_space_chain_list%clear()
-
-    if (allocated(self%dummy_for_gnu)) deallocate(self%dummy_for_gnu)
 
   end subroutine clear
 

@@ -35,7 +35,6 @@ module partition_mod_test
     private
     integer :: dummy ! This is here only so procedures which do not use "this"
                      ! have something they can hit.
-    integer, allocatable :: dummy_for_gfortran
     type(reference_cube_type), pointer :: reference_element => null()
     integer :: total_ranks
     integer :: local_rank

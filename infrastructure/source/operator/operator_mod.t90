@@ -61,7 +61,6 @@ module operator_{{kind}}_mod
     real(kind={{kind}}), public, pointer :: local_stencil( :, :, : )
     !> size of the outermost dimension
     integer(i_def), public :: ncell_3d
-    integer(i_def), allocatable :: gnu_dummy(:)
   contains
     final :: operator_{{kind}}_proxy_destructor
  end type operator_{{kind}}_proxy_type

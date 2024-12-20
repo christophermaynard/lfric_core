@@ -36,8 +36,6 @@ module function_space_collection_mod_test
     type(local_mesh_type)              :: unit_test_local_mesh
     type(mesh_type), pointer           :: mesh => null()
 
-    integer, allocatable :: dummy_for_gcc
-
   contains
     procedure setUp
     procedure tearDown

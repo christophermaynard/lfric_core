@@ -33,13 +33,6 @@ type, public :: mesh_map_collection_type
 
   !> Linked list mesh_map_type objects.
   type(linked_list_type)      :: mesh_map_list
-  !>
-  !> An unused allocatable integer that prevents an intenal compiler error
-  !> with the Gnu Fortran compiler. Adding an allocatable forces the compiler
-  !> to accept that the object has a finaliser. It gets confused without it.
-  !> This is a workaround for GCC bug id 61767 - when this bug is fixed, the
-  !> integer can be removed.
-  integer(i_def), allocatable :: dummy_for_gnu
 
 contains ! Type-bound procedures for mesh_map_collection_type
 
@@ -230,7 +223,6 @@ subroutine clear(self)
   class(mesh_map_collection_type), intent(inout) :: self
 
   call self%mesh_map_list%clear()
-  if (allocated(self%dummy_for_gnu)) deallocate(self%dummy_for_gnu)
 
   return
 end subroutine clear

@@ -93,12 +93,6 @@ module field_parent_mod
   !> Abstract field proxy type that is the patrent of any field proxy
   type, public, abstract :: field_parent_proxy_type
     private
-    !> An unused allocatable integer that prevents an intenal compiler error
-    !> with the Gnu Fortran compiler. Adding an allocatable forces the compiler
-    !> to accept that the object has a finaliser. It gets confused without it.
-    !> This is a workaround for GCC bug id 61767 - when this bug is fixed, the
-    !> integer can be removed.
-    integer(kind=i_def), allocatable :: dummy_for_gnu
     !> An unused integer that can be used when self needs to be accessed within
     !> a function to avoid compilers complaining about unused variables
     integer(kind=i_def) :: dummy_for_self

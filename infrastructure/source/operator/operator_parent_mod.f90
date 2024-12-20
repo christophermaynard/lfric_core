@@ -30,7 +30,6 @@ module operator_parent_mod
      type( function_space_type ), pointer :: fs_to => null( )
     !> marker for if an operator has been initialised
     logical(kind=l_def) :: initialised = .false.
-    integer(i_def), allocatable :: gnu_dummy
   contains
     !> Initialise a parent operator object
     procedure, public :: operator_parent_initialiser
@@ -64,7 +63,6 @@ module operator_parent_mod
     !> Each operator has pointers to the function spaces which it lives "between"
     type( function_space_type ), pointer, public :: fs_to => null( )
     type( function_space_type ), pointer, public :: fs_from => null( )
-    integer(i_def), allocatable          :: gnu_dummy_proxy
   contains
     ! Finaliser for the object
     procedure, public :: destroy_operator_parent_proxy

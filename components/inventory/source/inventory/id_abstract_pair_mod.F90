@@ -24,7 +24,6 @@ module id_abstract_pair_mod
 
     private
 
-    integer(i_def), allocatable :: gnu_dummy(:)
     integer(i_def) :: id_
 
   contains

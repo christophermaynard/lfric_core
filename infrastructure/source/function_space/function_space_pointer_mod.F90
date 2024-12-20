@@ -27,14 +27,6 @@ module function_space_pointer_mod
     private
     type(function_space_type), pointer :: function_space_target => null()
 
-    !> An unused allocatable integer that prevents an intenal compiler error
-    !> with the Gnu Fortran compiler
-    !>
-    ! Adding an allocatable forces the compiler to accept that the object
-    ! has a finaliser. It gets confused without it. This is a workaround for
-    ! GCC bug id 61767 - when this bug is fixed, the integer can be removed.
-    integer(i_def), allocatable :: dummy_for_gnu
-
   contains
     !> @brief Returns a pointer to the function space that this object contains.
     !> @return function_space_target Pointer to the function space object.
@@ -88,7 +80,6 @@ contains ! Module procedures
     class(function_space_pointer_type), intent(inout) :: self
 
     nullify(self%function_space_target)
-    if (allocated(self%dummy_for_gnu)) deallocate(self%dummy_for_gnu)
 
   end subroutine clear
 

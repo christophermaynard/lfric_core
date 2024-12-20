@@ -25,7 +25,6 @@ module dino_mod
      integer :: file_handle
      !> Logical Whether the file is open
      logical :: file_is_open = .false.
-     integer, allocatable :: gnu_dummy
    contains
      generic   :: output_scalar => output_integer, output_real
      generic   :: input_scalar => input_integer, input_real
@@ -73,7 +72,6 @@ contains
        stop 1
     end if
     self%file_is_open = .true.
-    allocate(self%gnu_dummy)
   end subroutine initialise
 
   !> subroutine to write out a 3d real array
@@ -294,9 +292,6 @@ contains
     implicit none
     type(dino_type), intent(inout) :: self
     call self%io_close()
-    if( allocated(self%gnu_dummy) ) then
-       deallocate(self%gnu_dummy)
-    end if
 
   end subroutine dino_destructor
 

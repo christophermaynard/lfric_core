@@ -48,8 +48,6 @@ type, extends( MPITestCase ) :: function_space_chain_test_type
   type(function_space_type), pointer :: function_space3 => null()
   type(function_space_type), pointer :: function_space4 => null()
 
-  integer, allocatable :: dummy_for_gcc
-
 contains
   procedure :: setUp
   procedure :: tearDown
