@@ -16,7 +16,6 @@ ifeq ($(shell test $(NVFORT_VERSION) -lt 0241100; echo $$?), 0)
 endif
 
 F_MOD_DESTINATION_ARG = -module$(SPACE)
-OPENMP_ARG            = -mp
 
 FFLAGS_COMPILER           =
 FFLAGS_NO_OPTIMISATION    = -O0
@@ -34,12 +33,12 @@ FPPFLAGS = -P -D__NVCOMPILER
 # The LFRIC_OFFLOAD_DIRECTIVES env_variable is also queried in the PSyclone
 # script to generate matching directives
 ifeq ("$(LFRIC_OFFLOAD_DIRECTIVES)", "omp")
-	OPENMP_ARG = -mp=gpu -gpu=managed
-	LDFLAGS_COMPILER = -mp=gpu -gpu=managed -cuda
+	FFLAGS_OPENMP  = -mp=gpu -gpu=managed
+	LDFLAGS_OPENMP = -mp=gpu -gpu=managed -cuda
 else ifeq ("$(LFRIC_OFFLOAD_DIRECTIVES)", "acc")
-	OPENMP_ARG = -acc=gpu -gpu=managed -mp=multicore
-	LDFLAGS_COMPILER = -acc=gpu -gpu=managed -mp=multicore -cuda
+	FFLAGS_OPENMP  = -acc=gpu -gpu=managed -mp=multicore
+	LDFLAGS_OPENMP = -acc=gpu -gpu=managed -mp=multicore -cuda
 else
-	OPENMP_ARG = -mp
-	LDFLAGS_COMPILER = -mp
+	FFLAGS_OPENMP  = -mp
+	LDFLAGS_OPENMP = -mp
 endif
