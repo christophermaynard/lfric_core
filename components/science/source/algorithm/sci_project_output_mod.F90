@@ -34,8 +34,6 @@ contains
     use field_mod,                 only: field_type
     use field_parent_mod,          only: write_interface
     use operator_mod,              only: operator_type
-    use finite_element_config_mod, only: element_order_h, &
-                                         element_order_v
     use function_space_collection_mod,  only: function_space_collection
     use fs_continuity_mod,         only: W0, W1, W2, W3
     use quadrature_xyoz_mod,               only: quadrature_xyoz_type
@@ -57,11 +55,15 @@ contains
     type( quadrature_xyoz_type )          :: qr
     type( quadrature_rule_gaussian_type ) :: quadrature_rule
     integer(i_def)                        :: idx, fs_handle
+    integer(i_def)                        :: element_order_h
+    integer(i_def)                        :: element_order_v
     procedure(write_interface), pointer   :: tmp_write_ptr => null()
 
+    element_order_h = field%get_element_order_h()
+    element_order_v = field%get_element_order_v()
 
-    qr = quadrature_xyoz_type( MAX(element_order_h, element_order_v) + 3, &
-                               quadrature_rule )
+    qr = quadrature_xyoz_type( element_order_h+3, element_order_h+3, &
+                               element_order_v+3, quadrature_rule )
 
     ! Determine the input function space
     fs_handle = field%which_function_space()

@@ -16,9 +16,7 @@ module driver_fem_mod
                                             final_chi_transforms
   use constants_mod,                  only: i_def, l_def, str_def
   use extrusion_mod,                  only: TWOD, PRIME_EXTRUSION
-  use finite_element_config_mod,      only: element_order_h,  &
-                                            element_order_v,  &
-                                            coord_order
+  use finite_element_config_mod,      only: coord_order
   use field_mod,                      only: field_type
   use fs_continuity_mod,              only: W0, W2, W3, Wtheta, Wchi, W2v, W2h
   use function_space_mod,             only: function_space_type

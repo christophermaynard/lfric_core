@@ -21,8 +21,6 @@ module lfric_xios_time_axis_mod
   use function_space_mod,   only: function_space_type
   use function_space_collection_mod, &
                             only: function_space_collection
-  use finite_element_config_mod, &
-                            only: element_order_h, element_order_v
   use file_mod,             only: FILE_OP_OPEN, FILE_MODE_READ
   use lfric_ncdf_dims_mod,  only: lfric_ncdf_dims_type
   use lfric_ncdf_field_mod, only: lfric_ncdf_field_type
@@ -594,6 +592,8 @@ contains
     type(field_collection_iterator_type) :: pop_iter
     type(field_proxy_type)               :: data_proxy, model_proxy, interpolating_proxy
     integer(i_def)                       :: ndata
+    integer(i_def)                       :: element_order_h
+    integer(i_def)                       :: element_order_v
 
     ! Loop over time axis fields
 
@@ -619,6 +619,8 @@ contains
 
         model_fs => model_field%get_function_space()
         ndata = model_fs%get_ndata()
+        element_order_h = model_fs%get_element_order_h()
+        element_order_v = model_fs%get_element_order_v()
         mesh_model => model_proxy%vspace%get_mesh()
         mesh_data => data_proxy%vspace%get_mesh()
         ! If the data is on a different mesh to the model field, then an intermediate field

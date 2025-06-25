@@ -20,7 +20,7 @@ module sci_mapping_constants_mod
   use extrusion_mod,                     only: PRIME_EXTRUSION, &
                                                DOUBLE_LEVEL,    &
                                                TWOD
-  use sci_fem_constants_mod,             only: get_qr
+  use sci_fem_constants_mod,             only: get_qr_fv
   use field_mod,                         only: field_type
   use function_space_mod,                only: function_space_type
   use function_space_collection_mod,     only: function_space_collection
@@ -176,11 +176,10 @@ contains
     mesh_id = mesh%get_id()
     chi => get_coordinates(mesh_id)
     panel_id => get_panel_id(mesh_id)
-    qr => get_qr()
-    w2_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                              element_order_v, W2)
-    w3_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                              element_order_v, W3)
+    ! Kernels only work for lowest order spaces so use finite volume
+    qr => get_qr_fv()
+    w2_fs => function_space_collection%get_fs(mesh, 0, 0, W2)
+    w3_fs => function_space_collection%get_fs(mesh, 0, 0, W3)
 
     call project_xdot_to_w2_inventory%add_operator(project_xdot_to_w2, w2_fs, w3_fs, mesh)
     call project_ydot_to_w2_inventory%add_operator(project_ydot_to_w2, w2_fs, w3_fs, mesh)
@@ -233,14 +232,12 @@ contains
     mesh_id = mesh%get_id()
     chi => get_coordinates(mesh_id)
     panel_id => get_panel_id(mesh_id)
-    qr => get_qr()
 
-    w2_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                              element_order_v, W2)
-    w3_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                              element_order_v, W3)
-    wtheta_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                                  element_order_v, Wtheta)
+    ! Kernels only work for lowest order spaces so use finite volume
+    qr => get_qr_fv()
+    w2_fs => function_space_collection%get_fs(mesh, 0, 0, W2)
+    w3_fs => function_space_collection%get_fs(mesh, 0, 0, W3)
+    wtheta_fs => function_space_collection%get_fs(mesh, 0, 0, Wtheta)
 
     call u_lon_map_inventory%add_operator(u_lon_map, w2_fs, w3_fs, mesh)
     call u_lat_map_inventory%add_operator(u_lat_map, w2_fs, w3_fs, mesh)
@@ -292,12 +289,10 @@ contains
 
     if ( subroutine_timers ) call timer('runtime_constants.mapping')
 
-    w2_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                              element_order_v, W2)
-    w3_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                              element_order_v, W3)
-    wtheta_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                                  element_order_v, Wtheta)
+    ! Kernels only work for lowest order spaces so use finite volume
+    w2_fs => function_space_collection%get_fs(mesh, 0, 0, W2)
+    w3_fs => function_space_collection%get_fs(mesh, 0, 0, W3)
+    wtheta_fs => function_space_collection%get_fs(mesh, 0, 0, Wtheta)
 
     call u_lon_sample_inventory%add_operator(u_lon_sample, w2_fs, w3_fs, mesh)
     call u_lat_sample_inventory%add_operator(u_lat_sample, w2_fs, w3_fs, mesh)
@@ -543,7 +538,7 @@ contains
               prime_extrusion_mesh, DOUBLE_LEVEL                               &
       )
       double_level_chi => get_coordinates(double_level_mesh%get_id())
-      qr => get_qr()
+      qr => get_qr_fv()
 
       if ( subroutine_timers ) call timer('runtime_constants.mapping')
 
@@ -642,7 +637,7 @@ contains
   !> @return The field containing weights for conservative W3 mapping
   function get_intermesh_weights_w3_rdef(fine_mesh, coarse_mesh) result(weights_rdef)
 
-    use sci_fem_constants_mod,               only: get_mass_matrix_diagonal
+    use sci_fem_constants_mod,               only: get_mass_matrix_diagonal_fv
     use sci_weights_intermesh_w3_kernel_mod, only: weights_intermesh_w3_kernel_type
 
     implicit none
@@ -681,8 +676,8 @@ contains
       end if
 
       ! @TODO #4487: this would be better as just the cell volumes
-      mm_w3_fine => get_mass_matrix_diagonal(W3, fine_mesh%get_id())
-      mm_w3_coarse => get_mass_matrix_diagonal(W3, coarse_mesh%get_id())
+      mm_w3_fine => get_mass_matrix_diagonal_fv(W3, fine_mesh%get_id())
+      mm_w3_coarse => get_mass_matrix_diagonal_fv(W3, coarse_mesh%get_id())
 
       if ( subroutine_timers ) call timer('runtime_constants.mapping')
 
@@ -1016,7 +1011,7 @@ contains
     type(mesh_type),            pointer :: mesh
     type(operator_type),        pointer :: proj_op
     logical(kind=l_def)                 :: constant_exists
-    type(function_space_type),  pointer :: w1_k0_fs
+    type(function_space_type),  pointer :: w1_fs
     type(function_space_type),  pointer :: w3_fs
     type(field_type),           pointer :: chi(:)
     type(field_type),           pointer :: panel_id
@@ -1037,16 +1032,15 @@ contains
     if (.not. constant_exists) then
       chi => get_coordinates(mesh_id)
       panel_id => get_panel_id(mesh_id)
-      qr => get_qr()
+      qr => get_qr_fv()
 
       if ( subroutine_timers ) call timer('runtime_constants.mapping')
 
-      w1_k0_fs => function_space_collection%get_fs(mesh, 0, 0, W1)
-      w3_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                                element_order_v, W3)
+      w1_fs => function_space_collection%get_fs(mesh, 0, 0, W1)
+      w3_fs => function_space_collection%get_fs(mesh, 0, 0, W3)
 
       call project_lon_dot_to_w1_inventory%add_operator(                       &
-              proj_op, w1_k0_fs, w3_fs, mesh                                   &
+              proj_op, w1_fs, w3_fs, mesh                                      &
       )
 
       call invoke( name='proj_lon_dot_to_w1_op',                               &
@@ -1073,7 +1067,7 @@ contains
     type(mesh_type),            pointer :: mesh
     type(operator_type),        pointer :: proj_op
     logical(kind=l_def)                 :: constant_exists
-    type(function_space_type),  pointer :: w1_k0_fs
+    type(function_space_type),  pointer :: w1_fs
     type(function_space_type),  pointer :: w3_fs
     type(field_type),           pointer :: chi(:)
     type(field_type),           pointer :: panel_id
@@ -1094,16 +1088,15 @@ contains
     if (.not. constant_exists) then
       chi => get_coordinates(mesh_id)
       panel_id => get_panel_id(mesh_id)
-      qr => get_qr()
+      qr => get_qr_fv()
 
       if ( subroutine_timers ) call timer('runtime_constants.mapping')
 
-      w1_k0_fs => function_space_collection%get_fs(mesh, 0, 0, W1)
-      w3_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                                element_order_v, W3)
+      w1_fs => function_space_collection%get_fs(mesh, 0, 0, W1)
+      w3_fs => function_space_collection%get_fs(mesh, 0, 0, W3)
 
       call project_lat_dot_to_w1_inventory%add_operator(                       &
-              proj_op, w1_k0_fs, w3_fs, mesh                                   &
+              proj_op, w1_fs, w3_fs, mesh                                      &
       )
 
       call invoke( name='proj_lat_dot_to_w1_op',                               &
@@ -1130,7 +1123,7 @@ contains
     type(mesh_type),            pointer :: mesh
     type(operator_type),        pointer :: proj_op
     logical(kind=l_def)                 :: constant_exists
-    type(function_space_type),  pointer :: w1_k0_fs
+    type(function_space_type),  pointer :: w1_fs
     type(function_space_type),  pointer :: w3_fs
     type(field_type),           pointer :: chi(:)
     type(field_type),           pointer :: panel_id
@@ -1149,16 +1142,15 @@ contains
     if (.not. constant_exists) then
       chi => get_coordinates(mesh_id)
       panel_id => get_panel_id(mesh_id)
-      qr => get_qr()
+      qr => get_qr_fv()
 
       if ( subroutine_timers ) call timer('runtime_constants.mapping')
 
-      w1_k0_fs => function_space_collection%get_fs(mesh, 0, 0, W1)
-      w3_fs => function_space_collection%get_fs(mesh, element_order_h, &
-                                                element_order_v, W3)
+      w1_fs => function_space_collection%get_fs(mesh, 0, 0, W1)
+      w3_fs => function_space_collection%get_fs(mesh, 0, 0, W3)
 
       call project_r_dot_to_w1_inventory%add_operator(                         &
-              proj_op, w1_k0_fs, w3_fs, mesh                                   &
+              proj_op, w1_fs, w3_fs, mesh                                      &
       )
 
       call invoke( name='proj_r_dot_to_w1_op',                                 &
