@@ -315,7 +315,6 @@ module sci_iterative_solver_mod
 
   type, public, extends(abstract_iterative_solver_type) :: precondition_only_type
      private
-     logical(kind=l_def) :: d_norm
    contains
      procedure :: apply => precondition_only_solve
      procedure :: precondition_only_solve
@@ -1672,16 +1671,14 @@ contains
        ! Compute initial and final error
        call b%duplicate(res)
        call res%copy(b)
-       if( self%d_norm ) then
-          e0 = res%norm()
-       end if
+       e0 = res%norm()
        call x%duplicate(Ax)
        call self%lin_op%apply(x, Ax)
        call res%axpy(-1.0_r_def, Ax)
        e = res%norm()
        write(log_scratch_space,'(A,3E15.8)')  &
             "Precondition only error,init, relative: = ", e,e0,e/e0
-       call log_event(log_scratch_space,LOG_LEVEL_INFO)
+       call log_event(log_scratch_space,LOG_LEVEL_DEBUG)
     else
        call log_event("Precondition only: ... finished", LOG_LEVEL_DEBUG)
     end if
