@@ -1,0 +1,222 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2024 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+!> Test for the unweighted multidata scalar prolongation kernel
+module prolong_multidata_scalar_kernel_mod_test
+  use funit
+  use constants_mod, only : i_def, r_double, r_single
+
+  implicit none
+  private
+  public :: test_prolong_multidata_r_double
+  public :: test_prolong_multidata_r_single
+
+contains
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Double precision test
+  @test( )
+  subroutine test_prolong_multidata_r_double( )
+    use sci_prolong_multidata_scalar_kernel_mod, only : prolong_multidata_scalar_kernel_code
+    use get_unit_test_m3x3_dofmap_mod,       only : get_wtheta_m3x3_dofmap
+    implicit none
+
+    integer(kind=i_def) :: lp_x, lp_y
+    ! Scalars
+    integer(kind=i_def) :: nlayers
+    integer(kind=i_def) :: ncell_f_per_c_x ! number of fine cells per coarse in x
+    integer(kind=i_def) :: ncell_f_per_c_y ! number of fine cells per coarse in y
+    integer(kind=i_def) :: ncell_f       ! number of fine cells
+    integer(kind=i_def) :: ncell_c       ! number of coarse cells
+    integer(kind=i_def) :: ndf           ! number of dofs per cell. Same on each mesh
+    integer(kind=i_def) :: undf_f, undf_c
+    integer(kind=i_def) :: ndata           ! number of fields in multidata field
+    integer(kind=i_def) :: k, k_start, i, cell, j
+    ! Integer Arrays
+    integer(kind=i_def), allocatable, dimension(:,:,:) :: cell_map
+    integer(kind=i_def), allocatable, dimension(:,:) :: map_f ! Cell and dof indexed
+    integer(kind=i_def), allocatable, dimension(:,:)   :: map_c ! only dof indexed
+    ! Real Arrays
+    real(kind=r_double), allocatable, dimension(:) :: coarse_field, fine_field
+
+    real(r_double), parameter :: tol = 1.0e-12_r_double
+
+    ! set the scalars by hand
+    nlayers = 3
+    ncell_f_per_c_x = 2 ! quads
+    ncell_f_per_c_y = 2 ! quads
+    ndata = 2
+    ncell_c = 9_i_def
+    ncell_f = ncell_c * ncell_f_per_c_x * ncell_f_per_c_y ! only need one coarse cell
+    ndf = 2 ! keep it simple (Wtheta, vertically continuous)
+    undf_f = ndata*(nlayers + 1) * ncell_f
+    undf_c = ndata*(nlayers + 1) * ncell_c
+
+    allocate( cell_map(ncell_c,          &
+                       ncell_f_per_c_x,  &
+                       ncell_f_per_c_y), &
+              map_f(ndf,ncell_f),        &
+              map_c(ndf, ncell_c) )
+    allocate( coarse_field(undf_c),      &
+              fine_field(undf_f) )
+
+    cell_map = reshape( (/  1,  4,  7, 19, 22, 27, 37, 40, 43, &
+              2,  5,  8, 20, 23, 28, 38, 41, 44, &
+              3,  6,  9, 21, 24, 29, 39, 42, 45, &
+             10, 13, 16, 28, 31, 34, 46, 49, 52, &
+             11, 14, 17, 29, 32, 35, 47, 50, 53, &
+             12, 15, 18, 30, 33, 36, 48, 51, 54  &
+            /), (/ ncell_c, ncell_f_per_c_x, ncell_f_per_c_y /) )
+
+    call get_wtheta_m3x3_dofmap(map_c, nlayers)
+
+    do j = 1, ncell_f
+      map_f(1,j) = (j-1)*(ndata*(nlayers+1))+1
+      map_f(2,j) = (j-1)*(ndata*(nlayers+1))+2
+    end do
+
+    ! set simple values for the fields
+    fine_field(:) = 0.0_r_double
+    coarse_field(:) = 2.5_r_double
+
+    cell = 1
+
+    call prolong_multidata_scalar_kernel_code(    &
+                              nlayers,            &
+                              cell_map(cell,:,:), &
+                              ncell_f_per_c_x,    &
+                              ncell_f_per_c_y,    &
+                              ncell_f,            &
+                              fine_field,         &
+                              coarse_field,       &
+                              ndata,              &
+                              ndf,                &
+                              undf_f,             &
+                              map_f,              &
+                              undf_c,             &
+                              map_c(:,cell) )
+    do lp_y = 1, ncell_f_per_c_y
+      do lp_x = 1, ncell_f_per_c_x
+        do i = 1, ndata
+          k_start = (i-1)*(nlayers - 1 + ndf)+1
+          do k = 0, nlayers
+            @assertEqual( 2.5_r_double, fine_field(map_f(lp_x,lp_y)+k+k_start-1), tol)
+          end do
+        end do
+      end do
+    end do
+
+
+    deallocate( cell_map,     &
+                map_f,        &
+                map_c,        &
+                coarse_field, &
+                fine_field )
+
+  end subroutine test_prolong_multidata_r_double
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Single precision test
+  @test( )
+  subroutine test_prolong_multidata_r_single( )
+    use sci_prolong_multidata_scalar_kernel_mod, only : prolong_multidata_scalar_kernel_code
+    use get_unit_test_m3x3_dofmap_mod,       only : get_wtheta_m3x3_dofmap
+    implicit none
+
+    integer(kind=i_def) :: lp_x, lp_y
+    ! Scalars
+    integer(kind=i_def) :: nlayers
+    integer(kind=i_def) :: ncell_f_per_c_x ! number of fine cells per coarse in x
+    integer(kind=i_def) :: ncell_f_per_c_y ! number of fine cells per coarse in y
+    integer(kind=i_def) :: ncell_f       ! number of fine cells
+    integer(kind=i_def) :: ncell_c       ! number of coarse cells
+    integer(kind=i_def) :: ndf           ! number of dofs per cell. Same on each mesh
+    integer(kind=i_def) :: undf_f, undf_c
+    integer(kind=i_def) :: ndata           ! number of fields in multidata field
+    integer(kind=i_def) :: k, k_start, i, cell, j
+    ! Integer Arrays
+    integer(kind=i_def), allocatable, dimension(:,:,:) :: cell_map
+    integer(kind=i_def), allocatable, dimension(:,:) :: map_f ! Cell and dof indexed
+    integer(kind=i_def), allocatable, dimension(:,:)   :: map_c ! only dof indexed
+    ! Real Arrays
+    real(kind=r_single), allocatable, dimension(:) :: coarse_field, fine_field
+
+    real(r_single), parameter :: tol = 1.0e-6_r_single
+
+    ! set the scalars by hand
+    nlayers = 3
+    ncell_f_per_c_x = 2 ! quads
+    ncell_f_per_c_y = 2 ! quads
+    ndata = 2
+    ncell_c = 9_i_def
+    ncell_f = ncell_c * ncell_f_per_c_x * ncell_f_per_c_y ! only need one coarse cell
+    ndf = 2 ! keep it simple (Wtheta, vertically continuous)
+    undf_f = ndata*(nlayers + 1) * ncell_f
+    undf_c = ndata*(nlayers + 1) * ncell_c
+
+    allocate( cell_map(ncell_c,          &
+                       ncell_f_per_c_x,  &
+                       ncell_f_per_c_y), &
+              map_f(ndf,ncell_f),        &
+              map_c(ndf, ncell_c) )
+    allocate( coarse_field(undf_c),      &
+              fine_field(undf_f) )
+
+    cell_map = reshape( (/  1,  4,  7, 19, 22, 27, 37, 40, 43, &
+              2,  5,  8, 20, 23, 28, 38, 41, 44, &
+              3,  6,  9, 21, 24, 29, 39, 42, 45, &
+             10, 13, 16, 28, 31, 34, 46, 49, 52, &
+             11, 14, 17, 29, 32, 35, 47, 50, 53, &
+             12, 15, 18, 30, 33, 36, 48, 51, 54  &
+            /), (/ ncell_c, ncell_f_per_c_x, ncell_f_per_c_y /) )
+
+    call get_wtheta_m3x3_dofmap(map_c, nlayers)
+
+    do j = 1, ncell_f
+      map_f(1,j) = (j-1)*(ndata*(nlayers+1))+1
+      map_f(2,j) = (j-1)*(ndata*(nlayers+1))+2
+    end do
+
+    ! set simple values for the fields
+    fine_field(:) = 0.0_r_single
+    coarse_field(:) = 2.5_r_single
+
+    cell = 1
+
+    call prolong_multidata_scalar_kernel_code(    &
+                              nlayers,            &
+                              cell_map(cell,:,:), &
+                              ncell_f_per_c_x,    &
+                              ncell_f_per_c_y,    &
+                              ncell_f,            &
+                              fine_field,         &
+                              coarse_field,       &
+                              ndata,              &
+                              ndf,                &
+                              undf_f,             &
+                              map_f,              &
+                              undf_c,             &
+                              map_c(:,cell) )
+    do lp_y = 1, ncell_f_per_c_y
+      do lp_x = 1, ncell_f_per_c_x
+        do i = 1, ndata
+          k_start = (i-1)*(nlayers - 1 + ndf)+1
+          do k = 0, nlayers
+            @assertEqual( 2.5_r_single, fine_field(map_f(lp_x,lp_y)+k+k_start-1), tol)
+          end do
+        end do
+      end do
+    end do
+
+
+    deallocate( cell_map,     &
+                map_f,        &
+                map_c,        &
+                coarse_field, &
+                fine_field )
+
+  end subroutine test_prolong_multidata_r_single
+
+end module prolong_multidata_scalar_kernel_mod_test

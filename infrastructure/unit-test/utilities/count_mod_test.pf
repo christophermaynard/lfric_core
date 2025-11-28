@@ -1,0 +1,133 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2017 Met Office. All rights reserved.
+! For further details please refer to the file LICENCE which you should have
+! received as part of this distribution.
+!-----------------------------------------------------------------------------
+!> @brief Test the functionality of count_mod
+!>
+!> @details A pFUnit test module to exercise the counter facilities.
+!>
+module count_mod_test
+
+  use pfunit
+  use lfric_mpi_mod, only : global_mpi, &
+                            lfric_comm_type
+  use constants_mod, only: i_def
+
+  implicit none
+
+  private
+
+  public set_up, tear_down, test_counter
+  !
+  !pFUnit depends on symbol spill
+  !
+  public MPITestMethod
+
+  integer(i_def), parameter :: COUNTER_UNIT  = 12
+
+contains
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @before
+  subroutine set_up(this)
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer(i_def) :: condition
+    type(lfric_comm_type) :: lfric_comm
+
+    call lfric_comm%set_comm_mpi_val(this%getMpiCommunicator())
+
+    !Store the MPI communicator for later use
+    call global_mpi%initialise(lfric_comm)
+
+    open( COUNTER_UNIT, status='scratch', action='readwrite', &
+          iostat=condition )
+    @assertEqual( condition, 0 )
+
+  end subroutine set_up
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @after
+  subroutine tear_down(this)
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer(i_def) :: condition
+
+    close( COUNTER_UNIT, iostat=condition )
+    @assertEqual( condition, 0 )
+
+    ! Clear the stored MPI communicator
+    call global_mpi%finalise()
+
+  end subroutine tear_down
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes=[1] )
+  subroutine test_counter(this)
+
+    use count_mod, only: count_type, halo_calls
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer(i_def)    :: i
+    character(len=47) :: found_str1
+    character(len=2)  :: found_str2, found_str4, found_str5
+    character(len=50) :: found_str3
+    integer(i_def)    :: found_int
+
+    allocate(halo_calls, source=count_type('halo_calls'))
+
+    call halo_calls%counter('section_1')
+
+    do i = 1, 50
+      if (allocated(halo_calls)) call halo_calls%counter_inc()
+    end do
+
+    call halo_calls%counter('section_2')
+
+    do i = 1, 10
+      if (allocated(halo_calls)) call halo_calls%counter_inc()
+    end do
+
+    call halo_calls%counter('section_1')
+
+    do i = 1, 30
+      if (allocated(halo_calls)) call halo_calls%counter_inc()
+    end do
+
+    call halo_calls%counter('section_2')
+
+    call halo_calls%output_counters(opt_unit=COUNTER_UNIT)
+
+    rewind( COUNTER_UNIT )
+    read(COUNTER_UNIT,'(A47)')found_str1
+    @assertEqual( '||=  Section name =||= Count within section =||', found_str1 )
+
+    read(COUNTER_UNIT,('(A2,A50,A2,i14,A2)')) &
+           found_str2, found_str3, found_str4, found_int, found_str5
+    @assertEqual( '||', found_str2 )
+    @assertEqual( '                                         section_1', found_str3 )
+    @assertEqual( '||', found_str4 )
+    @assertEqual( 60, found_int )
+    @assertEqual( '||', found_str5 )
+
+
+    read(COUNTER_UNIT,('(A2,A50,A2,i14,A2)')) &
+           found_str2, found_str3, found_str4, found_int, found_str5
+    @assertEqual( '||', found_str2 )
+    @assertEqual( '                                         section_2', found_str3 )
+    @assertEqual( '||', found_str4 )
+    @assertEqual( 40, found_int )
+    @assertEqual( '||', found_str5 )
+
+  end subroutine test_counter
+
+end module count_mod_test

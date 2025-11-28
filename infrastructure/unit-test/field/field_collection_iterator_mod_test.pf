@@ -1,0 +1,313 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2022 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+
+!> Test the field collection iterator object
+!>
+module field_collection_iterator_mod_test
+
+    use, intrinsic :: iso_fortran_env, only : real32, real64
+
+    use constants_mod,                 only : i_def, r_def, l_def
+    use function_space_mod,            only : function_space_type
+    use function_space_collection_mod, only : function_space_collection_type, &
+                                              function_space_collection
+    use mesh_collection_mod,           only : mesh_collection_type, &
+                                              mesh_collection
+    use halo_comms_mod,                only : initialise_halo_comms, &
+                                              finalise_halo_comms
+    use halo_routing_collection_mod,   only : halo_routing_collection_type, &
+                                              halo_routing_collection
+    use field_mod,                     only : field_type,field_proxy_type
+    use field_real32_mod,              only : field_real32_type, &
+                                              field_real32_proxy_type
+    use field_real64_mod,              only : field_real64_type, &
+                                              field_real64_proxy_type
+    use field_parent_mod,              only : field_parent_type
+    use integer_field_mod,             only : integer_field_type, &
+                                              integer_field_proxy_type
+    use field_collection_iterator_mod, only : field_collection_iterator_type
+    use field_collection_mod,          only : field_collection_type
+    use fs_continuity_mod,             only : W0, W2, W3
+    use lfric_mpi_mod,                 only : global_mpi, &
+                                              lfric_comm_type
+    use local_mesh_mod,                only : local_mesh_type
+    use pure_abstract_field_mod,       only : pure_abstract_field_type
+
+    use pfunit
+
+  implicit none
+
+  private
+  public :: test_mixed_type, &
+            test_mixed_kind, &
+            test_zero_length_iteration
+  !
+  ! pFUnit depends on symbol oveflow to work:
+  !
+  public :: MPITestCase, MPITestParameter
+
+  @TestCase
+  type, extends(MPITestCase), public :: field_collection_iterator_test_type
+    private
+    type(function_space_type), pointer :: w0_fs => null()
+    type(function_space_type), pointer :: w2_fs => null()
+    type(function_space_type), pointer :: w3_fs => null()
+    type(local_mesh_type)              :: unit_test_local_mesh
+  contains
+    procedure setUp
+    procedure tearDown
+    procedure get_local_mesh_ptr
+  end type field_collection_iterator_test_type
+
+  integer(i_def), parameter :: element_order_h = 0
+  integer(i_def), parameter :: element_order_v = 0
+
+contains
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
+
+    use mesh_mod, only : mesh_type, PLANE_BI_PERIODIC
+
+    implicit none
+
+    class(field_collection_iterator_test_type), intent(inout) :: this
+
+    type(local_mesh_type), pointer :: unit_test_local_mesh_ptr
+    type(mesh_type) :: unit_test_mesh
+    integer(i_def)  :: mesh_id
+
+    type(mesh_type), pointer :: mesh => null()
+    type(lfric_comm_type) :: lfric_comm
+
+    call lfric_comm%set_comm_mpi_val(this%getMpiCommunicator())
+
+    !Store the MPI communicator for later use
+    call global_mpi%initialise(lfric_comm)
+
+    ! Initialise halo functionality
+    call initialise_halo_comms(lfric_comm)
+
+    ! Create top level mesh collection
+    mesh_collection = mesh_collection_type()
+    ! Create top level function space collection
+    function_space_collection = function_space_collection_type()
+    ! Create top level halo_routing collection
+    halo_routing_collection = halo_routing_collection_type()
+
+    call this%unit_test_local_mesh%initialise()
+    unit_test_local_mesh_ptr => this%get_local_mesh_ptr()
+
+    ! Dummy mesh mod has 9 cells, 3 layers and is uniform in vertical
+    unit_test_mesh = mesh_type( PLANE_BI_PERIODIC, unit_test_local_mesh_ptr )
+    mesh_id =  mesh_collection%add_new_mesh( unit_test_mesh )
+    mesh    => mesh_collection%get_mesh( mesh_id )
+
+    this%w0_fs => function_space_collection%get_fs( mesh, &
+                                                    element_order_h, &
+                                                    element_order_v, &
+                                                    W0 )
+
+    this%w2_fs => function_space_collection%get_fs( mesh, &
+                                                    element_order_h, &
+                                                    element_order_v, &
+                                                    W2 )
+
+    this%w3_fs => function_space_collection%get_fs( mesh, &
+                                                    element_order_h, &
+                                                    element_order_v, &
+                                                    W3 )
+    nullify( mesh )
+
+  end subroutine setUp
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine tearDown( this )
+
+    implicit none
+
+    class(field_collection_iterator_test_type), intent(inout) :: this
+
+    call function_space_collection%clear()
+    call mesh_collection%clear()
+
+    ! Finalise halo functionality
+    call finalise_halo_comms()
+    ! Clear the stored MPI communicator
+    call global_mpi%finalise()
+
+  end subroutine tearDown
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_local_mesh_ptr(this) result(unit_test_local_mesh_ptr)
+    implicit none
+    class(field_collection_iterator_test_type), intent(inout), target :: this
+    type(local_mesh_type), pointer :: unit_test_local_mesh_ptr
+    unit_test_local_mesh_ptr => this%unit_test_local_mesh
+  end function get_local_mesh_ptr
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  @Test( npes=[1] )
+  subroutine test_mixed_type( test_type )
+
+    implicit none
+
+    class(field_collection_iterator_test_type), intent(inout) :: test_type
+
+    type(field_type)                    :: test_field1
+    type(integer_field_type)            :: test_field2
+
+    type(field_proxy_type)              :: test_field1_p
+    type(integer_field_proxy_type)      :: test_field2_p
+
+    type(field_proxy_type)              :: returned_field1_p
+    type(integer_field_proxy_type)      :: returned_field2_p
+
+    type(field_collection_type)                    :: field_collectionA
+    type(field_collection_iterator_type)           :: iter
+    class(field_parent_type), pointer              :: fld => null()
+
+    real(r_def), parameter              :: tol = 1.0e-6_r_def
+    integer(i_def)                      :: i
+
+    ! Create a field object with the name 'test_field1'
+    ! and put 99.0 in the first dof
+    call test_field1%initialise( test_type%w0_fs, name='test_field1' )
+    test_field1_p = test_field1%get_proxy()
+    test_field1_p%data(1) = 99.0_r_def
+
+    ! Create an integer field object with the name 'test_field2'
+    ! and put 33 in the first dof
+    call test_field2%initialise( test_type%w2_fs, name='test_field2' )
+    test_field2_p = test_field2%get_proxy()
+    test_field2_p%data(1) = 33_i_def
+
+    ! Put test_field1 and test_field2 in to a collection.
+    !
+    call field_collectionA%initialise( name="field_collectionA", table_len=5 )
+    call field_collectionA%add_field(test_field1)  ! a real field
+    call field_collectionA%add_field(test_field2)  ! an integer field
+
+    ! Check we can iterate over a collection
+    ! field_collectionA created above with table_len=5 and the given
+    ! field names, should contain fields in the following order:
+    ! 1. The real field with a first data item of 99.0
+    ! 2. The integer field with 33 as the first data item
+    !    - so check for that:
+    call iter%initialise(field_collectionA)
+    do i=1,10
+      if(.not.iter%has_next())exit
+      fld=>iter%next()
+      select type(fld)
+        type is (field_type)  ! r_def
+          @assertEqual(1, i)
+          returned_field1_p = fld%get_proxy()
+          @assertEqual(99.0_r_def, returned_field1_p%data(1), tolerance=tol)
+        type is (integer_field_type)
+          @assertEqual(2, i)
+          returned_field2_p = fld%get_proxy()
+          @assertEqual(33_i_def, returned_field2_p%data(1))
+      end select
+    end do
+    ! Test that there were only two items in the collection (so the iteration
+    ! loop exited on i==3)
+    @assertEqual(3, i)
+
+  end subroutine test_mixed_type
+
+  @Test( npes=[1] )
+  subroutine test_mixed_kind( test_type )
+
+    implicit none
+
+    class(field_collection_iterator_test_type), intent(inout) :: test_type
+
+    type(field_real32_type)              :: test_field1
+    type(field_real64_type)              :: test_field2
+
+    type(field_real32_proxy_type)        :: test_field1_p
+    type(field_real64_proxy_type)        :: test_field2_p
+
+    type(field_real32_proxy_type)        :: returned_field1_p
+    type(field_real64_proxy_type)        :: returned_field2_p
+
+    type(field_collection_type)          :: field_collectionB
+    type(field_collection_iterator_type) :: iter
+    class(field_parent_type), pointer    :: fld => null()
+
+    real(real32), parameter              :: tol_real32 = 1.0e-6_real32
+    real(real64), parameter              :: tol_real64 = 1.0e-6_real64
+    integer(i_def)                       :: i
+
+    ! Create a field object with the name 'test_field1'
+    ! and put 99.0 in the first dof
+    call test_field1%initialise( test_type%w0_fs, name='test_field1' )
+    test_field1_p = test_field1%get_proxy()
+    test_field1_p%data(1) = 99.0_real32
+
+    ! Create an integer field object with the name 'test_field2'
+    ! and put 33 in the first dof
+    call test_field2%initialise( test_type%w2_fs, name='test_field2' )
+    test_field2_p = test_field2%get_proxy()
+    test_field2_p%data(1) = 33.0_real64
+
+    ! Put test_field1 and test_field2 in to a collection.
+    !
+    call field_collectionB%initialise( name="field_collectionB", table_len=5 )
+    call field_collectionB%add_field(test_field1)  ! a real32 field
+    call field_collectionB%add_field(test_field2)  ! a real64 field
+
+    ! Check we can iterate over a collection
+    ! field_collectionA created above with table_len=5 and the given
+    ! field names, should contain fields in the following order:
+    ! 1. The real32 field with a first data item of 99.0
+    ! 2. The real64 field with 33.0 as the first data item
+    !    - so check for that:
+    call iter%initialise(field_collectionB)
+    do i=1,10
+      if(.not.iter%has_next())exit
+      fld=>iter%next()
+      select type(fld)
+        type is (field_real32_type)
+          @assertEqual(1, i)
+          returned_field1_p = fld%get_proxy()
+          @assertEqual(99.0_real32, returned_field1_p%data(1), tolerance=tol_real32)
+        type is (field_real64_type)
+          @assertEqual(2, i)
+          returned_field2_p = fld%get_proxy()
+          @assertEqual(33.0_real64, returned_field2_p%data(1), tolerance=tol_real64)
+      end select
+    end do
+    ! Test that there were only two items in the collection (so the iteration
+    ! loop exited on i==3)
+    @assertEqual(3, i)
+
+  end subroutine test_mixed_kind
+
+  @test( npes=1 )
+  subroutine test_zero_length_iteration( test_type )
+
+    implicit none
+
+    class(field_collection_iterator_test_type), intent(inout) :: test_type
+
+    class(field_parent_type), pointer :: field => null()
+
+    type(field_collection_type)          :: collection
+    type(field_collection_iterator_type) :: test_unit
+
+    call collection%initialise( name="field_collection", table_len=5 )
+    call test_unit%initialise(collection)
+    @assertFalse( test_unit%has_next(), message="Empty list iterator didn't signal completion." )
+
+    field=>test_unit%next()
+    @assertFalse( associated(field), message="Empty list iterator didn't return null field." )
+
+  end subroutine test_zero_length_iteration
+
+end module field_collection_iterator_mod_test

@@ -1,0 +1,132 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2017 Met Office. All rights reserved.
+! For further details please refer to the file LICENCE which you should have
+! received as part of this distribution.
+!-----------------------------------------------------------------------------
+!> @brief Test the functionality of timer_mod
+!>
+!> @details A pFUnit test module to exercise the timer facilities.
+!>
+module timer_mod_test
+
+  use pfunit
+  use lfric_mpi_mod, only : global_mpi, &
+                            lfric_comm_type
+  use constants_mod, only : r_def, i_def, str_def, r_double, i_long
+
+  implicit none
+
+  private
+
+  public set_up, tear_down
+  public test_timer_internals
+  public test_timer_timings
+  !
+  ! pFUnit depends on symbol spill
+  !
+  public MPITestMethod
+
+contains
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @before
+  subroutine set_up( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+    type(lfric_comm_type) :: lfric_comm
+
+    call lfric_comm%set_comm_mpi_val(this%getMpiCommunicator())
+
+    !Store the MPI communicator for later use
+    call global_mpi%initialise(lfric_comm)
+
+  end subroutine set_up
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @after
+  subroutine tear_down( this )
+
+    use timer_mod, only: reset_timer
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    call reset_timer()
+
+    ! Clear the stored MPI communicator
+    call global_mpi%finalise()
+
+  end subroutine tear_down
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes=[1] )
+  subroutine test_timer_internals(this)
+
+    use timer_mod, only: init_timer, timer, get_routine_name, &
+                         get_routine_total_calls
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer                :: i
+    integer(i_long)        :: num_calls
+    real(r_def)            :: a, b, c
+    character(len=str_def) :: nme
+
+    call init_timer()
+    call timer('SECTION 1')
+    c = 0.0_r_def
+    do i = 1, 100
+      a = real(i,r_def)
+      b = c + 1.0_r_def
+      c = 10.0_r_def*exp(-b)
+    end do
+    call timer('section 1')
+
+    do i = 1, 10
+      call timer('section 2')
+      a = cos(real(i,r_def))*exp(-real(i,r_def))
+      call timer('section 2')
+    end do
+    b = a
+
+    nme = get_routine_name(1)
+    @assertEqual('section 1',trim(nme))
+    nme = get_routine_name(2)
+    @assertEqual('section 2',trim(nme))
+    num_calls = get_routine_total_calls(1)
+    @assertEqual(1_i_long,num_calls)
+    num_calls = get_routine_total_calls(2)
+    @assertEqual(10_i_long,num_calls)
+
+  end subroutine test_timer_internals
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Timer should be using an MPI-agnostic wallclock, i.e. we'll get the same
+  ! recorded duration if we run with 1 or 2 PEs.
+  @Test( npes=[1,2] )
+  subroutine test_timer_timings(this)
+
+    use timer_mod, only: init_timer, timer, calculate_timer_stats, &
+                         get_mean_time
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+    real(r_double) :: val
+
+    call init_timer()
+    call timer('test_sleep')
+    call sleep(1)
+    call timer('test_sleep')
+    call calculate_timer_stats()
+    val = get_mean_time(1)
+    ! assume a tolerance for system variation.
+    @assertEqual(1.0_r_double, val, 1e-2_r_double)
+
+  end subroutine test_timer_timings
+
+end module timer_mod_test

@@ -1,0 +1,65 @@
+!-----------------------------------------------------------------------------
+! Copyright (c) 2017,  Met Office, on behalf of HMSO and Queen's Printer
+! For further details please refer to the file LICENCE.original which you
+! should have received as part of this distribution.
+!-----------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+module matrix_invert_mod_test
+  implicit none
+
+contains
+
+  @test
+  subroutine test_of_matrix_invert()
+    use funit
+    use, intrinsic :: iso_fortran_env, only: real32, real64
+    use matrix_invert_mod, only : matrix_invert_lu, matrix_invert_plu
+    use constants_mod,     only : r_def
+    implicit none
+
+    real(kind=r_def) :: tol
+    real(kind=r_def) :: a(4,4), a_inv(4,4), answer(4,4), I(4,4)
+
+#if (RDEF_PRECISION == 64)
+    tol = 1.0e-7_real64
+#elif (RDEF_PRECISION == 32)
+    tol = 2.0e-7_real32
+#else
+    @assertFail("Unsupported default precision")
+#endif
+
+    I(1,:) = (/ 1.0_r_def, 0.0_r_def, 0.0_r_def, 0.0_r_def /)
+    I(2,:) = (/ 0.0_r_def, 1.0_r_def, 0.0_r_def, 0.0_r_def /)
+    I(3,:) = (/ 0.0_r_def, 0.0_r_def, 1.0_r_def, 0.0_r_def /)
+    I(4,:) = (/ 0.0_r_def, 0.0_r_def, 0.0_r_def, 1.0_r_def /)
+
+    ! Test lu decomposition
+    ! This uses 2D P1_DG mass matrix as an example
+    a(1,:) = 1.0_r_def/9.0_r_def*(/ 4.0_r_def, 2.0_r_def, 2.0_r_def, 1.0_r_def /)
+    a(2,:) = 1.0_r_def/9.0_r_def*(/ 2.0_r_def, 4.0_r_def, 1.0_r_def, 2.0_r_def /)
+    a(3,:) = 1.0_r_def/9.0_r_def*(/ 2.0_r_def, 1.0_r_def, 4.0_r_def, 2.0_r_def /)
+    a(4,:) = 1.0_r_def/9.0_r_def*(/ 1.0_r_def, 2.0_r_def, 2.0_r_def, 4.0_r_def /)
+
+    call matrix_invert_lu(a, a_inv, 4)
+
+    answer = matmul(a, a_inv)
+
+    @assertEqual( I, answer, tol )
+
+    ! Test plu decomposition
+    ! Use an example of an invertible matrix with no LU decomposition
+    a(1,:) = (/ 0.0_r_def, 0.0_r_def, 0.0_r_def, 1.0_r_def /)
+    a(2,:) = (/ 0.0_r_def, 0.0_r_def, 1.0_r_def, 0.0_r_def /)
+    a(3,:) = (/ 0.0_r_def, 1.0_r_def, 0.0_r_def, 0.0_r_def /)
+    a(4,:) = (/ 1.0_r_def, 0.0_r_def, 0.0_r_def, 0.0_r_def /)
+
+    call matrix_invert_plu(a, a_inv, 4)
+
+    answer = matmul(a, a_inv)
+
+    @assertEqual( I, answer, tol )
+
+  end subroutine test_of_matrix_invert
+
+end module matrix_invert_mod_test

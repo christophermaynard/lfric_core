@@ -1,0 +1,84 @@
+{# ########################################################################### #}
+{# (c) Crown copyright 2024 Met Office. All rights reserved. #}
+{# The file LICENCE, distributed with this code, contains details of the terms #}
+{# under which the code may be used. #}
+{# ########################################################################### #}
+{% do LOG.debug("Entered templates/runtime/generate_runtime_scripts.cylc") %}
+
+{# Generate runtime section for scripts #}
+
+{# Import macros to set custom directive values for this platform #}
+{% from "site/"~SITE~"/macros/macros_"~site_vars["scripts_platform"]~".cylc" import
+    set_task_resources,
+    with context %}
+
+{# Set the family inheritance for this task #}
+{% set inherit = namespace(str="") %}
+{% set inherit.str = "SCRIPTS" %}
+{% for family in task_values["script_families"] %}
+    {% set inherit.str = inherit.str~","~family|upper %}
+{% endfor %}
+
+{# ######################## #}
+{# Scripts Runtime Sections #}
+{# ######################## #}
+
+    [[{{task}}]]
+ 	    execution time limit = PT15M
+
+{% if "export_simsys_scripts" in task %}
+
+        inherit=EXPORT-SOURCE
+        script="rose task-run --app-key=export_simsys_scripts"
+        [[[environment]]]
+            github_branch={{SIMSYS_BRANCH}}
+
+{% elif "config_dump_checker" in task %}
+
+        inherit={{inherit.str|upper}}
+        script="rose task-run --app-key=check_config_dump"
+
+{% elif "style_checker" in task %}
+
+        inherit={{inherit.str|upper}}
+        script="rose task-run --app-key=check_style"
+
+{% elif "extract_checker" in task %}
+
+        inherit={{inherit.str|upper}}
+        script="rose task-run --app-key=extract_list_checker"
+
+{% elif "site_validator" in task %}
+
+        inherit={{inherit.str|upper}}
+        script="rose task-run --app-key=site_validator"
+
+{% elif "rose-stem_lint_checker" in task %}
+
+        inherit={{inherit.str|upper}}
+        script="rose task-run --app-key=rose-stem_lint_check"
+
+{% elif "validate_rose_meta" in task %}
+
+        inherit={{inherit.str|upper}}
+        script="rose task-run --app-key=validate_rose_meta"
+        [[[environment]]]
+            ROSE_PYTHONPATH = $PYTHONPATH
+            ROSE_META_PATH = $SOURCE_ROOT/rose-meta
+
+{% elif "global_variables_checker" in task %}
+
+        inherit={{inherit.str|upper}}
+        script="rose task-run --app-key=check_global_variables"
+
+{% elif "python_unit_tests" in task %}
+
+        inherit={{inherit.str|upper}}
+        script="rose task-run --app-key=python_unit_tests"
+
+{% endif %}
+
+        [[[directives]]]
+{{ set_task_resources(1, [1, "GB"]) }}
+
+{% do LOG.debug("Finished in templates/runtime/generate_runtime_scripts.cylc") %}

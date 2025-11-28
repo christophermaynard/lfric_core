@@ -1,0 +1,23 @@
+class lfric_xios_time_axis_mod::time_axis_type {
+  -name : character
+  -time_data : real[]<<allocatable>>
+  -fields : field_collection_type
+  -cyclic : logical = .true.
+  -time_units : character = 'seconds'
+  -upper_limit : real
+  -does_interpolation : logical = .false.
+  -update_frequency : integer = 1
+
+  +initialise(<<in>>name: character, <<in>>file_id: character, <<in>>input_units: character<<optional>>, <<in>>yearly: logical<<optional>>, <<in>>interp_flag: logical<<optional>>, <<in>>pop_freq: integer<<optional>>)
+  +setup()
+  -read_time_data(<<in>>file_path: character)
+  +get_name(<<out>>output_name: character)
+  -shift_forward()
+  +step()
+  +get_window_size(<<out>>n_window: integer)
+  +populate_fields(<<out>>pop_fields: logical)
+  +align(<<in>>input_time: real)
+  +add_field(<<in>>field: field_type)
+  +update_fields()
+  +populate_model_fields(<<in>>model_fields: field_collection_type)
+ }

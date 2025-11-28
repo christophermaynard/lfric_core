@@ -1,0 +1,215 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2020 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+!> Test the LFRic-XIOS write routines
+!>
+module lfric_xios_write_mod_test
+
+  use constants_mod,                  only : i_def
+  use lfric_xios_constants_mod,       only : dp_xios
+  use lfric_xios_utils_mod,           only : set_prime_io_mesh
+  use halo_routing_collection_mod,    only : halo_routing_collection_type, &
+                                             halo_routing_collection
+  use function_space_collection_mod,  only : function_space_collection_type, &
+                                             function_space_collection
+  use local_mesh_mod,                 only : local_mesh_type
+  use mesh_collection_mod,            only : mesh_collection_type, &
+                                             mesh_collection
+  use mesh_mod,                       only : mesh_type, PLANE_BI_PERIODIC
+  use field_mod,                      only : field_type, field_proxy_type
+  use function_space_mod,             only : function_space_type
+  use fs_continuity_mod,              only : W0, W2H, WTheta, W3
+  use lfric_xios_mock_mod,            only : get_latest_data
+
+  use funit
+
+  implicit none
+
+  private
+  public :: test_lfric_xios_write
+
+
+  @TestCase
+  type, extends(TestCase), public :: write_test_type
+    private
+    type(function_space_type), pointer :: w0_fs => null()
+    type(function_space_type), pointer :: w2h_fs => null()
+    type(function_space_type), pointer :: wth_fs => null()
+    type(function_space_type), pointer :: w3_fs => null()
+    type(mesh_type),           pointer :: mesh   => null()
+    type(local_mesh_type)              :: unit_test_local_mesh
+
+  contains
+    procedure setUp
+    procedure tearDown
+    procedure get_local_mesh_ptr
+  end type write_test_type
+
+  integer(i_def), parameter :: element_order_h = 0
+  integer(i_def), parameter :: element_order_v = 0
+
+contains
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
+
+    implicit none
+
+    class(write_test_type), intent(inout) :: this
+
+    type(local_mesh_type), pointer :: unit_test_local_mesh_ptr
+    type(mesh_type) :: unit_test_mesh
+    integer(i_def)  :: mesh_id
+
+    ! Create top level mesh collection
+    mesh_collection = mesh_collection_type()
+    ! Create top level function space collection
+    function_space_collection = function_space_collection_type()
+    ! Create top level halo_routing collection
+    halo_routing_collection = halo_routing_collection_type()
+
+    call this%unit_test_local_mesh%initialise()
+    unit_test_local_mesh_ptr => this%get_local_mesh_ptr()
+
+    ! Dummy mesh mod has 9 cells, 3 layers and is uniform in vertical
+    unit_test_mesh = mesh_type( PLANE_BI_PERIODIC, unit_test_local_mesh_ptr )
+    mesh_id = mesh_collection%add_new_mesh( unit_test_mesh )
+    this%mesh => mesh_collection%get_mesh( mesh_id )
+
+    call set_prime_io_mesh(this%mesh)
+
+    ! Make a function space to be used to create fields in the tests
+    this%w0_fs => function_space_collection%get_fs( this%mesh, &
+                                                    element_order_h, &
+                                                    element_order_v, W0 )
+    this%w2h_fs => function_space_collection%get_fs( this%mesh, &
+                                                    element_order_h, &
+                                                    element_order_v, W2H )
+    this%wth_fs => function_space_collection%get_fs( this%mesh, &
+                                                    element_order_h, &
+                                                    element_order_v, WTheta )
+    this%w3_fs => function_space_collection%get_fs( this%mesh, &
+                                                    element_order_h, &
+                                                    element_order_v, W3 )
+
+  end subroutine setUp
+
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine tearDown( this )
+
+    implicit none
+
+    class(write_test_type), intent(inout) :: this
+
+    call function_space_collection%clear()
+    call mesh_collection%clear()
+    call halo_routing_collection%clear()
+
+  end subroutine tearDown
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_local_mesh_ptr(this) result(unit_test_local_mesh_ptr)
+    implicit none
+    class(write_test_type), intent(inout), target :: this
+    type(local_mesh_type), pointer :: unit_test_local_mesh_ptr
+    unit_test_local_mesh_ptr => this%unit_test_local_mesh
+  end function get_local_mesh_ptr
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  @Test
+  subroutine test_lfric_xios_write( this )
+
+    use lfric_xios_write_mod,     only: write_field_generic,         &
+                                        write_state
+
+    implicit none
+
+    class(write_test_type), intent(inout) :: this
+
+    ! Fields to be written
+    type(field_type) :: W0_field, W2H_field, WTheta_field, W3_field
+    type(field_proxy_type) :: test_proxy
+    real(dp_xios), allocatable :: W0_data(:), W2H_data(:), WTheta_data(:), W3_data(:)
+    real(dp_xios), allocatable :: W0_result(:), W2H_result(:), WTheta_result(:), W3_result(:)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Setup expected data arrays
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    W0_data = (/ 1.0_dp_xios, 10.0_dp_xios, 19.0_dp_xios, 28.0_dp_xios, 2.0_dp_xios, 11.0_dp_xios, 20.0_dp_xios, 29.0_dp_xios, 3.0_dp_xios, 12.0_dp_xios, 21.0_dp_xios, 30.0_dp_xios, &
+                 4.0_dp_xios, 13.0_dp_xios, 22.0_dp_xios, 31.0_dp_xios, 5.0_dp_xios, 14.0_dp_xios, 23.0_dp_xios, 32.0_dp_xios, 6.0_dp_xios, 15.0_dp_xios, 24.0_dp_xios, 33.0_dp_xios, &
+                 7.0_dp_xios, 16.0_dp_xios, 25.0_dp_xios, 34.0_dp_xios, 8.0_dp_xios, 17.0_dp_xios, 26.0_dp_xios, 35.0_dp_xios, 9.0_dp_xios, 18.0_dp_xios, 27.0_dp_xios, 36.0_dp_xios /)
+
+    W2H_data = (/ 1.00_dp_xios, 19.0_dp_xios, 37.0_dp_xios, 2.00_dp_xios, 20.0_dp_xios, 38.0_dp_xios, 3.00_dp_xios, 21.0_dp_xios, 39.0_dp_xios, &
+                  4.00_dp_xios, 22.0_dp_xios, 40.0_dp_xios, 5.00_dp_xios, 23.0_dp_xios, 41.0_dp_xios, 6.00_dp_xios, 24.0_dp_xios, 42.0_dp_xios, &
+                  7.00_dp_xios, 25.0_dp_xios, 43.0_dp_xios, 8.00_dp_xios, 26.0_dp_xios, 44.0_dp_xios, 9.00_dp_xios, 27.0_dp_xios, 45.0_dp_xios, &
+                  10.0_dp_xios, 28.0_dp_xios, 46.0_dp_xios, 11.0_dp_xios, 29.0_dp_xios, 47.0_dp_xios, 12.0_dp_xios, 30.0_dp_xios, 48.0_dp_xios, &
+                  13.0_dp_xios, 31.0_dp_xios, 49.0_dp_xios, 14.0_dp_xios, 32.0_dp_xios, 50.0_dp_xios, 15.0_dp_xios, 33.0_dp_xios, 51.0_dp_xios, &
+                  16.0_dp_xios, 34.0_dp_xios, 52.0_dp_xios, 17.0_dp_xios, 35.0_dp_xios, 53.0_dp_xios, 18.0_dp_xios, 36.0_dp_xios, 54.0_dp_xios /)
+
+    WTheta_data = (/ 1.0_dp_xios, 10.0_dp_xios, 19.0_dp_xios, 28.0_dp_xios, 2.0_dp_xios, 11.0_dp_xios, 20.0_dp_xios, 29.0_dp_xios, 3.0_dp_xios, 12.0_dp_xios, 21.0_dp_xios, 30.0_dp_xios, &
+                     4.0_dp_xios, 13.0_dp_xios, 22.0_dp_xios, 31.0_dp_xios, 5.0_dp_xios, 14.0_dp_xios, 23.0_dp_xios, 32.0_dp_xios, 6.0_dp_xios, 15.0_dp_xios, 24.0_dp_xios, 33.0_dp_xios, &
+                     7.0_dp_xios, 16.0_dp_xios, 25.0_dp_xios, 34.0_dp_xios, 8.0_dp_xios, 17.0_dp_xios, 26.0_dp_xios, 35.0_dp_xios, 9.0_dp_xios, 18.0_dp_xios, 27.0_dp_xios, 36.0_dp_xios /)
+
+    W3_data = (/ 1.0_dp_xios, 10.0_dp_xios, 19.0_dp_xios, 2.0_dp_xios, 11.0_dp_xios, 20.0_dp_xios, 3.0_dp_xios, 12.0_dp_xios, 21.0_dp_xios, &
+                 4.0_dp_xios, 13.0_dp_xios, 22.0_dp_xios, 5.0_dp_xios, 14.0_dp_xios, 23.0_dp_xios, 6.0_dp_xios, 15.0_dp_xios, 24.0_dp_xios, &
+                 7.0_dp_xios, 16.0_dp_xios, 25.0_dp_xios, 8.0_dp_xios, 17.0_dp_xios, 26.0_dp_xios, 9.0_dp_xios, 18.0_dp_xios, 27.0_dp_xios /)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Test node write
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    call W0_field%initialise( this%w0_fs )
+    test_proxy = W0_field%get_proxy()
+    test_proxy%data = W0_data
+    call write_field_generic("W0_field", test_proxy)
+
+    allocate(W0_result(size(W0_data)))
+    call get_latest_data(W0_result)
+    @assertEqual( test_proxy%data(::4), W0_result(1:9) )
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Test edge write
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    call W2H_field%initialise( this%w2h_fs )
+    test_proxy = W2H_field%get_proxy()
+    test_proxy%data = W2H_data
+    call write_field_generic("W2H_field", test_proxy)
+
+    allocate(W2H_result(size(W2H_data)))
+    call get_latest_data(W2H_result)
+    @assertEqual( test_proxy%data(::3), W2H_result(1:18) )
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Test face write
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    call WTheta_field%initialise( this%wth_fs )
+    test_proxy = WTheta_field%get_proxy()
+    test_proxy%data = WTheta_data
+    call write_field_generic("WTheta_field", test_proxy)
+
+    allocate(WTheta_result(size(WTheta_data)))
+    call get_latest_data(WTheta_result)
+    @assertEqual( test_proxy%data(::4), WTheta_result(1:9) )
+
+    call W3_field%initialise( this%w3_fs )
+    test_proxy = W3_field%get_proxy()
+    test_proxy%data = W3_data
+    call write_field_generic("W3_field", test_proxy)
+
+    allocate(W3_result(size(W3_data)))
+    call get_latest_data(W3_result)
+    @assertEqual( test_proxy%data(::3), W3_result(1:9) )
+
+    deallocate( W0_result, W2H_result, WTheta_result, W3_result )
+
+  end subroutine test_lfric_xios_write
+
+end module lfric_xios_write_mod_test

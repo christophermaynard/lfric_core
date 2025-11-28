@@ -1,0 +1,154 @@
+!-----------------------------------------------------------------------
+! (C) Crown copyright 2022 Met Office. All rights reserved.
+! For further details please refer to the file COPYRIGHT.txt
+! which you should have received as part of this distribution.
+!-----------------------------------------------------------------------
+module smooth_orog_kernel_mod_test
+
+  use constants_mod,                       only: i_def, r_def
+
+  use get_unit_test_m3x3_q3x3x3_sizes_mod, only: get_w3_m3x3_q3x3x3_size
+
+  use get_unit_test_m3x3_dofmap_mod,       only: get_w3_m3x3_dofmap, &
+                                                 get_m3x3_stencil_dofmap_region
+
+  use funit
+
+  implicit none
+
+  private
+  public :: test_all
+
+  @TestCase
+  type, extends(TestCase), public :: smooth_orog_test_type
+    private
+  contains
+    procedure setUp
+    procedure tearDown
+    procedure test_all
+  end type smooth_orog_test_type
+
+contains
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
+
+    implicit none
+
+    class(smooth_orog_test_type), intent(inout) :: this
+
+  end subroutine setUp
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine tearDown( this )
+
+    implicit none
+
+    class(smooth_orog_test_type), intent(inout) :: this
+
+  end subroutine tearDown
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test
+  subroutine test_all( this )
+
+    use sci_smooth_orog_kernel_mod, only : smooth_orog_code
+
+    implicit none
+
+    class(smooth_orog_test_type), intent(inout) :: this
+
+    integer(i_def) :: df, cell
+    integer(i_def) :: nlayers, ncells, nqp_h, nqp_v
+    integer(i_def) :: ndf_w3, undf_w3
+    integer(i_def) :: dim_space_w3, dim_space_diff_w3
+
+    real(r_def), parameter :: tol = 1.0e-12_r_def
+    real(r_def)            :: answer
+
+    integer(i_def), allocatable :: map_w3(:,:)
+    integer(i_def), allocatable :: stencil_map_w3(:,:,:)
+
+    real(r_def), allocatable :: orog_in(:)
+    real(r_def), allocatable :: orog_out(:)
+
+    nlayers = 1
+    call get_w3_m3x3_q3x3x3_size( ndf_w3, undf_w3, ncells,         &
+                                  dim_space_w3, dim_space_diff_w3, &
+                                  nqp_h, nqp_v,                    &
+                                  nlayers )
+    call get_w3_m3x3_dofmap( map_w3, nlayers )
+    call get_m3x3_stencil_dofmap_region( stencil_map_w3, map_w3 )
+
+    allocate( orog_in(undf_w3) )
+    allocate( orog_out(undf_w3) )
+
+    ! Cell ordering is as follows:
+    !
+    ! Cell map, map_w3.
+    ! 1 2 3
+    ! 4 5 6
+    ! 7 8 9
+    !
+    ! Region stencil, stencil_map_w3 (for centre cell map_w3=5).
+    ! It starts in the centre cell, and then loops around.
+    ! 3 4 5
+    ! 2 1 6
+    ! 9 8 7
+    !
+    ! The ordering means that the stencil for cell=5, with df=1 is linked
+    ! to the cell map as:
+    ! e.g. stencil_map_w3(1,7,5) = map_w3(1,9).
+
+    ! Define the input data using map_w3 as:
+    ! orog_in =
+    ! 4 2 4
+    ! 2 1 2
+    ! 4 2 4
+
+    ! Smoothing in kernel is defined, using stencil_map_w3, as:
+    ! 1 2 1
+    ! 2 4 2
+    ! 1 2 1 / 16
+
+    ! This gives the output answer as:
+    ! orog out at centre cell = ( 4 (1 * 4) + 4 (2 * 2) + 4 * 1 ) / 16 = 2.25
+
+    orog_out(:) = 0.0_r_def
+
+    orog_in( map_w3(1,5) ) = 1.0_r_def    ! map_w3(1,5) = stencil_map_w3(1,1,5)
+    orog_in( map_w3(1,4) ) = 2.0_r_def    ! map_w3(1,4) = stencil_map_w3(1,2,5)
+    orog_in( map_w3(1,2) ) = 2.0_r_def    ! map_w3(1,2) = stencil_map_w3(1,4,5)
+    orog_in( map_w3(1,6) ) = 2.0_r_def    ! map_w3(1,6) = stencil_map_w3(1,6,5)
+    orog_in( map_w3(1,8) ) = 2.0_r_def    ! map_w3(1,8) = stencil_map_w3(1,8,5)
+    orog_in( map_w3(1,1) ) = 4.0_r_def    ! map_w3(1,1) = stencil_map_w3(1,3,5)
+    orog_in( map_w3(1,3) ) = 4.0_r_def    ! map_w3(1,3) = stencil_map_w3(1,5,5)
+    orog_in( map_w3(1,9) ) = 4.0_r_def    ! map_w3(1,9) = stencil_map_w3(1,7,5)
+    orog_in( map_w3(1,7) ) = 4.0_r_def    ! map_w3(1,7) = stencil_map_w3(1,9,5)
+
+    answer = 2.25_r_def
+
+    ! Centre cell
+    cell = 5
+    df = 1
+
+    call smooth_orog_code( nlayers,                  &
+                           orog_out,                 &
+                           orog_in,                  &
+                           9,                        &
+                           stencil_map_w3(:,:,cell), &
+                           ndf_w3,                   &
+                           undf_w3,                  &
+                           map_w3(:, cell)           &
+                          )
+
+    @assertEqual( answer, orog_out(map_w3(df, cell) ), tol )
+
+    deallocate( orog_in )
+    deallocate( orog_out )
+    deallocate( map_w3 )
+    deallocate( stencil_map_w3 )
+
+  end subroutine test_all
+
+end module smooth_orog_kernel_mod_test

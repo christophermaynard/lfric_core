@@ -1,0 +1,160 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2018 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+
+module get_unit_test_w3nodal_basis_mod
+! A module containing a collection of helper routines that provide canned
+! basis functions (and differential basis functions) evaluated on w3 nodal
+! points for use when writing unit tests of kernels.
+!
+! Not all the combinations of (diff) basis functions have been added. There are
+! many of them and only a few will ever be used, so they are being added as
+! necessary.
+!
+! If you require a (diff) basis function that you think should be in this file
+! but isn't, then feel free to add it.
+
+  use constants_mod, only : r_def
+
+  implicit none
+
+  private
+
+  public :: get_w0_w3nodal_diff_basis,     &
+            get_wtheta_w3nodal_basis,      &
+            get_w1_w3nodal_basis,          &
+            get_w2_w3nodal_basis,          &
+            get_w0_w3nodal_basis,          &
+            get_wchi_w3nodal_basis,        &
+            get_wchi_w3nodal_diff_basis
+
+  contains
+
+!---------------------------------------------------------------------
+
+  subroutine get_w1_w3nodal_basis(basis_w1)
+    ! Return the basis function for a field on a W1 function space
+    implicit none
+    real(r_def), allocatable, intent(inout) :: basis_w1(:,:,:)
+
+    allocate(basis_w1(3,12,1))
+
+    basis_w1(:,:,:) = reshape( [0.00_r_def, 0.25_r_def, 0.00_r_def, &
+                                0.25_r_def, 0.00_r_def, 0.00_r_def, &
+                                0.00_r_def, 0.25_r_def, 0.00_r_def, &
+                                0.25_r_def, 0.00_r_def, 0.00_r_def, &
+                                0.00_r_def, 0.00_r_def, 0.25_r_def, &
+                                0.00_r_def, 0.00_r_def, 0.25_r_def, &
+                                0.00_r_def, 0.00_r_def, 0.25_r_def, &
+                                0.00_r_def, 0.00_r_def, 0.25_r_def, &
+                                0.00_r_def, 0.25_r_def, 0.00_r_def, &
+                                0.25_r_def, 0.00_r_def, 0.00_r_def, &
+                                0.00_r_def, 0.25_r_def, 0.00_r_def, &
+                                0.25_r_def, 0.00_r_def, 0.00_r_def ], [3,12,1] )
+
+  end subroutine get_w1_w3nodal_basis
+
+  subroutine get_wchi_w3nodal_diff_basis(diff_basis_wchi)
+    ! Return the diff basis function for a field on a wchi function space
+    ! evaluated on w3 nodal points
+    implicit none
+    real(r_def), allocatable, intent(inout) :: diff_basis_wchi(:,:,:)
+
+    allocate(diff_basis_wchi(3,8,1))
+    diff_basis_wchi = reshape( [-0.25_r_def, -0.25_r_def, -0.25_r_def, &
+                               0.25_r_def, -0.25_r_def, -0.25_r_def, &
+                              -0.25_r_def,  0.25_r_def, -0.25_r_def, &
+                               0.25_r_def,  0.25_r_def, -0.25_r_def, &
+                              -0.25_r_def, -0.25_r_def,  0.25_r_def, &
+                               0.25_r_def, -0.25_r_def,  0.25_r_def, &
+                              -0.25_r_def,  0.25_r_def,  0.25_r_def, &
+                               0.25_r_def,  0.25_r_def,  0.25_r_def  ], [3,8,1] )
+  end subroutine get_wchi_w3nodal_diff_basis
+
+  subroutine get_w0_w3nodal_diff_basis(diff_basis_w0)
+    ! Return the diff basis function for a field on a w0 function space
+    ! evaluated on w3 nodal points
+    implicit none
+    real(r_def), allocatable, intent(inout) :: diff_basis_w0(:,:,:)
+
+    allocate(diff_basis_w0(3,8,1))
+    diff_basis_w0 = reshape( [-0.25_r_def, -0.25_r_def, -0.25_r_def, &
+                               0.25_r_def, -0.25_r_def, -0.25_r_def, &
+                               0.25_r_def,  0.25_r_def, -0.25_r_def, &
+                              -0.25_r_def,  0.25_r_def, -0.25_r_def, &
+                              -0.25_r_def, -0.25_r_def,  0.25_r_def, &
+                               0.25_r_def, -0.25_r_def,  0.25_r_def, &
+                               0.25_r_def,  0.25_r_def,  0.25_r_def, &
+                              -0.25_r_def,  0.25_r_def,  0.25_r_def], [3,8,1] )
+  end subroutine get_w0_w3nodal_diff_basis
+
+!---------------------------------------------------------------------
+
+  subroutine get_wtheta_w3nodal_basis(basis_wtheta)
+    ! Return the basis function for a field on a wtheta function space
+    ! evaluated on w3 nodal points
+
+    implicit none
+
+    real(r_def), allocatable, intent(inout) :: basis_wtheta(:,:,:)
+
+    ! Lowest order scalar. 2 Wtheta basis functions. 1 W3 nodal points.
+    allocate(basis_wtheta(1,2,1))
+    basis_wtheta(:, 1, 1) =  0.50_r_def
+    basis_wtheta(:, 2, 1) =  0.50_r_def
+
+  end subroutine get_wtheta_w3nodal_basis
+
+!---------------------------------------------------------------------
+
+  subroutine get_w2_w3nodal_basis(basis_w2)
+    ! Provide w2 basis functions computed at W3 nodal points
+
+    implicit none
+
+    real(r_def), allocatable :: basis_w2(:,:,:)
+
+    ! Lowest order vector. 6 W2 basis functions. 1 W3 nodal point.
+    allocate(basis_w2(3,6,1))
+    basis_w2(:, 1, 1) = (/ 0.5_r_def,  0.0_r_def,  0.0_r_def /)
+    basis_w2(:, 2, 1) = (/ 0.0_r_def, -0.5_r_def,  0.0_r_def /)
+    basis_w2(:, 3, 1) = (/ 0.5_r_def,  0.0_r_def,  0.0_r_def /)
+    basis_w2(:, 4, 1) = (/ 0.0_r_def, -0.5_r_def,  0.0_r_def /)
+    basis_w2(:, 5, 1) = (/ 0.0_r_def,  0.0_r_def,  0.5_r_def /)
+    basis_w2(:, 6, 1) = (/ 0.0_r_def,  0.0_r_def,  0.5_r_def /)
+
+  end subroutine get_w2_w3nodal_basis
+
+!---------------------------------------------------------------------
+
+  subroutine get_w0_w3nodal_basis(basis_w0)
+    ! Return the basis function for a field on w0 function space
+    ! evaluated on w3 nodal points
+
+    implicit none
+
+    real(r_def), allocatable, intent(inout) :: basis_w0(:,:,:)
+    allocate(basis_w0(1,8,1))
+    basis_w0(:, :, :) =  0.125_r_def
+
+  end subroutine get_w0_w3nodal_basis
+
+!---------------------------------------------------------------------
+
+  subroutine get_wchi_w3nodal_basis(basis_wchi)
+    ! Return the basis function for a field on Wchi function space
+    ! evaluated on w3 nodal points
+
+    implicit none
+
+    real(r_def), allocatable, intent(inout) :: basis_wchi(:,:,:)
+    allocate(basis_wchi(1,8,1))
+    basis_wchi(:, :, :) =  0.125_r_def
+
+  end subroutine get_wchi_w3nodal_basis
+
+!---------------------------------------------------------------------
+
+end module get_unit_test_w3nodal_basis_mod

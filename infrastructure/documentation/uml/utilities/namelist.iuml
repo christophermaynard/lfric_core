@@ -1,0 +1,42 @@
+' (c) Crown copyright 2023 Met Office. All rights reserved.
+' The file LICENCE, distributed with this code, contains details of the terms
+' under which the code may be used.
+
+'==========================================
+class namelist_mod::namelist_type {
+'==========================================
+  -listname: string <<allocatable>>
+  -profile_name: string
+  -members: namelist_item_type[:] <<allocatable>>
+
+  +initialise => namelist_initialise( \n\t<<in>>listname:string<<len=*>>, \n\t<<in>>members:namelist_item_type[:], \n\t<<in,optional>>profile_name:string<<len=*>> )
+
+  +generic:: get_value() => \n\tget_int32_value, get_int32_arr_value,\n\tget_int64_value, get_int64_arr_value,\n\tget_real32_value, get_real32_arr_value,\n\tget_real64_value, get_real64_arr_value,\n\tget_logical_value, get_logical_arr_value,\n\tget_str_value, get_str_arr_value
+
+  +get_listname():     string <<allocatable>>
+  +get_profile_name(): string <<allocatable>>
+  +get_full_name():    string <<allocatable>>
+
+  +clear()
+  +<<destroy>> namelist_destructor()
+
+  -get_int32_value(   <<in>>key:string<<len=*>>, <<out>>value:integer <<kind=int32>> )
+  -get_int64_value(   <<in>>key:string<<len=*>>, <<out>>value:integer <<kind=int64>> )
+  -get_real32_value(   <<in>>key:string<<len=*>>, <<out>>value:real    <<kind=real32>> )
+  -get_real64_value(   <<in>>key:string<<len=*>>, <<out>>value:real    <<kind=real64>> )
+  -get_str_value(   <<in>>key:string<<len=*>>, <<out>>value:string  <<len=*>> )
+  -get_logical_value( <<in>>key:string<<len=*>>, <<out>>value:logical )
+
+
+  -get_int32_arr_value(   <<in>>key:string<<len=*>>, <<out>>value:integer[:] <<kind=int32,allocatable>> )
+  -get_int64_arr_value(   <<in>>key:string<<len=*>>, <<out>>value:integer[:] <<kind=int64,allocatable>> )
+  -get_real32_arr_value(   <<in>>key:string<<len=*>>, <<out>>value:real[:]    <<kind=real32,allocatable>> )
+  -get_real64_arr_value(   <<in>>key:string<<len=*>>, <<out>>value:real[:]    <<kind=real64,allocatable>> )
+  -get_str_arr_value(   <<in>>key:string<<len=*>>, <<out>>value:string[:]  <<len=*,allocatable>> )
+  -get_logical_arr_value( <<in>>key:string<<len=*>>, <<out>>value:logical[:] <<allocatable>> )
+}
+
+linked_list_data_mod::linked_list_data_type <|-- namelist_mod::namelist_type
+namelist_mod::namelist_type o-> "*" namelist_item_mod::namelist_item_type
+namelist_item_mod::namelist_item_type o-> key_value_mod::key_value_type
+key_value_collection_mod::key_value_collection_type o-> key_value_mod::key_value_type

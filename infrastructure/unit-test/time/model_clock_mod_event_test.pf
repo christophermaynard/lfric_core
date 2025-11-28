@@ -1,0 +1,116 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2022 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+module model_clock_mod_event_test
+
+  use clock_mod,       only : clock_type
+  use constants_mod,   only : i_def, r_second
+  use event_actor_mod, only : event_actor_type
+  use event_mod,       only : event_type, event_action
+  use model_clock_mod, only : model_clock_type
+  use pfunit,      only : anyExceptions,  &
+                              assertEqual,    &
+                              assertTrue,     &
+                              SourceLocation, &
+                              TestCase
+
+  implicit none
+
+  private
+  public test_clock_event
+
+  @TestCase
+  type, public, extends(TestCase) :: clock_event_test_type
+    private
+  contains
+    procedure test_clock_event
+  end type clock_event_test_type
+
+  type, extends(event_actor_type) :: dummy_actor_type
+    integer(i_def), public :: indicator
+    integer(i_def), public :: event_step
+  contains
+  end type dummy_actor_type
+
+  interface dummy_actor_type
+    procedure dummy_actor_constructor
+  end interface dummy_actor_type
+
+contains
+
+  function dummy_actor_constructor(name, active) result(new_actor)
+    implicit none
+    character(*), intent(in) :: name
+    logical, intent(in) :: active
+
+    type(dummy_actor_type) :: new_actor
+
+    call new_actor%init_event_actor(name)
+    call new_actor%set_active(active)
+    new_actor%indicator = 0
+    new_actor%event_step = 0
+
+  end function dummy_actor_constructor
+
+  subroutine dummy_action(dummy_actor, clock)
+
+    implicit none
+
+    class(event_actor_type), intent(inout) :: dummy_actor
+    class(clock_type),      intent(in)     :: clock
+
+    select type(dummy_actor)
+      type is (dummy_actor_type)
+      dummy_actor%indicator = dummy_actor%indicator + 1
+      dummy_actor%event_step = clock%get_step()
+    end select
+
+  end subroutine dummy_action
+
+  @test
+  subroutine test_clock_event( this )
+
+    implicit none
+
+    class(clock_event_test_type), intent(inout) :: this
+
+    type(model_clock_type)           :: test_unit
+    type(dummy_actor_type), target   :: actor_1, actor_2
+    class(event_actor_type), pointer  :: actor_1_ptr, actor_2_ptr
+    procedure(event_action), pointer :: action => null()
+    logical                          :: running
+
+    test_unit= model_clock_type( 1_i_def, 10_i_def, &
+                                 1.0_r_second, 0.0_r_second )
+
+    actor_1 = dummy_actor_type("dummy actor1", .true.)
+    actor_1_ptr => actor_1
+    action => dummy_action
+    ! Set up event to go until end of clock
+    call test_unit%add_event(action, actor_1_ptr)
+
+    do while (test_unit%tick())
+
+      @assertEqual(actor_1%indicator, test_unit%get_step())
+      @assertEqual(actor_1%event_step, test_unit%get_step())
+
+      ! Set up event to start half way and run until the end
+      if (test_unit%get_step() == 5) then
+        actor_2 = dummy_actor_type("dummy actor2", .true.)
+        actor_2_ptr => actor_2
+        call test_unit%add_event(action, actor_2_ptr)
+      end if
+
+      if (test_unit%get_step() > 5) then
+        @assertEqual(actor_2%indicator, test_unit%get_step() - 5)
+        @assertEqual(actor_2%event_step, test_unit%get_step())
+      end if
+
+    end do
+
+  end subroutine test_clock_event
+
+
+end module model_clock_mod_event_test

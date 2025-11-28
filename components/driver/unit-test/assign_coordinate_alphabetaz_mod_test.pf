@@ -1,0 +1,234 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2021 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------------
+module assign_coordinate_alphabetaz_mod_test
+
+  use, intrinsic :: iso_fortran_env, only : real32, real64
+  use constants_mod, only : r_def, i_def, PI, l_def
+  use funit
+
+  implicit none
+
+  private
+  public :: set_up, tear_down, test_all
+
+  real(kind=r_def), parameter :: radius = 104.0_r_def
+
+contains
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @before
+  subroutine set_up()
+
+    use extrusion_config_mod, only : method_uniform, &
+                                     stretching_method_linear
+    use feign_config_mod,     only : feign_extrusion_config, &
+                                     feign_planet_config
+
+    implicit none
+
+    call feign_extrusion_config( method=method_uniform,                      &
+                                 planet_radius=radius,                       &
+                                 domain_height=10.0_r_def,                   &
+                                 number_of_layers=5_i_def,                   &
+                                 stretching_method=stretching_method_linear, &
+                                 stretching_height=15.0_r_def,               &
+                                 eta_values=(/0.5_r_def/) )
+
+    call feign_planet_config( scaling_factor=1.0_r_def )
+
+  end subroutine set_up
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @after
+  subroutine tear_down()
+
+    use configuration_mod, only : final_configuration
+
+    implicit none
+
+    call final_configuration()
+
+  end subroutine tear_down
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @test
+  subroutine test_all()
+
+    use driver_coordinates_mod, only : assign_coordinate_alphabetaz
+
+    implicit none
+
+    real(kind=r_def), parameter :: dh = 17.0_r_def
+
+    integer(kind=i_def) :: nlayers, ndf_chi, undf_chi, ndf_pid, undf_pid
+    integer(kind=i_def) :: map_chi(1), map_pid(1), nverts, i
+    real(kind=r_def) :: alpha(2), beta(2), panel_rho(4)
+    real(kind=r_def) :: alpha_out(1), beta_out(1), height_out(1), panel_id(1)
+    real(kind=r_def) :: verts_XYZ(3,8,1), verts_ref(8,3), nodal_coord(3,1)
+    real(kind=r_def) :: r_bot, r_top
+    real(kind=r_def) :: lon, lat, eps
+    real(kind=r_def) :: stretch_factor
+    real(kind=r_def) :: tol
+    real(kind=r_def) :: inverse_rot_matrix(3,3)
+    logical(kind=l_def) :: to_rotate
+
+#if (RDEF_PRECISION == 64)
+    tol = 1.0e-5_real64
+#elif (RDEF_PRECISION == 32)
+    tol = 1.0e-4_real32
+#else
+    @assertFail("Unsupported default precision")
+#endif
+
+    nlayers    = 1
+    ndf_chi    = 1
+    nverts     = 8
+    map_chi(1) = 1
+    undf_chi   = 1
+
+    ! Define panel_id field
+    panel_id = (/ 3.0_r_def /)
+    ndf_pid = 1
+    undf_pid = 1
+    map_pid = (/ 1 /)
+
+    ! Coordinates of vertices of reference_element
+    verts_ref(:,1) = (/ 0.0_r_def, 1.0_r_def, 1.0_r_def, 0.0_r_def, &
+                        0.0_r_def, 1.0_r_def, 1.0_r_def, 0.0_r_def /)
+    verts_ref(:,2) = (/ 0.0_r_def, 0.0_r_def, 1.0_r_def, 1.0_r_def, &
+                        0.0_r_def, 0.0_r_def, 1.0_r_def, 1.0_r_def /)
+    verts_ref(:,3) = (/ 0.0_r_def, 0.0_r_def, 0.0_r_def, 0.0_r_def, &
+                        1.0_r_def, 1.0_r_def, 1.0_r_def, 1.0_r_def /)
+
+    ! We consider a cell whose vertices are at
+    ! alpha = (0, pi/6), beta = (-pi/6, pi/12), height = (0, dh) on panel 3
+    alpha(:) = (/ 0.0_r_def,     PI/6.0_r_def  /)
+    beta(:)  = (/ -PI/6.0_r_def, PI/12.0_r_def /)
+    ! Compute analytic values of panel_rho = sqrt(1+tan^2(alpha)+tan^2(beta))
+    panel_rho(:) = (/ 2.0_r_def/sqrt(3.0_r_def),                            &
+                      sqrt(8.0_r_def - 4.0_r_def*sqrt(3.0_r_def)),          &
+                      sqrt(15.0_r_def)/3.0_r_def,                           &
+                      sqrt(25.0_r_def/3.0_r_def-4.0_r_def*sqrt(3.0_r_def)) /)
+    ! Now we give the values of the corresponding (X,Y,Z) coordinates
+    r_bot = radius
+    r_top = radius + dh
+    verts_XYZ(1,:,1) = (/ -r_bot/panel_rho(1), -r_bot/panel_rho(2), &
+                          -r_bot/panel_rho(3), -r_bot/panel_rho(4), &
+                          -r_top/panel_rho(1), -r_top/panel_rho(2), &
+                          -r_top/panel_rho(3), -r_top/panel_rho(4) /)
+    verts_XYZ(2,:,1) = (/ -r_bot/sqrt(3.0_r_def)/panel_rho(1),                   &
+                           r_bot*(2.0_r_def-sqrt(3.0_r_def))/panel_rho(2), &
+                          -r_bot/sqrt(3.0_r_def)/panel_rho(3),                   &
+                           r_bot*(2.0_r_def-sqrt(3.0_r_def))/panel_rho(4), &
+                          -r_top/sqrt(3.0_r_def)/panel_rho(1),                   &
+                           r_top*(2.0_r_def-sqrt(3.0_r_def))/panel_rho(2), &
+                          -r_top/sqrt(3.0_r_def)/panel_rho(3),                   &
+                           r_top*(2.0_r_def-sqrt(3.0_r_def))/panel_rho(4) /)
+    verts_XYZ(3,:,1) = (/ 0.0_r_def,  0.0_r_def,              &
+                          r_bot/sqrt(3.0_r_def)/panel_rho(3), &
+                          r_bot/sqrt(3.0_r_def)/panel_rho(4), &
+                          0.0_r_def,  0.0_r_def,              &
+                          r_top/sqrt(3.0_r_def)/panel_rho(3), &
+                          r_top/sqrt(3.0_r_def)/panel_rho(4) /)
+
+    ! The coordinate at which to determine chi at in the reference element
+    nodal_coord(:,1) = (/ 0.5_r_def, 0.5_r_def, 0.5_r_def /)
+
+    ! Test with no rotation ----------------------------------------------------
+    stretch_factor = 1.0_r_def
+    to_rotate = .false.
+    inverse_rot_matrix = reshape([[1.0_r_def, 0.0_r_def, 0.0_r_def],           &
+                                  [0.0_r_def, 1.0_r_def, 0.0_r_def],           &
+                                  [0.0_r_def, 0.0_r_def, 1.0_r_def]],          &
+                                 shape=[3,3])
+
+    call assign_coordinate_alphabetaz(nlayers, ndf_chi, nverts,                &
+                                      undf_chi, map_chi,                       &
+                                      alpha_out, beta_out, height_out,         &
+                                      verts_XYZ, nodal_coord, verts_ref,       &
+                                      to_rotate, inverse_rot_matrix,           &
+                                      stretch_factor,                          &
+                                      panel_id, ndf_pid, undf_pid, map_pid     )
+
+    ! The answer should be the central point of the box
+    ! alpha = pi/12, beta = -pi/24, h = dh / 2, panel_id = 3
+    @assertEqual( alpha_out(1), 0.5_r_def*(alpha(1)+alpha(2)), tol )
+    @assertEqual( beta_out(1), 0.5_r_def*(beta(1)+beta(2)), tol )
+    @assertEqual( dh/2.0_r_def, height_out(1), tol )
+
+    ! Test with some rotation --------------------------------------------------
+    panel_id = (/ 5.0_r_def /)
+    stretch_factor = 1.0_r_def
+    to_rotate = .true.
+    ! Rotation of north pole to lon=2*pi, lat=0
+    inverse_rot_matrix = reshape([[0.0_r_def,  0.0_r_def,  1.0_r_def],         &
+                                  [0.0_r_def, -1.0_r_def,  0.0_r_def],         &
+                                  [1.0_r_def,  0.0_r_def,  0.0_r_def]],        &
+                                 shape=[3,3])
+
+    call assign_coordinate_alphabetaz(nlayers, ndf_chi, nverts,                &
+                                      undf_chi, map_chi,                       &
+                                      alpha_out, beta_out, height_out,         &
+                                      verts_XYZ, nodal_coord, verts_ref,       &
+                                      to_rotate, inverse_rot_matrix,           &
+                                      stretch_factor,                          &
+                                      panel_id, ndf_pid, undf_pid, map_pid     )
+
+    ! Alpha and beta swap from the example above
+    ! alpha = -pi/24, beta = pi/12, h = dh / 2, panel_id = 5
+    @assertEqual( 0.5_r_def*(alpha(1)+alpha(2)), beta_out(1), tol )
+    @assertEqual( 0.5_r_def*(beta(1)+beta(2)), alpha_out(1), tol )
+    @assertEqual( dh/2.0_r_def, height_out(1), tol )
+
+    ! Test with stretching and rotation ----------------------------------------
+    panel_id = (/ 3.0_r_def /)
+    stretch_factor = sqrt(7.0_r_def - 4.0_r_def*sqrt(3.0_r_def))  ! Point on equator goes to 60 deg
+    to_rotate = .true.
+    ! Rotation of north pole to lon=2*pi, lat=pi/2
+    inverse_rot_matrix = reshape([[-1.0_r_def,  0.0_r_def,  0.0_r_def],        &
+                                  [ 0.0_r_def, -1.0_r_def,  0.0_r_def],        &
+                                  [ 0.0_r_def,  0.0_r_def,  1.0_r_def]],       &
+                                 shape=[3,3])
+
+    ! Coordinates: lon = pi/6, lat = pi/3
+    lon = PI/6.0_r_def
+    lat = PI/3.0_r_def
+    eps = 1.0e-08_r_def
+    verts_XYZ(1,:,1) = (/                                                      &
+      r_bot*cos(lon-eps)*cos(lat-eps), r_bot*cos(lon+eps)*cos(lat-eps),        &
+      r_bot*cos(lon+eps)*cos(lat+eps), r_bot*cos(lon-eps)*cos(lat+eps),        &
+      r_top*cos(lon-eps)*cos(lat-eps), r_top*cos(lon+eps)*cos(lat-eps),        &
+      r_top*cos(lon+eps)*cos(lat+eps), r_top*cos(lon-eps)*cos(lat+eps) /)
+    verts_XYZ(2,:,1) = (/                                                      &
+      r_bot*sin(lon-eps)*cos(lat-eps), r_bot*sin(lon+eps)*cos(lat-eps),        &
+      r_bot*sin(lon+eps)*cos(lat+eps), r_bot*sin(lon-eps)*cos(lat+eps),        &
+      r_top*sin(lon-eps)*cos(lat-eps), r_top*sin(lon+eps)*cos(lat-eps),        &
+      r_top*sin(lon+eps)*cos(lat+eps), r_top*sin(lon-eps)*cos(lat+eps) /)
+    verts_XYZ(3,:,1) = (/                                                      &
+      r_bot*sin(lat-eps), r_bot*sin(lat-eps),                                  &
+      r_bot*sin(lat+eps), r_bot*sin(lat+eps),                                  &
+      r_top*sin(lat-eps), r_top*sin(lat-eps),                                  &
+      r_top*sin(lat+eps), r_top*sin(lat+eps) /)
+
+    call assign_coordinate_alphabetaz(nlayers, ndf_chi, nverts,                &
+                                      undf_chi, map_chi,                       &
+                                      alpha_out, beta_out, height_out,         &
+                                      verts_XYZ, nodal_coord, verts_ref,       &
+                                      to_rotate, inverse_rot_matrix,           &
+                                      stretch_factor,                          &
+                                      panel_id, ndf_pid, undf_pid, map_pid     )
+
+    ! Answer is in panel 3, with alpha and beta rotated from panel 1
+    ! alpha = 0.0, beta = -pi/6 (negative of the original longitude), h = dh / 2
+    @assertEqual( alpha_out(1), 0.0_r_def, tol )
+    @assertEqual( beta_out(1), -lon, tol )
+    @assertEqual( dh/2.0_r_def, height_out(1), tol )
+
+  end subroutine test_all
+
+end module assign_coordinate_alphabetaz_mod_test

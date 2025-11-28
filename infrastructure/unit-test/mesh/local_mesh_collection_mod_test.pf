@@ -1,0 +1,145 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2020 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+
+!> Test the local mesh collection object
+!>
+module local_mesh_collection_mod_test
+
+  use constants_mod,              only: i_def, l_def,                 &
+                                        str_max_filename, str_def
+  use global_mesh_collection_mod, only : global_mesh_collection_type, &
+                                         global_mesh_collection
+  use global_mesh_mod,            only : global_mesh_type
+  use lfric_mpi_mod,              only : global_mpi, &
+                                         lfric_comm_type
+  use local_mesh_collection_mod,  only : local_mesh_collection_type, &
+                                         local_mesh_collection
+  use local_mesh_mod,             only : local_mesh_type
+  use partition_mod,              only : partition_type,     &
+                                         partitioner_planar, &
+                                         partitioner_interface
+  use ugrid_mesh_data_mod,        only : ugrid_mesh_data_type
+  use panel_decomposition_mod,    only : custom_decomposition_type
+
+  use pfunit
+
+  implicit none
+
+  private
+  public :: set_up, tear_down, test_all
+  !
+  ! pFUnit requires symbol spillage
+  !
+  public :: MPITestCase, MPITestMethod
+
+contains
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @before
+  subroutine set_up( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+    type(lfric_comm_type) :: lfric_comm
+
+    call lfric_comm%set_comm_mpi_val(this%getMpiCommunicator())
+
+    !Store the MPI communicator for later use
+    call global_mpi%initialise(lfric_comm)
+
+    ! Create top level collections
+    global_mesh_collection = global_mesh_collection_type()
+    local_mesh_collection = local_mesh_collection_type()
+
+
+  end subroutine set_up
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @after
+  subroutine tear_down( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    call global_mesh_collection%clear()
+    call local_mesh_collection%clear()
+
+    ! Clear the stored MPI communicator
+    call global_mpi%finalise()
+
+  end subroutine tear_down
+
+  @test( npes=[1] )
+  subroutine test_all( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    character(len = str_max_filename) :: filename
+    character(str_def) :: mesh_name
+
+    type(ugrid_mesh_data_type) :: ugrid_mesh_data
+    type(global_mesh_type) :: global_mesh
+    type(global_mesh_type), pointer :: global_mesh_ptr => null()
+    integer(i_def) :: global_mesh_id
+    integer(i_def) :: max_stencil_depth
+    procedure (partitioner_interface), pointer :: partitioner_ptr => null()
+    type(custom_decomposition_type) :: decomposition
+    type(partition_type) :: partition
+    type(local_mesh_type) :: local_mesh
+    type(local_mesh_type) :: unit_test_local_mesh
+    type(local_mesh_type), pointer :: local_mesh_ptr1,  local_mesh_ptr2
+    integer(i_def) :: local_mesh_id
+    integer(i_def) :: unit_test_local_mesh_id
+    logical(l_def) :: generate_inner_halos
+
+    filename = 'data/mesh_BiP8x8-750x250.nc'
+    mesh_name = 'unit_test'
+
+    call ugrid_mesh_data%read_from_file(trim(filename), mesh_name)
+    global_mesh = global_mesh_type( ugrid_mesh_data )
+    call ugrid_mesh_data%clear()
+    global_mesh_id = global_mesh%get_id()
+    call global_mesh_collection%add_new_global_mesh( global_mesh )
+    global_mesh_ptr => global_mesh_collection%get_global_mesh( global_mesh_id )
+    partitioner_ptr => partitioner_planar
+    decomposition = custom_decomposition_type(1,1)
+    max_stencil_depth = 1
+    generate_inner_halos = .true.
+    partition = partition_type( global_mesh_ptr,       &
+                                partitioner_ptr,       &
+                                decomposition,         &
+                                max_stencil_depth,     &
+                                generate_inner_halos,  &
+                                this%getProcessRank(), &
+                                this%getNumProcesses() )
+
+    ! Put two different local meshes in the collection
+    call local_mesh%initialise( global_mesh_ptr, partition )
+    local_mesh_id = &
+                local_mesh_collection%add_new_local_mesh(local_mesh)
+
+    call unit_test_local_mesh%initialise( )
+    unit_test_local_mesh_id = &
+                local_mesh_collection%add_new_local_mesh(unit_test_local_mesh)
+
+    ! Check that the ids of the two different local meshes added to the
+    ! collection are different
+    @assertTrue( local_mesh_id /= unit_test_local_mesh_id )
+
+    ! Extract the same local mesh from the collection by its id and by its name
+    local_mesh_ptr1 => local_mesh_collection%get_local_mesh( local_mesh_id )
+    local_mesh_ptr2 => local_mesh_collection%get_local_mesh( mesh_name )
+
+    ! Make sure the same mesh was extracted by both methods
+    @assertAssociated( local_mesh_ptr1, local_mesh_ptr2 )
+
+  end subroutine test_all
+
+end module local_mesh_collection_mod_test

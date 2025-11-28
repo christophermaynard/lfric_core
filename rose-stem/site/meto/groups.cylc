@@ -1,0 +1,71 @@
+{# ########################################################################### #}
+{# (c) Crown copyright 2024 Met Office. All rights reserved. #}
+{# The file LICENCE, distributed with this code, contains details of the terms #}
+{# under which the code may be used. #}
+{# ########################################################################### #}
+{% do LOG.debug("Entered site/meto/groups.cylc") %}
+
+{%- do site_groups.update({
+    "scripts": [
+        "config_dump_checker",
+        "style_checker",
+        "site_validator",
+        "validate_rose_meta",
+        "rose-stem_lint_checker",
+        "global_variables_checker",
+        "python_unit_tests"
+    ],
+    "azspice_developer": [],
+    "azspice": ["azspice_developer"],
+    "ex1a_developer": [],
+    "ex1a": ["ex1a_developer"],
+    "azspice_build": [],
+    "ex1a_build": [],
+    "azspice_unit_tests": [],
+    "ex1a_unit_tests": [],
+    "azspice_integration_tests": [],
+    "ex1a_integration_tests": [],
+    }) %}
+
+
+{% do site_groups.update({
+    "developer" : [
+        "azspice_developer",
+        "ex1a_developer",
+        "scripts",
+    ],
+    "all": [
+        "azspice",
+        "ex1a",
+    ],
+    "build": [
+        "azspice_build",
+        "ex1a_build",
+    ],
+    "unit_tests": [
+        "azspice_unit_tests",
+        "ex1a_unit_tests"
+    ],
+    "integration_tests": [
+        "azspice_integration_tests",
+        "ex1a_integration_tests",
+    ],
+    "performance": [
+        "ex1a_performance",
+    ],
+    }) %}
+
+
+{% include "site/meto/groups/group_coupled.cylc" %}
+{% include "site/meto/groups/group_coupling.cylc" %}
+{% include "site/meto/groups/group_driver.cylc" %}
+{% include "site/meto/groups/group_infrastructure.cylc" %}
+{% include "site/meto/groups/group_io_demo.cylc" %}
+{% include "site/meto/groups/group_lfric_xios.cylc" %}
+{% include "site/meto/groups/group_mesh_tools.cylc" %}
+{% include "site/meto/groups/group_science.cylc" %}
+{% include "site/meto/groups/group_skeleton.cylc" %}
+{% include "site/meto/groups/group_simple_diffusion.cylc" %}
+{% include "site/meto/groups/group_lbc_demo.cylc" %}
+
+{% do LOG.debug("Finished in site/meto/groups.cylc") %}

@@ -1,0 +1,525 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2018 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+!> @brief Test the functionality of lfric_mpi_mod
+!>
+!> @details A pFUnit test module to exercise the functionality in mpi_mod.
+!>
+module lfric_mpi_mod_test
+
+  use pfunit
+  use, intrinsic   :: iso_fortran_env, only : int32, real32, real64
+  use constants_mod, only: i_def, r_single, r_double, &
+                           integer_type, real_type
+#ifdef LEGACY_MPI
+  use mpi,     only      : MPI_DOUBLE_PRECISION, MPI_REAL4, MPI_INTEGER, &
+                           MPI_CONGRUENT
+#else
+!> @todo: This should be "use mpi_f08...", but that clashes with the
+!> "use pfunit" which is currently built with legacy mpi, only
+!> - so use legacy mpi here, too.
+!> When pfunit is built with mpi_f08, #4545 will swap to the following line:
+!>  use mpi_f08, only      : MPI_DOUBLE_PRECISION, MPI_REAL4, MPI_INTEGER, &
+!>                           MPI_CONGRUENT
+  use mpi,     only      : MPI_DOUBLE_PRECISION, MPI_REAL4, MPI_INTEGER, &
+                           MPI_CONGRUENT
+#endif
+  use lfric_mpi_mod, only: global_mpi, create_comm, get_lfric_datatype, &
+                           lfric_comm_type, lfric_datatype_type
+
+  implicit none
+
+  private
+  public set_up, tear_down, &
+         test_real64, test_bcast_real64, &
+         test_real32, test_bcast_real32, &
+         test_int, test_bcast_int, &
+         test_bcast_logical
+  !
+  ! pFUnit depends on symbol spill
+  !
+  public MPITestMethod
+
+contains
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @before
+  subroutine set_up(this)
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+    type(lfric_comm_type) :: lfric_comm
+
+    call lfric_comm%set_comm_mpi_val(this%getMpiCommunicator())
+
+    !Store the MPI communicator for later use
+    call global_mpi%initialise(lfric_comm)
+
+  end subroutine set_up
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @after
+  subroutine tear_down(this)
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    ! Clear the stored MPI communicator
+    call global_mpi%finalise()
+
+  end subroutine tear_down
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST REAL64 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes = [1, 4] )
+  subroutine test_real64( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer, parameter  :: r_test = real64
+
+    real(r_test)   :: l_array(3) = (/ 2.0_r_test, 3.0_r_test, 1.0_r_test /)
+    real(r_test)   :: l_local(3)
+    real(r_test)   :: l_sum, l_max, l_min
+    real(r_test)   :: g_sum, g_max, g_min
+    real(r_test)   :: s, answer
+    integer(i_def) :: i
+    type(lfric_comm_type) :: lfric_comm
+    type(lfric_datatype_type) :: lfric_datatype
+    integer(i_def) :: rank_number, total_ranks
+    integer(i_def) :: num_processes
+    integer(i_def) :: proc_num
+    integer        :: compare_result
+    integer        :: ierr
+    integer        :: pfunit_comm
+    integer        :: model_comm
+
+    num_processes = this%context%getNumProcesses()
+    proc_num      = this%getProcessRank()
+
+    ! Test that LFRic's communicator is a duplicate of the one provided
+    ! by pFUnit. Technically, this tests if they are "congruent" (contain
+    ! the same ranks in the same order)
+    lfric_comm = global_mpi%get_comm()
+    pfunit_comm = this%getMpiCommunicator()
+    model_comm = lfric_comm%get_comm_mpi_val()
+    !> @todo: pfunit is built with legacy mpi, so we currently fall back to
+    !> using the legacy version of mpi_comm_compare(). When pfunit is built
+    !> with mpi_f08 this will need updating to use mpi_comm objects.
+    !> See ticket #4545 for more details.
+    call mpi_comm_compare(pfunit_comm, model_comm, compare_result, ierr)
+    @assertEqual( MPI_CONGRUENT, compare_result )
+
+    ! Test real global sum routine
+    l_sum = 0.0_r_test
+    l_local(:) = l_array(:)*(proc_num+1)
+    do i = 1, size(l_local)
+       l_sum = l_sum + l_local(i)
+    end do
+    call global_mpi%global_sum( l_sum, g_sum )
+    ! Calculate weights
+    s = 0.0_r_test
+    do i = 1, num_processes
+       s = s + i
+    end do
+    answer = 6.0_r_test * s
+    @assertEqual(  answer, g_sum, 1.0e-2_r_test )
+
+    ! Test real global maximum routine
+    l_max = l_local(1)
+    do i = 2, size(l_local)
+       if(l_local(i) > l_max) l_max = l_local(i)
+    end do
+    call global_mpi%global_max( l_max, g_max )
+    answer = 3.0_r_test * real(num_processes, r_test)
+    @assertEqual(  answer, g_max, 1.0e-2_r_test )
+
+    ! Test real global minimum routine
+    l_min = l_local(1)
+    do i = 2, size(l_local)
+       if(l_local(i) < l_min) l_min = l_local(i)
+    end do
+    call global_mpi%global_min( l_min, g_min )
+    answer = 1.0_r_test
+    @assertEqual( answer, g_min, 1.0e-2_r_test )
+
+    ! Test the routines for getting total number of ranks and local rank number
+    total_ranks = global_mpi%get_comm_size()
+    @assertEqual( num_processes, total_ranks )
+
+    rank_number=global_mpi%get_comm_rank()
+    @assertTrue( rank_number <= total_ranks)
+
+    ! Test the mpi data type routines - double and single
+    lfric_datatype = get_lfric_datatype( real_type, r_double )
+
+#ifdef LEGACY_MPI
+    @assertEqual( MPI_DOUBLE_PRECISION, lfric_datatype%get_datatype_mpi_val() )
+#else
+!> @todo: This should be "...%mpi_val", but that clashes with the use of legacy
+!> mpi in pfunit - so use the legacy line here for now.
+!> When pfunit is built with mpi_f08, #4545 will swap to the following line:
+!>    @assertEqual( MPI_DOUBLE_PRECISION%mpi_val, lfric_datatype%get_datatype_mpi_val() )
+    @assertEqual( MPI_DOUBLE_PRECISION, lfric_datatype%get_datatype_mpi_val() )
+#endif
+
+  end subroutine test_real64
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST BROADCASTS AT REAL64 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes = [1, 4] )
+  subroutine test_bcast_real64( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer, parameter  :: r_test = real64
+    real(r_test)   :: r_buffer_scalar
+    real(r_test)   :: r_buffer_1d(1)
+    real(r_test)   :: r_buffer_2d(1,1)
+    real(r_test)   :: r_buffer_3d(1,1,1)
+
+    integer(i_def) :: num_processes
+    integer(i_def) :: proc_num
+
+    num_processes = this%context%getNumProcesses()
+    proc_num      = this%getProcessRank()
+
+    ! Test real broadcast routine
+    ! Scalar data
+    r_buffer_scalar = 7.0_r_test*real(proc_num+1, r_test)
+    call global_mpi%broadcast( r_buffer_scalar, 0 )
+    @assertEqual( 7.0_r_test, r_buffer_scalar )
+    ! 1d data
+    r_buffer_1d(1) = 11.0_r_test*real(proc_num+1, r_test)
+    call global_mpi%broadcast( r_buffer_1d, 1, 0 )
+    @assertEqual( 11.0_r_test, r_buffer_1d(1) )
+    ! 2d data
+    r_buffer_2d(1,1) = 13.0_r_test*real(proc_num+1, r_test)
+    call global_mpi%broadcast( r_buffer_2d, 1, 0 )
+    @assertEqual( 13.0_r_test, r_buffer_2d(1,1) )
+    ! 3d data
+    r_buffer_3d(1,1,1) = 17.0_r_test*real(proc_num+1,r_test)
+    call global_mpi%broadcast( r_buffer_3d, 1, 0 )
+    @assertEqual( 17.0_r_test, r_buffer_3d(1,1,1) )
+
+  end subroutine test_bcast_real64
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST REAL32 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes = [1, 4] )
+  subroutine test_real32( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer, parameter  :: r_test = real32
+
+    real(r_test)   :: l_array(3) = (/ 20.0_r_test, 30.0_r_test, 10.0_r_test /)
+    real(r_test)   :: l_local(3)
+    real(r_test)   :: l_sum, l_max, l_min
+    real(r_test)   :: g_sum, g_max, g_min
+    real(r_test)   :: s, answer
+    integer(i_def) :: i
+    type(lfric_datatype_type) :: lfric_datatype
+    integer(i_def) :: rank_number, total_ranks
+    integer(i_def) :: num_processes
+    integer(i_def) :: proc_num
+
+    num_processes = this%context%getNumProcesses()
+    proc_num      = this%getProcessRank()
+    l_local(:)    = l_array(:)*real(proc_num+1, r_test)
+
+    ! Test real global sum routine
+    l_sum = 0.0_r_test
+    do i = 1, size(l_local)
+       l_sum = l_sum + l_local(i)
+    end do
+    call global_mpi%global_sum( l_sum, g_sum )
+    ! Calculate weights
+    s = 0.0_r_test
+    do i = 1, num_processes
+       s = s + real(i, r_test)
+    end do
+    answer = 60.0_r_test * s
+    @assertEqual(  answer, g_sum, 1.0e-2_r_test )
+
+    ! Test real global maximum routine
+    l_max = l_local(1)
+    do i = 2, size(l_local)
+       if(l_local(i) > l_max) l_max = l_local(i)
+    end do
+    call global_mpi%global_max( l_max, g_max )
+    answer = 30.0_r_test * real(num_processes, r_test)
+    @assertEqual(  answer, g_max, 1.0e-2_r_test )
+
+    ! Test real global minimum routine
+    l_min = l_local(1)
+    do i = 2, size(l_local)
+       if(l_local(i) < l_min) l_min = l_local(i)
+    end do
+    call global_mpi%global_min( l_min, g_min )
+    answer = 10.0_r_test
+    @assertEqual( answer, g_min, 1.0e-2_r_test )
+
+    ! Test the mpi data type routines - double and single
+    lfric_datatype = get_lfric_datatype( real_type, r_single )
+#ifdef LEGACY_MPI
+    @assertEqual( MPI_REAL4, lfric_datatype%get_datatype_mpi_val() )
+#else
+!> @todo: This should be "...%mpi_val", but that clashes with the use of legacy
+!> mpi in pfunit - so use the legacy line here for now.
+!> When pfunit is built with mpi_f08, #4545 will swap to the following line:
+!>    @assertEqual( MPI_REAL4%mpi_val, lfric_datatype%get_datatype_mpi_val() )
+    @assertEqual( MPI_REAL4, lfric_datatype%get_datatype_mpi_val() )
+#endif
+
+    ! Test the routines for getting total number of ranks and local rank number
+    total_ranks = global_mpi%get_comm_size()
+    @assertEqual( num_processes, total_ranks )
+
+    rank_number = global_mpi%get_comm_rank()
+    @assertTrue( rank_number <= total_ranks)
+
+  end subroutine test_real32
+
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST BROADCASTS AT REAL32 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes = [1, 4] )
+  subroutine test_bcast_real32( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer, parameter  :: r_test = real32
+    real(r_test)   :: r_buffer_scalar
+    real(r_test)   :: r_buffer_1d(1)
+    real(r_test)   :: r_buffer_2d(1,1)
+    real(r_test)   :: r_buffer_3d(1,1,1)
+
+    integer(i_def) :: num_processes
+    integer(i_def) :: proc_num
+
+    num_processes = this%context%getNumProcesses()
+    proc_num      = this%getProcessRank()
+
+    ! Test real broadcast routine
+    r_buffer_scalar = 7.0_r_test*real(proc_num+1, r_test)
+    call global_mpi%broadcast( r_buffer_scalar, 0 )
+    @assertEqual( 7.0_r_test, r_buffer_scalar )
+    ! 1d data
+    r_buffer_1d(1) = 11.0_r_test*real(proc_num+1,r_test)
+    call global_mpi%broadcast( r_buffer_1d, 1, 0 )
+    @assertEqual( 11.0_r_test, r_buffer_1d(1) )
+    ! 2d data
+    r_buffer_2d(1,1) = 13.0_r_test*real(proc_num+1,r_test)
+    call global_mpi%broadcast( r_buffer_2d, 1, 0 )
+    @assertEqual( 13.0_r_test, r_buffer_2d(1,1) )
+    ! 3d data
+    r_buffer_3d(1,1,1) = 17.0_r_test*real(proc_num+1,r_test)
+    call global_mpi%broadcast( r_buffer_3d, 1, 0 )
+    @assertEqual( 17.0_r_test, r_buffer_3d(1,1,1) )
+
+  end subroutine test_bcast_real32
+
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST INTEGERS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes = [1, 4] )
+  subroutine test_int( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer, parameter  :: i_test = int32
+
+    integer(i_test) :: l_array_i(3) = (/ 200_i_test, 300_i_test, 100_i_test /)
+    integer(i_test) :: l_local_i(3)
+    integer(i_test) :: l_sum_i, l_max_i, l_min_i
+    integer(i_test) :: g_sum_i, g_max_i, g_min_i
+    integer(i_test) :: i_buffer_1d(1)
+    integer(i_test) :: i_buffer_2d(1,1)
+    integer(i_test) :: i_buffer_3d(1,1,1)
+    integer(i_test), allocatable :: i_buffer_ans(:)
+    integer(i_test) :: w, answer
+    character(len=3)  :: str_buffer(1)
+    integer(i_def) :: i
+    type(lfric_datatype_type) :: lfric_datatype
+    integer(i_def) :: rank_number, total_ranks
+    integer(i_def) :: num_processes
+    integer(i_def) :: proc_num
+
+    num_processes = this%context%getNumProcesses()
+    proc_num      = this%getProcessRank()
+    l_local_i(:)  = l_array_i(:)*(proc_num+1)
+
+    allocate(i_buffer_ans(num_processes))
+
+    ! Test integer global sum routine
+    l_sum_i = 0_i_test
+    do i = 1, size(l_local_i)
+       l_sum_i = l_sum_i + l_local_i(i)
+    end do
+    call global_mpi%global_sum( l_sum_i, g_sum_i )
+    ! Calculate weights
+    w = 0_i_test
+    do i = 1, num_processes
+       w = w + i
+    end do
+    answer = 600.0_i_test * w
+    @assertEqual(  answer, g_sum_i )
+
+    ! Test integer global maximum routine
+    l_max_i = l_local_i(1)
+    do i = 2, size(l_local_i)
+       if(l_local_i(i) > l_max_i) l_max_i = l_local_i(i)
+    end do
+    call global_mpi%global_max( l_max_i, g_max_i )
+    answer = 300.0_i_test * num_processes
+    @assertEqual(  answer, g_max_i )
+
+    ! Test real global minimum routine
+    l_min_i = l_local_i(1)
+    do i = 2, size(l_local_i)
+       if(l_local_i(i) < l_min_i) l_min_i = l_local_i(i)
+    end do
+    call global_mpi%global_min( l_min_i, g_min_i )
+    answer = 100_i_test
+    @assertEqual( answer, g_min_i )
+
+    ! Test integer gather routine
+    i_buffer_1d(1) = 700_i_test * (proc_num + 1_i_test)
+    call global_mpi%all_gather(i_buffer_1d, i_buffer_ans, 1)
+    do i = 1,num_processes
+      @assertEqual( i * 700_i_test, i_buffer_ans(i) )
+    end do
+
+    ! Test integer broadcast routine
+    ! 1d data
+    i_buffer_1d(1) = 900_i_test*(proc_num+1)
+    call global_mpi%broadcast( i_buffer_1d, 1, 0 )
+    @assertEqual( 900_i_test, i_buffer_1d(1) )
+    ! 2d data
+    i_buffer_2d(1,1) = 907_i_test*(proc_num+1)
+    call global_mpi%broadcast( i_buffer_2d, 1, 0 )
+    @assertEqual( 907_i_test, i_buffer_2d(1,1) )
+    ! 3d data
+    i_buffer_3d(1,1,1) = 19_i_test*(proc_num+1)
+    call global_mpi%broadcast( i_buffer_3d, 1, 0 )
+    @assertEqual( 19_i_test, i_buffer_3d(1,1,1) )
+
+    ! Test character string broadcast routine
+    if(proc_num == 0) then
+     str_buffer(1) = 'Hi '
+    else
+     str_buffer(1) = 'Bye'
+    end if
+    call global_mpi%broadcast( str_buffer, len(str_buffer(1))*size(str_buffer), 0 )
+    @assertEqual( 'Hi ', str_buffer(1) )
+
+    ! Test the mpi data type routines - integer
+    lfric_datatype = get_lfric_datatype( integer_type, i_test )
+#ifdef LEGACY_MPI
+    @assertEqual( MPI_INTEGER, lfric_datatype%get_datatype_mpi_val() )
+#else
+!> @todo: This should be "...%mpi_val", but that clashes with the use of legacy
+!> mpi in pfunit - so use the legacy line here for now.
+!> When pfunit is built with mpi_f08, #4545 will swap to the following line:
+!>    @assertEqual( MPI_INTEGER%mpi_val, lfric_datatype%get_datatype_mpi_val() )
+    @assertEqual( MPI_INTEGER, lfric_datatype%get_datatype_mpi_val() )
+#endif
+
+    ! Test the routines for getting total number of ranks and local rank number
+    total_ranks = global_mpi%get_comm_size()
+    @assertEqual( num_processes, total_ranks )
+
+    rank_number=global_mpi%get_comm_rank()
+    @assertTrue( rank_number <= total_ranks)
+
+    deallocate(i_buffer_ans)
+
+  end subroutine test_int
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST BROADCAST OF INTEGERS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes = [1, 4] )
+  subroutine test_bcast_int( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    integer, parameter  :: i_test = int32
+    integer(i_test) :: i_buffer_scalar
+    integer(i_test) :: i_buffer_1d(1)
+    integer(i_test) :: i_buffer_2d(1,1)
+    integer(i_test) :: i_buffer_3d(1,1,1)
+    integer(i_def) :: num_processes
+    integer(i_def) :: proc_num
+
+    num_processes = this%context%getNumProcesses()
+    proc_num      = this%getProcessRank()
+    ! Test integer broadcast routine
+    i_buffer_scalar = 17_i_test*int(proc_num+1, i_test)
+    call global_mpi%broadcast( i_buffer_scalar, 0 )
+    @assertEqual( 17_i_test, i_buffer_scalar )
+    ! 1d data
+    i_buffer_1d(1) = 900_i_test*int(proc_num+1, i_test)
+    call global_mpi%broadcast( i_buffer_1d, 1, 0 )
+    @assertEqual( 900_i_test, i_buffer_1d(1) )
+    ! 2d data
+    i_buffer_2d(1,1) = 907_i_test*int(proc_num+1, i_test)
+    call global_mpi%broadcast( i_buffer_2d, 1, 0 )
+    @assertEqual( 907_i_test, i_buffer_2d(1,1) )
+    ! 3d data
+    i_buffer_3d(1,1,1) = 19_i_test*int(proc_num+1, i_test)
+    call global_mpi%broadcast( i_buffer_3d, 1, 0 )
+    @assertEqual( 19_i_test, i_buffer_3d(1,1,1) )
+
+  end subroutine test_bcast_int
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST BROADCAST OF LOGICALS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes = [1, 4] )
+  subroutine test_bcast_logical( this )
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    logical :: l_buffer_scalar
+    logical :: l_buffer_1d(1)
+    logical :: l_buffer_2d(1,1)
+    logical :: l_buffer_3d(1,1,1)
+    integer(i_def) :: num_processes
+    integer(i_def) :: proc_num
+
+    num_processes = this%context%getNumProcesses()
+    proc_num      = this%getProcessRank()
+    ! Test logical broadcast routine
+    l_buffer_scalar = .false.
+    if(proc_num == 0)l_buffer_scalar = .true.
+    call global_mpi%broadcast( l_buffer_scalar, 0 )
+    @assertTrue( l_buffer_scalar )
+    ! 1d data
+    l_buffer_1d(1) = .false.
+    if(proc_num == 0)l_buffer_1d(1) = .true.
+    call global_mpi%broadcast( l_buffer_1d, 1, 0 )
+    @assertTrue( l_buffer_1d(1) )
+    ! 2d data
+    l_buffer_2d(1,1) = .false.
+    if(proc_num == 0)l_buffer_2d(1,1) = .true.
+    call global_mpi%broadcast( l_buffer_2d, 1, 0 )
+    @assertTrue( l_buffer_2d(1,1) )
+    ! 3d data
+    l_buffer_3d(1,1,1) = .false.
+    if(proc_num == 0)l_buffer_3d(1,1,1) = .true.
+    call global_mpi%broadcast( l_buffer_3d, 1, 0 )
+    @assertTrue( l_buffer_3d(1,1,1) )
+
+  end subroutine test_bcast_logical
+
+end module lfric_mpi_mod_test

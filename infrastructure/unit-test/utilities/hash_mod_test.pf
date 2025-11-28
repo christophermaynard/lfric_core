@@ -1,0 +1,50 @@
+!-----------------------------------------------------------------------------
+! (C) Crown copyright 2023 Met Office. All rights reserved.
+! For further details please refer to the file LICENCE which you should have
+! received as part of this distribution.
+!-----------------------------------------------------------------------------
+!> @brief Test the functionality of hash_mod
+!>
+!> @details A pFUnit test module to exercise the hashing algorithms.
+!>
+module hash_mod_test
+
+  use pfunit
+  use lfric_mpi_mod, only : global_mpi
+  use constants_mod, only: i_def, str_def
+
+  implicit none
+
+  private
+
+  public test_string_hashing
+  !
+  ! pFUnit depends on symbol spill
+  !
+  public MPITestMethod, MPITestParameter
+
+contains
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test( npes=[1] )
+  subroutine test_string_hashing(this)
+
+    use hash_mod, only : hash_string
+
+    implicit none
+
+    class(MPITestMethod), intent(inout) :: this
+
+    character(str_def) :: string
+    integer(i_def) :: hash, result
+
+    string = "This is a string"
+    result = 1484
+
+    hash = hash_string(trim(string))
+
+    @assertEqual(result, hash)
+
+  end subroutine test_string_hashing
+
+end module hash_mod_test

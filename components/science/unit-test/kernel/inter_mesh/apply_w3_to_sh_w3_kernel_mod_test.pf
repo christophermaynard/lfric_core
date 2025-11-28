@@ -1,0 +1,161 @@
+!-----------------------------------------------------------------------------
+! (c) Crown copyright 2020 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-----------------------------------------------------------------------------
+!> Test the apply_w3_to_sh_w3_kernel
+module apply_w3_to_sh_w3_kernel_mod_test
+
+  use constants_mod,                       only : i_def, r_def
+  use get_unit_test_m3x3_q3x3x3_sizes_mod, only : get_w3_m3x3_q3x3x3_size
+  use get_unit_test_m3x3_dofmap_mod,       only : get_w3_m3x3_dofmap
+  use funit
+
+  implicit none
+
+  private
+  public :: apply_w3_to_sh_w3_test_type, test_all
+
+  @TestCase
+  type, extends(TestCase) :: apply_w3_to_sh_w3_test_type
+    private
+  contains
+    procedure setUp
+    procedure tearDown
+    procedure test_all
+  end type apply_w3_to_sh_w3_test_type
+
+contains
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine setUp( this )
+
+    implicit none
+
+    class(apply_w3_to_sh_w3_test_type), intent(inout) :: this
+
+  end subroutine setUp
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine tearDown( this )
+
+    use configuration_mod,        only: final_configuration
+
+    implicit none
+
+    class(apply_w3_to_sh_w3_test_type), intent(inout) :: this
+
+  end subroutine tearDown
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  @Test
+  subroutine test_all( this )
+
+    use sci_apply_w3_to_sh_w3_kernel_mod, only : apply_w3_to_sh_w3_code
+
+   implicit none
+
+    class(apply_w3_to_sh_w3_test_type), intent(inout) :: this
+
+    real(kind=r_def),      parameter :: tol = 1.0e-12_r_def
+    real(kind=r_def),      parameter :: dx = 5.0_r_def
+    real(kind=r_def),      parameter :: dy = 3.0_r_def
+    real(kind=r_def),      parameter :: dz = 7.0_r_def
+    real(kind=r_def),      parameter :: dV = dx * dy * dz
+
+    ! Fields
+    real(kind=r_def),    allocatable :: rhs_w3_sh(:)
+    real(kind=r_def),    allocatable :: field_w3(:)
+    real(kind=r_def),    allocatable :: rhs_answer(:)
+    real(kind=r_def),    allocatable :: detj_shifted(:), detj_prime(:)
+
+    integer(kind=i_def)              :: i, j, k, cell
+    integer(kind=i_def)              :: nlayers, nlayers_sh, ncells, ncells_sh
+    integer(kind=i_def)              :: nqp_h, nqp_v
+    integer(kind=i_def)              :: ndf_w3_sh, ndf_w3
+    integer(kind=i_def)              :: dim_space, dim_space_diff
+    integer(kind=i_def)              :: undf_w3_sh, undf_w3
+
+    ! Dofmaps
+    integer(kind=i_def), allocatable :: map_w3_sh(:,:)
+    integer(kind=i_def), allocatable :: map_w3(:,:)
+
+    nlayers = 3
+    nlayers_sh = nlayers + 1
+    call get_w3_m3x3_q3x3x3_size( ndf_w3, undf_w3, ncells,   &
+                                  dim_space, dim_space_diff, &
+                                  nqp_h, nqp_v,              &
+                                  nlayers )
+    call get_w3_m3x3_q3x3x3_size( ndf_w3_sh, undf_w3_sh, ncells_sh, &
+                                  dim_space, dim_space_diff,        &
+                                  nqp_h, nqp_v,                     &
+                                  nlayers_sh )
+
+
+    call get_w3_m3x3_dofmap(map_w3, nlayers)
+    call get_w3_m3x3_dofmap(map_w3_sh, nlayers_sh)
+    cell = 1
+
+    ! Create the data
+    allocate( rhs_w3_sh( undf_w3_sh ) )
+    allocate( rhs_answer( undf_w3_sh ) )
+    allocate( field_w3( undf_w3 ) )
+    allocate( detj_shifted( undf_w3_sh ) )
+    allocate( detj_prime( undf_w3 ) )
+
+    rhs_w3_sh(:) = 0.0_r_def
+
+    do cell = 1, ncells
+      ! Fill values for interior of domain
+      do k = 0, nlayers - 1
+        ! Density increasing linearly with height
+        field_w3(map_w3(1, cell) + k) = real(k+1, r_def)
+        detj_prime(map_w3(1, cell) + k) = dV
+      end do
+
+      detj_shifted(map_w3_sh(1, cell)) = dV / 2.0_r_def
+      detj_shifted(map_w3_sh(1, cell)+nlayers) = dV / 2.0_r_def
+      do k = 1, nlayers - 1
+        detj_shifted(map_w3_sh(1, cell) + k) = dV
+      end do
+
+    end do
+
+    cell = 1
+    call apply_w3_to_sh_w3_code(                    &
+                                 nlayers_sh,        &
+                                 rhs_w3_sh,         &
+                                 field_w3,          &
+                                 detj_shifted,      &
+                                 detj_prime,        &
+                                 ndf_w3_sh,         &
+                                 undf_w3_sh,        &
+                                 map_w3_sh(:,cell), &
+                                 ndf_w3,            &
+                                 undf_w3,           &
+                                 map_w3(:,cell)     &
+                               )
+
+    ! Look at first column
+    rhs_answer(:) = 0.0_r_def
+    rhs_answer(map_w3_sh(1,cell)+0) = 1.0_r_def
+    rhs_answer(map_w3_sh(1,cell)+1) = 1.5_r_def
+    rhs_answer(map_w3_sh(1,cell)+2) = 2.5_r_def
+    rhs_answer(map_w3_sh(1,cell)+3) = 3.0_r_def
+
+    do k = 0, nlayers_sh - 1
+        @assertEqual(rhs_answer(map_w3_sh(1, cell)+k), rhs_w3_sh(map_w3_sh(1, cell)+k), tol)
+    end do
+
+
+    deallocate( rhs_w3_sh )
+    deallocate( rhs_answer )
+    deallocate( field_w3 )
+    deallocate( detj_shifted )
+    deallocate( detj_prime )
+    deallocate( map_w3_sh )
+    deallocate( map_w3 )
+
+  end subroutine test_all
+
+end module apply_w3_to_sh_w3_kernel_mod_test
