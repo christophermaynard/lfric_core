@@ -95,37 +95,38 @@ subroutine get_partition_parameters_nml( partitioning,   &
 
   decomposition = auto_decomposition_type()
   
-!  call partitioning%get_value( 'panel_decomposition', panel_decomposition )
+  !  call partitioning%get_value( 'panel_decomposition', panel_decomposition )
+  panel_decomposition = panel_decomposition_auto
 
-!  select case (panel_decomposition)
+  select case (panel_decomposition)
 
-!  case ( panel_decomposition_auto )
-!    decomposition = auto_decomposition_type()
+  case ( panel_decomposition_auto )
+    decomposition = auto_decomposition_type()
 
-!  case ( panel_decomposition_row )
-!    decomposition = row_decomposition_type()
+  case ( panel_decomposition_row )
+    decomposition = row_decomposition_type()
 
-!  case ( panel_decomposition_column )
-!    decomposition = column_decomposition_type()
+  case ( panel_decomposition_column )
+    decomposition = column_decomposition_type()
 
-!  case ( panel_decomposition_custom )
-!    call partitioning%get_value( 'panel_xproc', panel_xproc )
-!    call partitioning%get_value( 'panel_yproc', panel_yproc )
-!    decomposition = custom_decomposition_type( panel_xproc, panel_yproc )
+  case ( panel_decomposition_custom )
+    call partitioning%get_value( 'panel_xproc', panel_xproc )
+    call partitioning%get_value( 'panel_yproc', panel_yproc )
+    decomposition = custom_decomposition_type( panel_xproc, panel_yproc )
 
-!  case ( panel_decomposition_auto_nonuniform )
-!    decomposition = auto_nonuniform_decomposition_type()
+  case ( panel_decomposition_auto_nonuniform )
+    decomposition = auto_nonuniform_decomposition_type()
 
-!  case ( panel_decomposition_guided_nonuniform )
-!    call partitioning%get_value( 'panel_xproc', panel_xproc )
-!    decomposition = guided_nonuniform_decomposition_type( panel_xproc )
+  case ( panel_decomposition_guided_nonuniform )
+    call partitioning%get_value( 'panel_xproc', panel_xproc )
+    decomposition = guided_nonuniform_decomposition_type( panel_xproc )
 
-!  case default
-    ! Not clear it's possible to still error at this point but no harm in checking
-!    call log_event( "Missing entry for panel decomposition, "// &
-!                    "specify 'auto' if unsure.", LOG_LEVEL_ERROR )
+  case default
+   ! Not clear it's possible to still error at this point but no harm in checking
+    call log_event( "Missing entry for panel decomposition, "// &
+                    "specify 'auto' if unsure.", LOG_LEVEL_ERROR )
 
-!  end select
+  end select
 
   call get_partition_strategy(mesh_selection, total_ranks, partitioner_ptr)
 
