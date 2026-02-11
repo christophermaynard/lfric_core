@@ -93,8 +93,8 @@ subroutine get_partition_parameters_nml( partitioning,   &
 
   integer :: panel_decomposition
 
-!  call partitioning%get_value( 'panel_decomposition', panel_decomposition )
-  panel_decomposition = panel_decomposition_auto
+  call partitioning%get_value( 'panel_decomposition', panel_decomposition )
+
   select case (panel_decomposition)
 
   case ( panel_decomposition_auto )
