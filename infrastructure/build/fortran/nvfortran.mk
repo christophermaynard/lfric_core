@@ -44,4 +44,4 @@ else
 endif
 
 #FPP = nvfortran -E
-#FPPFLAGS = -P -D__NVCOMPILER
+FPPFLAGS = -P
