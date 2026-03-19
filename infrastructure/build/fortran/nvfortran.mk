@@ -43,5 +43,5 @@ else
 	LDFLAGS_OPENMP = -mp
 endif
 
-FPP = nvfortran -E
-FPPFLAGS = -P -D__NVCOMPILER
+#FPP = nvfortran -E
+#FPPFLAGS = -P -D__NVCOMPILER
