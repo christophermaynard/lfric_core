@@ -98,7 +98,9 @@ subroutine get_partition_parameters_nml( partitioning,   &
   select case (panel_decomposition)
 
   case ( panel_decomposition_auto )
-    decomposition = auto_decomposition_type()
+     !    decomposition = auto_decomposition_type()
+     ! The NVIDIA compiler barfs on the constructor call, but the default structure constructor
+     ! Does not do anything!
 
   case ( panel_decomposition_row )
     decomposition = row_decomposition_type()
