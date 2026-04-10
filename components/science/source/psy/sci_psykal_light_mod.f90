@@ -93,6 +93,7 @@ contains
       type(r_solver_field_proxy_type)             :: field_proxy
       integer(kind=i_def)                         :: max_halo_depth_mesh
       type(mesh_type), pointer                    :: mesh => null()
+      integer(kind=tik) :: id
       !
       ! Determine the number of OpenMP threads
       !
