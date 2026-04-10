@@ -19,6 +19,7 @@ module sci_r_solver_field_vector_mod
                                             log_scratch_space
   use vector_mod,                    only : abstract_vector_type
   use mesh_mod,                      only : mesh_type
+  use timing_mod,                    only : start_timing, stop_timing, tik, LPROF
 
   implicit none
   private
