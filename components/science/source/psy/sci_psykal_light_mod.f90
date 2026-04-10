@@ -11,6 +11,7 @@ module sci_psykal_light_mod
   use integer_field_mod,  only : integer_field_type, integer_field_proxy_type
   use r_solver_field_mod, only : r_solver_field_type, r_solver_field_proxy_type
   use r_tran_field_mod,   only : r_tran_field_type, r_tran_field_proxy_type
+  
 
   implicit none
 
@@ -75,6 +76,8 @@ contains
       use omp_lib,            only: omp_get_thread_num
       use omp_lib,            only: omp_get_max_threads
       use mesh_mod,           only: mesh_type
+      use timing_mod,         only: start_timing, stop_timing, tik, LPROF
+
 
       implicit none
 
@@ -134,7 +137,9 @@ contains
       END DO
       DEALLOCATE (l_field_norm)
       global_sum%value = field_norm
+      call start_timing(id, 'double_global_sum')
       field_norm = global_sum%get_sum()
+      call stop_timing(id, 'double_global_sum')  
       !
     end subroutine invoke_rdouble_X_innerproduct_X
 
