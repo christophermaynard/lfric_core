@@ -77,7 +77,7 @@ contains
       use omp_lib,            only: omp_get_max_threads
       use mesh_mod,           only: mesh_type
       use timing_mod,         only: start_timing, stop_timing, tik, LPROF
-
+      use mpi_f08, only: mpi_comm_world, mpi_barrier
 
       implicit none
 
@@ -94,6 +94,7 @@ contains
       integer(kind=i_def)                         :: max_halo_depth_mesh
       type(mesh_type), pointer                    :: mesh => null()
       integer(kind=tik) :: id
+      integer :: ierr
       !
       ! Determine the number of OpenMP threads
       !
@@ -138,6 +139,7 @@ contains
       END DO
       DEALLOCATE (l_field_norm)
       global_sum%value = field_norm
+      call mpi_barrier(mpi_comm_world, ierr)
       call start_timing(id, 'double_global_sum')
       field_norm = global_sum%get_sum()
       call stop_timing(id, 'double_global_sum')  
